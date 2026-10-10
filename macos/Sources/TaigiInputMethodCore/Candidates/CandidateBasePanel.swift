@@ -351,7 +351,7 @@ class CandidateBasePanel: NSPanel, CandidateWindowDragging {
     /// Set from the content each `show` carries, before the cells it belongs
     /// to are built, so the keys are resolved as the cells are. A
     /// display-only re-render keeps it.
-    var slotKeySet: CandidateSlotKeySet = .bareKeys
+    var slotKeySet: CandidateSlotKeySet = .digits
 
     /// Whether cell 0 — the §34 literal — takes no key, so the keys start on
     /// the cell after it. Set from the content each `show` or in-place update

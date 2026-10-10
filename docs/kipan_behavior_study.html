@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客話企盤 (HakSpring-Kipan) — 全設定行為矩陣深度研究報告</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --border: #475569;
+            --success: #4ade80;
+            --code-bg: #0b1120;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 2.5rem 1.5rem;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 2.2rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+        }
+        .meta-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0 2.5rem 0;
+        }
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem;
+        }
+        .card h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .card .value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .table-wrap {
+            overflow-x: auto;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            text-align: left;
+        }
+        th, td {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        th {
+            background: #111e33;
+            color: var(--text-primary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .prof-header strong {
+            display: block;
+            color: var(--accent);
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+        .prof-header small {
+            color: var(--text-secondary);
+            font-weight: normal;
+            font-size: 0.8rem;
+            line-height: 1.3;
+            display: block;
+        }
+        .corpus-row {
+            background: #1e3a5f !important;
+        }
+        .corpus-header {
+            padding: 0.8rem 1.2rem;
+            border-top: 2px solid var(--accent);
+        }
+        .corpus-title {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1.1rem;
+        }
+        .badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-accent {
+            background: var(--accent);
+            color: #0f172a;
+        }
+        .corpus-meaning {
+            color: #bae6fd;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+        code {
+            background: var(--code-bg);
+            color: #38bdf8;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9em;
+            border: 1px solid #1e293b;
+        }
+        .cell-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            width: 180px;
+            background: rgba(15, 23, 42, 0.4);
+        }
+        .output-pill {
+            display: inline-block;
+            background: #064e3b;
+            color: #34d399;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            border: 1px solid #059669;
+        }
+        .cand-item {
+            margin-bottom: 0.35rem;
+            font-size: 0.85rem;
+        }
+        .cand-num { color: var(--text-secondary); margin-right: 0.2rem; }
+        .cand-hanji { color: #fbbf24; font-weight: 600; margin-right: 0.3rem; }
+        .cand-roman { color: var(--text-secondary); font-size: 0.8rem; }
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>客話企盤 (HakSpring-Kipan) 全設定行為矩陣深度研究報告</h1>
+            <p class="subtitle">自動化模擬 Rust 引擎無頭執行：設定切換 × 客話語料 × 候選切分 × 送字形態對照全覽</p>
+        </header>
+
+        <div class="meta-cards">
+            <div class="card">
+                <h3>測試設定組合</h3>
+                <div class="value">6 組</div>
+            </div>
+            <div class="card">
+                <h3>測試語料規模</h3>
+                <div class="value">9 條</div>
+            </div>
+            <div class="card">
+                <h3>總計執行場次</h3>
+                <div class="value">54 場</div>
+            </div>
+            <div class="card">
+                <h3>辭典詞庫版本</h3>
+                <div class="value">22,294 筆</div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 180px;">測試向度</th>
+                        <th><div class="prof-header"><strong>1. 標準漢羅（漢字優先 + 雙軌並列 + 無分隔 None）</strong><small>客話企盤預設：首選出諸夏字，羅馬字以無分隔 HagPinPlus 連寫，候選窗雙軌並列</small></div></th><th><div class="prof-header"><strong>2. 拼音優先（無分隔 None，HagPinPlus 標準連寫）</strong><small>客拼正宗 HagPinPlus 風格：首選輸出客拼，音節間完全無分隔連寫（如 fàdséu）</small></div></th><th><div class="prof-header"><strong>3. 拼音優先（連字號分隔 + 雙軌並列，教育部風格）</strong><small>教育部詞典標準拼寫：首選輸出帶連字號之客拼（如 fàd-séu）</small></div></th><th><div class="prof-header"><strong>4. 拼音優先（空格分隔 + 雙軌並列）</strong><small>分音節空格習慣：首選輸出客拼，各音節以空格分隔（如 fàd séu）</small></div></th><th><div class="prof-header"><strong>5. 漢字帶音混排 (Combined / Ruby)</strong><small>學習與教學模式：候選窗將漢字與標音融合成單一複合標籤呈現</small></div></th><th><div class="prof-header"><strong>6. 原碼字串置頂 (Show Typed Text First)</strong><small>混打外語模式：第 0 位強制保留英文原文，Space 或 Return 可直接送出英數</small></div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>平哥實測句：想法</strong> <code>siongfad</code>
+                    <span class="corpus-meaning">（預期詞義：想法）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">(無候選字)</span></td><td class="cell-result"><span class="output-pill">(無候選字)</span></td><td class="cell-result"><span class="output-pill">(無候選字)</span></td><td class="cell-result"><span class="output-pill">(無候選字)</span></td><td class="cell-result"><span class="output-pill">(無候選字)</span></td><td class="cell-result"><span class="output-pill">siongfad</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"></td><td class="cell-cands"></td><td class="cell-cands"></td><td class="cell-cands"></td><td class="cell-cands"></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">siongfad</span></div></td></tr>
+
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>平哥實測句：跈時行</strong> <code>tensihang</code>
+                    <span class="corpus-meaning">（預期詞義：跈時行 (趕流行)）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">跈</span></td><td class="cell-result"><span class="output-pill">těn</span></td><td class="cell-result"><span class="output-pill">těn</span></td><td class="cell-result"><span class="output-pill">těn</span></td><td class="cell-result"><span class="output-pill">跈</span></td><td class="cell-result"><span class="output-pill">tensihang</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">跈</span> <span class="cand-roman">跈</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">挺</span> <span class="cand-roman">挺</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">鄧</span> <span class="cand-roman">鄧</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">跈</span> <span class="cand-roman">跈</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">挺</span> <span class="cand-roman">挺</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">鄧</span> <span class="cand-roman">鄧</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">跈</span> <span class="cand-roman">跈</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">挺</span> <span class="cand-roman">挺</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">鄧</span> <span class="cand-roman">鄧</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">跈</span> <span class="cand-roman">跈</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">挺</span> <span class="cand-roman">挺</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">鄧</span> <span class="cand-roman">鄧</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">跈</span> <span class="cand-roman">跈</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">挺</span> <span class="cand-roman">挺</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">鄧</span> <span class="cand-roman">鄧</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">tensihang</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">跈</span> <span class="cand-roman">跈</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">挺</span> <span class="cand-roman">挺</span></div></td></tr>
+
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>平哥實測句：顛顛倒倒</strong> <code>diandiandodo</code>
+                    <span class="corpus-meaning">（預期詞義：顛顛倒倒）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">知恁知恁到到</span></td><td class="cell-result"><span class="output-pill">dí àn dí àn dodo</span></td><td class="cell-result"><span class="output-pill">dí àn dí àn do-do</span></td><td class="cell-result"><span class="output-pill">dí àn dí àn do do</span></td><td class="cell-result"><span class="output-pill">知恁知恁到到</span></td><td class="cell-result"><span class="output-pill">diandiandodo</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">知恁知恁到到</span> <span class="cand-roman">知恁知恁到到</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">蹀</span> <span class="cand-roman">蹀</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">知恁知恁到到</span> <span class="cand-roman">知恁知恁到到</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">蹀</span> <span class="cand-roman">蹀</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">知恁知恁到到</span> <span class="cand-roman">知恁知恁到到</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">蹀</span> <span class="cand-roman">蹀</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">知恁知恁到到</span> <span class="cand-roman">知恁知恁到到</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">蹀</span> <span class="cand-roman">蹀</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">知恁知恁到到</span> <span class="cand-roman">知恁知恁到到</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">蹀</span> <span class="cand-roman">蹀</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">diandiandodo</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">知恁知恁到到</span> <span class="cand-roman">知恁知恁到到</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">蹀</span> <span class="cand-roman">蹀</span></div></td></tr>
+
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>客語核心人稱代名詞：𠊎</strong> <code>ngai</code>
+                    <span class="corpus-meaning">（預期詞義：𠊎 (我)）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">𠊎</span></td><td class="cell-result"><span class="output-pill">ngǎi</span></td><td class="cell-result"><span class="output-pill">ngǎi</span></td><td class="cell-result"><span class="output-pill">ngǎi</span></td><td class="cell-result"><span class="output-pill">𠊎</span></td><td class="cell-result"><span class="output-pill">ngai</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">𠊎</span> <span class="cand-roman">𠊎</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">崖</span> <span class="cand-roman">崖</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">耐</span> <span class="cand-roman">耐</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">𠊎</span> <span class="cand-roman">𠊎</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">崖</span> <span class="cand-roman">崖</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">耐</span> <span class="cand-roman">耐</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">𠊎</span> <span class="cand-roman">𠊎</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">崖</span> <span class="cand-roman">崖</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">耐</span> <span class="cand-roman">耐</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">𠊎</span> <span class="cand-roman">𠊎</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">崖</span> <span class="cand-roman">崖</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">耐</span> <span class="cand-roman">耐</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">𠊎</span> <span class="cand-roman">𠊎</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">崖</span> <span class="cand-roman">崖</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">耐</span> <span class="cand-roman">耐</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">ngai</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">𠊎</span> <span class="cand-roman">𠊎</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">崖</span> <span class="cand-roman">崖</span></div></td></tr>
+
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>核心生活詞彙：發燒</strong> <code>fadseu</code>
+                    <span class="corpus-meaning">（預期詞義：發燒）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">發燒</span></td><td class="cell-result"><span class="output-pill">fàdséu</span></td><td class="cell-result"><span class="output-pill">fàd-séu</span></td><td class="cell-result"><span class="output-pill">fàd séu</span></td><td class="cell-result"><span class="output-pill">發燒</span></td><td class="cell-result"><span class="output-pill">fadseu</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">闊</span> <span class="cand-roman">闊</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">罰</span> <span class="cand-roman">罰</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">闊</span> <span class="cand-roman">闊</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">罰</span> <span class="cand-roman">罰</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">闊</span> <span class="cand-roman">闊</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">罰</span> <span class="cand-roman">罰</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">闊</span> <span class="cand-roman">闊</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">罰</span> <span class="cand-roman">罰</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">闊</span> <span class="cand-roman">闊</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">罰</span> <span class="cand-roman">罰</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">fadseu</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">闊</span> <span class="cand-roman">闊</span></div></td></tr>
+
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>專案核心名詞：企盤</strong> <code>kipan</code>
+                    <span class="corpus-meaning">（預期詞義：企盤 (輸入法鍵盤)）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">棋盤</span></td><td class="cell-result"><span class="output-pill">kǐpǎn</span></td><td class="cell-result"><span class="output-pill">kǐ-pǎn</span></td><td class="cell-result"><span class="output-pill">kǐ pǎn</span></td><td class="cell-result"><span class="output-pill">棋盤</span></td><td class="cell-result"><span class="output-pill">kipan</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">棋盤</span> <span class="cand-roman">棋盤</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">企</span> <span class="cand-roman">企</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">騎</span> <span class="cand-roman">騎</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">棋盤</span> <span class="cand-roman">棋盤</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">企</span> <span class="cand-roman">企</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">騎</span> <span class="cand-roman">騎</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">棋盤</span> <span class="cand-roman">棋盤</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">企</span> <span class="cand-roman">企</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">騎</span> <span class="cand-roman">騎</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">棋盤</span> <span class="cand-roman">棋盤</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">企</span> <span class="cand-roman">企</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">騎</span> <span class="cand-roman">騎</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">棋盤</span> <span class="cand-roman">棋盤</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">企</span> <span class="cand-roman">企</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">騎</span> <span class="cand-roman">騎</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">kipan</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">棋盤</span> <span class="cand-roman">棋盤</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">企</span> <span class="cand-roman">企</span></div></td></tr>
+
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>日常生活詞彙：食飯</strong> <code>siidfan</code>
+                    <span class="corpus-meaning">（預期詞義：食飯 (吃飯)）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">食飯</span></td><td class="cell-result"><span class="output-pill">siidfan</span></td><td class="cell-result"><span class="output-pill">siid-fan</span></td><td class="cell-result"><span class="output-pill">siid fan</span></td><td class="cell-result"><span class="output-pill">食飯</span></td><td class="cell-result"><span class="output-pill">siidfan</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">食飯</span> <span class="cand-roman">食飯</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">識</span> <span class="cand-roman">識</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">食</span> <span class="cand-roman">食</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">食飯</span> <span class="cand-roman">食飯</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">識</span> <span class="cand-roman">識</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">食</span> <span class="cand-roman">食</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">食飯</span> <span class="cand-roman">食飯</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">識</span> <span class="cand-roman">識</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">食</span> <span class="cand-roman">食</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">食飯</span> <span class="cand-roman">食飯</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">識</span> <span class="cand-roman">識</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">食</span> <span class="cand-roman">食</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">食飯</span> <span class="cand-roman">食飯</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">識</span> <span class="cand-roman">識</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">食</span> <span class="cand-roman">食</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">siidfan</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">食飯</span> <span class="cand-roman">食飯</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">識</span> <span class="cand-roman">識</span></div></td></tr>
+
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>首字母簡拼測試：fs</strong> <code>fs</code>
+                    <span class="corpus-meaning">（預期詞義：發燒 (簡拼)）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">發燒</span></td><td class="cell-result"><span class="output-pill">fàdséu</span></td><td class="cell-result"><span class="output-pill">fàd-séu</span></td><td class="cell-result"><span class="output-pill">fàd séu</span></td><td class="cell-result"><span class="output-pill">發燒</span></td><td class="cell-result"><span class="output-pill">fs</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">發生</span> <span class="cand-roman">發生</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">壞勢</span> <span class="cand-roman">壞勢</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">發生</span> <span class="cand-roman">發生</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">壞勢</span> <span class="cand-roman">壞勢</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">發生</span> <span class="cand-roman">發生</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">壞勢</span> <span class="cand-roman">壞勢</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">發生</span> <span class="cand-roman">發生</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">壞勢</span> <span class="cand-roman">壞勢</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">發生</span> <span class="cand-roman">發生</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">壞勢</span> <span class="cand-roman">壞勢</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">fs</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">發燒</span> <span class="cand-roman">發燒</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">發生</span> <span class="cand-roman">發生</span></div></td></tr>
+
+        <tr class="corpus-row">
+            <td class="corpus-header" colspan="7">
+                <div class="corpus-title">
+                    <span class="badge badge-accent">測試語料</span>
+                    <strong>首字母簡拼測試：kp</strong> <code>kp</code>
+                    <span class="corpus-meaning">（預期詞義：企盤 (簡拼)）</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+<td class="cell-label">首位送出結果 (Commit Output)</td><td class="cell-result"><span class="output-pill">看病</span></td><td class="cell-result"><span class="output-pill">konpiang</span></td><td class="cell-result"><span class="output-pill">kon-piang</span></td><td class="cell-result"><span class="output-pill">kon piang</span></td><td class="cell-result"><span class="output-pill">看病</span></td><td class="cell-result"><span class="output-pill">kp</span></td></tr>
+<tr>
+<td class="cell-label">最終候選字清單 (Top 3 Candidates)</td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">看病</span> <span class="cand-roman">看病</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">卡片</span> <span class="cand-roman">卡片</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">囥步</span> <span class="cand-roman">囥步</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">看病</span> <span class="cand-roman">看病</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">卡片</span> <span class="cand-roman">卡片</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">囥步</span> <span class="cand-roman">囥步</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">看病</span> <span class="cand-roman">看病</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">卡片</span> <span class="cand-roman">卡片</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">囥步</span> <span class="cand-roman">囥步</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">看病</span> <span class="cand-roman">看病</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">卡片</span> <span class="cand-roman">卡片</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">囥步</span> <span class="cand-roman">囥步</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji">看病</span> <span class="cand-roman">看病</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">卡片</span> <span class="cand-roman">卡片</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">囥步</span> <span class="cand-roman">囥步</span></div></td><td class="cell-cands"><div class="cand-item"><span class="cand-num">1.</span> <span class="cand-hanji"></span> <span class="cand-roman">kp</span></div><div class="cand-item"><span class="cand-num">2.</span> <span class="cand-hanji">看病</span> <span class="cand-roman">看病</span></div><div class="cand-item"><span class="cand-num">3.</span> <span class="cand-hanji">卡片</span> <span class="cand-roman">卡片</span></div></td></tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <p>客源翠 HakSpring 團隊 — 客話企盤 (HakSpring-Kipan) 自動化架構研究工坊產出</p>
+        </footer>
+    </div>
+</body>
+</html>

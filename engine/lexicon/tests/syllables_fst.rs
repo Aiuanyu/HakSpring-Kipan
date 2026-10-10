@@ -343,3 +343,40 @@ fn write_set_to_temp_inventory(keys: Vec<String>) -> SyllableInventory {
     );
     SyllableInventory::open(&path).expect("open inventory")
 }
+
+#[test]
+fn test_deployed_syllables_fst() {
+    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap();
+    let fst_path = repo_root.join("assets/dictionaries/syllables.fst");
+    let inv = SyllableInventory::open(&fst_path).expect("open deployed syllables.fst");
+    println!("Deployed syllables.fst entry count = {}", inv.entry_count());
+    println!("contains tl:ngai = {}", inv.contains_in(InputMode::Tl, "ngai"));
+    println!("contains tl:ngai1 = {}", inv.contains_in(InputMode::Tl, "ngai1"));
+    println!("contains tl:ngai2 = {}", inv.contains_in(InputMode::Tl, "ngai2"));
+    println!("contains tl:fad = {}", inv.contains_in(InputMode::Tl, "fad"));
+    println!("contains tl:seu = {}", inv.contains_in(InputMode::Tl, "seu"));
+
+    let fst_path = repo_root.join("assets/dictionaries/dictionary.fst");
+    let bin_path = repo_root.join("assets/dictionaries/dictionary.bin");
+    let prefix_index = lexicon::prefix_index::PrefixIndex::open(&fst_path).expect("open dict fst");
+    let dict = lexicon::dictionary_reader::DictionaryReader::open(&bin_path).expect("open dict bin");
+    let rowids = prefix_index.lookup_exact("tl:ngai");
+    println!("lookup_exact('tl:ngai') count = {}", rowids.len());
+    for rowid in rowids {
+        if let Some(record) = dict.record(rowid) {
+            println!("  rowid {}: hanji={:?}, tl={:?}, bitmask={}, subtag={:#x}", rowid, record.hanji, record.tl, record.bitmask, record.kautian_subtag);
+            println!("    tl_toneless_face={:?}", phonetics::KeyFamily::Tl.toneless_face(&record.tl));
+            // Default filter from wire with subcollections active:
+            let default_mask = (1 << 0) | (1 << 13) | ((1 << 0) << 14); // kautian on, subcoll active, main enabled
+            let filter = lexicon::dictionary_reader::Filter::from_enabled_bitmask(default_mask);
+            println!("    passes_filter with default subcoll: {}", lexicon::dictionary_reader::DictionaryReader::passes_filter(record.bitmask, record.kautian_subtag, &filter));
+            let all_on_filter = lexicon::dictionary_reader::Filter::from_enabled_bitmask(u32::MAX);
+            println!("    passes_filter with u32::MAX: {}", lexicon::dictionary_reader::DictionaryReader::passes_filter(record.bitmask, record.kautian_subtag, &all_on_filter));
+        }
+    }
+}
+

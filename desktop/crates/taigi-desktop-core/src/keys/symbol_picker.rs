@@ -199,12 +199,12 @@ mod tests {
 
     #[test]
     fn the_slot_keys_follow_the_tone_scheme() {
-        assert_eq!(intent(&text("q")), SymbolPickerIntent::PickSlot(0));
-        assert_eq!(intent(&text(";")), SymbolPickerIntent::PickSlot(8));
+        assert_eq!(intent(&text("1")), SymbolPickerIntent::PickSlot(0));
+        assert_eq!(intent(&text("9")), SymbolPickerIntent::PickSlot(8));
         assert_eq!(
-            intent(&text("1")),
+            intent(&text("q")),
             SymbolPickerIntent::CloseAndPassThrough,
-            "a digit is not a slot key under Standard"
+            "q is an initial letter in Hakfa, not a slot key"
         );
         // The set itself is `CandidateSlotKeySet`'s and pinned in `intent.rs`;
         // one assertion per scheme shows the picker reads it.

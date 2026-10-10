@@ -77,6 +77,7 @@ Details and timings: `docs/architecture/build-artifacts.md`.
 
 ## Conventions
 
+- **【族名與語名規範】一律使用 `hakfa`（Hakfa）／嚴禁使用 `hakka`**：專案全體（包含程式碼命名、變數、檔名、路徑、文件與 UI），若涉及客語羅馬化代號或族語命名，**嚴禁使用 ❌ `hakka`，一律使用 ⭕ `hakfa`（有大寫時就大寫，如 `Hakfa`）**。原因：臺灣客人大體喊自家 Hagngin、喊族語 Hakfa。
 - Code, comments and docs in **English**. Living docs name UI labels by their i18n `en` value. CJK only for Taigi content (phonetic / Hanji examples, test data, proper names of dictionaries and fonts). Dated snapshots (`docs/reports/**`, `docs/releases/**`) are frozen.
 - Conventional Commits `type(scope): subject`; one PR per logical change; say which platforms you built and tested.
 - `changelog/` is edited only at release time.

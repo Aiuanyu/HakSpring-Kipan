@@ -10,10 +10,10 @@ profile = "minimal"
 # devices). Deliberately omitted: the x86 / x86_64 Android targets (no emulator
 # ABI ships; build-android-libs.sh refuses an x86 `abiFilters` entry). Engine-only
 # work on Linux or Windows can skip every cross target with RUSTUP_TOOLCHAIN=stable.
-targets = [
-    "aarch64-apple-ios",
-    "aarch64-apple-ios-sim",
-    "x86_64-apple-ios",
-    "aarch64-linux-android",
-    "armv7-linux-androideabi",
-]
+# targets = [
+#     "aarch64-apple-ios",
+#     "aarch64-apple-ios-sim",
+#     "x86_64-apple-ios",
+#     "aarch64-linux-android",
+#     "armv7-linux-androideabi",
+# ]

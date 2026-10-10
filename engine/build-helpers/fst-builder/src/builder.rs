@@ -94,3 +94,41 @@ pub(crate) fn run_build(output_path: &str) -> Result<BuildStats, String> {
         distinct_keys: distinct_keys.len(),
     })
 }
+
+pub(crate) fn run_build_set(output_path: &str) -> Result<usize, String> {
+    let stdin = io::stdin();
+    let mut keys: Vec<String> = Vec::new();
+    let mut line_no: usize = 0;
+
+    for line_res in stdin.lock().lines() {
+        line_no += 1;
+        let line = line_res.map_err(|e| format!("line {}: read error: {}", line_no, e))?;
+        let trimmed = line.trim();
+        if !trimmed.is_empty() {
+            keys.push(trimmed.to_string());
+        }
+    }
+
+    if keys.is_empty() {
+        return Err("no keys received on stdin".to_string());
+    }
+
+    keys.sort_unstable();
+    keys.dedup();
+
+    let file =
+        File::create(output_path).map_err(|e| format!("create output `{}`: {}", output_path, e))?;
+    let writer = BufWriter::new(file);
+    let mut builder =
+        fst::SetBuilder::new(writer).map_err(|e| format!("fst SetBuilder init: {}", e))?;
+
+    for key in &keys {
+        builder
+            .insert(key.as_bytes())
+            .map_err(|e| format!("fst insert `{}`: {}", key, e))?;
+    }
+
+    builder.finish().map_err(|e| format!("fst finish: {}", e))?;
+
+    Ok(keys.len())
+}

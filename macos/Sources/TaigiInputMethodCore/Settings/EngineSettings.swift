@@ -194,7 +194,7 @@ struct EngineSettings: Sendable {
         isHanjiFirst: true,
         candidateDisplayMode: .sideBySide,
         isLiteralRomanCandidateEnabled: false,
-        syllableSeparator: .hyphen,
+        syllableSeparator: .noSeparator,
         isNasalMarkerUppercaseEnabled: true,
         isCustomDictEnabled: true,
         dictionarySources: .defaults,

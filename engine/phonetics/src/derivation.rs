@@ -90,9 +90,9 @@ const SYLLABLE_DELIMITERS: [char; 7] = [' ', '\t', '\n', '\u{0B}', '\u{0C}', '\r
 /// `ch` / `chh`, the rest shared). One table for both scripts: `ch` never
 /// starts a TL syllable, and a traditional-POJ `ts…` spelling reads as the
 /// same `ts` unit it would in TL, so the union changes no verdict.
-const ABBREV_INITIALS: [&str; 19] = [
-    "tsh", "chh", "ts", "ch", "ph", "th", "kh", "ng", "p", "m", "b", "t", "n", "l", "k", "g", "s",
-    "j", "h",
+const ABBREV_INITIALS: &[&str] = &[
+    "tsh", "chh", "zh", "ch", "sh", "rh", "bb", "ts", "ph", "th", "kh", "ng",
+    "p", "m", "b", "t", "n", "l", "k", "g", "s", "j", "h", "f", "v", "z", "c", "q", "x",
 ];
 
 /// The leading spelling unit of one bare (lowercased, diacritic-stripped)

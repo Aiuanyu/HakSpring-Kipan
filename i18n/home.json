@@ -16,11 +16,11 @@
         ]
       },
       "values": {
-        "hanji": "台語齒盤",
-        "tailo": "Tâi-gí Khí-puânn",
-        "poj": "Tâi-gí Khí-pôaⁿ",
-        "en": "TaigiKeyboard",
-        "ja": "台湾語キーボード"
+        "hanji": "客源翠企盤",
+        "tailo": "HakSpring-Kipan",
+        "poj": "HakSpring-Kipan",
+        "en": "HakSpring-Kipan",
+        "ja": "客源翠企盤"
       }
     },
     "setupKeyboard": {

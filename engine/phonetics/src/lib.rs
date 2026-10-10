@@ -22,6 +22,7 @@ mod poj;
 mod punctuation;
 mod syllable;
 mod tables;
+pub mod hakfa_tables;
 mod tl;
 mod tone_variations;
 mod tps;
@@ -37,6 +38,7 @@ pub use api::{
     toneless_reading_key, InputMode, PhoneticsError, System,
 };
 pub use derivation::{derive_abbrev, poj_abbrev_from_tl};
+pub use hakfa_tables::is_valid_hakfa_syllable;
 pub use key_family::{abbrev_family_key, KeyFamily, HANJI_KEY_PREFIX};
 pub use normalization::{
     has_tone_marks, is_combining_tone_mark, normalize_input, taigi_unicode_base_form,

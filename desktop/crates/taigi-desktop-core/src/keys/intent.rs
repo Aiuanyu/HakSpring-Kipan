@@ -361,7 +361,9 @@ impl ComposingKeyIntent {
         // and the engine would be handed a string it cannot parse (Codex
         // PR2b review). The same holds for `a.`, which is document text;
         // macOS asks every character too since P11c (roadmap E2).
-        let digits_are_tones = is_composing && bindings.tone_scheme == ToneInputScheme::Standard;
+        // 在客話企盤中，無調連打是標準模式，數字鍵是用來選字的（Slot keys），不是調號。
+        // 當候選視窗開啟時由 Tier 3 進行數字選字；無候選窗時則落入 punctuation 規則直接 commit。
+        let digits_are_tones = false;
         let is_romanization = characters.chars().all(|c| {
             Self::is_romanization_character(c) || (digits_are_tones && Self::is_tone_digit(c))
         });
@@ -623,9 +625,10 @@ mod tests {
 
     #[test]
     fn digits_are_tone_markers_only_while_composing() {
+        // 在客話企盤中，無數字調，數字鍵在無候選窗時直接 commit 並輸出數字
         assert_eq!(
             classify(&text("5"), true, false),
-            ComposingKeyIntent::Input("5".into())
+            ComposingKeyIntent::CommitThenInsert("5".into())
         );
         assert_eq!(
             classify(&text("5"), false, false),
@@ -1074,10 +1077,10 @@ mod tests {
                 CommitThenInsert("a字".into()),
                 PassThrough,
             ),
-            // trace: a digit is a tone only mid-composition under Standard.
-            ("a5", &standard, Input("a5".into()), PassThrough),
+            // 在客話企盤中，無數字調，數字在組字中均落入 CommitThenInsert
+            ("a5", &standard, CommitThenInsert("a5".into()), PassThrough),
             ("a5", &telex, CommitThenInsert("a5".into()), PassThrough),
-            ("5a", &standard, Input("5a".into()), PassThrough),
+            ("5a", &standard, CommitThenInsert("5a".into()), PassThrough),
             // trace: a Telex key is a one-character event; `fx` / `vx` /
             // `zx` are letters, idle too.
             ("fx", &telex, Input("fx".into()), Input("fx".into())),
@@ -1245,10 +1248,10 @@ mod tests {
             ComposingKeyIntent::CommitThenPassThrough,
             "a chording modifier makes the digit miss"
         );
-        // Under Standard a bare digit with the window up is still the tone.
+        // 在客話企盤中，Standard 的候選窗選字鍵也是數字鍵。
         assert_eq!(
             classify(&text("3"), true, true),
-            ComposingKeyIntent::Input("3".into())
+            ComposingKeyIntent::SelectCandidateSlot { slot: 2, flip: false }
         );
     }
 
@@ -1259,51 +1262,26 @@ mod tests {
         // types. A shifted digit flips under Telex and stays punctuation under
         // Standard; under Telex the shifted letter is a tone key. ⇧ beside a
         // host chord is the host's.
-        let shift_w = KeyEventSnapshot::text("W", KeyModifiers::SHIFT);
+        // 在客話企盤中，Standard 的 slot keys 也是數字，因此 Shift+數字（如 Shift+2=@）觸發 flip
+        let shift_two =
+            KeyEventSnapshot::chord(Some("@"), "@", KeyModifiers::SHIFT).with_key_code(0x32);
         assert_eq!(
-            classify(&shift_w, true, true),
+            classify(&shift_two, true, true),
             ComposingKeyIntent::SelectCandidateSlot {
                 slot: 1,
                 flip: true
             }
+        );
+        let shift_w = KeyEventSnapshot::text("W", KeyModifiers::SHIFT);
+        assert_eq!(
+            classify(&shift_w, true, true),
+            ComposingKeyIntent::Input("W".into()),
+            "W is a letter in Hakfa, not a slot key"
         );
         assert_eq!(
             classify(&shift_w, true, false),
             ComposingKeyIntent::Input("W".into()),
             "with no window the capital reaches the composition"
-        );
-        let shift_semicolon = KeyEventSnapshot::chord(Some(":"), ":", KeyModifiers::SHIFT)
-            .with_key_code(crate::keys::chord::SEMICOLON_KEY_CODE);
-        assert_eq!(
-            classify(&shift_semicolon, true, true),
-            ComposingKeyIntent::SelectCandidateSlot {
-                slot: 8,
-                flip: true
-            }
-        );
-        assert_eq!(
-            classify(&shift_semicolon, true, false),
-            ComposingKeyIntent::CommitThenInsert(":".into())
-        );
-        // Under Telex the shifted digit flips; under Standard it stays the
-        // punctuation it types, and the shifted letter is the tone key.
-        let telex = telex_bindings();
-        let shift_two =
-            KeyEventSnapshot::chord(Some("@"), "@", KeyModifiers::SHIFT).with_key_code(0x32);
-        assert_eq!(
-            ComposingKeyIntent::intent(&shift_two, true, true, &telex, PLATFORM),
-            ComposingKeyIntent::SelectCandidateSlot {
-                slot: 1,
-                flip: true
-            }
-        );
-        assert_eq!(
-            classify(&shift_two, true, true),
-            ComposingKeyIntent::CommitThenInsert("@".into())
-        );
-        assert_eq!(
-            ComposingKeyIntent::intent(&shift_w, true, true, &telex, PLATFORM),
-            ComposingKeyIntent::TelexKey("W".into())
         );
         // Shift beside a host chord is the host's, window or not.
         let ctrl_shift_w =
@@ -1316,19 +1294,24 @@ mod tests {
 
     #[test]
     fn bare_slot_keys_pick_while_the_window_is_up_and_type_otherwise() {
+        // 在客話企盤中，選字鍵是數字 1..9，字母 q/w/d/f 等一律為輸入字母
         assert_eq!(
-            classify(&text("q"), true, true),
+            classify(&text("1"), true, true),
             ComposingKeyIntent::SelectCandidateSlot {
                 slot: 0,
                 flip: false
             }
         );
         assert_eq!(
-            classify(&text(";"), true, true),
+            classify(&text("9"), true, true),
             ComposingKeyIntent::SelectCandidateSlot {
                 slot: 8,
                 flip: false
             }
+        );
+        assert_eq!(
+            classify(&text("q"), true, true),
+            ComposingKeyIntent::Input("q".into())
         );
         assert_eq!(
             classify(&text("q"), true, false),

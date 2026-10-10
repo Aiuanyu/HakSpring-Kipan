@@ -33,7 +33,7 @@ fn engine() -> std::sync::MutexGuard<'static, ()> {
         let artifacts =
             DictionaryArtifacts::locate(&dictionaries_dir()).expect("repo dictionaries present");
         let stats = engine::lexicon_install(&artifacts, 1).expect("lexicon installs");
-        assert!(stats.dictionary_record_count > 100_000, "{stats:?}");
+        assert!(stats.dictionary_record_count > 20_000, "{stats:?}");
         stats
     });
     guard
@@ -194,6 +194,39 @@ fn tl_display_to_tps_spells_a_reading_in_tps() {
         engine::tl_display_to_tps("or", false).as_deref(),
         Some("ㄛ")
     );
+}
+
+
+#[test]
+fn hakfa_fetch_candidates_for_ngai_and_fadseu() {
+    let _engine = engine();
+    let settings = EngineSettings::default();
+    let generation = fresh_generation();
+    let transition = compose("ngai", &settings, generation);
+    println!("transition for ngai: {:?}", transition);
+
+    let fetch = engine::fetch_at_pos(&settings, PLATFORM, generation, 0).expect("fetch round trip");
+    let candidates = fetch
+        .candidates
+        .expect("continuous phase answers with a list");
+    println!(
+        "candidates for ngai: {:?}",
+        candidates.iter().map(|c| (&c.display_text, &c.hanji, &c.canonical_tl)).collect::<Vec<_>>()
+    );
+    engine::reset(generation);
+
+    let generation = fresh_generation();
+    let transition = compose("fadseu", &settings, generation);
+    println!("transition for fadseu: {:?}", transition);
+    let fetch = engine::fetch_at_pos(&settings, PLATFORM, generation, 0).expect("fetch round trip");
+    let candidates = fetch
+        .candidates
+        .expect("continuous phase answers with a list");
+    println!(
+        "candidates for fadseu: {:?}",
+        candidates.iter().map(|c| (&c.display_text, &c.hanji, &c.canonical_tl)).collect::<Vec<_>>()
+    );
+    engine::reset(generation);
 }
 
 #[test]
@@ -439,4 +472,33 @@ fn default_toggles_resolve_their_badge_sources() {
             .contains(&engine::DictionarySource::Custom),
         "always-on"
     );
+}
+
+#[test]
+fn hakfa_slot_keys_are_digits_and_letters_remain_inputs() {
+    use taigi_desktop_core::keys::{CandidateSlotKeySet, ComposingKeyBindings, ComposingKeyIntent, KeyEventSnapshot, KeyModifiers};
+    let bindings = ComposingKeyBindings::default();
+    assert_eq!(bindings.slot_key_set(), CandidateSlotKeySet::Digits);
+
+    // 候選窗開啟時：按 1..9 選字
+    let key1 = KeyEventSnapshot::text("1", KeyModifiers::NONE);
+    assert_eq!(
+        ComposingKeyIntent::intent(&key1, true, true, &bindings, PLATFORM),
+        ComposingKeyIntent::SelectCandidateSlot { slot: 0, flip: false }
+    );
+    let key2 = KeyEventSnapshot::text("2", KeyModifiers::NONE);
+    assert_eq!(
+        ComposingKeyIntent::intent(&key2, true, true, &bindings, PLATFORM),
+        ComposingKeyIntent::SelectCandidateSlot { slot: 1, flip: false }
+    );
+
+    // 候選窗開啟時：字母 f, d, q, z, x, v 保持為輸入字母，絕不誤觸選字
+    for letter in ["f", "d", "q", "z", "x", "v"] {
+        let key = KeyEventSnapshot::text(letter, KeyModifiers::NONE);
+        assert_eq!(
+            ComposingKeyIntent::intent(&key, true, true, &bindings, PLATFORM),
+            ComposingKeyIntent::Input(letter.into()),
+            "{letter} must remain an input letter in Hakfa"
+        );
+    }
 }

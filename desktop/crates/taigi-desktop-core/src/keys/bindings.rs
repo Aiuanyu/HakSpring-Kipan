@@ -227,7 +227,7 @@ mod tests {
             assert!(bindings.chord(action).is_some(), "{action:?} starts blank");
         }
         assert_eq!(bindings.tone_scheme, ToneInputScheme::Standard);
-        assert_eq!(bindings.slot_key_set(), CandidateSlotKeySet::BareKeys);
+        assert_eq!(bindings.slot_key_set(), CandidateSlotKeySet::Digits);
     }
 
     #[test]

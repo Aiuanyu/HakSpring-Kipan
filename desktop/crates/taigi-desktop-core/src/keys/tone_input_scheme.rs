@@ -45,7 +45,7 @@ impl ToneInputScheme {
     /// The keys that pick a candidate under this scheme.
     pub fn slot_key_set(self) -> CandidateSlotKeySet {
         match self {
-            Self::Standard => CandidateSlotKeySet::BareKeys,
+            Self::Standard => CandidateSlotKeySet::Digits,
             Self::Telex => CandidateSlotKeySet::Digits,
         }
     }
@@ -96,7 +96,7 @@ mod tests {
         // `DEFAULT` is Standard.
         assert_eq!(
             ToneInputScheme::Standard.slot_key_set(),
-            CandidateSlotKeySet::BareKeys
+            CandidateSlotKeySet::Digits
         );
         assert_eq!(
             ToneInputScheme::Telex.slot_key_set(),

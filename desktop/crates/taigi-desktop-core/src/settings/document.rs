@@ -711,8 +711,8 @@ mod tests {
         let mut doc = SettingsDocument::default();
         assert_eq!(
             doc.engine_settings().syllable_separator,
-            SyllableSeparator::Hyphen,
-            "ships Hyphen"
+            SyllableSeparator::None,
+            "ships None"
         );
         doc.set_choice(&keys::SYLLABLE_SEPARATOR, SyllableSeparator::Space);
         assert_eq!(

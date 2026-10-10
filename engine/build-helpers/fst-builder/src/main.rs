@@ -49,6 +49,19 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
+        "build-set" if args.len() == 2 => match builder::run_build_set(&args[1]) {
+            Ok(distinct_keys) => {
+                eprintln!(
+                    "[fst-builder] built set {} (distinct_keys={})",
+                    args[1], distinct_keys
+                );
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("[fst-builder] build-set failed: {}", e);
+                ExitCode::FAILURE
+            }
+        },
         "build-syllables" => match parse_build_syllables(&args[1..]) {
             Ok((output, tl_input, poj_input, tps_input)) => {
                 match syllables::run_build(output, tl_input, poj_input, tps_input) {

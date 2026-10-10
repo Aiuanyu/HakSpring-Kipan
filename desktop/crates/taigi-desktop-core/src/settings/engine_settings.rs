@@ -256,8 +256,8 @@ impl SyllableSeparator {
 
 impl SettingChoice for SyllableSeparator {
     const ALL: &'static [Self] = &[Self::Hyphen, Self::Space, Self::None];
-    /// The dictionary form.
-    const DEFAULT: Self = Self::Hyphen;
+    /// The dictionary form / default (HakSpring HagPinPlus default: None).
+    const DEFAULT: Self = Self::None;
     fn raw(self) -> &'static str {
         match self {
             Self::Hyphen => "hyphen",
@@ -299,7 +299,7 @@ pub struct EngineSettings {
     pub is_literal_roman_candidate_enabled: bool,
     /// Syllable Separator (`behavioral-invariants.md` §49) —
     /// `AppConfig.syllable_separator` on the base config, sent as stored.
-    /// CROSS-PLATFORM INVARIANT — default Hyphen on every platform; mirrored by
+    /// CROSS-PLATFORM INVARIANT — default None for HakSpring HagPinPlus; mirrored by
     /// `syllableSeparator` (`ios/.../SharedSettings.swift`) and
     /// `syllableSeparator` (`android/.../PrefHelper.kt`). macOS keeps a Swift
     /// twin: `macos/.../EngineSettings.swift` `syllableSeparator`.
@@ -339,7 +339,7 @@ impl EngineSettings {
             is_full_width_punctuation: MODE.effective_full_width_punctuation(STORED_SWAP),
             candidate_display_mode: MODE,
             is_literal_roman_candidate_enabled: false,
-            syllable_separator: SyllableSeparator::Hyphen,
+            syllable_separator: SyllableSeparator::None,
             is_nasal_marker_uppercase_enabled: true,
             is_custom_dict_enabled: true,
             dictionary_sources: DictionarySourceToggles::DEFAULT,

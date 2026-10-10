@@ -157,3 +157,8 @@ windows/.build/
 # e2e run output (make e2e): traces + reports, never committed
 /e2e/runs/
 
+# Hakfa dictionary build scratch & output
+/output/
+/dictionary/output/hakfa/
+assets/dictionaries/backup_taigi/
+commit_msg.txt
