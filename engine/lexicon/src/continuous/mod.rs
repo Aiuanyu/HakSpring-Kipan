@@ -1294,6 +1294,32 @@ pub fn fetch_abbrev_candidates(
             COVERAGE_KIND_ABBREV,
         ));
     }
+    let target = fst_key.split_once(':').map(|(_, k)| k).unwrap_or(fst_key);
+    for entry in ctx.custom {
+        if phonetics::derive_abbrev(&entry.roman) == target {
+            out.push(candidate::custom_entry_to_candidate(
+                entry,
+                raw_len,
+                ctx.freq_map,
+                ctx.now_ms,
+                ctx.context,
+                COVERAGE_KIND_ABBREV,
+                ctx.mode,
+            ));
+        }
+    }
+    for entry in ctx.learned {
+        if phonetics::derive_abbrev(&entry.canonical_tl) == target {
+            out.push(candidate::learned_entry_to_candidate(
+                entry,
+                (0, raw_len),
+                ctx.freq_map,
+                ctx.now_ms,
+                ctx.context,
+                COVERAGE_KIND_ABBREV,
+            ));
+        }
+    }
     dedupe_by_roman_hanji_span(&mut out);
     sort_by_candidate_key(out, raw_len, RawCandidate::rank_facts)
 }

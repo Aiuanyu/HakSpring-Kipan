@@ -21,8 +21,8 @@ import CoreText
 // The glyph outline comes from a font, but the font is a build-time input, not a
 // runtime one: nothing on a user's machine reads it. Pinned to an exact
 // PostScript name so the same source cannot render differently on two machines.
-let glyph = "台"
-let fontPostScriptName = "PingFangTC-Semibold"
+let glyph = "客"
+let fontPostScriptName = "ZenMaruGothic-Bold"
 // Fraction of the height left clear above and below the glyph (Apple's glyphs
 // run about 10pt on the 16pt cap), and the corner radius in points.
 let glyphInsetRatio: CGFloat = 0.19

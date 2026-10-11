@@ -163,7 +163,7 @@ impl LearnedPhraseStore {
             .read(|connection| {
                 // Cached: the one statement the keystroke path runs here.
                 let mut statement = connection.prepare_cached(&format!(
-                    "SELECT p.hanzi, p.roman, p.learn_count\nFROM {TABLE_NAME} p\nJOIN {SEARCH_KEY_TABLE_NAME} k ON k.phrase_id = p.id\nWHERE k.family = ? AND k.form = ? AND k.key = ?\nORDER BY p.learn_count DESC, p.updated_at DESC\nLIMIT ?;"
+                    "SELECT p.hanzi, p.roman, p.learn_count\nFROM {TABLE_NAME} p\nJOIN {SEARCH_KEY_TABLE_NAME} k ON k.phrase_id = p.id\nWHERE k.family = ? AND k.form IN (?, 'abbrev') AND k.key = ?\nORDER BY p.learn_count DESC, p.updated_at DESC\nLIMIT ?;"
                 ))?;
                 let rows = statement.query_map(
                     params![query_key.family, query_key.form, query_key.key, limit as i64],

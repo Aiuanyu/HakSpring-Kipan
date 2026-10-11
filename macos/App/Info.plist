@@ -48,7 +48,7 @@
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>tw.aiuanyu.inputmethod.HakSpring-Kipan</string>
+	<string>net.aiuanyu.inputmethod.HakSpring-Kipan</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -64,11 +64,11 @@
 	     `make version-desktop x.y.z`, which sets the same version on Windows in
 	     the same pass. -->
 	<key>CFBundleShortVersionString</key>
-	<string>3.6.13</string>
+	<string>0.0.2</string>
 	<key>CFBundleVersion</key>
-	<string>30613</string>
+	<string>2</string>
 	<key>InputMethodConnectionName</key>
-	<string>tw.aiuanyu.inputmethod.HakSpring-Kipan_Connection</string>
+	<string>net.aiuanyu.inputmethod.HakSpring-Kipan_Connection</string>
 	<key>InputMethodServerControllerClass</key>
 	<string>TaigiInputController</string>
 	<!-- Declares that the localized names exist; Apple documents this as a
@@ -104,7 +104,7 @@
 	<key>TISIconIsTemplate</key>
 	<true/>
 	<key>TISInputSourceID</key>
-	<string>tw.aiuanyu.inputmethod.HakSpring-Kipan</string>
+	<string>net.aiuanyu.inputmethod.HakSpring-Kipan</string>
 	<key>TISIntendedLanguage</key>
 	<string>mul</string>
 	<key>tsInputMethodIconFileKey</key>

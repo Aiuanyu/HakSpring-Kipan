@@ -37,14 +37,16 @@ import ImageIO
 
 // MARK: - The design
 
-let appGlyph = "台"
-let fontPostScriptName = "PingFangTC-Semibold"
+let appGlyph = "客"
+let appFontPostScriptName = "ZenMaruGothic-Bold"
+let modeFontPostScriptName = "PingFangTC-Semibold"
 /// The outline each mark was approved with. `NSFont(name:)` substitutes rather
 /// than fails for some names, and Apple can change a glyph under a stable
 /// PostScript name in an OS update — either would silently reshape a committed
 /// artefact. Regenerating then fails loudly instead of producing a diff nobody
 /// can read. Update an entry ONLY together with a reviewed icon change.
 let approvedOutlineFingerprints: [String: String] = [
+    "客": "13f91b78561babf8051e8919b34d16038a610a0277a4cebdd61918d2c90e9669",
     "台": "4a24567095da319efa0f0284986163581c459b300822c1b7fadc9efbb5c76f81",
     "Ts": "9a97aba6cd4cfbf3ef297d6876ee3f061ffd1fb41225ebbb96038819cd9d77d5",
     "白": "da4bd709899fd47e2bc9e32706953bbe3fc95c8a9ce873865d9605022544dd1c",
@@ -130,7 +132,7 @@ func fail(_ message: String) -> Never {
 /// would push it visibly off centre at 16 px. Laid out by CoreText, so a
 /// two-letter mark keeps the font's own advances and kerning; a single glyph
 /// sits at the origin, so its outline is the bare glyph path.
-func textOutline(_ text: String) -> CGPath {
+func textOutline(_ text: String, fontPostScriptName: String) -> CGPath {
     guard let font = NSFont(name: fontPostScriptName, size: 100) else {
         fail("font '\(fontPostScriptName)' is not installed")
     }
@@ -194,8 +196,8 @@ func fingerprint(of path: CGPath) -> String {
 }
 
 /// The outline of `text`, checked against its approved fingerprint.
-func approvedOutline(_ text: String) -> CGPath {
-    let outline = textOutline(text)
+func approvedOutline(_ text: String, fontPostScriptName: String) -> CGPath {
+    let outline = textOutline(text, fontPostScriptName: fontPostScriptName)
     let found = fingerprint(of: outline)
     guard let approved = approvedOutlineFingerprints[text] else {
         fail("'\(text)' has no entry in `approvedOutlineFingerprints`")
@@ -310,7 +312,7 @@ func stage(_ png: Data, as name: String, in directory: URL = staging) -> URL {
 /// written and reported.
 var outputs: [(staged: URL, committed: URL)] = []
 
-let appOutline = approvedOutline(appGlyph)
+let appOutline = approvedOutline(appGlyph, fontPostScriptName: appFontPostScriptName)
 for member in iconsetMembers {
     _ = stage(render(pixels: member.pixels, outline: appOutline), as: "\(member.name).png", in: iconset)
 }
@@ -336,7 +338,7 @@ for size in linuxSizes {
 }
 
 for mode in modeIcons {
-    let outline = approvedOutline(mode.symbol)
+    let outline = approvedOutline(mode.symbol, fontPostScriptName: modeFontPostScriptName)
     outputs.append((stageIco(outline, sizes: windowsModeSizes, name: mode.name), windowsModeIconURL(mode.name)))
     for size in linuxModeSizes where mode.linux {
         let png = render(pixels: size, outline: outline)
