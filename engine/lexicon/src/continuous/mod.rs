@@ -59,6 +59,8 @@
 //! syllabifier endings → `(span, key)` pairs) lives in
 //! `engine/lexicon/tests/common/mod.rs`.
 
+use std::borrow::Cow;
+
 use phonetics::{KeyFamily, HANJI_KEY_PREFIX};
 
 use crate::dictionary_reader::{DictionaryReader, Filter, WALKER_COST_UNPRICED};
@@ -367,17 +369,21 @@ pub struct ContinuousFetchCtx<'a> {
 pub enum TonePin {
     /// No tone constraint: a toneless TL/POJ span (the deliberate
     /// "show all tones" affordance, §17 case 2), any English span (a
-    /// digit there is not a tone), or a TPS span not closed by the space.
+    /// digit there is not a tone), or a TPS span with no tone mark and no
+    /// space in it or at its end.
     #[default]
     None,
-    /// A3 (§41) — a TPS span whose TAIL syllable was closed by the
-    /// keyboard's space with no tone mark of its own: only the unmarked
-    /// tone (1 on an open rime, 4 on a stop coda) may surface. Carries
-    /// the fused `tps_notone` body of the span / buffer, which is what
-    /// the whole-buffer sources align against; the exact / walker paths
+    /// §17 case 4 + §41 — a TPS span carrying a tone mark or a keyboard
+    /// space: every [`TpsClose`] is a point where the user closed a
+    /// syllable, so a reading must end a syllable there and carry the tone
+    /// the close names. `ㄉㄞ˫ㄨㄢ` keeps 大員 `tāi-uân` and drops 台灣
+    /// `tâi-uân`; `ㄌㄧˋㄫ` drops 靈 `lîng` (no syllable ends after ㄧ);
+    /// `ㄒㄧ`␣ keeps 詩 si1 and drops 是 sī. `body` is the fused
+    /// `tps_notone` body of the span / buffer, which the whole-buffer
+    /// sources align against; the exact / walker / partial-prefix paths
     /// align against the MATCHED key instead (a §35 substituted reading
     /// reconstructs to the matched key, never the typed one).
-    TpsSpaceEnd(String),
+    TpsTyped { body: String, closes: Vec<TpsClose> },
     /// §17 case 3 — a TL/POJ span carrying at least one ASCII tone digit:
     /// the hyphenless typed body with its digits (`teng5sek`) and the
     /// mode whose numeric-tone face it is read against. Every syllable
@@ -414,20 +420,42 @@ pub struct TypedBoundary {
     pub khinsiann: bool,
 }
 
+/// One syllable close the user typed inside (or at the end of) a TPS span:
+/// `body_end` is the byte offset into the span's TONELESS body where the
+/// closed syllable ends.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TpsClose {
+    pub body_end: usize,
+    pub kind: TpsCloseKind,
+}
+
+/// What a [`TpsClose`] asks of the syllable ending there.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TpsCloseKind {
+    /// A typed tone mark: the syllable carries exactly this numeric tone.
+    Marked(char),
+    /// The keyboard space closing the span's unmarked last syllable (§41):
+    /// tone 1 on an open rime, 4 on a stop coda.
+    SpaceClosed,
+    /// A space inside the span: a syllable boundary of any tone, never a
+    /// tone-1 instruction (§31 `ㄍㄠ`␣`ㄉㄞ˪` 交代, §35 `ㄇ`␣`ㄒㄧ` 毋是).
+    Boundary,
+}
+
 impl TonePin {
     /// Does `reading` (a canonical TL reading — `DictionaryRecord.tl`, or
     /// a custom roman folded through `phonetics::api::canonical_tl_form`)
     /// satisfy this pin? `matched_key` is the FST key the reading came
-    /// back under on the exact / walker paths; the whole-buffer sources
-    /// (custom merge, partial-prefix extensions) pass `None` and the pin
-    /// aligns against its own carried body — for a strict-prefix
-    /// extension the matched key runs past the pin point, and a custom
-    /// entry has no key at all.
+    /// back under on the exact / walker / partial-prefix paths (for a
+    /// strict-prefix extension it runs past the typed text — only the TPS
+    /// pin reads it, cut at each close); the custom and learned merges
+    /// pass `None` and the pin aligns against its own carried body, since
+    /// a custom entry has no key at all.
     pub fn admits(&self, matched_key: Option<&str>, reading: &str) -> bool {
         match self {
             TonePin::None => true,
-            TonePin::TpsSpaceEnd(body) => {
-                reading_passes_space_pin(matched_key.unwrap_or(body), reading)
+            TonePin::TpsTyped { body, closes } => {
+                reading_passes_tps_closes(matched_key.unwrap_or(body), closes, reading)
             }
             TonePin::TypedTones {
                 mode,
@@ -554,18 +582,23 @@ fn is_unmarked_tps_tone(tone: char) -> bool {
     matches!(tone, '1' | '4')
 }
 
-/// A3 (§41) — does `reading` satisfy the space pin implied by `tps_body`?
-/// True when the reading has a syllable boundary exactly at the end of
-/// `tps_body` AND the syllable ending there carries an unmarked tone
-/// ([`is_unmarked_tps_tone`]).
+/// §17 case 4 + §41 — does `reading` honour every syllable close the user
+/// typed? For each [`TpsClose`] the reading must end a syllable exactly at
+/// `body_end` of the toneless body and that syllable's tone must fit the
+/// close's [`TpsCloseKind`] — one walk of the reading for every close
+/// ([`phonetics::tps_notone_boundary_tones`]).
 ///
 /// `tps_body` is either a full `tps:`-family FST key — the MATCHED key on
-/// the exact / walker dictionary paths, since §35 substitutions
-/// reconstruct to the matched form and the literal query key would reject
-/// legitimate ambiguity-family hits — or a bare body, which is the shape
-/// the whole-buffer sources (custom entries, the walker's custom override)
-/// carry. A key in any other family passes through: TL/POJ tones are
-/// ASCII digits, already pinned by the verbatim toned key (§17).
+/// the exact / walker / partial-prefix dictionary paths, since §35
+/// substitutions reconstruct to the matched form and the literal query key
+/// would reject legitimate ambiguity-family hits — or a bare body, which is
+/// the shape the whole-buffer sources (custom entries, the walker's custom
+/// override) carry. Its tone marks are stripped before aligning (a
+/// fully-toned span matched the verbatim toned key; every §35 substitution
+/// is byte-length preserving), and it may run past the last close (a
+/// partial-prefix extension's later syllables). A key in any other family
+/// passes through: TL/POJ tones are ASCII digits, pinned by
+/// [`TonePin::TypedTones`].
 ///
 /// A missing boundary is a REJECT, not a pass: the user closed a syllable
 /// there, so a reading that runs through that point mid-syllable is not
@@ -573,7 +606,7 @@ fn is_unmarked_tps_tone(tone: char) -> bool {
 ///
 /// `reading` is a canonical TL reading — `DictionaryRecord.tl` for a
 /// dictionary hit, `CustomEntry.roman` for a custom entry.
-fn reading_passes_space_pin(tps_body: &str, reading: &str) -> bool {
+fn reading_passes_tps_closes(tps_body: &str, closes: &[TpsClose], reading: &str) -> bool {
     let body = match tps_body.strip_prefix(KeyFamily::Tps.prefix()) {
         Some(body) => body,
         // Bare body — the whole-buffer form, TPS by construction.
@@ -581,11 +614,28 @@ fn reading_passes_space_pin(tps_body: &str, reading: &str) -> bool {
         // Another FST family (`tl:` / `poj:` / `hanzi:`) — never pinned.
         None => return true,
     };
-    if body.chars().any(phonetics::is_tps_tone_mark) {
-        // Marked body — the verbatim toned key already filtered by tone.
-        return true;
-    }
-    phonetics::tps_notone_prefix_boundary_tone(reading, body).is_some_and(is_unmarked_tps_tone)
+    // A partial-tone span keys the toneless body, so most matched keys
+    // carry no mark and need no copy.
+    let toneless: Cow<str> = if body.chars().any(phonetics::is_tps_tone_mark) {
+        Cow::Owned(
+            body.chars()
+                .filter(|&c| !phonetics::is_tps_tone_mark(c))
+                .collect(),
+        )
+    } else {
+        Cow::Borrowed(body)
+    };
+    let ends = closes.iter().map(|close| close.body_end);
+    phonetics::tps_notone_boundary_tones(reading, &toneless, ends).is_some_and(|tones| {
+        closes
+            .iter()
+            .zip(tones)
+            .all(|(close, tone)| match close.kind {
+                TpsCloseKind::Marked(typed) => tone == typed,
+                TpsCloseKind::SpaceClosed => is_unmarked_tps_tone(tone),
+                TpsCloseKind::Boundary => true,
+            })
+    })
 }
 
 /// Every dictionary candidate for one exact continuous key, in FST rowid
@@ -603,9 +653,10 @@ fn reading_passes_space_pin(tps_body: &str, reading: &str) -> bool {
 /// `poj_abbrev` / `tps_abbrev` acronym-collision guard
 /// ([`matches_continuous_toneless_key`] — continuous input is
 /// phonetic-syllable, not acronym; normal-mode `lexicon::search` keeps
-/// acronym matching), and the key's [`TonePin`] — the A3 (§41) space pin
-/// (`ㄒㄧ`␣ keeps si1, drops si2/5/7; `ㄐㄧㆵ`␣ keeps tsit4, drops tsit8)
-/// or the §17 typed-tone pin (`teng5sek` keeps têng-sek, drops téng-sek).
+/// acronym matching), and the key's [`TonePin`] — the TPS typed closes
+/// (§17 case 4 / §41: `ㄉㄞ˫ㄨㄢ` keeps tāi-uân, drops tâi-uân; `ㄒㄧ`␣
+/// keeps si1, drops si2/5/7; `ㄐㄧㆵ`␣ keeps tsit4, drops tsit8) or the §17
+/// typed-tone pin (`teng5sek` keeps têng-sek, drops téng-sek).
 /// Without the pin on the walker side the span-local list and the
 /// whole-sentence slot 0 would disagree and a wrong-tone word would
 /// reappear at index 0.
@@ -939,10 +990,12 @@ pub fn fetch_partial_prefix_candidates_unbounded(
             }
             // Tone pin: a strict-prefix extension is only eligible when
             // the syllables typed so far carry the typed tones (§17) / the
-            // space-closed unmarked tone (§41). Checked against the TYPED
-            // body (the pin point), not the matched key — the matched key
-            // runs past the pin into the extension's later syllables.
-            if !ctx.tone_pin.admits(None, &record.tl) {
+            // space-closed unmarked tone (§41). TL / POJ read the typed body
+            // the pin carries; TPS aligns its closes on the MATCHED key (a
+            // §35 hit `tps:ㆬㄒㄧ` under typed `ㄇ˫ㄒ` reconstructs to `ㆬ`),
+            // each close cut at its own offset, so the extension's later
+            // syllables past the last close never take part.
+            if !ctx.tone_pin.admits(Some(&matched_key), &record.tl) {
                 continue;
             }
             // Syllable reach: a strict-prefix extension may not carry a
@@ -1418,7 +1471,7 @@ impl<'a> SyllableReach<'a> {
 
 #[cfg(test)]
 mod typed_tone_pin_tests {
-    use super::{reading_passes_typed_tones, TonePin, TypedBoundary};
+    use super::{reading_passes_typed_tones, TonePin, TpsClose, TpsCloseKind, TypedBoundary};
     use phonetics::InputMode::{self, Poj, Tl};
 
     fn passes(mode: InputMode, typed: &str, reading: &str) -> bool {
@@ -1647,11 +1700,153 @@ mod typed_tone_pin_tests {
         assert!(TonePin::None.admits_custom("téng-sek", Poj));
         // TPS: exact path aligns on the matched key, whole-buffer on the body.
         // trace: 詩 si → tps notone `ㄒㄧ`, tone 1 → passes; 是 sī tone 7 → rejected.
-        let space = TonePin::TpsSpaceEnd("ㄒㄧ".to_owned());
+        let space = TonePin::TpsTyped {
+            body: "ㄒㄧ".to_owned(),
+            closes: vec![TpsClose {
+                body_end: "ㄒㄧ".len(),
+                kind: TpsCloseKind::SpaceClosed,
+            }],
+        };
         assert!(space.admits(None, "si"));
         assert!(!space.admits(None, "sī"));
         assert!(space.admits(Some("tps:ㄒㄧ"), "si"));
         assert!(!space.admits(Some("tps:ㄒㄧ"), "sī"));
+    }
+}
+
+#[cfg(test)]
+mod tps_close_pin_tests {
+    use super::{reading_passes_tps_closes, TpsClose, TpsCloseKind};
+    use TpsCloseKind::{Boundary, Marked, SpaceClosed};
+
+    fn close(body_end: usize, kind: TpsCloseKind) -> TpsClose {
+        TpsClose { body_end, kind }
+    }
+
+    // trace: `ㄉㄞ˫ㄨㄢ` → toneless `ㄉㄞㄨㄢ`, ˫ = 7 closes at `ㄉㄞ`.len() = 6.
+    // 大員 tāi-uân: tai7 ends at 6 ✓; 台灣 tâi-uân: tai5 ✗; uan is free.
+    #[test]
+    fn marked_close_keeps_the_typed_tone_only() {
+        let closes = [close(6, Marked('7'))];
+        assert!(reading_passes_tps_closes("ㄉㄞㄨㄢ", &closes, "tāi-uân"));
+        assert!(!reading_passes_tps_closes("ㄉㄞㄨㄢ", &closes, "tâi-uân"));
+        assert!(reading_passes_tps_closes(
+            "tps:ㄉㄞㄨㄢ",
+            &closes,
+            "tāi-uan"
+        ));
+    }
+
+    // trace: `ㄌㄧˋㄫ` → toneless `ㄌㄧㄫ`, ˋ = 2 at 6; §35 matched key
+    // `ㄌㄧㄥ` for 靈 lîng accumulates `ㄌㄧㄥ` (9 bytes) — no syllable ends
+    // at 6 → reject; 你 lí ends at 6 with tone 2 ✓.
+    #[test]
+    fn marked_close_rejects_a_reading_that_runs_through_the_mark() {
+        let closes = [close(6, Marked('2'))];
+        assert!(!reading_passes_tps_closes("tps:ㄌㄧㄥ", &closes, "lîng"));
+        assert!(!reading_passes_tps_closes("tps:ㄌㄧㄥ", &closes, "líng"));
+        assert!(reading_passes_tps_closes("tps:ㄌㄧㄫ", &closes, "lí-n̂g"));
+    }
+
+    // trace: `ㄌㄧ`␣`ㄫ` — interior space at 6. 靈 lîng ✗ (no end at 6);
+    // 你硬 lí-ngē ✓ whatever the tones; the space sets no tone.
+    #[test]
+    fn boundary_close_needs_a_syllable_end_but_no_tone() {
+        let closes = [close(6, Boundary)];
+        assert!(!reading_passes_tps_closes(
+            "tps:ㄌㄧㄥㆤ",
+            &closes,
+            "lîng-ē"
+        ));
+        assert!(reading_passes_tps_closes("tps:ㄌㄧㄫㆤ", &closes, "lí-ngē"));
+        assert!(reading_passes_tps_closes("tps:ㄌㄧㄫㆤ", &closes, "li-ngē"));
+    }
+
+    // trace: S23 `ㄇ`␣`ㄒㄧ` — §35 matches `tps:ㆬㄒㄧ` for 毋是 m̄-sī; m7's
+    // notone `ㆬ` ends at 3 ✓. The bare typed body keeps `ㄇ`, which no
+    // reading reconstructs — the matched key is what makes the hit align.
+    #[test]
+    fn boundary_close_aligns_on_the_substituted_matched_key() {
+        let closes = [close(3, Boundary)];
+        assert!(reading_passes_tps_closes("tps:ㆬㄒㄧ", &closes, "m̄-sī"));
+        assert!(!reading_passes_tps_closes("ㄇㄒㄧ", &closes, "m̄-sī"));
+    }
+
+    // trace: §41 — tsit4 這 ✓ (unmarked stop), tsit8 一 ✗ (dotted), si1 ✓, sī ✗.
+    #[test]
+    fn space_closed_keeps_tone_one_and_four_only() {
+        let at = |body: &str| [close(body.len(), SpaceClosed)];
+        assert!(reading_passes_tps_closes("ㄐㄧㆵ", &at("ㄐㄧㆵ"), "tsit"));
+        assert!(!reading_passes_tps_closes("ㄐㄧㆵ", &at("ㄐㄧㆵ"), "tsi̍t"));
+        assert!(reading_passes_tps_closes("ㄒㄧ", &at("ㄒㄧ"), "si"));
+        assert!(!reading_passes_tps_closes("ㄒㄧ", &at("ㄒㄧ"), "sī"));
+    }
+
+    // trace: `ㄏㄛˋㄇㄚ`␣ → ˋ 2 at 6 + space closing `ㄇㄚ` at 12.
+    #[test]
+    fn marked_and_space_closes_combine() {
+        let closes = [close(6, Marked('2')), close(12, SpaceClosed)];
+        assert!(reading_passes_tps_closes("ㄏㄛㄇㄚ", &closes, "hó-ma"));
+        assert!(!reading_passes_tps_closes("ㄏㄛㄇㄚ", &closes, "hó-má"));
+        assert!(!reading_passes_tps_closes("ㄏㄛㄇㄚ", &closes, "hō-ma"));
+    }
+
+    // A fully-toned span matched the verbatim toned key: marks are stripped
+    // before aligning, and ˙ (tone 8) sits on the toneless offsets too.
+    // trace: `ㄐㄧㆵ˙ㆤˊ` (key form U+0307) → toneless `ㄐㄧㆵㆤ`; closes
+    // 9 (8) and 12 (5). 一个 tsi̍t-ê ✓; 這个 tsit-ê (tone 4) ✗.
+    #[test]
+    fn verbatim_toned_matched_key_aligns_on_toneless_offsets() {
+        let closes = [close(9, Marked('8')), close(12, Marked('5'))];
+        assert!(reading_passes_tps_closes(
+            "tps:ㄐㄧㆵ\u{0307}ㆤˊ",
+            &closes,
+            "tsi̍t-ê"
+        ));
+        assert!(!reading_passes_tps_closes(
+            "tps:ㄐㄧㆵ\u{0307}ㆤˊ",
+            &closes,
+            "tsit-ê"
+        ));
+        let toned = [close(6, Marked('7')), close(12, Marked('5'))];
+        assert!(reading_passes_tps_closes(
+            "tps:ㄉㄞ˫ㄨㄢˊ",
+            &toned,
+            "tāi-uân"
+        ));
+        assert!(!reading_passes_tps_closes(
+            "tps:ㄉㄞ˫ㄨㄢˊ",
+            &toned,
+            "tâi-uân"
+        ));
+    }
+
+    // A partial-prefix extension's matched key runs past the last close;
+    // only the typed part is checked. A close past the body is a reject.
+    #[test]
+    fn closes_ignore_the_matched_key_past_the_last_close() {
+        let closes = [close(6, Marked('7'))];
+        assert!(reading_passes_tps_closes(
+            "tps:ㄉㄞㄨㄢㄒㄧ",
+            &closes,
+            "tāi-uân-si"
+        ));
+        assert!(!reading_passes_tps_closes(
+            "ㄉㄞ",
+            &[close(9, Boundary)],
+            "tāi"
+        ));
+        assert!(!reading_passes_tps_closes(
+            "ㄉㄞ",
+            &[close(4, Boundary)],
+            "tāi"
+        ));
+    }
+
+    #[test]
+    fn other_key_families_pass_through() {
+        let closes = [close(1, Marked('2'))];
+        assert!(reading_passes_tps_closes("tl:tai", &closes, "tâi"));
     }
 }
 

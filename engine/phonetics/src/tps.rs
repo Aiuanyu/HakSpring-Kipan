@@ -209,6 +209,22 @@ pub fn is_tps_tone_mark(ch: char) -> bool {
     )
 }
 
+/// The numeric tone a standalone TPS tone mark writes (`ˋ` → `'2'`, `˙` /
+/// `U+0307` → `'8'`), read back from [`ZHUYIN_TONES`]; `None` for any other
+/// char. Only a row encoding the mark alone matches — the coda-carrying
+/// `p4` / `p8` rows hold a final plus a mark, and tone 1's space is a
+/// separator, not a mark.
+pub fn tps_tone_mark_number(mark: char) -> Option<char> {
+    let mark = normalize_tps_lookup_scalar(mark);
+    if !is_tps_tone_mark(mark) {
+        return None;
+    }
+    ZHUYIN_TONES
+        .iter()
+        .find(|(_, encoded)| encoded.chars().eq(std::iter::once(mark)))
+        .and_then(|(tone, _)| tone.chars().next())
+}
+
 /// Fold a duplicate-encoded TPS glyph onto the one the tables use: `U+31B3`
 /// ㆳ (BOPOMOFO LETTER INNN) is the same symbol as `U+31AA` ㆪ (`inn`) —
 /// Unicode encodes nasalized `i` twice, once per writing direction
@@ -423,23 +439,46 @@ fn tps_notone_from_numeric_token(numeric_token: &str) -> String {
 /// typing the ㄛ form reaches the row through `tps_notone_var`, so a
 /// primary-only comparison would reject a legitimate hit.
 pub fn tps_notone_prefix_boundary_tone(record_tl: &str, notone_prefix: &str) -> Option<char> {
-    if notone_prefix.is_empty() {
-        return None;
-    }
-    let mut accumulated = String::with_capacity(notone_prefix.len());
-    for token in tl_syllable_tokens(record_tl) {
-        let numeric = crate::api::to_tone_number(token);
-        let tone = numeric.chars().next_back().filter(char::is_ascii_digit)?;
-        accumulated.push_str(&tps_notone_from_numeric_token(&numeric));
-        if accumulated.len() > notone_prefix.len() {
+    tps_notone_boundary_tones(record_tl, notone_prefix, [notone_prefix.len()])?
+        .first()
+        .copied()
+}
+
+/// §17 case 4 — [`tps_notone_prefix_boundary_tone`] for several syllable
+/// closes in ONE walk of `record_tl`: the tone of the syllable ending
+/// exactly at each of `ends` (ascending byte offsets into `notone_body`),
+/// or `None` when any end is 0, lands mid-syllable, runs past the reading,
+/// or the reading's surface up to it is not `notone_body`'s (or→er variant
+/// accepted, as there). `notone_body` may run past the last end — a
+/// partial-prefix extension's matched key does.
+pub fn tps_notone_boundary_tones(
+    record_tl: &str,
+    notone_body: &str,
+    ends: impl IntoIterator<Item = usize>,
+) -> Option<Vec<char>> {
+    let mut ends = ends.into_iter().peekable();
+    let mut tones = Vec::new();
+    let mut accumulated = String::with_capacity(notone_body.len());
+    let mut tokens = tl_syllable_tokens(record_tl);
+    while let Some(&end) = ends.peek() {
+        if end == 0 {
             return None;
         }
-        let variant = tps_notone_or_variant(&accumulated);
-        if accumulated == notone_prefix || (!variant.is_empty() && variant == notone_prefix) {
-            return Some(tone);
+        let numeric = crate::api::to_tone_number(tokens.next()?);
+        let tone = numeric.chars().next_back().filter(char::is_ascii_digit)?;
+        accumulated.push_str(&tps_notone_from_numeric_token(&numeric));
+        if accumulated.len() < end {
+            continue;
         }
+        let typed = notone_body.get(..end)?;
+        let variant = tps_notone_or_variant(&accumulated);
+        if accumulated != typed && (variant.is_empty() || variant != typed) {
+            return None;
+        }
+        tones.push(tone);
+        ends.next();
     }
-    None
+    Some(tones)
 }
 
 /// v3.5.9 D / C-3b — runtime mirror of
@@ -855,6 +894,58 @@ mod tests {
                 tps_notone_prefix_boundary_tone("ter", &variant),
                 tps_notone_prefix_boundary_tone("ter", &primary),
             );
+        }
+    }
+
+    // trace: tāi-uân → `ㄉㄞ` (6, tone 7) + `ㄨㄢ` (12, tone 5); the body
+    // may run past the last end; 0, mid-syllable, past-the-reading and a
+    // body that is not the reading's surface are rejects.
+    #[test]
+    fn boundary_tones_reads_every_end_in_one_walk() {
+        assert_eq!(
+            tps_notone_boundary_tones("tāi-uân", "ㄉㄞㄨㄢ", [6, 12]),
+            Some(vec!['7', '5'])
+        );
+        assert_eq!(
+            tps_notone_boundary_tones("tāi-uân", "ㄉㄞㄨㄢㄒㄧ", [6]),
+            Some(vec!['7'])
+        );
+        assert_eq!(
+            tps_notone_boundary_tones("tāi-uân", "ㄉㄞ", []),
+            Some(vec![])
+        );
+        for ends in [vec![0], vec![3], vec![6, 9], vec![6, 15]] {
+            assert_eq!(
+                tps_notone_boundary_tones("tāi-uân", "ㄉㄞㄨㄢ", ends.clone()),
+                None,
+                "{ends:?}"
+            );
+        }
+        assert_eq!(tps_notone_boundary_tones("tāi-uân", "ㄉㄚㄨㄢ", [6]), None);
+    }
+
+    // trace: ZHUYIN_TONES single-digit rows — 2 ˋ, 3 ˪, 5 ˊ, 6 ˇ, 7 ˫,
+    // 8 U+0307 (the keyboard's ˙ U+02D9 normalizes onto it), 9 ˆ.
+    #[test]
+    fn tone_mark_number_reads_every_standalone_mark() {
+        for (mark, tone) in [
+            ('\u{02cb}', '2'),
+            ('\u{02ea}', '3'),
+            ('\u{02ca}', '5'),
+            ('\u{02c7}', '6'),
+            ('\u{02eb}', '7'),
+            ('\u{0307}', '8'),
+            ('\u{02d9}', '8'),
+            ('\u{02c6}', '9'),
+        ] {
+            assert_eq!(tps_tone_mark_number(mark), Some(tone), "{mark:?}");
+        }
+    }
+
+    #[test]
+    fn tone_mark_number_rejects_glyphs_codas_and_the_space() {
+        for c in ['ㄒ', 'ㄧ', 'ㆷ', 'ㆴ', ' ', '5'] {
+            assert_eq!(tps_tone_mark_number(c), None, "{c:?}");
         }
     }
 

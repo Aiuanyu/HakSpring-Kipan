@@ -31,6 +31,9 @@
 //! DUMP_CUSTOM="tâi-gí:台語" DUMP_LEARNED="記起來:kì--khí-lâi" \
 //! DUMP_INPUTS="tai5,tai5gi2,tsua" DUMP_MODE=tl \
 //!   cargo test -p composing --test prod candidate_dump -- --ignored --nocapture
+//! # many inputs, one per line, verbatim (keeps a TPS trailing space)
+//! DUMP_INPUTS_FILE=/tmp/inputs.txt DUMP_MODE=tps \
+//!   cargo test -p composing --test prod candidate_dump -- --ignored --nocapture
 //! ```
 //!
 //! Requires the production artifacts to exist (run `make dict` first if
@@ -86,7 +89,23 @@ fn dump_continuous_candidates() {
     LexiconHandle::install(paths).expect("install production lexicon");
 
     let mode = std::env::var("DUMP_MODE").unwrap_or_else(|_| "tl".to_string());
-    let inputs = std::env::var("DUMP_INPUTS").unwrap_or_else(|_| DEFAULT_INPUTS.to_string());
+    // DUMP_INPUTS_FILE: one input per line, kept verbatim (a trailing TPS
+    // space is a tone-closing key, which the comma list would trim away).
+    let inputs: Vec<String> = match std::env::var("DUMP_INPUTS_FILE") {
+        Ok(path) => std::fs::read_to_string(&path)
+            .expect("read DUMP_INPUTS_FILE")
+            .lines()
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .collect(),
+        Err(_) => std::env::var("DUMP_INPUTS")
+            .unwrap_or_else(|_| DEFAULT_INPUTS.to_string())
+            .split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .collect(),
+    };
     // DUMP_BITMASK lets a run mimic the device's source-toggle filter
     // (e.g. dev on + itaigi off). Default: every source.
     let bitmask: u32 = std::env::var("DUMP_BITMASK")
@@ -137,7 +156,7 @@ fn dump_continuous_candidates() {
         })
         .collect();
 
-    for raw in inputs.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+    for raw in inputs.iter().map(String::as_str) {
         let resp = fetch_at_pos_response(
             &cfg,
             raw,
