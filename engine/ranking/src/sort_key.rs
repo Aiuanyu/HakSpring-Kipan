@@ -35,7 +35,8 @@ pub struct CandidateRankFacts {
 
 /// [`CandidateRankFacts::walker_cost`] of a candidate the corpus does not price
 /// (custom, learned, synthesized): it sorts after every priced candidate of
-/// its tier unless user weight or the context lifts it (E1 P5b).
+/// its tier unless user weight or the context lifts it (E1 P5b) — a custom
+/// word is led by `custom_lead` first.
 pub const WALKER_COST_UNPRICED: u16 = u16::MAX;
 
 /// The [`CandidateSortKey`] sort every continuous fetch
@@ -61,6 +62,15 @@ pub fn sort_by_candidate_key<T>(
     indexed.into_iter().map(|(_, item)| item).collect()
 }
 
+/// The leading `(tier, custom_lead, coverage_kind)` of [`CandidateSortKey`]:
+/// whole input before front segment, then the user's own words, then the
+/// match kind. Shared with any list that orders on these but not on the
+/// rest of the key (the TPS word list, `composing::continuous`).
+pub fn candidate_lead(facts: &CandidateRankFacts, raw_len: u32) -> (u8, u8, u8) {
+    let tier = u8::from(facts.consumed_span.1 != raw_len);
+    (tier, u8::from(!facts.is_custom), facts.coverage_kind)
+}
+
 // v3.5.8 Phase 9.1 — CandidateSortKey
 //
 // Encodes the lexicographic sort policy pinned in
@@ -70,8 +80,9 @@ pub fn sort_by_candidate_key<T>(
 // is descending. NaN-safe because floats are wrapped in `NonNanF64`
 // which coerces NaN to `f64::MIN` at construction.
 //
-// Order: coverage_kind, tier, -user_weight, context_rank, walker_cost, -score,
-// -freq, -coverage, source_rank, stable_idx. Bigram P5 (§56) added
+// Order: tier, custom_lead, coverage_kind, -user_weight, context_rank,
+// walker_cost, -score, -freq, -coverage, source_rank, stable_idx — the first
+// three are [`candidate_lead`], shared with the TPS word list. Bigram P5 (§56) added
 // `context_rank` between `-user_weight` and `-score`; E1 P5a added
 // `walker_cost` below it for the walker's edge pick, and P5b made the
 // candidate list read it too, so the list and slot 0 share one scale. S8 moved `-coverage` from
@@ -82,22 +93,21 @@ pub fn sort_by_candidate_key<T>(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CandidateSortKey {
-    /// v3.5.8 Phase 9 Item 10 — leading dim. `0` for full-syllable
-    /// (the pre-Item-10 `fetch_candidates_for_keys_with_barriers` path) and `1`
-    /// for partial-prefix (`lexicon::fetch_partial_prefix_candidates`).
-    /// Sits ahead of [`tier`](Self::tier) because partial-prefix
-    /// candidates have `consumed_span_end == raw_len`
-    /// (Q15.4 → `tier = 0`); without this dim a partial-prefix
-    /// tier-0 candidate would outrank a future full-syllable
-    /// tier-1 candidate, violating §15.5 "rank below regardless of
-    /// frequency". See `docs/engine/continuous-candidate-display.md`
-    /// §15.5.
-    coverage_kind: u8,
-    /// `0` = Tier 0 (full-buffer coverage), `1` = Tier 1 (partial).
-    /// Roadmap and spec both use the "Tier 0 = full buffer" labelling
-    /// (`docs/releases/v3.5.8/plan.md` § Phase 9 / `docs/engine/continuous-input-
-    /// ranking.md` §1.1).
+    /// Leading dim: `0` = Tier 0 (the candidate consumes the whole input),
+    /// `1` = Tier 1 (only its front). A word covering everything typed —
+    /// an exact word, a strict-prefix extension whose final syllable the
+    /// input reaches (§43), a whole abbreviation — leads every word
+    /// covering only a front segment (`taiuanl` → 台灣人 before 台灣;
+    /// `docs/engine/continuous-input-ranking.md`).
     tier: u8,
+    /// `0` for a custom-dictionary word, `1` otherwise: the user's own
+    /// words lead their tier, whatever their match kind, selection or
+    /// corpus cost ("the word I put in shows up"). Custom
+    /// words are synthesized whole-input, so this only orders Tier 0.
+    custom_lead: u8,
+    /// Within a tier: full syllable `0` < partial prefix `1` < abbreviation
+    /// `2` (`lexicon::COVERAGE_KIND_*`).
+    coverage_kind: u8,
     /// Descending: [`CandidateRankFacts::user_weight`] — a selected word
     /// (`> 0.0`) precedes every never-selected one (`0.0`) whatever
     /// their dictionary frequency. `f64` so two selections seconds
@@ -114,8 +124,9 @@ pub struct CandidateSortKey {
     /// (E1 P5a / P5b, `docs/architecture/unified-word-frequency-roadmap.md`).
     /// Equal costs (corpus-unseen words share one smoothed cost; nearby counts
     /// round to one milli-nat) fall to `score` and the dimensions below. An
-    /// unpriced candidate (custom, learned) sorts after every priced one
-    /// unless a dimension above decides.
+    /// unpriced candidate (a learned phrase) sorts after every priced one
+    /// unless a dimension above decides (`custom_lead` decides for a custom
+    /// word).
     walker_cost: u16,
     /// Descending: higher `freq × syll_bias × boost` wins.
     neg_score: Reverse<NonNanF64>,
@@ -147,14 +158,15 @@ impl CandidateSortKey {
     pub fn new(facts: &CandidateRankFacts, raw_len: u32, stable_idx: u32) -> Self {
         let (start, end) = facts.consumed_span;
         let coverage_bytes = end.saturating_sub(start);
-        let tier: u8 = if end == raw_len { 0 } else { 1 };
         // v3.5.8 Phase 9 Item 12 — `is_custom` is carried on the
         // candidate (`record_to_candidate` → false, dict.bin source
         // bits; `custom_entry_to_candidate` → true, forces rank 0).
         let source_rank = source_tier_rank(facts.bitmask, facts.is_custom);
+        let (tier, custom_lead, coverage_kind) = candidate_lead(facts, raw_len);
         Self {
-            coverage_kind: facts.coverage_kind,
             tier,
+            custom_lead,
+            coverage_kind,
             neg_user_weight: Reverse(NonNanF64::new(facts.user_weight)),
             context_rank: facts.context_rank,
             walker_cost: facts.walker_cost,
@@ -467,28 +479,50 @@ mod tests {
         assert!(key(&frequent, raw_len, 0) < key(&corpus_equal, raw_len, 1));
     }
 
-    // E1 P5b: an unpriced candidate (custom, learned) follows every priced
-    // one in its tier — custom's source rank 0 sits below the cost — unless
-    // the user selected it or the context names it.
+    // E1 P5b: an unpriced candidate (a learned phrase) follows every priced
+    // one in its tier unless the user selected it or the context names it.
     #[test]
     fn unpriced_candidate_follows_priced_unless_selected_or_in_context() {
         let raw_len: u32 = 3;
         let unseen = cand_with_cost(1.0, UNSEEN_WALKER_COST);
-        let custom = CandidateRankFacts {
-            is_custom: true,
-            ..cand_with_cost(0.0, WALKER_COST_UNPRICED)
-        };
-        assert!(key(&unseen, raw_len, 1) < key(&custom, raw_len, 0));
-        let selected_custom = CandidateRankFacts {
+        let learned = cand_with_cost(0.0, WALKER_COST_UNPRICED);
+        assert!(key(&unseen, raw_len, 1) < key(&learned, raw_len, 0));
+        let selected_learned = CandidateRankFacts {
             user_weight: 0.1,
-            ..custom
+            ..learned
         };
-        assert!(key(&selected_custom, raw_len, 0) < key(&unseen, raw_len, 1));
-        let context_custom = CandidateRankFacts {
+        assert!(key(&selected_learned, raw_len, 0) < key(&unseen, raw_len, 1));
+        let context_learned = CandidateRankFacts {
             context_rank: CONTEXT_RANK_USER,
-            ..custom
+            ..learned
         };
-        assert!(key(&context_custom, raw_len, 0) < key(&unseen, raw_len, 1));
+        assert!(key(&context_learned, raw_len, 0) < key(&unseen, raw_len, 1));
+    }
+
+    // USER 2026-10-12: the user's own word leads its tier — over a priced,
+    // selected, in-context full-syllable dictionary word — but never
+    // crosses into the tier above it.
+    #[test]
+    fn custom_word_leads_its_tier_and_only_its_tier() {
+        let raw_len: u32 = 3;
+        let custom_partial = CandidateRankFacts {
+            is_custom: true,
+            ..cand_partial(0, 3, 0.0, 0, 0)
+        };
+        let dictionary_best = CandidateRankFacts {
+            user_weight: 4.0,
+            context_rank: CONTEXT_RANK_USER,
+            ..cand_with_cost(1000.0, 1_000)
+        };
+        assert!(key(&custom_partial, raw_len, 1) < key(&dictionary_best, raw_len, 0));
+        // A Tier-0 dictionary word still leads a custom word that would
+        // cover only the front (custom words are whole-input, so this is
+        // the comparator's own contract, not a production shape).
+        let custom_front = CandidateRankFacts {
+            is_custom: true,
+            ..cand(0, 2, 0.0, 0, 0)
+        };
+        assert!(key(&cand(0, 3, 1.0, 1, 0), raw_len, 1) < key(&custom_front, raw_len, 0));
     }
 
     #[test]
@@ -570,24 +604,33 @@ mod tests {
     // ----- v3.5.8 Phase 9 Item 10 — `coverage_kind` dim -----
 
     #[test]
-    fn coverage_kind_full_beats_partial_regardless_of_other_dims() {
-        // Item 10 headline invariant: a partial-prefix candidate with
-        // MAX freq + MAX score + a heavy user weight + best source rank
-        // must STILL lose to a full-syllable candidate with min freq,
-        // min score, never selected, and worst source rank — the
-        // leading `coverage_kind` dim is load-bearing.
-        // Both candidates have `end == raw_len` so their `tier`
-        // dimension is identical (0) — the regression this guards
-        // against is a tier-0 partial beating a tier-1 full when
-        // `coverage_kind` is mis-ordered.
+    fn coverage_kind_full_beats_partial_within_a_tier() {
+        // Item 10: within one tier (both `end == raw_len`) and among
+        // dictionary rows, a partial-prefix candidate with MAX freq + MAX
+        // score + a heavy user weight + best source rank still loses to a
+        // full-syllable candidate with min freq, min score, never selected
+        // and worst source rank — `coverage_kind` sits above every
+        // dimension except `tier` and `custom_lead`.
         let raw_len: u32 = 3;
         let full_weak = cand_with_user_weight(0, 3, 0.001, 1, 0, 0.0);
         let mut partial_strong = cand_partial(0, 3, f32::MAX, u32::MAX, KAUTIAN_BIT);
         partial_strong.user_weight = 4.0;
         assert!(
             key(&full_weak, raw_len, 0) < key(&partial_strong, raw_len, 1),
-            "Item 10: full-syllable must precede partial-prefix regardless of other dims"
+            "Item 10: within a tier, full-syllable precedes partial-prefix"
         );
+    }
+
+    // USER 2026-10-12: whole-input coverage leads the match kind — a
+    // partial-prefix extension the input reaches into (`taiuanl` →
+    // 台灣人) precedes a full-syllable word covering only the front
+    // (台灣 `taiuan`), whatever their scores.
+    #[test]
+    fn whole_input_extension_beats_front_segment_full_word() {
+        let raw_len: u32 = 7;
+        let extension_weak = cand_partial(0, 7, 0.001, 1, 0);
+        let front_strong = cand_with_user_weight(0, 6, f32::MAX, u32::MAX, KAUTIAN_BIT, 4.0);
+        assert!(key(&extension_weak, raw_len, 1) < key(&front_strong, raw_len, 0));
     }
 
     #[test]

@@ -177,13 +177,16 @@ fn span_local_branch_dedupes_partial_overlap_before_capping() {
     let _lock = engine_install_lock();
     install_fixture();
     // `mk`: `m` is a lattice syllable so the fetch takes the span-local
-    // branch (毋 first); the seven `m̄-k…` rows arrive as Step 4b partial
+    // branch (毋); the seven `m̄-k…` rows arrive as Step 4b partial
     // extensions AND as abbreviation hits and must show once; the
     // abbreviation block is then filled to the cap from the rows the
     // exclude did not touch (物件 + the 30 `mó-ka` rows → 30 survive).
+    // Every two-syllable row covers the whole input, so 毋 — covering only
+    // `m` — follows them all (tier first, USER 2026-10-12).
     let cands = fetch("mk", "tl");
     let hanji: Vec<&str> = cands.iter().filter_map(|c| c.hanji.as_deref()).collect();
-    assert_eq!(hanji[0], "毋", "{hanji:?}");
+    assert_eq!(hanji.last(), Some(&"毋"), "{hanji:?}");
+    assert_eq!(hanji[0], "毋甘", "partial extension first: {hanji:?}");
     let distinct: std::collections::HashSet<&str> = hanji.iter().copied().collect();
     assert_eq!(
         distinct.len(),
@@ -272,9 +275,8 @@ fn custom_entry_sharing_the_abbreviated_word_shows_once() {
     // A custom 鎖匙 `só-sî` answers `ss` in the abbreviation block, by the
     // exact-face rule a dictionary row answers to (whole-buffer synth,
     // source rank 0). The dictionary's own 鎖匙 collapses onto it — same
-    // `(roman, hanji, span)` — and, carrying no corpus cost, it follows the
-    // priced 先生 there, as a custom twin does in the full block
-    // (`list_custom_twin_of_the_cheapest_word_follows_the_priced_homophone`).
+    // `(roman, hanji, span)` — and, as the user's own word, it leads the
+    // block (`custom_lead`, USER 2026-10-12).
     let hanji = fetch_hanji_with_custom(
         "ss",
         "tl",
@@ -285,7 +287,7 @@ fn custom_entry_sharing_the_abbreviated_word_shows_once() {
     );
     assert_eq!(
         hanji,
-        vec!["先生", "鎖匙"],
-        "dictionary 鎖匙 deduped onto the custom row"
+        vec!["鎖匙", "先生"],
+        "custom first, dictionary 鎖匙 deduped onto it"
     );
 }

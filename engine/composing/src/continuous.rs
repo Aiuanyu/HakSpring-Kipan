@@ -45,9 +45,9 @@
 //!    covers this for inputs with no valid syllable, Step 4b extends
 //!    it to already-syllabified inputs. Cross-batch
 //!    `(canonical_tl | roman, hanji, consumed_span)` dedupe drops extension hits
-//!    already present in the FULL block. `CandidateSortKey`'s leading
-//!    `coverage_kind` dim pins the result strictly below the FULL
-//!    block, so no global re-sort is needed.
+//!    already present in the FULL block. Step 4d then re-sorts the merged
+//!    blocks by `CandidateSortKey` (tier first, USER 2026-10-12), so an
+//!    extension covering the whole input leads front-segment rows.
 //! 5. POJ presentation pass: `mode == Poj` → [`recase_tl_as_poj_display`]
 //!    over every candidate's `roman` then [`dedupe_rendered_continuous`].
 //!    Skipped (not identity-called) for TL / English / TPS — the gate sits
@@ -84,7 +84,7 @@ use lexicon::{
     EngineHandle as LexiconHandle, LearnedEntry, RawCandidate, SyllableInventory,
     COVERAGE_KIND_FULL, PARTIAL_PREFIX_OUTPUT_CAP,
 };
-use ranking::{FrequencyMap, WALKER_COST_UNPRICED};
+use ranking::{candidate_lead, sort_by_candidate_key, FrequencyMap, WALKER_COST_UNPRICED};
 
 /// The slot-0 walker's native result. The seam in [`assemble_candidates`]
 /// converts it to a `RawCandidate`; slot 0 is an explicit prepend, never
@@ -1217,6 +1217,13 @@ pub(crate) fn assemble_candidates(
             .as_ref()
             .map_or(&[], |continuous_keys| &continuous_keys.keys);
 
+        // Rows ahead of the ranked list: 1 once the walker's whole-sentence
+        // slot is prepended (Step 4), which no later sort may move.
+        let mut walker_slot0_len = 0usize;
+        // Whether a block was appended after the first sorted one (the §35
+        // bare merge, Step 4b, Step 4c) — the only case Step 4d must re-sort.
+        let mut appended_blocks = false;
+
         // ---- Step 2: empty-keys partial-prefix vs span-local fetch.
         let mut candidates: Vec<RawCandidate> = if keys.is_empty() {
             // v3.5.8 Phase 9 Item 10 — partial-prefix fallthrough.
@@ -1270,6 +1277,7 @@ pub(crate) fn assemble_candidates(
                     && !literal_glyph_in_inventory;
                 if bare_expanded_only {
                     c.extend(fetch_via_lexicon_partial_inner(raw, raw_len, mode, ctx));
+                    appended_blocks = true;
                 }
             }
             // ---- Step 3: per-candidate recase loop.
@@ -1419,6 +1427,7 @@ pub(crate) fn assemble_candidates(
                                 && (x.canonical_tl == slot0.canonical_tl || x.roman == slot0.roman))
                         });
                         c.insert(0, slot0);
+                        walker_slot0_len = 1;
                     }
                 }
             }
@@ -1439,10 +1448,9 @@ pub(crate) fn assemble_candidates(
             // Step 4b runs the same `fetch_partial_prefix_candidates`
             // machinery that branch uses against the whole-buffer key
             // built by `build_partial_prefix_key(raw, mode)`. The result
-            // carries `COVERAGE_KIND_PARTIAL_PREFIX`, so `CandidateSortKey`'s
-            // leading dim pins these strictly below the FULL block in
-            // the merged vec — concat-without-resort preserves the
-            // `[FULL...][PARTIAL...]` invariant.
+            // carries `COVERAGE_KIND_PARTIAL_PREFIX`; Step 4d places it by
+            // `CandidateSortKey` among the FULL rows (tier first: it covers
+            // the whole input, so it leads front-segment rows).
             //
             // References:
             // - librime `src/rime/gear/table_translator.cc:178` →
@@ -1541,6 +1549,7 @@ pub(crate) fn assemble_candidates(
                     // un-truncated pool was already sorted by CandidateSortKey),
                     // so `truncate` keeps the global score order.
                     ext.truncate(PARTIAL_PREFIX_OUTPUT_CAP);
+                    appended_blocks |= !ext.is_empty();
                     c.extend(ext);
                 }
             }
@@ -1552,10 +1561,10 @@ pub(crate) fn assemble_candidates(
         // buffer's shape (`shadow::abbrev_query_key`), not "no exact keys":
         // `mk` has the left-anchored syllable `m` and is still the
         // abbreviation of 物件. Hits carry `COVERAGE_KIND_ABBREV`, which
-        // `CandidateSortKey` ranks below PARTIAL, so appending keeps
-        // `[FULL…][PARTIAL…][ABBREV…]` without a re-sort — for a valid onset
-        // like `ts` the single-syllable partial hits stay put and the
-        // abbreviated words trail them. Same recase → exclude → truncate
+        // `CandidateSortKey` ranks below PARTIAL within a tier (Step 4d) —
+        // for a valid onset like `ts` the single-syllable partial hits stay
+        // ahead and the abbreviated words trail them; a whole-input
+        // abbreviation leads front-segment rows (`mk` 物件 before `m` 毋). Same recase → exclude → truncate
         // order as Step 4b: a row can be both a partial extension and an
         // abbreviation hit (`m̄-khíng` under `mk`), and truncating before
         // the exclude would lose real candidates to the duplicates cut.
@@ -1566,8 +1575,23 @@ pub(crate) fn assemble_candidates(
                 recase_all(&mut abbrev, raw, mode);
                 retain_absent_from(&candidates, &mut abbrev);
                 abbrev.truncate(PARTIAL_PREFIX_OUTPUT_CAP);
+                appended_blocks |= !abbrev.is_empty();
                 candidates.extend(abbrev);
             }
+        }
+        // ---- Step 4d: one order over the merged blocks (USER 2026-10-12).
+        // Each block above arrives sorted, but `CandidateSortKey` leads with
+        // the tier: a Step 4b extension or Step 4c abbreviation covering the
+        // whole input outranks a span-local row covering only its front, so
+        // the concatenation is re-sorted (stable — each block's own order and
+        // its exclude → truncate are kept). The walker's slot 0 stays put.
+        if appended_blocks {
+            let ranked = candidates.split_off(walker_slot0_len.min(candidates.len()));
+            candidates.extend(sort_by_candidate_key(
+                ranked,
+                raw_len,
+                RawCandidate::rank_facts,
+            ));
         }
         // ---- Step 5: presentation pass (typed separators, POJ render,
         // Syllable Separator, ⁿ case).
@@ -1665,11 +1689,14 @@ pub(crate) fn assemble_candidates(
         if mode == phonetics::InputMode::Tps {
             dedupe_display_hanji_for_tps(&mut candidates);
         }
-        // A word's list: longer words first, each length keeps its ranking.
+        // A word's list: the Step 4d lead (`candidate_lead`), then longer
+        // words first; each length keeps its ranking. The walker's slot 0
+        // stays put.
         if shape == ListShape::Word {
-            candidates.sort_by_key(|candidate| {
+            let ranked_from = walker_slot0_len.min(candidates.len());
+            candidates[ranked_from..].sort_by_key(|candidate| {
                 (
-                    candidate.coverage_kind,
+                    candidate_lead(&candidate.rank_facts(), raw_len),
                     std::cmp::Reverse(candidate.consumed_span.1),
                 )
             });
