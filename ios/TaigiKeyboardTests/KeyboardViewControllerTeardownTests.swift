@@ -20,5 +20,6 @@ final class KeyboardViewControllerTeardownTests: XCTestCase {
             hostingView?.superview === controller.view,
             "hosting view must stay in place so the dismissal still shows the keys",
         )
+        XCTAssertEqual(hostingView?.isUserInteractionEnabled, false, "detached keys must not reach the torn-down ActionHandler")
     }
 }

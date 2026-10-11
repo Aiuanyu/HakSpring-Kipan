@@ -69,9 +69,9 @@ final class NextWordController {
         cachedPredictionsVisible = false
     }
 
-    /// Keyboard dismissed: drops any in-flight prediction answer and the context Timer, so
-    /// this controller — which UIKit may keep until its host app returns — makes no further
-    /// call into the process-shared engine. No UI reset: the keyboard is gone.
+    /// Keyboard dismissed: stops the context Timer and drops in-flight prediction answers, so
+    /// this controller — which UIKit may keep until its host app returns — does not fire
+    /// `ContextTimeoutFired` into the process-shared engine later. No UI reset: the keyboard is gone.
     func tearDown() {
         envelopeGen &+= 1
         stopContextTimeoutTimer()

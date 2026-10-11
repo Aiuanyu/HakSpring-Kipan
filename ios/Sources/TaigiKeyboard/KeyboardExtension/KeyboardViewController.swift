@@ -21,8 +21,7 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
     weak var actionHandler: ActionHandler?
     var isCleanedUp = false
 
-    /// Settings observer + keyboard-case guards; cancelled by `performCleanup()`.
-    var cancellables = Set<AnyCancellable>()
+    private var cancellables = Set<AnyCancellable>()
 
     /// FIXME: Workaround for KeyboardKit 10 auto-capitalization override.
     /// These two properties are part of a 2-layer workaround:
@@ -359,5 +358,10 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
             self?.syncSettings()
         }
         .store(in: &cancellables)
+    }
+
+    /// Settings observer + keyboard-case guards stop with the keyboard (`performCleanup()`).
+    func cancelSubscriptions() {
+        cancellables.removeAll()
     }
 }

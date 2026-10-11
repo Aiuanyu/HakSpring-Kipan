@@ -19,7 +19,7 @@ extension KeyboardViewController {
         }
 
         isCleanedUp = true
-        cancellables.removeAll()
+        cancelSubscriptions()
 
         cleanupInputState()
         cleanupServices()
@@ -33,11 +33,13 @@ extension KeyboardViewController {
     }
 
     /// Unparents KeyboardKit's hosting controller; the view stays so the dismissal still shows
-    /// keys. Must run in `viewWillDisappear`: a hosting controller still parented when its view
+    /// keys, but takes no more touches — a tap there would reach a torn-down ActionHandler.
+    /// Must run in `viewWillDisappear`: a hosting controller still parented when its view
     /// leaves the window leaves SwiftUI's focus bridge holding this controller (one leaked
     /// controller per re-show), and unparenting in `viewDidDisappear` is already too late.
     func detachKeyboardHostingController() {
         for child in children {
+            child.view.isUserInteractionEnabled = false
             child.willMove(toParent: nil)
             child.removeFromParent()
         }
