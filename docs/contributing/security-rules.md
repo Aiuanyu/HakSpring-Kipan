@@ -19,7 +19,7 @@ All logging must be guarded so that **no log output appears in production/releas
 - Use `DebugLogger(category:)` — wrapper around `os.Logger` that is a complete no-op in release builds
 - No `#if DEBUG` needed at call sites — the wrapper handles it internally via `@autoclosure` (message string is never constructed in release)
 - No `privacy: .public` needed at call sites — the wrapper applies it automatically
-- Do NOT use `os.Logger` directly — always use `DebugLogger`
+- Do NOT use `os.Logger` directly — use `DebugLogger`, or `LoggerFactory.make(category:)` in a shared-core candidate (`docs/architecture/behavioral-invariants.md` §12; the installed factory produces `DebugLogger`, so the release no-op still holds)
 
 ### Android specifics
 
