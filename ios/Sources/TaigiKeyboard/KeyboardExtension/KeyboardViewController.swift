@@ -65,8 +65,6 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
 
     // MARK: - Initialization
 
-    // TODO: Migrate actionHandler/emojiService to weak refs,
-    // so deinit only handles logical state reset (composing/markedText/autocomplete).
     deinit {
         performCleanup()
     }
@@ -360,5 +358,10 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
             self?.syncSettings()
         }
         .store(in: &cancellables)
+    }
+
+    /// Settings observer + keyboard-case guards stop with the keyboard (`performCleanup()`).
+    func cancelSubscriptions() {
+        cancellables.removeAll()
     }
 }
