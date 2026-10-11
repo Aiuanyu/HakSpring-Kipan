@@ -39,6 +39,7 @@ mod tps_hanji_conversion_caret;
 mod tps_hanji_conversion_pick;
 mod tps_key;
 mod tps_space_pinned_tone;
+mod tps_typed_tone;
 
 /// Every `tests/*.rs` is a `[[test]]` root in `Cargo.toml` or a `mod` of one,
 /// so a new test file cannot silently stop running under `autotests = false`.

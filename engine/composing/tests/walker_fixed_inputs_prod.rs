@@ -74,3 +74,62 @@ fn list_orders_the_words_after_slot_0_by_corpus_count() {
     assert!(position("台灣") < position("大"));
     assert!(position("大") < position("台"));
 }
+
+#[test]
+fn tps_typed_marks_and_spaces_pin_the_reading() {
+    if !production_lexicon_ready() {
+        eprintln!("production artifacts absent — run `make dict`; skipping.");
+        return;
+    }
+    // §17 case 4 (2026-10-10 TPS real-text sim). trace (candidate_dump,
+    // every source, before the fix): `ㄉㄞ˫ㄨㄢ` → 台灣 tâi-uân (typed 7
+    // lost); `ㄌㄧˋㄫㆤ˫` → 靈會 lîng ē (span `ㄌㄧˋㄫ` read §35 `ㄫ`→`ㄥ`
+    // through the mark); `ㄍㄚ`␣`ㄍㄚ` → 角仔 kak-á (`ㄍ` after the space
+    // read as the coda `ㆻ`). The typed word is at slot 0 now, and no
+    // reading contradicting a typed close is listed at all.
+    let slot0 = [
+        ("ㄉㄞ˫ㄨㄢ", "大員"),
+        ("ㄌㄧˋㄫㆤ˫", "你硬"),
+        ("ㄏㄛˋㄇㄚˋ", "好馬"),
+    ];
+    for (raw, hanji) in slot0 {
+        let cells = fetch_cells(&config("tps"), raw, fresh_install_fetch());
+        assert_eq!(
+            cells.first().and_then(|(h, ..)| h.as_deref()),
+            Some(hanji),
+            "{raw}: {cells:?}"
+        );
+    }
+    let absent = [
+        ("ㄉㄞ˫ㄨㄢ", "台灣"),
+        ("ㄏㄛˋㄇㄚ", "號碼"),
+        ("ㄍㄚˋㄍㄚ", "角仔"),
+        ("ㄍㄚ ㄍㄚ", "角仔"),
+        ("ㄌㄧˋㄫㆤ˫", "靈會"),
+        ("ㄌㄧˋㄫ", "靈"),
+        ("ㄌㄧ ㄫㆤ", "靈的"),
+        ("ㄌㄧ ㄫ", "靈"),
+    ];
+    for (raw, hanji) in absent {
+        let cells = fetch_cells(&config("tps"), raw, fresh_install_fetch());
+        assert!(
+            !cells.iter().any(|(h, ..)| h.as_deref() == Some(hanji)),
+            "{raw} lists {hanji}: {cells:?}"
+        );
+    }
+    // Controls: no mark and no space keep every reading (§17 case 2), and
+    // the interior-space phrases §31 / §35 rely on stay.
+    for (raw, hanji) in [
+        ("ㄉㄞㄨㄢ", "台灣"),
+        ("ㄌㄧㄫㆤ", "靈的"),
+        ("ㄍㄠ ㄉㄞ˪", "交代"),
+        ("ㄇ ㄒㄧ", "毋是"),
+    ] {
+        let cells = fetch_cells(&config("tps"), raw, fresh_install_fetch());
+        assert_eq!(
+            cells.first().and_then(|(h, ..)| h.as_deref()),
+            Some(hanji),
+            "{raw}: {cells:?}"
+        );
+    }
+}
