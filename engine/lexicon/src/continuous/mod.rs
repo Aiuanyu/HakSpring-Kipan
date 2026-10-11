@@ -90,16 +90,16 @@ pub const COVERAGE_KIND_FULL: u8 = 0;
 /// v3.5.8 Phase 9 Item 10 — `RawCandidate.coverage_kind` ordinal for
 /// partial-prefix hits (syllabifier returned no ending, engine fell
 /// through to [`fetch_partial_prefix_candidates`] via
-/// `prefix_index.lookup_prefix`). Ranks strictly below
-/// [`COVERAGE_KIND_FULL`] in [`CandidateSortKey`] regardless of any other
-/// dimension; see `docs/engine/continuous-candidate-display.md` §15.5.
+/// `prefix_index.lookup_prefix`). Ranks below [`COVERAGE_KIND_FULL`] within
+/// a tier in [`CandidateSortKey`]; a whole-input extension still leads a
+/// front-segment full syllable (`docs/engine/continuous-input-ranking.md`).
 pub const COVERAGE_KIND_PARTIAL_PREFIX: u8 = 1;
 
 /// `RawCandidate.coverage_kind` ordinal for whole-buffer abbreviation hits
 /// ([`fetch_abbrev_candidates`]): the typed buffer is an acronym-shaped
 /// string (`ss`, `tk`, `ㄙㄒ`) and the record's per-syllable-initial face
-/// (`tl_abbrev` / `poj_abbrev` / `tps_abbrev`) equals it. Ranks strictly
-/// below [`COVERAGE_KIND_PARTIAL_PREFIX`] in [`CandidateSortKey`]: an acronym-shaped
+/// (`tl_abbrev` / `poj_abbrev` / `tps_abbrev`) equals it. Ranks
+/// below [`COVERAGE_KIND_PARTIAL_PREFIX`] within a tier in [`CandidateSortKey`]: an acronym-shaped
 /// buffer that is also a valid onset (`ts`, `kh`) is mid-syllable at least
 /// as often as it is an abbreviation, so the single-syllable partial hits
 /// the user was reaching for keep their positions and the abbreviated
@@ -232,10 +232,9 @@ pub struct RawCandidate {
     /// Internal axis only — does NOT enter `CandidateMessage` (same
     /// pattern as [`user_weight`](Self::user_weight); see
     /// `docs/engine/continuous-candidate-display.md` §15.5). Consumed
-    /// solely by [`CandidateSortKey`] to push every partial-prefix candidate
-    /// strictly below every full-syllable candidate in lexicographic
-    /// order, irrespective of `tier`, user weight, score, dict freq, or
-    /// source rank.
+    /// solely by [`CandidateSortKey`], below `tier` and `custom_lead`: within
+    /// a tier a partial-prefix candidate follows every full-syllable one,
+    /// irrespective of user weight, score, dict freq, or source rank.
     pub coverage_kind: u8,
     /// v3.5.8 Phase 9 Item 12 — `true` for candidates synthesized from
     /// a `custom_dictionary.db` entry ([`custom_entry_to_candidate`](candidate::custom_entry_to_candidate)),
@@ -743,8 +742,9 @@ fn exact_candidates_for_key(
 /// `docs/releases/v3.5.8/plan.md` § Phase 9 sort_key formula:
 ///
 /// ```text
-/// (coverage_kind, tier, -user_weight, context_rank, walker_cost,
-///  -adjusted_score, -freq, -coverage_bytes, source_tier_rank, stable_idx)
+/// (tier, custom_lead, coverage_kind, -user_weight, context_rank,
+///  walker_cost, -adjusted_score, -freq, -coverage_bytes, source_tier_rank,
+///  stable_idx)
 /// ```
 ///
 /// E1 P5b: `walker_cost` (the record's corpus cost) orders the list on the
@@ -851,10 +851,8 @@ pub fn fetch_candidates_for_keys_with_barriers(
 /// 4. Build candidates with `coverage_kind = COVERAGE_KIND_PARTIAL_PREFIX`
 ///    and `consumed_span = key.0` (caller pins `(0, raw.len())` per
 ///    Q15.4 — partial-prefix candidates always final-commit).
-/// 5. Sort via the same [`CandidateSortKey`]; the leading
-///    `coverage_kind` dim is `1` here so the whole batch ranks below
-///    any concurrent full-syllable hits if a caller ever merges them
-///    (this fn produces partial-prefix candidates only).
+/// 5. Sort via the same [`CandidateSortKey`] (`coverage_kind` is `1` for
+///    the whole batch; custom rows lead it through `custom_lead`).
 /// 6. Truncate to [`PARTIAL_PREFIX_OUTPUT_CAP`] after the sort, so the
 ///    returned slice is the globally best-scoring subset (not the FST
 ///    byte-sort prefix). Custom entries participate in the sort and

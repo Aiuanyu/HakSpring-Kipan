@@ -17,8 +17,8 @@ use crate::dictionary_reader::{DictionaryRecord, WALKER_COST_UNPRICED};
 /// `(hanji, span)` and on `roman` or `canonical_tl` (word identity), then apply the [`CandidateSortKey`](ranking::CandidateSortKey) sort.
 /// `coverage_kind` is the path's own — `COVERAGE_KIND_FULL` on the exact
 /// path, `COVERAGE_KIND_PARTIAL_PREFIX` on the partial-prefix path — and is
-/// stamped on the custom synths so §15.5's "partial-prefix ranks strictly
-/// below full-syllable" rule holds for them too (Codex pre-impl D6).
+/// stamped on the custom synths so they sort by match kind like any row
+/// (Codex pre-impl D6).
 ///
 /// **Custom merge** (v3.5.8 Phase 9 Item 12): a custom entry is measured
 /// against `typed_key`, the whole-buffer key, by the dictionary's own rules
@@ -234,12 +234,9 @@ pub(super) fn record_to_candidate(
 /// - `frequency = 0`, `syllable_count = 1` — `custom_dictionary.db`
 ///   carries no `dict.bin`-comparable frequency. `is_custom = true`
 ///   gives `source_tier_rank` rank `0`, which is what governs the
-///   `(canonical_tl, hanji)` dedupe winner and prior-axis ties; it does NOT
-///   globally float custom above `dict.bin` because `CandidateSortKey` weighs
-///   `score`/`freq` ahead of `source_rank`. This is intentional —
-///   Item 12's job is duplicate elimination + custom-wins-collision,
-///   not a global custom-priority tier
-///   (`docs/engine/continuous-commit-and-display.md` §10.10).
+///   `(canonical_tl, hanji)` dedupe winner. Its place in the list is
+///   `CandidateSortKey`'s `custom_lead`: the head of the whole-input tier
+///   (USER 2026-10-12, `docs/engine/continuous-input-ranking.md`).
 /// - `display_text = hanji.unwrap_or(canonical_tl_form(roman, mode))` —
 ///   v3.5.9 B-4 closes the bounded asymmetry the pre-B-4
 ///   `unwrap_or(roman)` contract documented at

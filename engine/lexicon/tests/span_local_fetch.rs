@@ -1934,21 +1934,17 @@ fn best_candidate_for_key_picks_the_corpus_cheapest_word_over_the_frequent_one()
 #[test]
 fn list_orders_by_corpus_cost_and_leads_with_the_edge_pick() {
     // E1 P5b: the list sorts on the edge pick's scale — corpus cost first,
-    // frequency only breaking an equal cost — so its head is the walker's
-    // word; a custom entry carries no corpus cost and follows the priced rows.
-    // trace: 台灣 6000 < 臺灣 9000 (freq 5000) = 台員 9000 (freq 4000) < custom.
+    // frequency only breaking an equal cost — so, with no custom word, its
+    // head is the walker's word.
+    // trace: 台灣 6000 < 臺灣 9000 (freq 5000) = 台員 9000 (freq 4000).
     let (prefix_index, dict) = taiuan_homophones("e1-p5b-list-cost", &[("台員", 4000, 9_000)]);
-    let custom = vec![CustomEntry {
-        roman: "tâi-uân".to_owned(),
-        hanji: Some("大灣".to_owned()),
-    }];
     let user_frequency = FrequencyMap::new();
-    let ctx = ctx_typed(&custom, "tl:taiuan", &prefix_index, &dict, &user_frequency);
+    let ctx = ctx(&user_frequency, 0, &[], &prefix_index, &dict);
     let list: Vec<String> = taiuan_list(&ctx)
         .into_iter()
         .map(|(word, _)| word)
         .collect();
-    assert_eq!(list, ["台灣", "臺灣", "台員", "大灣"]);
+    assert_eq!(list, ["台灣", "臺灣", "台員"]);
     let best =
         best_candidate_for_key_with_barriers("tl:taiuan", &[], &TonePin::None, (0, 6), &[], &ctx)
             .expect("key has dict hits");
@@ -1956,11 +1952,33 @@ fn list_orders_by_corpus_cost_and_leads_with_the_edge_pick() {
 }
 
 #[test]
-fn list_custom_twin_of_the_cheapest_word_follows_the_priced_homophone() {
-    // E1 P5b: a custom entry that collides with 台灣 replaces the dictionary
-    // row (custom wins the dedupe) and carries no corpus cost, so the priced
-    // 臺灣 now leads; the walker's custom edge override still puts the user's
-    // word at slot 0 (composing, untouched here).
+fn list_custom_word_leads_the_priced_homophones() {
+    // USER 2026-10-12 (`custom_lead`): the user's own word leads its tier
+    // although it carries no corpus cost; the priced rows keep their order
+    // after it. The walker's custom edge override puts the same word at
+    // slot 0 in composing.
+    let (prefix_index, dict) = taiuan_homophones("custom-lead", &[("台員", 4000, 9_000)]);
+    let custom = vec![CustomEntry {
+        roman: "tâi-uân".to_owned(),
+        hanji: Some("大灣".to_owned()),
+    }];
+    let user_frequency = FrequencyMap::new();
+    let ctx = ctx_typed(&custom, "tl:taiuan", &prefix_index, &dict, &user_frequency);
+    assert_eq!(
+        taiuan_list(&ctx),
+        [
+            ("大灣".to_owned(), true),
+            ("台灣".to_owned(), false),
+            ("臺灣".to_owned(), false),
+            ("台員".to_owned(), false)
+        ]
+    );
+}
+
+#[test]
+fn list_custom_twin_of_the_cheapest_word_keeps_the_lead() {
+    // A custom entry that collides with 台灣 replaces the dictionary row
+    // (custom wins the dedupe) and, as the user's own word, leads the list.
     let (prefix_index, dict) = taiuan_homophones("e1-p5b-custom-twin", &[]);
     let custom = vec![CustomEntry {
         roman: "tâi-uân".to_owned(),
@@ -1970,7 +1988,7 @@ fn list_custom_twin_of_the_cheapest_word_follows_the_priced_homophone() {
     let ctx = ctx_typed(&custom, "tl:taiuan", &prefix_index, &dict, &user_frequency);
     assert_eq!(
         taiuan_list(&ctx),
-        [("臺灣".to_owned(), false), ("台灣".to_owned(), true)]
+        [("台灣".to_owned(), true), ("臺灣".to_owned(), false)]
     );
 }
 

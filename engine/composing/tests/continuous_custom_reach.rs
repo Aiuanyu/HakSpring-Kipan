@@ -96,6 +96,20 @@ fn custom_word_waits_until_the_final_syllable_is_typed_into() {
 }
 
 #[test]
+fn a_reached_custom_word_leads_the_front_segment_rows() {
+    // USER 2026-10-12: tier first, then the user's own words — at
+    // `tankiant` 陳建中 covers the whole input, so it leads 陳 / 打, which
+    // cover only `tan` / `ta`.
+    let _lock = engine_install_lock();
+    install();
+    for raw in ["tankiant", "tkt"] {
+        let (_, all) = lists_custom("tl", raw);
+        let first_word = all.iter().flatten().next().map(String::as_str);
+        assert_eq!(first_word, Some("陳建中"), "{raw}: got {all:?}");
+    }
+}
+
+#[test]
 fn custom_word_answers_its_exact_abbreviation_only() {
     let _lock = engine_install_lock();
     install();

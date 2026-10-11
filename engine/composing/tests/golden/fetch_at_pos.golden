@@ -9,12 +9,12 @@
 5|2|台語|tâi-gí|台語
 ## tl_numeric_single :: tsua2
 5|1|tsuá|tsuá|⌀
-3|1|珠|tsu|珠
 5|1|紙|tsuá|紙
+3|1|珠|tsu|珠
 ## tl_numeric_multi :: tai5bak8
 8|1|tai5bak8|tâiba̍k|⌀
-4|1|台|tâi|台
 8|2|代墨|tâi-ba̍k|代墨
+4|1|台|tâi|台
 ## poj_diacritic :: tâi-uân
 9|2|tâi-uân|tâi-uân|⌀
 9|2|台灣|tâi-uân|台灣
@@ -28,8 +28,8 @@
 ## custom_dict :: taigi
 5|1|taigi|taigi|⌀
 5|2|台語|tâi-gí|台語
-3|1|台|tâi|台
 5|2|台語|tâi-gír|台語
+3|1|台|tâi|台
 ## mixed :: iausi
 5|1|iausi|iausi|⌀
 5|2|iáu是|iáu-sī|iáu是
@@ -45,8 +45,8 @@
 ## tl_prefix_extension_taigi :: taigi
 5|1|taigi|taigi|⌀
 5|2|台語|tâi-gí|台語
-3|1|台|tâi|台
 5|2|台語|tâi-gír|台語
+3|1|台|tâi|台
 ## trailing_hyphen :: tai-
 4|2|tai-|tai-|⌀
 3|1|台|tâi|台
