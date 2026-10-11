@@ -63,6 +63,7 @@ fn ctx<'a>(
         mode: phonetics::InputMode::Tl,
         context: ranking::ContextRanks::empty(),
         tone_pin: lexicon::TonePin::None,
+        whole_buffer_key: None,
     }
 }
 

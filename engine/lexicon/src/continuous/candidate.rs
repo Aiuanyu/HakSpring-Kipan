@@ -5,27 +5,36 @@ use ranking::{
     calculate_continuous_score, sort_by_candidate_key, source_tier_rank, ContextRanks, FrequencyMap,
 };
 
-use super::{ConsumedSpan, ContinuousFetchCtx, CustomEntry, LearnedEntry, RawCandidate};
+use super::{
+    custom_abbreviation_matches, custom_reach, fused_custom_typed_key, ConsumedSpan,
+    ContinuousFetchCtx, CustomEntry, CustomReach, LearnedEntry, RawCandidate, COVERAGE_KIND_ABBREV,
+    COVERAGE_KIND_PARTIAL_PREFIX,
+};
 use crate::dictionary_reader::{DictionaryRecord, WALKER_COST_UNPRICED};
 
-/// Shared tail of every continuous fetch: merge `custom_dictionary.db`
+/// Shared tail of every phonetic continuous fetch: merge `custom_dictionary.db`
 /// hits into the dictionary candidates `out`, collapse duplicates equal on
 /// `(hanji, span)` and on `roman` or `canonical_tl` (word identity), then apply the [`CandidateSortKey`](ranking::CandidateSortKey) sort.
-/// `coverage_kind` is stamped on the custom synths — `COVERAGE_KIND_FULL`
-/// on the exact path, `COVERAGE_KIND_PARTIAL_PREFIX` on the partial-prefix
-/// path so §15.5's "partial-prefix ranks strictly below full-syllable" rule
-/// is preserved there (Codex pre-impl D6).
+/// `coverage_kind` is the path's own — `COVERAGE_KIND_FULL` on the exact
+/// path, `COVERAGE_KIND_PARTIAL_PREFIX` on the partial-prefix path — and is
+/// stamped on the custom synths so §15.5's "partial-prefix ranks strictly
+/// below full-syllable" rule holds for them too (Codex pre-impl D6).
 ///
-/// **Custom merge** (v3.5.8 Phase 9 Item 12): each custom entry is
-/// synthesized as a full-buffer candidate (`consumed_span = (0, raw_len)`,
-/// `is_custom = true` → `source_tier_rank` rank 0) and appended AFTER the
-/// FST hits so a `(canonical_tl, hanji)` duplicate keeps the earlier-inserted
-/// `dict.bin` candidate only when source ranks tie (they never do — custom
-/// rank 0 < every `dict.bin` rank ≥ 1, so the custom entry always wins its
-/// collision). The legacy custom dict is prefix-visible, so the
-/// partial-prefix path merges too — Continuous must not hide the user's
-/// custom word while they are still typing toward the first syllable
-/// boundary. See `docs/engine/continuous-commit-and-display.md` §10.10.
+/// **Custom merge** (v3.5.8 Phase 9 Item 12): a custom entry is measured
+/// against `typed_key`, the whole-buffer key, by the dictionary's own rules
+/// ([`custom_reach`](super::custom_reach), product owner 2026-10-12): the exact
+/// path takes an [`Exact`](super::CustomReach::Exact) entry, the
+/// partial-prefix path an `Exact` or an
+/// [`Extension`](super::CustomReach::Extension) one — never a word whose final
+/// syllable was not typed into. `typed_key = None` admits none. The
+/// abbreviation block takes its own ([`merge_custom_abbreviations`]). Each
+/// admitted entry is synthesized as a full-buffer candidate
+/// (`consumed_span = (0, raw_len)`, `is_custom = true` → `source_tier_rank`
+/// rank 0) and appended AFTER the FST hits so a `(canonical_tl, hanji)`
+/// duplicate keeps the earlier-inserted `dict.bin` candidate only when source
+/// ranks tie (they never do — custom rank 0 < every `dict.bin` rank ≥ 1, so
+/// the custom entry always wins its collision). See
+/// `docs/engine/continuous-commit-and-display.md` §10.10.
 ///
 /// A custom entry is synthesized whole-buffer, so the buffer's
 /// [`TonePin`](super::TonePin) applies to it exactly as to a dictionary hit: with the
@@ -64,21 +73,22 @@ pub(super) fn merge_custom_dedupe_sort(
     mut out: Vec<RawCandidate>,
     ctx: &ContinuousFetchCtx<'_>,
     raw_len: u32,
+    typed_key: Option<&str>,
     coverage_kind: u8,
 ) -> Vec<RawCandidate> {
-    for entry in ctx.custom {
-        if !ctx.tone_pin.admits_custom(&entry.roman, ctx.mode) {
-            continue;
-        }
-        out.push(custom_entry_to_candidate(
-            entry,
+    if let Some(typed_key) = typed_key.filter(|_| !ctx.custom.is_empty()) {
+        let fused_key = fused_custom_typed_key(typed_key);
+        push_custom_entries(
+            &mut out,
+            ctx,
             raw_len,
-            ctx.freq_map,
-            ctx.now_ms,
-            ctx.context,
             coverage_kind,
-            ctx.mode,
-        ));
+            |roman| match custom_reach(&fused_key, roman) {
+                CustomReach::Exact => true,
+                CustomReach::Extension => coverage_kind == COVERAGE_KIND_PARTIAL_PREFIX,
+                CustomReach::Unreached => false,
+            },
+        );
     }
     // Learned phrases (§50) — same whole-buffer span as a custom row; the
     // `(canonical_tl, hanji, span)` dedupe below keeps the `dict.bin` / custom
@@ -100,6 +110,47 @@ pub(super) fn merge_custom_dedupe_sort(
     }
     dedupe_by_roman_hanji_span(&mut out);
     sort_by_candidate_key(out, raw_len, RawCandidate::rank_facts)
+}
+
+/// The custom entries whose abbreviation face is exactly `abbrev_key`'s body
+/// (`tl-abbrev:tkt` → 陳建中 `Tân Kiàn-tiong`), appended to the abbreviation
+/// block as [`COVERAGE_KIND_ABBREV`] synths — the exact-face rule a
+/// dictionary row answers to (`fetch_abbrev_candidates`). Learned phrases
+/// stay out: their store matches whole readings only.
+pub(super) fn merge_custom_abbreviations(
+    out: &mut Vec<RawCandidate>,
+    abbrev_key: &str,
+    raw_len: u32,
+    ctx: &ContinuousFetchCtx<'_>,
+) {
+    push_custom_entries(out, ctx, raw_len, COVERAGE_KIND_ABBREV, |roman| {
+        custom_abbreviation_matches(abbrev_key, roman)
+    });
+}
+
+/// Every custom entry `admits` and the buffer's tone pin let through, as a
+/// whole-buffer [`custom_entry_to_candidate`] synth stamped `coverage_kind`.
+fn push_custom_entries(
+    out: &mut Vec<RawCandidate>,
+    ctx: &ContinuousFetchCtx<'_>,
+    raw_len: u32,
+    coverage_kind: u8,
+    admits: impl Fn(&str) -> bool,
+) {
+    for entry in ctx.custom {
+        if !admits(&entry.roman) || !ctx.tone_pin.admits_custom(&entry.roman, ctx.mode) {
+            continue;
+        }
+        out.push(custom_entry_to_candidate(
+            entry,
+            raw_len,
+            ctx.freq_map,
+            ctx.now_ms,
+            ctx.context,
+            coverage_kind,
+            ctx.mode,
+        ));
+    }
 }
 
 pub(super) fn record_to_candidate(

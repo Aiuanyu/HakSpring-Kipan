@@ -131,9 +131,8 @@ fn decomposed_custom_roman_collapses_under_caps_and_poj() {
 
 #[test]
 fn decomposed_custom_roman_collapses_on_the_abbreviation_path() {
-    // The abbreviation block (Step 4c) does not merge custom rows again;
-    // its dictionary hit meets the custom row only through
-    // `retain_absent_from`'s identity half.
+    // The custom row joins the abbreviation block (Step 4c) itself, so its
+    // dictionary twin meets it in the lexicon dedupe's identity half.
     let _lock = engine_install_lock();
     install();
     let custom = || with_custom("so\u{301}-si\u{302}", "鎖匙");

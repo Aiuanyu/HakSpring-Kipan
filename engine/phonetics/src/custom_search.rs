@@ -51,15 +51,7 @@ pub fn derive_custom_search_keys(roman: &str) -> Vec<CustomSearchKey> {
     if roman.trim().is_empty() {
         return Vec::new();
     }
-    // Canonical TL display form (mode-independent identity surface). A Bopomofo
-    // dirty-row (the DB schema does not forbid one) folds via `from_zhuyin`; a
-    // POJ / TL latin display folds via `poj_display_to_tl_display` (identity
-    // for TL input — it only rewrites ch→ts / oa→ua etc.).
-    let tl = if contains_tps(roman) {
-        from_zhuyin(roman)
-    } else {
-        poj_display_to_tl_display(roman)
-    };
+    let tl = custom_search_reading(roman);
     let poj = tl_display_to_poj_display(&tl);
 
     let mut keys = Vec::new();
@@ -67,6 +59,21 @@ pub fn derive_custom_search_keys(roman: &str) -> Vec<CustomSearchKey> {
     push_latin_family(&mut keys, KeyFamily::Poj, &poj);
     push_tps_family(&mut keys, &tl);
     dedup_nonempty(keys)
+}
+
+/// The TL reading every search key of a stored custom-dictionary roman is
+/// derived from — the mode-independent surface the engine also measures a
+/// custom entry's syllables on, so a row the store matched is judged on the
+/// same reading. A Bopomofo dirty-row (the DB schema does not forbid one)
+/// folds via `from_zhuyin`; a POJ / TL latin display folds via
+/// `poj_display_to_tl_display` (identity for TL input — it only rewrites
+/// ch→ts / oa→ua etc.).
+pub fn custom_search_reading(roman: &str) -> String {
+    if contains_tps(roman) {
+        from_zhuyin(roman)
+    } else {
+        poj_display_to_tl_display(roman)
+    }
 }
 
 /// READ side — single family-native key for the current input + mode. `None`

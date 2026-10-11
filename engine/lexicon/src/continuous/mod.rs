@@ -73,8 +73,8 @@ mod candidate;
 mod toneless_match;
 
 use candidate::{
-    dedupe_by_roman_hanji_span, learned_entry_to_candidate, merge_custom_dedupe_sort,
-    record_to_candidate,
+    dedupe_by_roman_hanji_span, learned_entry_to_candidate, merge_custom_abbreviations,
+    merge_custom_dedupe_sort, record_to_candidate,
 };
 use toneless_match::{
     matches_continuous_toneless_key, matches_continuous_toneless_prefix_key, tps_face_starts_with,
@@ -352,6 +352,12 @@ pub struct ContinuousFetchCtx<'a> {
     /// per-key pin instead. [`TonePin::None`] is the legacy all-tones
     /// behavior.
     pub tone_pin: TonePin,
+    /// The whole typed buffer's partial-prefix key (`tl:tankiant`) — what a
+    /// `custom_dictionary.db` entry is measured against on the exact
+    /// span-local path, which has no whole-buffer key of its own
+    /// ([`custom_reach`]). `None` admits no custom entry there: there is
+    /// nothing typed to match it to.
+    pub whole_buffer_key: Option<String>,
 }
 
 /// Post-lookup tone constraint on the readings one continuous lookup
@@ -476,11 +482,20 @@ impl TonePin {
     /// entries are synthesized whole-buffer (no matched key), and their
     /// roman may be stored in the user's native POJ form, so it is folded
     /// to canonical TL first — the same fold `custom_entry_to_candidate`
-    /// applies for the identity key. The fold is skipped when nothing is
-    /// pinned, the common toneless-buffer case.
+    /// applies for the identity key. TPS mode's identity fold leaves the
+    /// Latin roman as stored, so there the pin reads the same
+    /// [`phonetics::api::custom_search_reading`] the TPS search keys and
+    /// [`custom_reach`] are derived from. The fold is skipped when nothing
+    /// is pinned, the common toneless-buffer case.
     pub fn admits_custom(&self, roman: &str, mode: phonetics::InputMode) -> bool {
-        matches!(self, TonePin::None)
-            || self.admits(None, &phonetics::api::canonical_tl_form(roman, mode))
+        if matches!(self, TonePin::None) {
+            return true;
+        }
+        let reading = match mode {
+            phonetics::InputMode::Tps => phonetics::api::custom_search_reading(roman),
+            _ => phonetics::api::canonical_tl_form(roman, mode),
+        };
+        self.admits(None, &reading)
     }
 }
 
@@ -805,7 +820,13 @@ pub fn fetch_candidates_for_keys_with_barriers(
             out.push(cand)
         });
     }
-    merge_custom_dedupe_sort(out, ctx, raw_len, COVERAGE_KIND_FULL)
+    merge_custom_dedupe_sort(
+        out,
+        ctx,
+        raw_len,
+        ctx.whole_buffer_key.as_deref(),
+        COVERAGE_KIND_FULL,
+    )
 }
 
 /// v3.5.8 Phase 9 Item 10 — partial-prefix candidate fetch for the
@@ -1000,9 +1021,8 @@ pub fn fetch_partial_prefix_candidates_unbounded(
             }
             // Syllable reach: a strict-prefix extension may not carry a
             // syllable the user never typed into (`tsuisi` must not surface
-            // 水社寮 `tsuí-siā-liâu`). Dictionary rows only — the custom-entry
-            // loop below is deliberately exempt (product owner 2026-08-21: a
-            // word the user added themselves stays prefix-visible).
+            // 水社寮 `tsuí-siā-liâu`). The custom merge below answers the
+            // same rule through [`custom_reach`].
             if !reach
                 .as_ref()
                 .is_none_or(|reach| reach.admits(&matched_key, &record.tl))
@@ -1025,7 +1045,8 @@ pub fn fetch_partial_prefix_candidates_unbounded(
             ));
         }
     }
-    merge_custom_dedupe_sort(out, ctx, raw_len, COVERAGE_KIND_PARTIAL_PREFIX)
+    let typed_key = (!fst_key.is_empty()).then_some(fst_key.as_str());
+    merge_custom_dedupe_sort(out, ctx, raw_len, typed_key, COVERAGE_KIND_PARTIAL_PREFIX)
 }
 
 /// v3.5.8 S2 — single best dictionary candidate for one exact FST
@@ -1276,8 +1297,9 @@ pub fn compound_hanji_exists(
 /// `syllable_count` stays the record's (鎖匙 = 2). Sorted by the same
 /// [`CandidateSortKey`]; **not truncated** — the caller excludes rows already on
 /// screen first, then applies [`PARTIAL_PREFIX_OUTPUT_CAP`] (the Step 4b
-/// lesson, Codex PR #351). Custom entries are not merged here; the fetch
-/// that ran before already merged them for the same buffer. Hydration is
+/// lesson, Codex PR #351). A custom entry whose abbreviation face IS the
+/// key body joins the block the same way ([`merge_custom_abbreviations`]);
+/// the phonetic fetches never offer it on an acronym. Hydration is
 /// uncapped: `tl-abbrev:tt` resolves ~8.5k rowids and a rank-blind cap in
 /// rowid order would drop the frequent words the sort exists to surface.
 pub fn fetch_abbrev_candidates(
@@ -1310,8 +1332,84 @@ pub fn fetch_abbrev_candidates(
             COVERAGE_KIND_ABBREV,
         ));
     }
+    merge_custom_abbreviations(&mut out, fst_key, raw_len, ctx);
     dedupe_by_roman_hanji_span(&mut out);
     sort_by_candidate_key(out, raw_len, RawCandidate::rank_facts)
+}
+
+/// Where a `custom_dictionary.db` entry stands against the typed whole-buffer
+/// key — the dictionary's own rules applied to a word the user added
+/// (product owner 2026-10-12, reversing the 2026-08-21 custom exemption: a
+/// custom 陳建中 `Tân Kiàn-tiong` surfaced from `t`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum CustomReach {
+    /// The reading's face IS the typed body — a full-buffer word.
+    Exact,
+    /// A strict-prefix extension the typed body reaches into the final
+    /// syllable of ([`SyllableReach`]).
+    Extension,
+    /// Anything else: a syllable never typed into, an acronym, or a face
+    /// that does not start with the typed body at all.
+    Unreached,
+}
+
+/// The whole-buffer key a custom entry is measured against: typed spaces and
+/// hyphens dropped, as the store's query key drops them — a face carries
+/// none, and the tone pin already holds every typed boundary to a syllable
+/// end. Built once per merge, then handed to [`custom_reach`] per entry.
+pub(super) fn fused_custom_typed_key(typed_key: &str) -> String {
+    typed_key
+        .chars()
+        .filter(|c| !matches!(c, ' ' | '-'))
+        .collect()
+}
+
+/// [`CustomReach`] of the custom `roman` under `fused_key`
+/// ([`fused_custom_typed_key`]).
+///
+/// Measured on [`phonetics::api::custom_search_reading`] — the reading the
+/// store's search keys were derived from, so a row the store matched is
+/// judged on the same surface (not the identity fold
+/// `canonical_tl_form`, which keeps a TL-literal `eng` the search keys
+/// fold).
+///
+/// Fail-closed where [`SyllableReach::admits`] fails open: a face that does
+/// not cover the typed body is exactly what the store's loose prefix query
+/// lets through (an acronym, a longer spelling), so it is not offered.
+pub(super) fn custom_reach(fused_key: &str, roman: &str) -> CustomReach {
+    let Some(reach) = SyllableReach::new(fused_key) else {
+        return CustomReach::Unreached;
+    };
+    let body = &fused_key[reach.family.len()..];
+    let reading = phonetics::api::custom_search_reading(roman).to_lowercase();
+    let Some(ends) = reach.syllable_ends(body, &reading) else {
+        return CustomReach::Unreached;
+    };
+    if ends
+        .last()
+        .is_some_and(|&end| end as usize == reach.typed_body_len)
+    {
+        CustomReach::Exact
+    } else if reach.reaches_final_syllable(&ends) {
+        CustomReach::Extension
+    } else {
+        CustomReach::Unreached
+    }
+}
+
+/// Whether one of the custom `roman`'s abbreviation search keys in
+/// `abbrev_key`'s family (`tl-abbrev:tkt`) is exactly the key body — read
+/// off the store's own write-side bundle
+/// ([`phonetics::api::derive_custom_search_keys`], TPS `ㄜ`→`ㄛ` variant
+/// included), so the engine and the store's whole-abbreviation match cannot
+/// drift.
+pub(super) fn custom_abbreviation_matches(abbrev_key: &str, roman: &str) -> bool {
+    let Some((tag, body)) = phonetics::split_abbrev_family_key(abbrev_key) else {
+        return false;
+    };
+    phonetics::api::derive_custom_search_keys(roman)
+        .iter()
+        .any(|key| key.family == tag && key.form == "abbrev" && key.key == body)
 }
 
 /// The typed input must reach INTO a record's FINAL syllable for a
@@ -1389,7 +1487,13 @@ impl<'a> SyllableReach<'a> {
         let Some(ends) = self.syllable_ends(matched_body, record_tl) else {
             return true;
         };
-        // A single-syllable reading is reached by any non-empty typed prefix.
+        self.reaches_final_syllable(&ends)
+    }
+
+    /// Whether the typed body runs past the second-to-last of `ends` — into
+    /// the final syllable. A single-syllable reading is reached by any
+    /// non-empty typed prefix.
+    fn reaches_final_syllable(&self, ends: &[u32]) -> bool {
         match ends.len() {
             0 | 1 => true,
             count => (ends[count - 2] as usize) < self.typed_body_len,

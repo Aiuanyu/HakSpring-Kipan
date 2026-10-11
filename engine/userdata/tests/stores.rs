@@ -245,13 +245,49 @@ fn an_added_entry_is_found_by_its_key_from_another_romanization_and_by_prefix() 
         hanji_of(&store.rows_matching(&query_key("tai", "tl"), 20)),
         ["台語"]
     );
-    let keystroke = store.rows_matching(
+    let keystroke = store.keystroke_rows(
         &query_key("ta", "tl"),
         CustomDictionaryStore::KEYSTROKE_LIMIT,
     );
     assert_eq!(keystroke.len(), 1);
     assert_eq!(keystroke[0].roman, "taigi");
     assert_eq!(store.count().unwrap(), 2);
+}
+
+#[test]
+fn keystroke_rows_match_an_abbreviation_whole_and_the_shortest_key_first() {
+    // trace: `derive_custom_search_keys` — 陳建中 `tân kiàn-tiong` stores
+    // tl notone `tankiantiong`, tl abbrev `tkt`; 陳 `tân` stores `tan` and no
+    // abbreviation (one syllable).
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        Arc::new(derive_custom_search_keys),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    store
+        .upsert(&CustomDictionaryRow::new("tân kiàn-tiong", "陳建中"))
+        .unwrap();
+    store
+        .upsert(&CustomDictionaryRow::new("tân", "陳"))
+        .unwrap();
+    let keystroke = |key: &str| {
+        store.keystroke_rows(
+            &query_key(key, "tl"),
+            CustomDictionaryStore::KEYSTROKE_LIMIT,
+        )
+    };
+    // `tankiantiong` (12) sorts after `tan` (3), though `tân kiàn…` sorts
+    // first by roman.
+    assert_eq!(hanji_of(&keystroke("t")), ["陳", "陳建中"]);
+    assert_eq!(hanji_of(&keystroke("tkt")), ["陳建中"]);
+    assert!(keystroke("tk").is_empty(), "an abbreviation matches whole");
+    // The search page keeps prefix-matching the abbreviation, as the system
+    // dictionary search does.
+    assert_eq!(
+        hanji_of(&store.rows_matching(&query_key("tk", "tl"), 20)),
+        ["陳建中"]
+    );
 }
 
 #[test]

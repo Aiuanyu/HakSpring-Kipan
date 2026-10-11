@@ -121,6 +121,7 @@ fn ctx<'a>(
         mode,
         context: ranking::ContextRanks::empty(),
         tone_pin: lexicon::TonePin::None,
+        whole_buffer_key: None,
     }
 }
 
@@ -428,33 +429,121 @@ fn tps_tone_marked_key_measures_reach_on_the_toned_face() {
     assert!(out.contains(&"交代".to_string()), "got {out:?}");
 }
 
-#[test]
-fn custom_dictionary_entries_are_exempt_from_the_reach_rule() {
-    // Product owner 2026-08-21: a word the user added themselves stays
-    // prefix-visible. The rule gates `dict.bin` rows only, so a
-    // three-syllable custom entry surfaces from a one-glyph prefix that
-    // would drop any dictionary row of the same length.
-    let rows = tl_rows();
-    let (prefix_index, dict) = build_fixture("custom-exempt", "tl:", &rows);
+/// Whether the custom `roman` / `hanji` entry surfaces for `typed` on the
+/// partial-prefix path, over the [`tl_rows`] dictionary.
+fn custom_surfaces(family: &str, typed: &str, mode: InputMode, roman: &str, hanji: &str) -> bool {
+    let (prefix_index, dict) = build_fixture("custom-reach", family, &tl_rows());
     let freq_map = FrequencyMap::new();
     let custom = vec![CustomEntry {
-        roman: "tsuí-siā-liâu".to_string(),
-        hanji: Some("水社寮".to_string()),
+        roman: roman.to_string(),
+        hanji: Some(hanji.to_string()),
     }];
-    let fetch_ctx = ctx(&prefix_index, &dict, &freq_map, &custom, InputMode::Tl);
-    let key = typed_key("tl:", "tsui");
-    let out: Vec<String> = fetch_partial_prefix_candidates(&key, key.0 .1, &fetch_ctx)
+    let fetch_ctx = ctx(&prefix_index, &dict, &freq_map, &custom, mode);
+    let key = typed_key(family, typed);
+    fetch_partial_prefix_candidates(&key, key.0 .1, &fetch_ctx)
         .iter()
-        .map(|candidate| candidate.display_text.clone())
-        .collect();
-    assert!(
-        out.contains(&"水社寮".to_string()),
-        "custom entry must stay visible, got {out:?}"
-    );
-    assert!(
-        !out.contains(&"水手".to_string()),
-        "the dictionary row of the same shape is still dropped, got {out:?}"
-    );
+        .any(|candidate| candidate.is_custom && candidate.display_text == hanji)
+}
+
+#[test]
+fn custom_dictionary_entries_answer_the_reach_rule() {
+    // Product owner 2026-10-12 (reverses the 2026-08-21 custom exemption):
+    // a custom 陳建中 `Tân Kiàn-tiong` surfaced from `t`. trace: reading
+    // `tân kiàn-tiong` → toneless face `tankiantiong`, ends [3, 7, 12];
+    // the typed body must run past 7, so `tankiant` (8) is the first to
+    // reach `tiong`. Stored capitals and the word space do not matter.
+    for typed in ["t", "ta", "tan", "tank", "tanki", "tankian"] {
+        assert!(
+            !custom_surfaces("tl:", typed, InputMode::Tl, "Tân Kiàn-tiong", "陳建中"),
+            "{typed}: final syllable not typed into"
+        );
+    }
+    for typed in ["tankiant", "tankianti", "tankiantiong"] {
+        assert!(
+            custom_surfaces("tl:", typed, InputMode::Tl, "Tân Kiàn-tiong", "陳建中"),
+            "{typed}: final syllable typed into"
+        );
+    }
+    // The dictionary row of the same shape answers the same rule.
+    let out = hanji_for("tl:", "tsui", InputMode::Tl, &tl_rows(), "custom-dict-twin");
+    assert!(!out.contains(&"水社寮".to_string()), "got {out:?}");
+}
+
+#[test]
+fn custom_entry_reach_holds_in_poj_and_tps() {
+    // POJ: same letters for this reading (`Tân Kiàn-tiong`).
+    assert!(!custom_surfaces(
+        "poj:",
+        "tankian",
+        InputMode::Poj,
+        "Tân Kiàn-tiong",
+        "陳建中"
+    ));
+    assert!(custom_surfaces(
+        "poj:",
+        "tankiant",
+        InputMode::Poj,
+        "Tân Kiàn-tiong",
+        "陳建中"
+    ));
+    // TPS: cut the toneless face at its own boundaries.
+    let (face, ends) = phonetics::tps_notone_syllable_ends_from_tl("tân kiàn-tiong");
+    let second_end = ends[1] as usize;
+    let one_glyph_past = second_end + face[second_end..].chars().next().unwrap().len_utf8();
+    assert!(!custom_surfaces(
+        "tps:",
+        &face[..second_end],
+        InputMode::Tps,
+        "Tân Kiàn-tiong",
+        "陳建中"
+    ));
+    assert!(custom_surfaces(
+        "tps:",
+        &face[..one_glyph_past],
+        InputMode::Tps,
+        "Tân Kiàn-tiong",
+        "陳建中"
+    ));
+}
+
+#[test]
+fn custom_entry_is_measured_on_its_search_reading() {
+    // A POJ-stored `têng-sek` is searched as TL `tîng-sik` (the store's
+    // write-side fold), so TL `tingsi` reaches it and `teng…` never does.
+    assert!(custom_surfaces(
+        "tl:",
+        "tingsi",
+        InputMode::Tl,
+        "têng-sek",
+        "程式"
+    ));
+    assert!(!custom_surfaces(
+        "tl:",
+        "ting",
+        InputMode::Tl,
+        "têng-sek",
+        "程式"
+    ));
+}
+
+#[test]
+fn custom_acronym_is_not_a_phonetic_prefix() {
+    // `tkt` is 陳建中's abbreviation, answered by the abbreviation block —
+    // the phonetic path never offers it (its face does not start `tkt`).
+    assert!(!custom_surfaces(
+        "tl:",
+        "tk",
+        InputMode::Tl,
+        "Tân Kiàn-tiong",
+        "陳建中"
+    ));
+    assert!(!custom_surfaces(
+        "tl:",
+        "tkt",
+        InputMode::Tl,
+        "Tân Kiàn-tiong",
+        "陳建中"
+    ));
 }
 
 #[test]

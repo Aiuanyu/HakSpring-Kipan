@@ -69,6 +69,22 @@ fn ctx<'a>(
         mode: phonetics::InputMode::Tl,
         context: ranking::ContextRanks::empty(),
         tone_pin: lexicon::TonePin::None,
+        whole_buffer_key: None,
+    }
+}
+
+/// [`ctx`] with `typed_key` as the whole-buffer key — what an exact-path
+/// custom entry is measured against.
+fn ctx_typed<'a>(
+    custom: &'a [CustomEntry],
+    typed_key: &str,
+    prefix_index: &'a PrefixIndex,
+    dict: &'a DictionaryReader,
+    freq_map: &'a FrequencyMap,
+) -> ContinuousFetchCtx<'a> {
+    ContinuousFetchCtx {
+        whole_buffer_key: Some(typed_key.to_owned()),
+        ..ctx(freq_map, 0, custom, prefix_index, dict)
     }
 }
 
@@ -1546,7 +1562,13 @@ fn item12_custom_only_entry_surfaces_full_buffer() {
         &[],
         &[],
         6,
-        &ctx(&FrequencyMap::new(), 0, &custom, &prefix_index, &dict),
+        &ctx_typed(
+            &custom,
+            "tl:taigi",
+            &prefix_index,
+            &dict,
+            &FrequencyMap::new(),
+        ),
     );
     assert_eq!(out.len(), 1, "custom entry must surface, got {out:#?}");
     assert_eq!(out[0].display_text, "台語");
@@ -1581,7 +1603,13 @@ fn item12_custom_dedupes_and_wins_dict_collision() {
         &[],
         &[],
         6,
-        &ctx(&FrequencyMap::new(), 0, &custom, &prefix_index, &dict),
+        &ctx_typed(
+            &custom,
+            "tl:taigi",
+            &prefix_index,
+            &dict,
+            &FrequencyMap::new(),
+        ),
     );
     assert_eq!(
         out.len(),
@@ -1620,7 +1648,13 @@ fn item12_custom_numeric_tone_spelling_is_the_same_word() {
         &[],
         &[],
         6,
-        &ctx(&FrequencyMap::new(), 0, &custom, &prefix_index, &dict),
+        &ctx_typed(
+            &custom,
+            "tl:taigi",
+            &prefix_index,
+            &dict,
+            &FrequencyMap::new(),
+        ),
     );
     assert_eq!(
         out.len(),
@@ -1909,7 +1943,7 @@ fn list_orders_by_corpus_cost_and_leads_with_the_edge_pick() {
         hanji: Some("大灣".to_owned()),
     }];
     let user_frequency = FrequencyMap::new();
-    let ctx = ctx(&user_frequency, 0, &custom, &prefix_index, &dict);
+    let ctx = ctx_typed(&custom, "tl:taiuan", &prefix_index, &dict, &user_frequency);
     let list: Vec<String> = taiuan_list(&ctx)
         .into_iter()
         .map(|(word, _)| word)
@@ -1933,7 +1967,7 @@ fn list_custom_twin_of_the_cheapest_word_follows_the_priced_homophone() {
         hanji: Some("台灣".to_owned()),
     }];
     let user_frequency = FrequencyMap::new();
-    let ctx = ctx(&user_frequency, 0, &custom, &prefix_index, &dict);
+    let ctx = ctx_typed(&custom, "tl:taiuan", &prefix_index, &dict, &user_frequency);
     assert_eq!(
         taiuan_list(&ctx),
         [("臺灣".to_owned(), false), ("台灣".to_owned(), true)]
