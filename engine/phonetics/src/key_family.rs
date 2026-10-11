@@ -157,6 +157,14 @@ pub fn abbrev_family_key(key: &str) -> Option<String> {
     Some(format!("{family}{ABBREV_FAMILY_SUFFIX}:{body}"))
 }
 
+/// The inverse of [`abbrev_family_key`]: `tl-abbrev:tkt` → `("tl", "tkt")`,
+/// the bare family tag ([`KeyFamily::tag`]) and the body. `None` for a key
+/// outside an abbreviation family.
+pub fn split_abbrev_family_key(key: &str) -> Option<(&str, &str)> {
+    let (family, body) = key.split_once(':')?;
+    Some((family.strip_suffix(ABBREV_FAMILY_SUFFIX)?, body))
+}
+
 /// Normalize raw TPS input into the body of a `tps:` FST key.
 ///
 /// The build pipeline emits fused Bopomofo with no separators and tone-8

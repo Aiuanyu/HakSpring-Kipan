@@ -127,15 +127,15 @@ The format is **round-trip compatible across platforms** (same schema, same v2, 
 
 ## Autocomplete Integration
 
-Custom entries have **highest priority** — shown before system dictionary results.
+A custom entry is offered by the same rules as a system dictionary word (behavioral-invariants.md §43): only once the typed input reaches into its final syllable (陳建中 `Tân Kiàn-tiong` from `tankiant`, not `t`), or on its whole abbreviation (`tkt`). It wins a collision with the same system word (source rank 0), and the walker takes its exact-span edge over the dictionary's.
 
 **Flow** (every platform, inside one `FetchAtPos`):
-1. `engine/dispatch/src/user_data/with_stores.rs` (`buffer_rows`) derives the query key from the raw (unsegmented) pending buffer (`phonetics::api::derive_custom_query_key`) and reads the matching custom rows — skipped when `FetchAtPos.custom_dictionary_disabled` — plus the learned phrases
+1. `engine/dispatch/src/user_data/with_stores.rs` (`buffer_rows`) derives the query key from the raw (unsegmented) pending buffer (`phonetics::api::derive_custom_query_key`) and reads the matching custom rows (`CustomDictionaryStore::keystroke_rows`: the query's form by prefix, the abbreviation whole, shortest key first, 20 rows) — skipped when `FetchAtPos.custom_dictionary_disabled` — plus the learned phrases
 2. The rows reach composing as `composing::UserRows`
 3. System dictionary queried in the same fetch
-4. Merge: custom words first, then system words, deduplicated
+4. Merge (`lexicon::continuous`): each custom row is sorted by `custom_reach` into the full block (typed in full), the partial-prefix block (final syllable typed into) or dropped; the abbreviation block takes the whole-abbreviation rows; deduplicated against the system words
 
-**Search**: key prefix over `custom_search_key` in the query's family (tone-number or toneless form, plus the abbreviation form)
+**Search page**: key prefix over `custom_search_key` in the query's family (tone-number or toneless form, plus the abbreviation form by prefix — `rows_matching`, the system dictionary search's own union)
 
 ---
 
@@ -167,10 +167,10 @@ None. A fresh install starts with an empty custom dictionary on every platform. 
 
 | Aspect | Custom | System |
 |--------|--------|--------|
-| Priority | Highest (shown first) | Normal |
+| Priority | Wins a collision with the same word (source rank 0); its exact-span walker edge overrides the dictionary's; in the list it carries no corpus cost, so it follows the priced words of its block unless picked before | Corpus cost |
 | ID marker | `-2` | `≥ 0` (row ID) |
 | Frequency tracking | `user_frequency.db`, like any pick — keyed by the `(display_text, canonical_tl)` pair, ranks custom rows among themselves (`lexicon::custom_entry_to_candidate` `user_weight`) | `user_frequency.db` (engine `UserFrequencyStore`) |
-| Search method | Prefix (roman/notone/abbrev) | Trie-based |
+| Search method | Keystroke: roman / notone prefix, abbreviation whole (`keystroke_rows`), then the §43 reach rule; search page: prefix on all three (`rows_matching`) | FST, same rules |
 | Segmentation | Raw input (unsegmented) | Segmented input |
 
 ---

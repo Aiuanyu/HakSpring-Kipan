@@ -173,10 +173,40 @@ impl CustomDictionaryStore {
 
     // Keystroke path
 
-    /// The entries matching `query_key`, for the composition being typed.
-    /// Synchronous and best-effort: a store that is not open answers `[]`
-    /// rather than making the keystroke wait. `form IN (?, 'abbrev')` lets
-    /// an abbreviation row satisfy a query in the same family; `DISTINCT`
+    /// The entries the composition being typed may offer. Synchronous and
+    /// best-effort: a store that is not open answers `[]` rather than making
+    /// the keystroke wait. The query's own form matches as a prefix (the
+    /// engine then keeps only the words whose final syllable the typed
+    /// input reaches, `lexicon::continuous::custom_reach`); an abbreviation
+    /// row matches only when it IS the query, as a dictionary abbreviation
+    /// does on the keystroke path. Grouped per entry because one entry owns
+    /// several side rows, shortest matched key first so `limit` is spent on
+    /// the words nearest the typed input before the long extensions the
+    /// engine drops — that narrows the starvation, it cannot rule it out.
+    pub fn keystroke_rows(
+        &self,
+        query_key: &CustomSearchKey,
+        limit: usize,
+    ) -> Vec<CustomDictionaryRow> {
+        self.database
+            .read(|connection| {
+                let mut statement = connection.prepare_cached(&format!(
+                    "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\nFROM {TABLE_NAME} AS entry\nJOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\nWHERE search_key.family = ?1\n  AND ((search_key.form = ?2 AND search_key.key LIKE ?3 || '%')\n    OR (search_key.form = 'abbrev' AND search_key.key = ?3))\nGROUP BY entry.id\nORDER BY MIN(length(search_key.key)), entry.roman, entry.id\nLIMIT ?4;"
+                ))?;
+                let rows = statement.query_map(
+                    params![query_key.family, query_key.form, query_key.key, limit as i64],
+                    decode_row,
+                )?;
+                rows.collect()
+            })
+            .unwrap_or_default()
+    }
+
+    // Settings path
+
+    /// The entries matching `query_key` for the dictionary search page,
+    /// prefix-matched on both the query's form and the abbreviation — the
+    /// system dictionary search's own union (`lexicon::search`). `DISTINCT`
     /// because one entry owns several side rows.
     pub fn rows_matching(
         &self,

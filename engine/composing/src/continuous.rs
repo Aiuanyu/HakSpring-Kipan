@@ -1185,6 +1185,12 @@ pub(crate) fn assemble_candidates(
                 // extensions). Computed from `raw` by the same rule the
                 // per-key pins use.
                 tone_pin,
+                // The key a custom entry is measured against on the exact
+                // span-local path — the same whole-buffer key the
+                // partial-prefix paths answer.
+                whole_buffer_key: (!custom.is_empty())
+                    .then(|| build_partial_prefix_key(raw, mode).map(|(_, key)| key))
+                    .flatten(),
             });
 
         // ---- Step 1: build keys + shadow/lattice (D1 fold).

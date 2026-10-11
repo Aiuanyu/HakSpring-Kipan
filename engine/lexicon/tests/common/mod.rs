@@ -151,6 +151,7 @@ pub fn fetch_candidates_for_endings(
         mode: ctx.mode,
         context: ctx.context,
         tone_pin: ctx.tone_pin.clone(),
+        whole_buffer_key: ctx.whole_buffer_key.clone(),
     };
     fetch_candidates_for_keys_with_barriers(&keys, &[], &[], input.len() as u32, &inner)
 }
@@ -181,6 +182,7 @@ pub fn neutral_ctx<'a>(
         mode,
         context: ranking::ContextRanks::empty(),
         tone_pin: lexicon::TonePin::None,
+        whole_buffer_key: None,
     }
 }
 

@@ -38,7 +38,7 @@ pub use api::{
     toneless_reading_key, InputMode, PhoneticsError, System,
 };
 pub use derivation::{derive_abbrev, poj_abbrev_from_tl};
-pub use key_family::{abbrev_family_key, KeyFamily, HANJI_KEY_PREFIX};
+pub use key_family::{abbrev_family_key, split_abbrev_family_key, KeyFamily, HANJI_KEY_PREFIX};
 pub use normalization::{
     has_tone_marks, is_combining_tone_mark, normalize_input, taigi_unicode_base_form,
 };

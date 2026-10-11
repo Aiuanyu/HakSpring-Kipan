@@ -269,11 +269,12 @@ fn tps_initials_match_the_tps_abbreviation() {
 fn custom_entry_sharing_the_abbreviated_word_shows_once() {
     let _lock = engine_install_lock();
     install_fixture();
-    // The platform pre-queries `custom_dictionary.db` with `form IN (?,
-    // 'abbrev')`, so a custom 鎖匙 `só-sî` already answers `ss` through the
-    // custom merge (whole-buffer synth, source rank 0). The dictionary's
-    // own 鎖匙 must collapse onto it — same `(roman, hanji, span)` — and
-    // the custom row stays ahead of the dictionary block.
+    // A custom 鎖匙 `só-sî` answers `ss` in the abbreviation block, by the
+    // exact-face rule a dictionary row answers to (whole-buffer synth,
+    // source rank 0). The dictionary's own 鎖匙 collapses onto it — same
+    // `(roman, hanji, span)` — and, carrying no corpus cost, it follows the
+    // priced 先生 there, as a custom twin does in the full block
+    // (`list_custom_twin_of_the_cheapest_word_follows_the_priced_homophone`).
     let hanji = fetch_hanji_with_custom(
         "ss",
         "tl",
@@ -284,7 +285,7 @@ fn custom_entry_sharing_the_abbreviated_word_shows_once() {
     );
     assert_eq!(
         hanji,
-        vec!["鎖匙", "先生"],
-        "custom first, dictionary 鎖匙 deduped"
+        vec!["先生", "鎖匙"],
+        "dictionary 鎖匙 deduped onto the custom row"
     );
 }
