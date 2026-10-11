@@ -154,7 +154,7 @@ No footer-weight link ships: the macOS About page (`macos/Sources/TaigiInputMeth
 
 Separate features by **usage frequency**, not by data relationship. Frequently-edited content goes on its own page; less-frequently-accessed management features group into a separate management page.
 
-- 自訂詞庫 (custom dictionary editing) = frequent edit → own page.
-- 備份 / 還原 (backup / restore) = rare access → separate management page.
+- Custom Dictionary (editing) = frequent edit → own page.
+- Backup and Restore = rare access → separate management page.
 
 Mixing them creates confusion about a page's purpose. When reorganizing settings or management UIs, group by how often the user interacts with each feature, not by which data table they live in.

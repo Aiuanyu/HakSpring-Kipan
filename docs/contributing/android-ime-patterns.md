@@ -24,7 +24,7 @@ Cross-platform test naming + assertion conventions follow `docs/contributing/ios
 
 - JUnit 4 — project default (see existing `app/src/test/java/.../ime/dictionary/*Test.kt`). Do not mix JUnit 5.
 - `kotlinx-coroutines-test` — `runTest { … }` block with injectable `TestDispatcher` for time-controlled tests.
-- `INVARIANT_*` function-name prefix for cross-platform-invariant tests; labels match `docs/architecture/behavioral-invariants.md` (policy: `docs/contributing/cross-platform-alignment.md` §3a).
+- Cross-platform-invariant tests carry their `INVARIANT_*` label per `docs/contributing/cross-platform-alignment.md` §3a (comment above the test, or the `fun INVARIANT_<label>_…` prefix); labels match `docs/architecture/behavioral-invariants.md`.
 - Tests must be runnable via `./gradlew test` (wired into `testImplementation` in the test source set).
 
 ## 4. Refactor-round checklist `[A]`

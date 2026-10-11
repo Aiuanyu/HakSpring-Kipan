@@ -4,9 +4,9 @@ Mandatory rules before any platform impl → Rust engine swap, new Rust slice, `
 
 ## 1. Four design goals per slice
 
-Every Rust slice must satisfy ALL four:
+Every Rust slice meets these four goals:
 
-1. **High cohesion, low coupling.** Each crate owns ONE engine concern; dependencies flow one-way down the layer graph (`rust-best-practices.md` §1a) — a domain crate may depend on lower domain/leaf crates (`composing→lexicon/ranking/phonetics`, `lexicon→mmap-host/ranking/phonetics`) plus `protos` for the RPC façade, but **never** upward on `dispatch`/FFI. Cross-module deps minimal and explicit.
+1. **High cohesion, low coupling.** Each crate owns one engine concern; dependencies flow one-way down the layer graph (`rust-best-practices.md` §1a) — a domain crate may depend on lower domain/leaf crates (`composing→lexicon/ranking/phonetics`, `lexicon→mmap-host/ranking/phonetics`) plus `protos` for the RPC façade, but **never** upward on `dispatch`/FFI. Cross-module deps minimal and explicit.
 2. **Rust idioms.** Typed `thiserror` errors, `prost` proto, sync-only, no `panic!`/`unwrap()`/`expect()` on unvalidated input (use `Result` for recoverable paths). `unsafe_code = "forbid"` on domain crates — `unsafe` is confined to the FFI crates plus the documented `mmap-host` carve-out. Canonical detail: `rust-best-practices.md` §2 (errors) / §3 (crate+type choices) / §8 (non-goals, incl. mutable process state only in `handle.rs` singletons; immutable `Lazy` tables OK) + `rust-ffi-safety.md` §1.3 (`Mutex<Engine>` guard) / §3 (`unsafe`).
 3. **Single responsibility naming.** File name = role (`trie.rs` not `util.rs`); function name = action verb (`lookup_prefix` not `process`); variable name = content (`row_ids` not `result`). One file / function / variable = one thing.
 4. **Idiomatic file organization.** Defer to Rust convention: tests live inline via `#[cfg(test)] mod tests { }`. Files split by sub-concern (cohesion-driven), NOT by line count. **No hard LOC cap**. Use length as a smell signal — "does this file actually own one concern?" — not a blocker. A 650-LOC file with one concern + cohesive tests reads better than 2 files with `#[path]` indirection.
@@ -27,7 +27,7 @@ Each slice ships as a **direct swap** with no fallback code path. Old Swift/Kotl
 
 When swapping `OldHelper.x(...)` → `RustEngineBridge.x(...)`, the bridge op is rarely a 1:1 replacement. The original call site often has:
 
-- Adjacent preprocessing (e.g. `TaigiUnicode.nfdPreprocessed` before `stripTone`).
+- Adjacent preprocessing (e.g. NFD normalization before a tone strip).
 - Mode/flag mapping that must forward ALL enum cases (e.g. ENGLISH must NOT collapse to TL).
 - Joiners / separators (iOS `joined(separator: " ")`, Android `joinToString(" ")` — NOT `""`).
 - Per-token decision branches (e.g. `or_maps_to_er` is a per-vowel-token override inside `to_zhuyin`, NOT a whole-string `.replace("er","or")`).
@@ -39,7 +39,7 @@ Procedure for each swap:
 1. Diff BEFORE vs AFTER with 5-10 lines of context, not just the call line.
 2. Check NFD / case / mode / joiner / special-case logic preservation.
 3. Cross-check iOS vs Android side-by-side — divergence is a strong tell that one swap dropped something.
-4. Add regression-prone modules (`stripTone+NFD`, exhaustive mode `when`/`switch`, per-token vowel overrides, multi-syllable joiner) to the pre-implementation review explicitly.
+4. Add regression-prone modules (NFD-before-tone-strip, exhaustive mode `when`/`switch`, per-token vowel overrides, multi-syllable joiner) to the pre-implementation review explicitly.
 
 A symbol grep does not catch this: dropped preprocessing is not a symbol reference.
 

@@ -44,7 +44,7 @@ iOS code is organized into four layers. Dependencies flow **top-down only** — 
 │                        Candidates/Services,                  │
 │                        Settings/ pure parts)                 │
 │  Rust FFI bridge (RustEngineBridge + generated protos),      │
-│  input pipeline, next-word glue, DB repositories, engine     │
+│  input pipeline, next-word glue, engine clients, engine      │
 │  settings protocol, service graph wiring, logging backend    │
 │  Imports: Foundation ONLY (+ SwiftProtobuf in Engine/)       │
 └──────────────────────────────────────────────────────────────┘

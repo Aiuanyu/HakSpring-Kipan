@@ -7,7 +7,7 @@ record: `docs/architecture/linux-roadmap.md`.
 ## Host gates prove compilation
 
 - Linux behaviour is observed only in the dogfood VMs and the `/e2e` run, never on the macOS host. Every PR passes
-  `make linux-check` on the macOS host: `cargo test` in `desktop/` (native), `cargo clippy
+  `make linux-check` on the macOS host: `cargo test --workspace` in `linux/` (native), `cargo clippy
   --workspace --all-targets -- -D warnings` in `linux/` (native: `zbus` + gtk4-rs + libadwaita
   from Homebrew), a real cross build of the engine for `x86_64-unknown-linux-gnu` via `cargo zigbuild`
   (`brew install zig cargo-zigbuild`; plain `cargo check` stops at the bundled SQLite's C build),

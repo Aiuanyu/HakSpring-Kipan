@@ -47,7 +47,7 @@ The **policy** (constants + tests + docs update together, comment format, `INVAR
 
 - Comment syntax in Kotlin:
   ```kotlin
-  // CROSS-PLATFORM INVARIANT — mirrors ios/Sources/TaigiKeyboard/Settings/EngineSettings.swift:<line>.
+  // CROSS-PLATFORM INVARIANT — mirrors ios/Sources/TaigiKeyboard/Settings/EngineSettings.swift:<symbol>.
   // Drift causes silent divergence.
   ```
 - Surfaces carrying the marker on Android: authoritative list = `grep -rl 'CROSS-PLATFORM INVARIANT' android/`.

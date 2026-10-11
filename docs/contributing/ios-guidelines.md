@@ -52,7 +52,7 @@ Refactors that delete Swift files under a synced-group directory: Xcode auto-rem
 ### When manual action IS still required
 
 - New file at `Sources/TaigiKeyboard/` ROOT level (siblings to synced groups need manual add).
-- `Sources/TaigiKeyboard/KeyboardExtension/` is a synced group too, with a per-target exception set for its `Info.plist` / `InfoPlist.strings` (`project.pbxproj:135-142`): a new Swift file there is auto-included; only the exception sets are user work.
+- `Sources/TaigiKeyboard/KeyboardExtension/` is a synced group too, with a per-target exception set for its `Info.plist` / `InfoPlist.strings` (the `Exceptions for "KeyboardExtension" folder` sets in `project.pbxproj`): a new Swift file there is auto-included; only the exception sets are user work.
 - New top-level directory under `Sources/TaigiKeyboard/` — Xcode does NOT auto-promote a new dir to a synced group; user must "Add Files…" or "Convert to Synchronized Group".
 - Binary references (e.g. `ios/RustEngine/RustTaigi.xcframework`) — not synced.
 - `Info.plist`, entitlements, signing, build settings, scheme — always pbxproj-level, always user. **One exception, and it is still user-run**: `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` are written by `make version-mobile x.y.z`, which sets the same version on Android in the same pass (the mobile train; macOS + Windows + Linux are the separately numbered desktop train) and pins the build number to 1 (App Store Connect numbers a version's uploads itself) (`tools/release_notes.py set-versions --train mobile`). AI still never edits pbxproj — name that command as the user's action item instead of asking for a hand edit in Xcode, because a hand edit desyncs the two mobile platforms until `check-versions` catches it.
@@ -66,7 +66,7 @@ Before approving any iOS folder-level refactor, audit:
 
 ```bash
 # Orphan groups (registered path no longer exists on disk)
-for path in $(grep -E 'PBXFileSystemSynchronizedRootGroup;' -A4 \
+for path in $(grep -E 'PBXFileSystemSynchronizedRootGroup;' -A8 \
   ios/TaigiKeyboard.xcodeproj/project.pbxproj \
   | grep -oE 'Sources/TaigiKeyboard/[A-Za-z]+' | sort -u); do
   [ ! -d "ios/$path" ] && echo "ORPHAN: $path"

@@ -8,6 +8,8 @@ paths:
   - "engine/**/src/requests.rs"
   - "engine/**/src/handle.rs"
   - "macos/crates/taigi-macos-ffi/**"
+  - "linux/crates/taigi-linux-ffi/**"
+  - "windows/crates/taigi-windows-tsf/**"
 ---
 
 # Rust FFI Safety

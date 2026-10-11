@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidelines for Claude Code in this repo (Python emoji-data pipeline for TaigiKeyboard).
+Guidelines for the `emoji/` subtree (Python emoji-data pipeline for TaigiKeyboard).
 
 Project rules live in `.claude/rules/`; repository-wide rules in the parent `AGENTS.md`.
 
@@ -61,5 +61,4 @@ own native model; there are no shared Swift/Kotlin modules. Schema: `.claude/rul
 
 ## Communication
 
-- Reply in 台灣華語; docs + code comments in English (CJK OK for verbatim quotes + 台語/漢字/TL/POJ terms).
-- Concise, bullet-point, key points only.
+Docs and code comments follow the root `AGENTS.md` § Conventions.
