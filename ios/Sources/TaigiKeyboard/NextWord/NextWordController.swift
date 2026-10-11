@@ -69,6 +69,15 @@ final class NextWordController {
         cachedPredictionsVisible = false
     }
 
+    /// Keyboard dismissed: drops any in-flight prediction answer and the context Timer, so
+    /// this controller — which UIKit may keep until its host app returns — makes no further
+    /// call into the process-shared engine. No UI reset: the keyboard is gone.
+    func tearDown() {
+        envelopeGen &+= 1
+        stopContextTimeoutTimer()
+        cachedPredictionsVisible = false
+    }
+
     // MARK: - Public API (preserved from pre-Rust controller)
 
     func process(
@@ -212,10 +221,13 @@ final class NextWordController {
         // rendering answer for the settings the query began under.
         let settings = settingsProvider.current
         let toggles = RustEngineBridge.DictionaryToggles(from: settings)
+        // Read before the hop, so a `tearDown()` or field switch that lands first drops the
+        // query instead of sending it under the newer envelope.
+        let envelope = envelopeGen
         // A `@MainActor` hop so the render lands after the effect loop that
         // queued it, as it always has.
         Task { @MainActor in
-            let envelope = envelopeGen
+            guard envelope == envelopeGen else { return }
             // Off the main thread: the engine reads the learned rows from its
             // own `user_association.db` inside this call (roadmap P7b).
             let filterResult = await Task.detached {

@@ -21,7 +21,8 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
     weak var actionHandler: ActionHandler?
     var isCleanedUp = false
 
-    private var cancellables = Set<AnyCancellable>()
+    /// Settings observer + keyboard-case guards; cancelled by `performCleanup()`.
+    var cancellables = Set<AnyCancellable>()
 
     /// FIXME: Workaround for KeyboardKit 10 auto-capitalization override.
     /// These two properties are part of a 2-layer workaround:
@@ -65,8 +66,6 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
 
     // MARK: - Initialization
 
-    // TODO: Migrate actionHandler/emojiService to weak refs,
-    // so deinit only handles logical state reset (composing/markedText/autocomplete).
     deinit {
         performCleanup()
     }
