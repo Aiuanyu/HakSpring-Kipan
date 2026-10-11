@@ -385,7 +385,7 @@ iOS composes the engine graph at two entry points (§2). Android also has two li
 - **IME service graph** — `TaigiKeyboard : LifecycleInputMethodService` (`ime/core/TaigiKeyboard.kt`). Created in `onCreate`, torn down in `onDestroy`. Owns per-session state (composing, candidates, next-word history).
 - **App graph** — `TaigiKeyboardApplication : Application` owns the warm-up chain (`prefs.warmUp()` + `migrateFromSharedPreferences` + per-service `init(context)`); `CompositionRoot` (`ime/core/CompositionRoot.kt`) is the process-wide service holder both scopes reach into. Services are idempotent, so a duplicate `init` during migration stays safe.
 
-Engine-layer code receives its dependencies via constructor injection from whichever scope constructs it. No `.INSTANCE` reach-ins (`docs/contributing/android-guidelines.md` §4).
+Engine-layer code receives its dependencies via constructor injection from whichever scope constructs it. No `.INSTANCE` reach-ins (`docs/contributing/android-guidelines.md` §3).
 
 ### 9.2 Settings live-read
 

@@ -361,7 +361,7 @@ Today Android lacks the iOS §3 `currentGeneration` mechanism. Late predictions 
 - `ASSOCIATION_TIMEOUT_MS = 10_000L`
 - `CONTEXT_TIMEOUT_MS = 30_000L`
 
-per `docs/contributing/cross-platform-alignment.md` §3a + `docs/contributing/android-guidelines.md` §2. A5-design plan originally deferred this to A8-sweep; it was inlined into A5-impl instead because the constants moved in the same PR. A8-sweep has no follow-up work on these comments.
+per `docs/contributing/cross-platform-alignment.md` §3a. A5-design plan originally deferred this to A8-sweep; it was inlined into A5-impl instead because the constants moved in the same PR. A8-sweep has no follow-up work on these comments.
 
 ### 13.8 Strict-less-than boundary + negative-delta guard
 
@@ -419,6 +419,6 @@ A5-impl adds the following Android files to the roster (mirroring §8 iOS column
 - iOS boundary contract: §§1–12 above.
 - A5-impl shipped via Phase II Round A5; engine logic now in Rust `engine/nextword` (since v3.5.5).
 - Parity-correction policy: `docs/contributing/cross-platform-alignment.md` §1b.
-- Android guidelines (shared-core purity, clock, coroutines): `docs/contributing/android-guidelines.md` §§1, 5.
+- Android guidelines (shared-core purity, clock, coroutines): `docs/contributing/android-guidelines.md` §§1, 3, 5.
 - Engine settings live-read rule: `docs/contributing/android-guidelines.md` §6 + `ios-exemplar.md` §3.
 - Behavioral invariants (decay half-life + user>dict weighting): `behavioral-invariants.md` §§7, 8.

@@ -5,7 +5,7 @@ Per-platform style guides and cross-cutting rules. Read the one that covers the 
 | Guide | Covers |
 |---|---|
 | [`known-pitfalls.md`](known-pitfalls.md) | Rules distilled from past incidents — read once before your first change |
-| [`cross-platform-alignment.md`](cross-platform-alignment.md) | Refactor behaviour-freeze, parity tiers, shared-core candidates, `CROSS-PLATFORM INVARIANT` comments |
+| [`cross-platform-alignment.md`](cross-platform-alignment.md) | iOS ↔ Android contract: refactor freeze + parity tier, shared-core criteria, where each concept lives, invariants, engine non-goals |
 | [`phonetics.md`](phonetics.md) | TL / POJ / TPS schema and canonical-form work — authoritative sources only |
 | [`i18n.md`](i18n.md) | Shared `i18n/*.json` keys |
 | [`doc-lookup.md`](doc-lookup.md) | Verifying a framework / OS API against current docs before calling it |
@@ -13,11 +13,9 @@ Per-platform style guides and cross-cutting rules. Read the one that covers the 
 | [`rust-best-practices.md`](rust-best-practices.md) | Engine workspace, errors, crates, tests |
 | [`rust-ffi-safety.md`](rust-ffi-safety.md) | Every FFI boundary (Swift / JNI / dispatch, Linux C ABI, Windows COM): panic, thread, error, logging, opaque handles, test contract |
 | [`rust-migration-policy.md`](rust-migration-policy.md) | Moving platform logic into the engine |
-| [`ios-guidelines.md`](ios-guidelines.md) | Day-to-day iOS rules |
-| [`ios-architecture.md`](ios-architecture.md) | iOS structure and layering, shared-core candidate criteria + marker |
-| [`ios-settings-injection.md`](ios-settings-injection.md) | `EngineSettingsProvider` wiring |
+| [`ios-guidelines.md`](ios-guidelines.md) | KeyboardKit lookup, extension memory, user data + Full Access, Xcode project files |
+| [`ios-architecture.md`](ios-architecture.md) | iOS layers, Engine-layer imports, settings injection, shared-core marker |
 | [`ui-style-guide.md`](ui-style-guide.md) | App / settings UI, both mobile platforms |
-| [`android-guidelines.md`](android-guidelines.md) | Android architecture, Kotlin, DI, DataStore, Gradle |
-| [`android-ime-patterns.md`](android-ime-patterns.md) | Compose, IME patterns, testing |
+| [`android-guidelines.md`](android-guidelines.md) | Shared-core marker, DI + lifecycle, IME host facts, DataStore settings, user-data SQLite, Gradle |
 | [`windows-guidelines.md`](windows-guidelines.md) | Windows TSF |
 | [`linux-guidelines.md`](linux-guidelines.md) | Linux Fcitx5 / IBus and `desktop/` |

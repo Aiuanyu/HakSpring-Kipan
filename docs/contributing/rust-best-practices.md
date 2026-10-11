@@ -82,7 +82,7 @@ Pinned choices (deviations require written justification):
 Type-shape preferences that cross FFI:
 
 - `#[repr(transparent)]` newtype for opaque handles (see `docs/contributing/rust-ffi-safety.md` § Opaque handle pattern).
-- **Explicit numeric widths**: `i64` / `f64` at the boundary (not `isize` / `usize`). Mirrors `docs/contributing/android-guidelines.md` §1 Kotlin→Rust shape rules.
+- **Explicit numeric widths**: `i64` / `f64` at the boundary (not `isize` / `usize`).
 - **UTF-8 strings only** — protobuf `string` already enforces; never use `&[u8]` for text data.
 
 ## 4. Cross-compile + build tooling `[A]`
@@ -136,8 +136,7 @@ Codifying `docs/contributing/cross-platform-alignment.md` §4.1 in Rust terms:
 - `docs/contributing/rust-migration-policy.md` — when to start a slice migration, design goals, no toggles, mirror deletion
 - khiin-rs reference study: `docs/references/khiin-reference.md` (clone under `references/khiin-rs/`).
 - `docs/contributing/cross-platform-alignment.md` §4.1 — Rust shared-core non-goals.
-- `docs/contributing/android-guidelines.md` §1 Kotlin→Rust shape preferences — mirror of the type-shape rules here.
-- `docs/contributing/ios-architecture.md` §5 — the iOS-side equivalent of what counts as a candidate for Rust extraction.
+- `docs/contributing/cross-platform-alignment.md` §1c — what counts as a shared-core candidate on iOS and Android.
 - `docs/architecture/behavioral-invariants.md` — invariant contracts the Rust implementation must preserve.
 - Rust API Guidelines (https://rust-lang.github.io/api-guidelines/) — adopted as the naming + docs baseline.
 - Rustonomicon (https://doc.rust-lang.org/nomicon/) — authoritative `unsafe` reference.
