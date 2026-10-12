@@ -1,0 +1,7 @@
+Improved: Conversion follows how often written Taigi uses each word: kausiu gives 教授.
+Improved: Tone digits become marks: tai5gi2 shows tâigí.
+Improved: A word covering all you typed comes first; no word is listed twice.
+Fixed: Phonetic Symbols: ㆳ finds words; typed tone marks are kept.
+New: Alternative Readings (又唸作) toggle for the MOE dictionary.
+Changed: Layout page grouped by script.
+Fixed: Steadier keyboard memory use.
