@@ -1,4 +1,4 @@
-package com.siansiansu.taigikeyboard.ui.tabs.layout
+package com.siansiansu.taigikeyboard.ui.tabs.theme
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -134,7 +134,7 @@ fun ColorPickerDialog(
             ) {
                 Text(
                     text = title,
-                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),

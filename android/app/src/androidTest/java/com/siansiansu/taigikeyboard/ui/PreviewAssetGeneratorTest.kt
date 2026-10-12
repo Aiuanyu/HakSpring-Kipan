@@ -26,7 +26,7 @@ import com.siansiansu.taigikeyboard.ime.theme.ThemeId
 import com.siansiansu.taigikeyboard.ime.theme.ThemeResolver
 import com.siansiansu.taigikeyboard.ui.components.GALLERY_CARD_WIDTH_DP
 import com.siansiansu.taigikeyboard.ui.components.GALLERY_PREVIEW_ASPECT
-import com.siansiansu.taigikeyboard.ui.tabs.layout.KeyboardPreviewPanel
+import com.siansiansu.taigikeyboard.ui.tabs.theme.KeyboardPreviewPanel
 import com.siansiansu.taigikeyboard.ui.tabs.theme.builtInThemePreviewRes
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
