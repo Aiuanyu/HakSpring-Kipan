@@ -541,10 +541,6 @@ impl JobSlot {
         Some(generation)
     }
 
-    pub fn is_held_by(&self, generation: u64) -> bool {
-        self.holder.get() == Some(generation)
-    }
-
     pub fn is_taken(&self) -> bool {
         self.holder.get().is_some()
     }

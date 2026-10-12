@@ -319,7 +319,8 @@ impl VerticalListModel {
     }
 
     /// The slot `row` shows, if it is one of the nine the anchor reaches.
-    pub fn slot_for_row(&self, row: usize) -> Option<usize> {
+    #[cfg(test)]
+    pub(crate) fn slot_for_row(&self, row: usize) -> Option<usize> {
         let slot = row.checked_sub(self.anchor_row)?;
         (slot < Self::VISIBLE_ROWS).then_some(slot)
     }

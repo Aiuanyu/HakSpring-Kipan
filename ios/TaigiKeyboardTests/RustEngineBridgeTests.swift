@@ -66,15 +66,6 @@ final class RustEngineBridgeTests: XCTestCase {
         XCTAssertFalse(RustEngineBridge.isAttachingPunctuation("?!"))
     }
 
-    // MARK: - Diagnostics (Codex v2 §8 / v3 §7)
-
-    func test_diagnostics_initialState_isEmpty() {
-        RustEngineBridge.resetDiagnosticsForTesting()
-        let snapshot = RustEngineBridge.diagnostics()
-        XCTAssertEqual(snapshot.failureCount, 0)
-        XCTAssertTrue(snapshot.recentErrors.isEmpty)
-    }
-
     // MARK: - T1: panic at FFI
 
     /// The FFI seam must NEVER unwind across the boundary: a valid `Response`

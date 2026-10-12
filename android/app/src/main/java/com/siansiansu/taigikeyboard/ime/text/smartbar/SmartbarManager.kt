@@ -193,9 +193,9 @@ class SmartbarManager(
      * via the [com.siansiansu.taigikeyboard.ime.text.composing.NextWordEffectRouter]
      * constructor parameter.
      *
-     * Unrelated to [handleNextWordPrediction] which is the platform candidate-
-     * tap path for `Phase::Composing` (engine does NOT emit
-     * `NextWordWordSelected` there, so the two paths do not double-fire).
+     * Unrelated to [handleNextWordPrediction], the platform tap path for a
+     * NextWord prediction (engine `Phase::Idle`, where the engine does NOT
+     * emit `NextWordWordSelected`, so the two paths do not double-fire).
      */
     fun dispatchComposingNextWordEffect(effect: com.siansiansu.taigikeyboard.engine.RustEngineBridge.ComposingTransition.Effect) {
         when (effect) {
@@ -566,10 +566,7 @@ class SmartbarManager(
 
         textInputManager.reloadCurrentLayout()
         textInputManager.reloadAllLayoutsInBackground()
-        textInputManager.invalidateKeysByCode(
-            com.siansiansu.taigikeyboard.ime.text.key.KeyCode.TRANSLATE,
-            com.siansiansu.taigikeyboard.ime.text.key.KeyCode.VIEW_NUMERIC_ADVANCED,
-        )
+        textInputManager.invalidateAllKeys()
     }
 
     /**

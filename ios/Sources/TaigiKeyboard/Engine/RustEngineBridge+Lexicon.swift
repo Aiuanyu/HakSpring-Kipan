@@ -23,8 +23,7 @@ public extension RustEngineBridge {
         let sources: [DictionarySource]
     }
 
-    /// Engine install diagnostic counts, surfaced for dogfood-time
-    /// inspection through `RustEngineBridge.diagnostics()` callers.
+    /// Engine install diagnostic counts.
     struct LexiconInstallStats: Equatable {
         public let dictionaryRecordCount: UInt64
         public let prefixIndexEntryCount: UInt64
@@ -315,7 +314,7 @@ public extension RustEngineBridge {
 
         guard let response = send(request, op: op) else { return nil }
         guard response.error == .ok else {
-            recordFailure(op: op, message: "engine returned \(response.error)", code: Int32(response.error.rawValue))
+            recordFailure(op: op, message: "engine returned \(response.error)")
             return nil
         }
         guard case let .lexicon(payload) = response.payload else {

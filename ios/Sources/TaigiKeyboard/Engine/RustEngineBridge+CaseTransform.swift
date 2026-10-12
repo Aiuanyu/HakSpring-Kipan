@@ -90,7 +90,7 @@ public extension RustEngineBridge {
 
         guard let response = send(request, op: op) else { return nil }
         guard response.error == .ok else {
-            recordFailure(op: op, message: "engine returned \(response.error)", code: Int32(response.error.rawValue))
+            recordFailure(op: op, message: "engine returned \(response.error)")
             return nil
         }
         guard case let .caseTransform(payload) = response.payload else {

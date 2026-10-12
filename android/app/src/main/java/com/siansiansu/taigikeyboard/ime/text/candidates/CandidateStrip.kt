@@ -224,8 +224,6 @@ private fun CandidateCell(
 
     // First candidate (engine ranker top, index 0) gets a filled keycap-color background as a
     // visual hint — matches the iOS strip + the Rime-family highlighted-candidate convention.
-    // Keyed on literal index 0, not the dead isComposingText metadata (no producer since the
-    // v3.5.8 continuous redesign removed the composing-text cell).
     val backgroundColor =
         when {
             isPressed -> Color(display.themePressedHighlightColor)

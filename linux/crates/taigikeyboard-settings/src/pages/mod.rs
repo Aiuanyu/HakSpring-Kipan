@@ -157,12 +157,6 @@ impl<'a> PageContext<'a> {
         row
     }
 
-    /// The flag a refresh raises while it sets the rows, for a handler
-    /// that is not one of the shapes above (the MOE dictionary expander's switch).
-    pub fn refreshing_flag(&self) -> Rc<Cell<bool>> {
-        Rc::clone(&self.suppress)
-    }
-
     /// A combo row over a `SettingChoice` roster, bound to its key.
     pub fn choice_row<T: SettingChoice>(
         &mut self,

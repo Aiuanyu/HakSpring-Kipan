@@ -5,9 +5,8 @@ import SwiftProtobuf
 
 /// Thin Swift wrapper around the Rust shared-core FFI exposed by
 /// `engine/swift-ffi/src/lib.rs`. This core file holds the cross-slice
-/// infrastructure: log-sink install, the in-memory diagnostics ring
-/// buffer, the request-id counter, the shared `AppConfig` builder, and
-/// the bytes / panic test seams.
+/// infrastructure: log-sink install, the failure log, the request-id
+/// counter, the shared `AppConfig` builder, and the bytes / panic test seams.
 ///
 /// Per-slice surfaces live in dedicated extension files in this same
 /// directory:
@@ -31,9 +30,7 @@ import SwiftProtobuf
 /// necessary fields as mandatory parameters — no global default.
 ///
 /// Per Codex v2 §8 + v3 §7: error visibility is hardened. DEBUG asserts on
-/// failure; release returns a graceful fallback + logs + records a
-/// structured `DiagnosticsEntry` in a bounded in-memory queue accessible
-/// via `diagnostics()` for dogfood inspection.
+/// failure; release returns a graceful fallback + logs a warning.
 public enum RustEngineBridge {
     private static let installLock = NSLock()
     private static var installed = false
@@ -53,34 +50,6 @@ public enum RustEngineBridge {
             set_log_level(4) // 4 = Debug per set_log_level Rust-side mapping (engine/swift-ffi)
         #endif
         installed = true
-    }
-
-    // MARK: Diagnostics (Codex v2 §8 / v3 §7)
-
-    /// One diagnostics record: timestamp, op name, error code, and message on failure.
-    public struct DiagnosticsEntry: Equatable {
-        public let timestamp: Date
-        public let op: String
-        public let errorCode: Int32
-        public let message: String
-    }
-
-    /// Read-only snapshot of in-memory failure tracking. For debug menu
-    /// + test inspection. Counter increments on every fallback path
-    /// (encode error, decode error, dispatch returned non-OK, missing
-    /// result variant). Recent entries capped at 32 to bound memory.
-    public static func diagnostics() -> (failureCount: Int, recentErrors: [DiagnosticsEntry]) {
-        diagnosticsLock.lock()
-        defer { diagnosticsLock.unlock() }
-        return (Int(failureCounter), Array(recentErrorBuffer))
-    }
-
-    /// Test-only: clears counters so independent test cases don't bleed.
-    static func resetDiagnosticsForTesting() {
-        diagnosticsLock.lock()
-        defer { diagnosticsLock.unlock() }
-        failureCounter = 0
-        recentErrorBuffer.removeAll()
     }
 
     // MARK: FFI dispatch
@@ -138,7 +107,7 @@ public enum RustEngineBridge {
         return try? Taigi_Engine_Response(serializedBytes: Data(responseBytes))
     }
 
-    // MARK: Cross-slice helpers (request ID + AppConfig + diagnostics)
+    // MARK: Cross-slice helpers (request ID + AppConfig + failure log)
 
     private static let idLock = NSLock()
     private static var nextID: UInt32 = 0
@@ -151,29 +120,9 @@ public enum RustEngineBridge {
         return nextID
     }
 
-    private static let diagnosticsLock = NSLock()
-    private static var failureCounter: UInt32 = 0
-    private static var recentErrorBuffer: [DiagnosticsEntry] = []
-
-    private static let recentErrorCap = 32
-
     /// `internal` (default) so every `RustEngineBridge+*` extension file
-    /// can route bridge failures through the same counter +
-    /// bounded ring-buffer.
-    static func recordFailure(op: String, message: String, code: Int32 = -1) {
-        diagnosticsLock.lock()
-        defer { diagnosticsLock.unlock() }
-        failureCounter &+= 1
-        let entry = DiagnosticsEntry(
-            timestamp: Date(),
-            op: op,
-            errorCode: code,
-            message: message,
-        )
-        recentErrorBuffer.append(entry)
-        if recentErrorBuffer.count > recentErrorCap {
-            recentErrorBuffer.removeFirst(recentErrorBuffer.count - recentErrorCap)
-        }
+    /// logs bridge failures the same way.
+    static func recordFailure(op: String, message: String) {
         let logger = LoggerFactory.make(category: "RustEngineBridge")
         logger.warning("[\(op)] \(message)")
         #if DEBUG

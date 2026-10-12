@@ -378,17 +378,9 @@ class TextInputManager(
         themeSurface?.apply(appearanceResolver.resolvedColors())
     }
 
+    /** Per-key recomposition is driven by the appearance data class, so a
+     *  full appearance push covers any subset of keys at no extra cost. */
     fun invalidateAllKeys() {
-        pushAppearance()
-    }
-
-    /** Targeted invalidation became a no-op when the keyboard moved to
-     *  Compose: per-key recomposition is driven by the appearance data class,
-     *  so a full appearance push covers any subset of keys at no extra cost.
-     *  [keyCodes] is retained for source compatibility with callers (e.g.,
-     *  `SmartbarManager.toggleTranslateSwapped`) but is ignored. */
-    @Suppress("UNUSED_PARAMETER")
-    fun invalidateKeysByCode(vararg keyCodes: Int) {
         pushAppearance()
     }
 

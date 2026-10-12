@@ -134,12 +134,6 @@ impl ShortcutAction {
         )
     }
 
-    /// Whether this action opens the settings window rather than doing
-    /// something to the composition in flight (different dispatch).
-    pub fn opens_settings(self) -> bool {
-        self == Self::OpenLastSettingsPane
-    }
-
     /// The chord a fresh install has on this action. The bare backtick is the
     /// Mac's own default and is consumed in the key sink only while the TIP is
     /// active, never registered as a preserved key.
@@ -530,13 +524,6 @@ mod tests {
         defaults.sort();
         defaults.dedup();
         assert_eq!(defaults.len(), 8, "the defaults are all different");
-        assert_eq!(
-            ShortcutAction::ALL
-                .iter()
-                .filter(|a| a.opens_settings())
-                .count(),
-            1
-        );
         for action in ShortcutAction::ALL {
             assert_eq!(
                 global_rejection(&action.default_chord()),
@@ -583,7 +570,6 @@ mod tests {
             ShortcutAction::ShowSymbolPicker.label_key(),
             StringKey::DesktopShortcutShowSymbolPicker
         );
-        assert!(!ShortcutAction::ShowSymbolPicker.opens_settings());
         // The picker is the one row that runs against the pressed context:
         // a pick writes into its document.
         let context_actions: Vec<_> = ShortcutAction::ALL
@@ -611,13 +597,11 @@ mod tests {
             ShortcutAction::CycleCandidateDisplayMode.label_key(),
             StringKey::DesktopShortcutCycleCandidateDisplayMode
         );
-        assert!(!ShortcutAction::CycleCandidateDisplayMode.opens_settings());
         assert_eq!(ShortcutAction::ShowTelexGuide.raw(), "showTelexGuide");
         assert_eq!(
             ShortcutAction::ShowTelexGuide.label_key(),
             StringKey::DesktopShortcutShowTelexGuide
         );
-        assert!(!ShortcutAction::ShowTelexGuide.opens_settings());
     }
 
     #[test]

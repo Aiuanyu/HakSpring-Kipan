@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Authoritative source-bitmask and tier constants for the dictionary pipeline.
+"""Authoritative source-bitmask constants for the dictionary pipeline.
 
 CROSS-PLATFORM INVARIANT — drift here causes silent divergence in dictionary
-filtering and candidate ranking. When changing ANY constant, update this
-file AND every mirror listed below in the SAME PR (see
-rules/cross-platform-alignment.md §3a).
+filtering. When changing ANY constant, update this file AND every mirror
+listed below in the SAME PR (see rules/cross-platform-alignment.md §3a).
 
 `SOURCE_BITS` + `IS_VARIANT_BIT` (bit-layout owners):
   - engine/lexicon/src/dictionary_reader.rs (binary-reader filter mask)
   - engine/lexicon/src/dictionary_filters.rs `SOURCES` (bit -> wire code -> toggle;
     the per-row `TaigiWord.sources` every platform shows)
-
-`SOURCE_TIERS` + `DEFAULT_TIER_NUMERATOR` + `TIER_DENOMINATOR` (ranking owners):
-  - engine/ranking/src/score.rs (`tier_numerator` + `TIER_DENOMINATOR`)
 """
 
 from __future__ import annotations
@@ -91,15 +87,3 @@ def encode_kautian_subtag(
 ASSOC_SOURCE_COLUMNS: Final[list[str]] = list(SOURCE_BITS.keys())[:9]
 # Alias retained for the main-source merge pipeline (same 9 columns).
 MAIN_SOURCE_COLUMNS: Final[list[str]] = ASSOC_SOURCE_COLUMNS
-
-# Tier multipliers — MUST mirror CandidateProcessor on both platforms.
-# baseFreqScore = rawFrequency * tierNumerator(sourceBitmask) / TIER_DENOMINATOR
-# tierNumerator(bitmask) = first-match in the order below, else DEFAULT_TIER_NUMERATOR.
-SOURCE_TIERS: Final[list[tuple[str, int]]] = [
-    ("kautian", 15),
-    ("taigitv", 13),
-    ("stti",    12),
-    ("kungge",  11),
-]
-DEFAULT_TIER_NUMERATOR: Final[int] = 10
-TIER_DENOMINATOR: Final[int] = 10

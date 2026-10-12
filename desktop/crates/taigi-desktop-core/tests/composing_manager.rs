@@ -848,7 +848,7 @@ fn enter_on_a_fresh_bar_commits_the_typed_literal_in_either_mode() {
         rig.type_text("taigi");
         let candidates = rig.candidates();
         assert_eq!(candidates[0].display_text, "taigi", "swapped={swapped}");
-        assert!(candidates[0].is_roman_only(), "swapped={swapped}");
+        assert!(candidates[0].hanji.is_none(), "swapped={swapped}");
         assert!(
             candidates[1].hanji.is_some(),
             "the dictionary's first candidate is next — swapped={swapped}"
@@ -909,7 +909,7 @@ fn alternate_on_a_single_script_candidate_commits_nothing() {
     rig.type_text("tai");
     let candidates = rig.candidates();
     let literal = candidates[0].clone();
-    assert!(literal.is_roman_only());
+    assert!(literal.hanji.is_none());
     let (outcome, committed) = rig.commit(&literal, CandidateScript::Alternate);
     assert_eq!(outcome, CandidateCommitOutcome::Ignored);
     assert_eq!(committed, None);

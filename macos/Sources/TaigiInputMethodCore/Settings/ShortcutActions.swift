@@ -170,14 +170,6 @@ enum ShortcutAction: CaseIterable, Sendable {
         }
     }
 
-    /// Whether this action opens the settings window rather than doing
-    /// something to the composition in flight. The two need different
-    /// dispatch: a window is process-wide, while a switch has to reach the
-    /// session that owns the engine (`ShortcutHotkeys.perform`).
-    var opensSettings: Bool {
-        self == .openLastSettingsPane
-    }
-
     /// Whether this action's chord is matched by the key path instead of
     /// fired by a Carbon hotkey. A Carbon handler runs with no client and
     /// outside any key event, and the picker needs both: it writes what the

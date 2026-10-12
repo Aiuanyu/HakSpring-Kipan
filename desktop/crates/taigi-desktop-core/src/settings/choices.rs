@@ -307,7 +307,8 @@ impl CandidateFontSelection {
     pub const INSTALLED_RAW: &'static str = "installed";
 
     /// The bundled face this selection names, or `None` for any other kind.
-    pub fn built_in(self) -> Option<CandidateFontChoice> {
+    #[cfg(test)]
+    pub(crate) fn built_in(self) -> Option<CandidateFontChoice> {
         match self {
             Self::BuiltIn(choice) => Some(choice),
             Self::Custom(_) | Self::Installed(_) => None,

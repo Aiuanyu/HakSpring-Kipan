@@ -47,9 +47,6 @@ data class TaigiWord(
      * Adding a new feature → add a const here, do not sprinkle string literals.
      */
     object MetadataKeys {
-        /** `"true"` on the slot-0 composing-text cell. Routes tap to commit raw / pending input. */
-        const val IS_COMPOSING_TEXT = "isComposingText"
-
         /** `"true"` on Continuous-mode candidate cells (slots 1..n). Routes tap to commitContinuous. */
         const val IS_CONTINUOUS = "isContinuous"
 

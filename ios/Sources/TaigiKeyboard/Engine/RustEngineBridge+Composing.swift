@@ -470,7 +470,7 @@ public extension RustEngineBridge {
         logger.debug("[FFI->] fn=composingDispatch op=\(op) id=\(request.id) generation=\(generation)")
         guard let response = dispatch(bytes, op: op) else { return nil }
         guard response.error == .ok else {
-            recordFailure(op: op, message: "engine returned \(response.error)", code: Int32(response.error.rawValue))
+            recordFailure(op: op, message: "engine returned \(response.error)")
             return nil
         }
         guard case let .composing(payload) = response.payload else {

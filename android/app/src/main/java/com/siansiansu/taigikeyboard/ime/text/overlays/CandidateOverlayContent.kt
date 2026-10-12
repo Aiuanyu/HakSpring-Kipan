@@ -342,8 +342,7 @@ private fun CandidateCell(
 ) {
     val word = item.word
     // First candidate (engine ranker top, index 0) gets the filled keycap-color hint — mirrors
-    // the strip + iOS overlay. Keyed on the packer's originalIndex, not the dead isComposingText
-    // metadata (no producer since the v3.5.8 continuous redesign).
+    // the strip + iOS overlay. Keyed on the packer's originalIndex.
     val isFirstCandidate = item.originalIndex == 0
     val interaction = remember { MutableInteractionSource() }
     val isPressed by interaction.collectIsPressedAsState()

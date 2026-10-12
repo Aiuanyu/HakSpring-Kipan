@@ -17,21 +17,6 @@ extension ActionHandler {
     // MARK: - Suggestion Selection
 
     func handleSuggestionSelection(_ suggestion: AutocompleteSuggestion) {
-        // Raw input candidate: commit literal keystrokes directly (no tone conversion)
-        if suggestion.additionalInfo["isRawInput"] == "true" {
-            composingManager.commitComposition()
-            // The literal keystrokes go into the document, so the verdict is
-            // what the layout composes — romanization in TL/POJ, Bopomofo in
-            // TPS, which takes no spacing. The output mode does not enter into
-            // it: a raw commit writes the same string whichever script the
-            // candidates would have led with.
-            appendAutoSpaceIfEarned(
-                documentText: suggestion.text,
-                wroteRomanization: Self.rawPreeditWritesRomanization(isTPSLayout: isTPSLayout),
-            )
-            return
-        }
-
         // Continuous candidate (R5): the engine resolves what the pick writes
         // from the candidate's own scripts under the live settings, counts the
         // pick, and answers the auto-space verdict — so Continuous commits match

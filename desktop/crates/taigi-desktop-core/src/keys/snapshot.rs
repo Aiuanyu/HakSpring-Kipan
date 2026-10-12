@@ -147,7 +147,8 @@ impl KeyEventSnapshot {
     }
 
     /// Home or End.
-    pub fn line_edge(key: LineEdgeKey, modifiers: KeyModifiers) -> Self {
+    #[cfg(test)]
+    pub(crate) fn line_edge(key: LineEdgeKey, modifiers: KeyModifiers) -> Self {
         Self {
             modifiers,
             is_named_special_key: true,
@@ -157,7 +158,8 @@ impl KeyEventSnapshot {
     }
 
     /// A key the platform names that is not navigation (F5, Insert, …).
-    pub fn named_special(modifiers: KeyModifiers) -> Self {
+    #[cfg(test)]
+    pub(crate) fn named_special(modifiers: KeyModifiers) -> Self {
         Self {
             modifiers,
             is_named_special_key: true,

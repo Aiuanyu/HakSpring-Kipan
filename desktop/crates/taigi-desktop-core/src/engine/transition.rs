@@ -142,15 +142,6 @@ impl ContinuousCandidate {
         }
     }
 
-    /// A candidate with no hanji is romanization-only. (Its `display_text`
-    /// is normally `hanji.unwrap_or(roman)`, but the §34 literal may carry
-    /// the identity of a dictionary row it absorbed — engine
-    /// `adopt_collapsed_dict_identity` — so `hanji`, not `display_text`, is
-    /// the script test.)
-    pub fn is_roman_only(&self) -> bool {
-        self.hanji.is_none()
-    }
-
     /// The hanji with a producer's empty string treated as absent — a
     /// romanization-only candidate either way.
     pub fn nonempty_hanji(&self) -> Option<&str> {
@@ -350,13 +341,13 @@ mod tests {
             ..Default::default()
         };
         let candidate = ContinuousCandidate::decode(&message);
-        assert!(candidate.is_roman_only());
+        assert!(candidate.hanji.is_none());
         let with_hanji = ContinuousCandidate::decode(&CandidateMessage {
             hanji: Some(String::new()),
             ..message
         });
         assert!(
-            !with_hanji.is_roman_only(),
+            with_hanji.hanji.is_some(),
             "an empty hanji is present, not absent"
         );
     }

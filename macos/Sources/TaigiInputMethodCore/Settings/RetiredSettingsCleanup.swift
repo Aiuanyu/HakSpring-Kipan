@@ -21,12 +21,10 @@ enum RetiredSettingsCleanup {
     /// Declared with no `initial:`, or the construction below would seed the
     /// very chord this is here to clear.
     private static let retiredShortcutNames = [
-        KeyboardShortcuts.Name("toggleBothScripts"),
-        KeyboardShortcuts.Name("toggleLiteralRomanCandidate"),
         // Open Settings, retired 2026-08-24 when every pane got a row of its own:
         // a chord for "whichever pane was last used" is a second key for what
-        // General does. Unlike the two above this one shipped, so real installs
-        // hold ⌃⇧, — or whatever the user recorded over it.
+        // General does. It shipped, so real installs hold ⌃⇧, — or whatever
+        // the user recorded over it.
         //
         // The CONCEPT came back on 2026-08-25 as `openLastSettingsPane` on
         // ⌃⌘S, once the five pane chords below went and took the reason it was
@@ -71,14 +69,6 @@ enum RetiredSettingsCleanup {
     /// would inherit a value nobody chose for it. None are migrated — each
     /// described a choice this build no longer offers.
     private static let retiredDefaultsNames = [
-        // The first shape of the composing-key settings, which described what
-        // a key does rather than which key does a job (the composing roster).
-        // The shape they replaced never shipped in a release, so the only
-        // installs that can hold one are builds from main.
-        "returnKeyBehavior",
-        "spaceKeyBehavior",
-        "bracketPagingBehavior",
-        "tabCycleBehavior",
         // The Appearance pane's two retired rows — the reasoning for each lives on
         // its type, `CandidateAccentColor` and `CandidateWindowStyle`.
         "candidateAccentColor",
@@ -98,10 +88,9 @@ enum RetiredSettingsCleanup {
         // is always on, so a stored value (a `false` left by an older build or
         // a hand edit) is inert now.
         "associationRecordingEnabled",
-        // Annotate in Brackets and Frequency Records, retired 2026-09-30: neither
-        // toggle ever shipped in a release (both lived only in builds from
-        // main between 2026-08-16 and 2026-08-24), nothing reads the keys any
-        // more — the desktop never brackets, and the engine counts every pick
+        // Annotate in Brackets and Frequency Records, retired 2026-09-30: both
+        // toggles shipped in v3.6.5, and nothing reads the keys any more — the
+        // desktop never brackets, and the engine counts every pick
         // (`RecordUsage` tag 4 reserved). Mobile keeps its own Annotate in
         // Brackets key and UI.
         "outputBothScripts",
