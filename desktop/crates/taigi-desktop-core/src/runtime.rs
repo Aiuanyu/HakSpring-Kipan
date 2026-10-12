@@ -83,11 +83,6 @@ impl DesktopRuntime {
         }
     }
 
-    /// Whether key-path writes have a settings file to go to.
-    pub fn has_settings_store(&self) -> bool {
-        self.settings_store.is_some()
-    }
-
     /// Whether the engine keeps the user's data in this process.
     pub fn is_learning(&self) -> bool {
         self.data_directory.is_some()

@@ -95,7 +95,7 @@ original URLs.
 | `pipeline/run.py`                | Discover `sources/*/*/config.yaml`, run staged pipeline      |
 | `pipeline/context.py`            | `PipelineContext` threaded through every stage               |
 | `common/stages/*.py`             | Individual stage implementations (14 stages total)           |
-| `common/source_bits.py`          | Authoritative SOURCE_BITS / SOURCE_TIERS / column orders     |
+| `common/source_bits.py`          | Authoritative SOURCE_BITS / column orders                    |
 | `build/merge_csv.py`             | Merge 9 per-source CSVs + khiin/dev/lkk supplements          |
 | `build/dictionary_records.py`    | Shared loader — CSV → filtered records with rowids 1..N      |
 | `build/associations.py`          | Shared bigram + char-to-phrase generator from dictionary.csv |
@@ -145,9 +145,9 @@ To inspect a previous release's full dictionary directly:
   once no test read it any more.
 - **Binary format reference**: `../docs/engine/binary-format.md` documents
   `dictionary.bin` / `association.bin` on-disk layout.
-- **Cross-platform invariant**: `SOURCE_BITS` + `SOURCE_TIERS` + tier
-  denominator in `common/source_bits.py` must mirror the engine —
-  `engine/lexicon/src/dictionary_filters.rs` (`SOURCES` / `source_codes`,
-  the bit → source-code decode every platform reads) and
-  `engine/ranking/src/score.rs::source_tier_rank`.
+- **Cross-platform invariant**: `SOURCE_BITS` in `common/source_bits.py`
+  must mirror the engine — `engine/lexicon/src/dictionary_filters.rs`
+  (`SOURCES` / `source_codes`, the bit → source-code decode every platform
+  reads). Source ranking lives only in the engine
+  (`engine/ranking/src/score.rs::source_tier_rank`).
   `docs/contributing/cross-platform-alignment.md` §3a governs drift.

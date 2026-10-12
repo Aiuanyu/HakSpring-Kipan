@@ -144,16 +144,8 @@ impl ComposingKeyChord {
     }
 
     /// The chord this event would record, or why it cannot be recorded.
-    ///
-    /// A shifted number-row key is refused as the digit it is: Shift alone
-    /// does not make a chord out of a typing key (`make`), and Shift+3 is the
-    /// `3` key even though a US layout types `#` for it. Read off the key
-    /// code, because that is the one thing Shift does not rewrite — and it is
-    /// what keeps this path and the settings-file path (`translate_raw`,
-    /// which is handed the unmodified `3`) refusing the same press. Every
-    /// other shifted key records as the character it types, which is what its
-    /// stored chords already hold.
-    pub fn make_from_event(
+    #[cfg(test)]
+    fn make_from_event(
         event: &KeyEventSnapshot,
         platform: DesktopPlatform,
     ) -> Result<Self, ChordRejection> {
@@ -168,6 +160,15 @@ impl ComposingKeyChord {
     /// `make` with the key code beside the characters — the one question the
     /// recorder (`RecordedPress`) and a live event both have to ask, so the
     /// shifted number row is refused on both.
+    ///
+    /// A shifted number-row key is refused as the digit it is: Shift alone
+    /// does not make a chord out of a typing key (`make`), and Shift+3 is the
+    /// `3` key even though a US layout types `#` for it. Read off the key
+    /// code, because that is the one thing Shift does not rewrite — and it is
+    /// what keeps this path and the settings-file path (`translate_raw`,
+    /// which is handed the unmodified `3`) refusing the same press. Every
+    /// other shifted key records as the character it types, which is what its
+    /// stored chords already hold.
     pub fn make_from_press(
         key: Option<&str>,
         modifiers: KeyModifiers,

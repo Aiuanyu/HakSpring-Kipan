@@ -12,15 +12,14 @@ import com.siansiansu.taigikeyboard.ime.core.logging.LoggerBackend
 import com.siansiansu.taigikeyboard.ime.core.logging.NullLoggerBackend
 import com.siansiansu.taigikeyboard.ime.dictionary.DictionarySource
 import com.siansiansu.taigikeyboard.ime.settings.EngineSettings
-import java.util.ArrayDeque
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Thin Kotlin wrapper around the Rust shared-core FFI exposed by
  * `engine/android-jni/src/lib.rs`.
  *
- * This object owns the JNI seam, [dispatch], the logger / diagnostics
- * state and every nested DTO type (`AppConfig` is built in `EngineAppConfig.kt`). The per-slice
+ * This object owns the JNI seam, [dispatch], the logger state and every
+ * nested DTO type (`AppConfig` is built in `EngineAppConfig.kt`). The per-slice
  * ops are extension functions on it, one file per slice (mirrors iOS
  * `RustEngineBridge+<Slice>.swift`):
  * - `PhoneticsBridge.kt` — phonetics core + TPS
@@ -41,10 +40,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * mandatory parameter — no `PojMarkerOptions(true, true, true)` silent default.
  *
  * Per Codex v2 §8 + v3 §7 + v4 §5: error visibility is hardened. Failures
- * increment a counter and append a structured [DiagnosticsEntry] to a
- * 32-entry bounded queue (synchronized). DEBUG additionally surfaces the
- * failure via `installedBackend.e` for logcat traceability — NEVER throws
- * (would kill IME mid-keystroke).
+ * are logged at warn and error level for logcat traceability — NEVER
+ * throws (would kill IME mid-keystroke).
  */
 object RustEngineBridge {
     init {
@@ -534,46 +531,6 @@ object RustEngineBridge {
     )
 
     // endregion
-    // region Diagnostics (Codex v2 §8 / v3 §7 / v4 §5)
-
-    data class DiagnosticsEntry(
-        val timestampMs: Long,
-        val op: String,
-        val errorCode: Int,
-        val message: String,
-    )
-
-    /**
-     * Read-only snapshot of in-memory failure tracking. For debug menu
-     * + test inspection. Counter increments on every fallback path
-     * (encode error, dispatch returned non-OK, missing result variant).
-     * Recent entries capped at 32 to bound memory. NEVER throws.
-     */
-    @JvmStatic
-    fun diagnostics(): DiagnosticsSnapshot {
-        synchronized(diagnosticsLock) {
-            return DiagnosticsSnapshot(
-                failureCount = failureCounter.get(),
-                recentErrors = recentErrors.toList(),
-            )
-        }
-    }
-
-    /** Test-only: clears counters so independent test cases don't bleed. */
-    @JvmStatic
-    fun resetDiagnosticsForTesting() {
-        synchronized(diagnosticsLock) {
-            failureCounter.set(0)
-            recentErrors.clear()
-        }
-    }
-
-    data class DiagnosticsSnapshot(
-        val failureCount: Int,
-        val recentErrors: List<DiagnosticsEntry>,
-    )
-
-    // endregion
     // region Test seam
 
     /** Sends arbitrary bytes for T4 / T5 / T7' tests. Returns null on parse failure. */
@@ -632,7 +589,7 @@ object RustEngineBridge {
             return null
         }
         if (response.error != ErrorCode.OK) {
-            recordFailure(op, "engine returned ${response.error}", response.error.number)
+            recordFailure(op, "engine returned ${response.error}")
             return null
         }
         return response
@@ -669,34 +626,20 @@ object RustEngineBridge {
     }
 
     // endregion
-    // region Diagnostics (shared by sibling bridges)
+    // region Failure log (shared by sibling bridges)
 
-    private val diagnosticsLock = Any()
-    private val failureCounter = AtomicInteger(0)
-    private val recentErrors = ArrayDeque<DiagnosticsEntry>(RECENT_ERRORS_CAP)
+    private val failureLogLock = Any()
 
     /**
-     * Records an FFI failure into the bounded diagnostics queue + emits
-     * a warn-level log. `internal` so sibling impl objects route their
-     * own failures through the same counter.
+     * Logs an FFI failure at warn level. `internal` so sibling impl
+     * objects route their own failures through the same sink; the lock
+     * keeps each failure's warn / error pair adjacent in logcat.
      */
     internal fun recordFailure(
         op: String,
         message: String,
-        code: Int = -1,
     ) {
-        synchronized(diagnosticsLock) {
-            failureCounter.incrementAndGet()
-            val entry = DiagnosticsEntry(
-                timestampMs = System.currentTimeMillis(),
-                op = op,
-                errorCode = code,
-                message = message,
-            )
-            if (recentErrors.size >= RECENT_ERRORS_CAP) {
-                recentErrors.removeFirst()
-            }
-            recentErrors.addLast(entry)
+        synchronized(failureLogLock) {
             installedBackend.w("RustEngineBridge", "[$op] $message")
             // Codex v3 §7 / v4 §5: also surface as error severity for logcat
             // traceability. The facade is itself DEBUG-gated (release builds
@@ -711,7 +654,6 @@ object RustEngineBridge {
     private const val LEVEL_WARN = 1
     private const val LEVEL_INFO = 2
     private const val LEVEL_DEBUG = 3
-    private const val RECENT_ERRORS_CAP = 32
 
     // endregion
 }

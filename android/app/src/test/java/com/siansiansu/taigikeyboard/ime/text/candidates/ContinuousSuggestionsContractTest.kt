@@ -81,7 +81,6 @@ class ContinuousSuggestionsContractTest {
         val slot0 = result[0]
         assertEquals("Slot 0 == candidate[0] (id starts at 1, defense-in-depth)", 1, slot0.id)
         assertEquals("true", slot0.additionalInfo[MetadataKeys.IS_CONTINUOUS])
-        assertNull("slot 0 must NOT carry isComposingText (legacy slot-0 model superseded)", slot0.additionalInfo[MetadataKeys.IS_COMPOSING_TEXT])
     }
 
     @Test

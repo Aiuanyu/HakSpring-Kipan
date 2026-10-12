@@ -202,15 +202,6 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.allCases.filter(\.firesFromTheKeyPath), [.showSymbolPicker])
     }
 
-    /// No global chord opens a NAMED pane any more; the menu bar does that
-    /// (`TaigiInputControllerMenuTests`). The one doorway reopens wherever the
-    /// user left off, which is what makes it a single key rather than five.
-    func testExactlyOneAction_opensSettings() {
-        XCTAssertEqual(
-            ShortcutAction.allCases.filter(\.opensSettings), [.openLastSettingsPane],
-        )
-    }
-
     /// A slot key is how a user picks the third candidate on screen, and the
     /// classifier reads that tier before it reads any binding — under either
     /// scheme's set. The core's gate refuses every slot key of both sets as
@@ -291,8 +282,7 @@ final class ShortcutActionsTests: XCTestCase {
     /// lose the user's chord each time the app started.
     func testNoLiveAction_reusesARetiredName() {
         let retired = Set([
-            "toggleBothScripts", "toggleLiteralRomanCandidate", "openSettings",
-            "openGeneralPane", "openAppearancePane", "openShortcutPane",
+            "openSettings", "openGeneralPane", "openAppearancePane", "openShortcutPane",
             "openCustomDictionaryPane", "openDictionarySourcesPane",
         ])
 

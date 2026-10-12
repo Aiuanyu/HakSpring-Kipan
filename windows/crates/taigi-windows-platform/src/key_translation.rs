@@ -267,7 +267,7 @@ pub fn snapshot(
 ///
 /// Shift stays: a chord is stored on the key's unshifted character, and the
 /// recorder refuses a shifted number-row key as the digit it is
-/// (`ComposingKeyChord::make_from_event`).
+/// (`ComposingKeyChord::make_from_press`).
 /// The glyph an AltGr layout would have typed is still in `characters`,
 /// which is read from the live state.
 fn unmodified_state(state: [u8; 256]) -> [u8; 256] {

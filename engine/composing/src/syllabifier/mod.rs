@@ -59,7 +59,7 @@ pub(crate) fn valid_span_endings_lowered_with_barriers(
 ) -> Vec<usize> {
     match mode {
         InputMode::Tps => {
-            tps::valid_span_endings_lowered(lowered, pos, inv, mode, max_syllables, barriers)
+            tps::valid_span_endings_lowered(lowered, pos, inv, max_syllables, barriers)
         }
         InputMode::Tl | InputMode::Poj | InputMode::English => {
             let barriers = if typed_hyphen_is_boundary(mode) {

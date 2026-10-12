@@ -6,6 +6,6 @@ released by the MoE and scraped as JSON. The filename
 
 Pipeline is the same shape as `taigitv`: `extract → cleanup → frequency
 → poj → numtone → notone → abbrev → source → variants`. Small row count
-so tier weighting matters — see `common/source_bits.py` `SOURCE_TIERS`.
+so tier weighting matters — see `engine/ranking/src/score.rs::source_tier_rank`.
 
 See `../../../docs/SOURCES.md` for provenance and licence.

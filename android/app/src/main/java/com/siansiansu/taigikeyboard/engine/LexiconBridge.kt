@@ -26,7 +26,7 @@ import com.siansiansu.taigikeyboard.engine.proto.TaigiWord as ProtoTaigiWord
 /**
  * Install (or atomically reinstall) the lexicon engine state. Called
  * from `AppInitializer` after `copyAssetsIfNeeded` finishes; idempotent.
- * Returns `null` on failure (logged via `RustEngineBridge.diagnostics()`).
+ * Returns `null` on failure (logged via `RustEngineBridge.recordFailure`).
  *
  * @param syllableInventoryPath Absolute path to v3.5.8 Phase 2
  *   `syllables.fst` (TL syllable inventory FST). Empty string =
