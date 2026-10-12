@@ -1,5 +1,9 @@
 import Foundation
 
+// MARK: - Shared-Core Candidate
+
+// Pure logic, Foundation-only. Eligible for cross-platform extraction.
+
 /// Search result with source information for dictionary search (Manage Dictionaries page).
 struct DictionarySearchResult {
     /// Sentinel id for results synthesised from the user's custom dictionary.

@@ -12,7 +12,7 @@ package com.siansiansu.taigikeyboard.ime.core
  *
  * Maps 1:1 to Rust's `enum Result<T, E> { Ok(T), Err(E) }`. Used instead of
  * Java `Throwable` propagation so shared-core candidate files never depend
- * on JVM exception types (`docs/contributing/android-guidelines.md` §10).
+ * on JVM exception types (`docs/contributing/cross-platform-alignment.md` §1c).
  *
  * Consumers destructure via `when` — no extension helpers are defined
  * here because shared-core candidate files forbid `inline` and

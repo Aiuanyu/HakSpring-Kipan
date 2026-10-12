@@ -44,7 +44,7 @@ enum CandidateCellScript {
 /// to Hanji with Romanization and the layout is not TPS (TPS is hanji-first by construction and
 /// ignores the picker). Read per fetch, never snapshotted, so a settings change
 /// takes effect on the next keystroke.
-// CROSS-PLATFORM INVARIANT — mirrors android/.../composing/TaigiAutocompleteService.kt
+// CROSS-PLATFORM INVARIANT — mirrors android/.../candidates/TaigiAutocompleteService.kt
 // `shouldSplitCombinedCells`. Drift causes silent divergence (one platform still
 // splitting under TPS, or not splitting under Hanji with Romanization).
 func shouldSplitCombinedCells(
@@ -63,7 +63,7 @@ func shouldSplitCombinedCells(
 /// it from an earlier cell reading the same (USER 2026-09-03: "the same Hanji or
 /// romanization must not appear twice"). The Continuous and NextWord builders differ only in
 /// the three projections.
-// CROSS-PLATFORM INVARIANT — mirrors android/.../composing/TaigiAutocompleteService.kt splitIntoSingleScriptCells
+// CROSS-PLATFORM INVARIANT — mirrors android/.../candidates/TaigiAutocompleteService.kt splitIntoSingleScriptCells
 // and the desktop PresentedCandidate split. Drift causes silent divergence (cell order or dedupe survivor differs on one platform).
 func splitIntoSingleScriptCells<T>(
     _ items: [T],

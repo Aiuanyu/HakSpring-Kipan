@@ -478,7 +478,7 @@ class TextInputManager(
     ) {
         // A host "no composing region" report (`-1/-1`) must not re-insert
         // stale preedit at the new cursor (`composing-state-boundary.md`
-        // §11.10 divergence #3; `INVARIANT_composing_external_region_clear_
+        // §11.10; `INVARIANT_composing_external_region_clear_
         // discards_state`), but it may also be older than our own last write
         // — the manager reconciles against the host before discarding.
         composingManager?.onHostSelectionUpdate(candidatesStart, candidatesEnd, taigikeyboard.currentInputConnection)

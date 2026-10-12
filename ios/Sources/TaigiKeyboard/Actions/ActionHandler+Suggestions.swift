@@ -206,7 +206,7 @@ extension ActionHandler {
     /// wrote romanization, and the committed DOCUMENT string does not end in a
     /// hyphen continuation (a mid-word hyphen keeps composing). The caller still
     /// owns the final-commit gate on the Continuous path.
-    // CROSS-PLATFORM INVARIANT — mirrors android/.../smartbar/CandidateClickHandler.kt
+    // CROSS-PLATFORM INVARIANT — mirrors android/.../candidates/CandidateClickHandler.kt
     // `shouldAppendAutoSpace`. Drift causes silent divergence (one platform spacing
     // after a hyphen continuation).
     static func shouldAppendAutoSpace(
@@ -236,7 +236,7 @@ extension ActionHandler {
         // `additionalInfo["hanzi"]` carries hanji even for hanji-only predictions
         // (Case B) where `subtitle == nil`; the canonical-TL reading rides
         // `additionalInfo["canonicalTl"]` (see `handleSuggestionSelection`).
-        // Mirror: android/.../smartbar/NextWordController.kt:355-363 (TaigiWord.roman).
+        // Mirror: android/.../nextword/NextWordController.kt `predictionWord` (TaigiWord.roman).
         // Swapped/TPS Case B (hanji-only, no roman): `subtitle == nil` after
         // `suggestionToHandle` (swap gate requires non-empty subtitle). Fall
         // back to `""` so bracket-mode output stays `"Hanji ()"` — matches the

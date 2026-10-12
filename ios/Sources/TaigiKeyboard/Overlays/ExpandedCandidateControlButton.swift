@@ -18,7 +18,7 @@ struct ExpandedCandidateControlButton: View {
                 .foregroundColor(theme.primaryTextColor)
                 .frame(width: 45, height: 45, alignment: .center)
                 // Themed pressed tint (matches the pressed candidate cells), else the neutral gray.
-                // CROSS-PLATFORM INVARIANT — mirrors android .../smartbar/CandidateOverlayContent.kt buttonPressed.
+                // CROSS-PLATFORM INVARIANT — mirrors android .../overlays/CandidateOverlayContent.kt buttonPressed.
                 .background(isPressed ? theme.pressedCandidateColor ?? Color.gray.opacity(0.3) : Color.clear)
                 .scaleEffect(isPressed ? 0.95 : 1.0)
                 .contentShape(Rectangle())

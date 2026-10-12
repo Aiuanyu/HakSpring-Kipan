@@ -78,8 +78,8 @@ class LoggerBackendNeutralityTest {
 
     /**
      * Candidate files that accept a [LoggerBackend] parameter MUST default
-     * it to [NullLoggerBackend]. The default-to-null pattern is what
-     * `docs/contributing/android-guidelines.md` §1.6 requires so shared-core call
+     * it to [NullLoggerBackend] (logging rule: `docs/contributing/android-guidelines.md`
+     * §1; this test is where the default is pinned) so shared-core call
      * paths that don't wire logging stay silent rather than depending on
      * a platform-specific backend.
      */
