@@ -355,7 +355,7 @@ This section is pointer-only — the substantive contract lives in iOS §§1–3
 
 - iOS readers / writers: §§1–6 above.
 - Cross-platform invariants the delivery mechanism must preserve: §Update / delivery items 1–4. Android additions in §7.2 (stamp cohesion) and §7.4 (DataStore out-of-scope reminder).
-- Shared-core marker convention + Android deviations: `docs/architecture/ios-exemplar.md` §5.2, §9 (I/O wrappers are excluded from the candidate roster).
+- Shared-core marker criteria: `docs/contributing/cross-platform-alignment.md` §1c (I/O wrappers are excluded from the candidate roster).
 
 ---
 

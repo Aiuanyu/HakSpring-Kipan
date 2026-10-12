@@ -45,7 +45,7 @@
 | `architecture/build-artifacts.md` | What is committed (`assets/dictionaries/`, `assets/fonts/font/`) vs generated (`make build`), why, measured timings, release-rebuild rule | Active |
 | `architecture/pr-number-migration.md` | Resolving pre-2026-09-07 `#NNN` PR numbers (archive repository, numbering restarted at #1) | Reference |
 | `architecture/composing-state-boundary.md` | Composing engine ↔ platform binding contract (§2.2 Effect table, ordering, §11 Android `InputConnection` binding); section numbers frozen | Reference |
-| `architecture/nextword-engine-boundary.md` | NextWord engine ↔ platform binding contract (generation, decay, timer, §13 Android binding); section numbers frozen | Reference |
+| `architecture/nextword-engine-boundary.md` | NextWord engine ↔ platform binding contract (effects, generation, timer, §13 Android binding); section numbers frozen | Reference |
 | `architecture/keyboard-body-invariants-android.md` | Android Compose keyboard-body geometry / touch-target invariants (refactor-freeze contract) | Active |
 | `architecture/data-artifacts-portability.md` | Binary artifacts + SQLite portability contract (iOS / Android §1–7, macOS / Windows stores §8, decision register) | Active |
 | `architecture/macos-roadmap.md` | macOS desktop IME (InputMethodKit over the shared engine) — design decisions D1–D11 incl. candidate-window port, PR table; shipped desktop v3.6.7/v3.6.8 | Reference |
@@ -67,7 +67,6 @@
 | `architecture/e2e-trace-schema.md` | Test-build-only JSONL trace contract — how it stays out of release, `trace_open` / `engine_request` / `engine_panic` / `adapter_reject` events | Reference |
 | `architecture/linux-release.md` | The Linux half of a desktop release: the `.deb` / `.rpm` / Arch packages (both shells, dictionaries, settings window), how `make -C linux deb` and `linux-build.yml` build and attach them, no in-app update | Reference |
 | `architecture/windows-release.md` | Windows installer (Inno Setup), Authenticode signing, and web-distributed installer workflow | Active |
-| `architecture/ios-exemplar.md` | Cross-platform architectural pattern (layers, DI, live-read settings, markers) + §9 Android deviations | Reference |
 
 ### `ui/` — Presentation & Layout (7)
 

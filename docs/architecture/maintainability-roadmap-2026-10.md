@@ -61,7 +61,7 @@ Active PR pointer: none (next: A2 on a new branch).
 | C, D | `AGENTS.md` § Design principles (shared logic lives in the engine; no redundant fallback); `rust-ffi-safety.md` §2 (domain façade owns the op); `planning.md` § No redundant fallback |
 | E | `rust-ffi-safety.md` §2 (dispatch = routing + cross-domain feed); `rust-best-practices.md` §1 / §1a (one crate per concern, one-way edges); `rust-migration-policy.md` §1.3–1.4 (file name = role, one concern per file) |
 | F | `rust-best-practices.md` §1 (desktop-core owns shared desktop behaviour); `windows-guidelines.md` / `linux-guidelines.md` (shells = OS calls) |
-| G | `ios-architecture.md` §1–2 (layer imports, constructor injection); `ios-exemplar.md` §1 / §5.1 / §8 / §9.5 (IME scope ≠ app scope, per-slice bridge files, view → view model) |
+| G | `ios-architecture.md` §1–3 (layers, Engine-layer imports, settings injection); `android-guidelines.md` §3 (IME scope ≠ app scope); `cross-platform-alignment.md` §2 (per-domain bridge files, where each concept lives) |
 
 | Mainstream practice | Source | This plan |
 |---|---|---|

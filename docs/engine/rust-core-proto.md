@@ -93,18 +93,10 @@ message Response {
 
 ---
 
-## 5. Generation counter — platform-owned, FFI carries it through
+## 5. Generations — two counters, two owners
 
-Authoritative ownership of `currentGeneration` lives in the **platform engine executor**, not in Rust. The contract is specified in `docs/architecture/nextword-engine-boundary.md` §2 (executor owns the counter, supplies it per intent) and §3 (only state transitions that invalidate pending prediction queries bump it).
-
-For the first-slice proto, `generation` is purely an **FFI correlation / stale-response field**:
-
-- Platform supplies the current generation in `Request.generation`.
-- Rust does not echo it: `Response.generation` (tag 3) was removed 2026-10-09 (round A1b) — no platform read it back; the e2e trace logs the decoded request's value (`docs/architecture/e2e-trace-schema.md`).
-- **Phonetics slice** does not consult or mutate `generation` — it is stateless.
-- **Composing slice** carries it through transitions but does not bump it. Bumping is a NextWord concern (platform side).
-
-This lifts the existing platform-side mechanism (iOS G5-impl + Android A5-impl, see `docs/architecture/nextword-engine-boundary.md` §2.4, §3) onto the wire so platform and Rust agree on the protocol shape. Whether NextWord generation ownership migrates into Rust is a separate decision.
+- **Envelope generation** (`Request.generation`) — platform-owned, one value per input context; the platform bumps it when the editor session changes (`ComposingManager.bumpGeneration`; next word: iOS `NextWordController.bumpEnvelopeGeneration`, Android `NextWordController.resetContext`). Rust never echoes it (`Response.generation`, tag 3, removed 2026-10-09, round A1b; the e2e trace logs the request's value, `docs/architecture/e2e-trace-schema.md`). A mutating composing / next-word request whose generation differs from the last one silently resets that engine's state before applying (no effects from the reset, `engine/composing/src/handle.rs`); a read-only query (`FetchAtPos`) at a stale generation answers the idle snapshot. Phonetics is stateless and ignores it.
+- **NextWord query generation** (`current_generation`) — engine-owned (`engine/nextword`); every invalidating intent bumps it, it travels on `QueryPredictions` / `ClearPredictionsUI`, and `FilterPredictions` answers `was_stale` when the query's generation no longer matches (`docs/architecture/nextword-engine-boundary.md` §3).
 
 ---
 
@@ -113,7 +105,7 @@ This lifts the existing platform-side mechanism (iOS G5-impl + Android A5-impl, 
 - Every stateful `Request` carries `AppConfig config_snapshot` (current settings as of that call).
 - Rust reads `request.config_snapshot` for **that call only**. Engine state never stores a settings struct across calls.
 - Enforces `docs/architecture/behavioral-invariants.md:295-299` (§11 settings live-read invariant) at the FFI level.
-- Mirrors `EngineSettings` live-read on iOS (`docs/architecture/ios-exemplar.md` §3) and Android (`docs/architecture/ios-exemplar.md` §9.2).
+- Mirrors `EngineSettings` live-read on iOS (`docs/contributing/ios-architecture.md` §3) and Android (`docs/contributing/android-guidelines.md` §6).
 
 A khiin-rs-style `CMD_SET_CONFIG` (`references/khiin-rs/khiin/src/engine.rs:296`) does not exist here; if one is ever added as an OPTIONAL platform warmup / compat command, it MUST NOT replace the per-request snapshot — the per-request snapshot is the authoritative source for every operation.
 
@@ -339,6 +331,6 @@ message CaseResponse {
 - `references/khiin-rs/khiin/src/engine.rs:57` — `send_command_bytes` shape
 - `references/khiin-rs/README.md:140-152` — protobuf rationale + request-id correlation
 - `docs/architecture/behavioral-invariants.md:295-309` (§11 settings live-read)
-- `docs/architecture/nextword-engine-boundary.md` §2, §2.4, §3 — generation counter ownership
-- `docs/architecture/composing-state-boundary.md` §11.10 — Android `Effect` divergences
+- `docs/architecture/nextword-engine-boundary.md` §3 — query generation
+- `docs/architecture/composing-state-boundary.md` §11.10 — Android host-cleared composing region
 - `engine/protos/proto/composing.proto` — `select_candidate` (tag 17) reserved; the op committed platform-resolved text and was removed 2026-10-09 (round A1a) (historical: iOS `ComposingState.swift:47-49` `selectCandidate(String)`, file deleted)
