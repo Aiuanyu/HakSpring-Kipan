@@ -739,6 +739,7 @@ internal fun lastGraphemeLength(text: String): Int {
  * The last user-perceived character of [text], whole — a supplementary-plane
  * Hanji like 𣍐 (a surrogate pair) is never split; "" when [text] is empty.
  * CROSS-PLATFORM INVARIANT — mirrors Swift `String.last` in iOS
- * `NextWordService.bundledLookupKey(for:)`. Drift causes silent divergence.
+ * `ActionHandler+KeyActions.swift` backspace re-predict (`trimmedText.last`).
+ * Drift causes silent divergence.
  */
 internal fun lastGrapheme(text: String): String = text.takeLast(lastGraphemeLength(text))
