@@ -34,8 +34,7 @@ That check is what proves the iOS `MARKETING_VERSION` carries the same number,
 so a half-applied bump stops here instead of shipping. The skill must not edit
 the user-owned iOS `.pbxproj`: when the two disagree, hand the user the one
 command that sets both — `make version-mobile <target without the v>` — and
-continue after they run it. The desktop train is numbered separately and is not
-this skill's concern.
+continue after they run it.
 
 Derive the release base unless one was passed:
 
@@ -129,7 +128,7 @@ Canonical store-note rules:
 - End each entry with punctuation.
 - Include only concrete user-visible changes.
 - Exclude refactors, tests, tooling, dependencies, issue/PR numbers, URLs, rankings, marketing claims, and future work.
-- Do not mention another platform in platform-specific notes: no Android in `ios.txt`, no App Store in `android.txt`, and no macOS in either. `validate_notes` rejects all three.
+- Do not mention another platform in platform-specific notes: no Android in `ios.txt`, no App Store in `android.txt`, and no macOS / Mac in either. `validate_notes` rejects all three.
 - Keep rendered bullets and newlines within 500 Unicode characters.
 
 ## 5. Validate and render
@@ -153,8 +152,7 @@ Passing deterministic validation does not replace the user's factual review.
 ## 6. Commit, tag, and hand off
 
 Commit and push `main`, then tag the release commit and push the tag. The tag
-name is `mobile-<version>` without the `v` (`v3.6.8` → `mobile-3.6.8`); the
-pre-2026-09 mobile tags are the bare `v<version>` form and stay as they are.
+name is `mobile-<version>` without the `v` (`v3.6.8` → `mobile-3.6.8`).
 
 ```bash
 git add -A
@@ -179,11 +177,7 @@ The user pastes iOS text into App Store Connect and Android text into the chosen
 
 macOS, Windows and Linux are the **desktop train**: one version number shared by the three, moved by `make version-desktop x.y.z`, independent of the mobile number this skill prepares. It has its own skill (`release-desktop`), its own record (`changelog/desktop-v<version>.md`), and its own publish scripts. This skill never writes that file, runs those scripts, or publishes anything for desktop.
 
-What that means while preparing a mobile release:
-
-- Keep macOS, Windows and Linux out of `changelog/mobile-<target>.md` entirely: that file is the mobile record, and a desktop change in it describes work its readers cannot install. Desktop work waits for its own `changelog/desktop-v<version>.md`.
-- Keep macOS out of `ios.txt` and `android.txt`. `validate_notes` forbids the whole words `macOS` and `Mac` in both, so a leak fails `check` rather than reaching a store listing.
-- `check-versions --train mobile` verifies iOS + Android only. A macOS, Windows or Linux version that differs from `<target>` is expected, not a finding.
+`check-versions --train mobile` verifies iOS + Android only. A macOS, Windows or Linux version that differs from `<target>` is expected, not a finding.
 
 ## Guardrails
 

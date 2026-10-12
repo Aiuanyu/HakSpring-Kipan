@@ -10,7 +10,7 @@ Answer one question: **which dependencies can move today, what does each move co
 
 Output is a report; the maintainer decides which upgrade rounds open. Never write "deferred", "post-vX" or "known limitation".
 
-**Read-only.** Only dry-run / query commands. Never run `cargo update` without `--dry-run`, `mise upgrade`, `uv lock`, or edit any manifest. `ios/TaigiKeyboard.xcodeproj/**` (incl. its `Package.resolved`) is USER-only — report, never touch.
+Dry-run / query commands only: `cargo update` always with `--dry-run`; no `mise upgrade`, no `uv lock`, no manifest edits. `ios/TaigiKeyboard.xcodeproj/**` (incl. its `Package.resolved`) is USER-only — report it.
 
 ## Classification
 
@@ -39,7 +39,7 @@ Grep for new pins too, manifests only (source and test comments say "pinned" con
 
 ## 2. Scope → procedure
 
-Run independent ecosystems in parallel (one message, several Bash calls). Network is required.
+Run independent ecosystems in parallel. Network is required.
 
 ### rust
 
@@ -90,7 +90,7 @@ Each tracked `Cargo.lock` is its own workspace: `git ls-files '*Cargo.lock'` (en
 
 - Changelog / release notes link or quoted breaking line — never from model memory.
 - Call sites of the changed API (`file:line`, LSP references preferred over grep).
-- Build cost: which stale-artifact gate the bump triggers (`AGENTS.md` § Build & Test: `engine/` → `make build`, `dictionary/` → `make dict` + `make build`) and which platforms' post-PR verification it needs.
+- Build cost: which `AGENTS.md` stale-artifact gate the bump triggers and which platforms' post-PR verification it needs.
 
 ## 4. Report
 

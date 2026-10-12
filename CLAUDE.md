@@ -1,6 +1,5 @@
 @AGENTS.md
 @docs/contributing/known-pitfalls.md
-@docs/contributing/doc-lookup.md
 
 # Claude Code
 

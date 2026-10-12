@@ -11,13 +11,13 @@ Answer one question: **can a user on `<base-ref>` upgrade to `<target-ref>` with
 Run from `main`. User supplies `<base-ref> [<target-ref>]`.
 Example: `/upgrade-check v3.6.2 v3.6.3` · `/upgrade-check v3.6.2` (target = HEAD).
 
-**Read-only.** This skill greps two refs and reports; it does not build, edit files, or commit, so it is safe on a dirty tree.
+It only reads two refs, so it is safe on a dirty tree.
 
 ## What this checks (and what it does NOT)
 
 This is a **persistence + upgrade-mechanics** audit. In scope: anything that travels across an app update on the user's device — SQLite user-data, `.taigi` backups, settings storage, manifest permissions, bundled-asset references, store version gates.
 
-**Out of scope** (use dogfood / tests / `/code-review` instead): functional regressions, input-correctness, ranking quality, UI glitches. A clean upgrade-check does NOT mean the new version behaves correctly — only that the old user's data and install survive the jump.
+**Out of scope** (use dogfood / tests / `/code-review` instead): functional regressions, input-correctness, ranking quality, UI glitches. A clean upgrade-check means only that the old user's data and install survive the jump.
 
 ## Classification
 
@@ -31,7 +31,7 @@ A BLOCKING finding fails the check. BEHAVIOR-CHANGE findings must each map to a 
 
 ## Procedure
 
-Read each file at both refs with `git show <ref>:<path>`; for code that may move, `git diff <base>..<target> -- <path>`. Trace, don't assume — quote `file:line` + old→new value for every finding.
+Read each file at both refs with `git show <ref>:<path>`; for code that may move, `git diff <base>..<target> -- <path>`.
 
 ### 1. SQLite user-data schema versions
 
@@ -47,9 +47,9 @@ These four DBs persist on-device and migrate forward via `PRAGMA user_version`. 
 For each: compare the constant at `<base>` vs `<target>`. The engine takes over a file a platform's older build wrote and never lowers that platform's stamp (U7 / U8); `engine/userdata/tests/takeover.rs` holds a fixture for every released shape on every platform.
 
 - **Unchanged** → no migration runs on upgrade. SAFE.
-- **Bumped** → a migration MUST exist and be:
+- **Bumped** → a migration must exist and be:
   - **forward-only + idempotent** — the engine's shape-detecting migrators (`engine/userdata`) run inside one transaction, so a half-migrated DB re-runs clean.
-  - **non-destructive** — verify it does not `DROP`/recreate a table that holds user rows without backfill (a full-rebuild branch is acceptable ONLY for pre-feature shapes that had no user data of that shape — confirm against the migration body).
+  - **non-destructive** — verify it does not `DROP`/recreate a table that holds user rows without backfill (a full-rebuild branch is acceptable only for pre-feature shapes that had no user data of that shape — confirm against the migration body).
   - **every released shape still taken over** — `takeover.rs` green; a shape the bump cannot read is a data loss.
   - Bumped with no migration body, or a destructive one → **BLOCKING**.
 
@@ -58,15 +58,15 @@ For each: compare the constant at `<base>` vs `<target>`. The engine takes over 
 Engine `engine/userdata/src/backup.rs` — `BACKUP_VERSION` (write version) + the `version < 1` refusal (accept floor); every platform exports and restores through it.
 
 - Write version bumped but accept-floor unchanged → new app still reads old backups. SAFE for the upgrade path (the cross-device concern — old app reading a *new* backup — is a separate downgrade case; note it but it is not an upgrade blocker).
-- **Accept-floor raised** (`>= M` with M increased) → a user's existing/exported backup at an older version now **rejects on import** → BLOCKING for restore.
-- New fields added to the JSON with safe `opt*` reads → SAFE.
+- **Accept-floor raised** (the `version < 1` refusal moved up) → a user's existing/exported backup at an older version now **rejects on import** → BLOCKING for restore.
+- New fields added to the JSON on `#[serde(default)]` structs → SAFE.
 
 ### 3. Settings keys (storage)
 
 iOS `Settings/SharedSettings.swift` (`SettingsKey` definitions + `resetToDefaults()`); Android `ime/settings/PreferenceKeys.kt` (key names) + `ime/settings/PrefHelper.kt` (`preference(...)` delegates and defaults); desktop: macOS `macos/Sources/TaigiInputMethodCore/Settings/SettingsStore.swift` (+ `RetiredSettingsCleanup.swift`, `ShortcutDefaultMigration.swift`), Windows + Linux `desktop/crates/taigi-desktop-core/src/settings/keys.rs` / `document.rs` (`settings.json` via `desktop/crates/taigi-desktop-storage/src/settings_file.rs`). `git diff` each.
 
 - **Key removed** while a reader still references it → BLOCKING (crash / lost setting). Grep the codebase for the removed key name at `<target>` to confirm no live reader.
-- **Default value flipped** on an existing key → BEHAVIOR-CHANGE. Only default-reliant users (never wrote the key) are affected; users who explicitly set it keep their stored value (the default applies only when the key is absent). The `resetToDefaults()` change does NOT run on upgrade — it fires only on an explicit user reset. Must be in the changelog.
+- **Default value flipped** on an existing key → BEHAVIOR-CHANGE. Only default-reliant users (never wrote the key) are affected; users who explicitly set it keep their stored value (the default applies only when the key is absent). The `resetToDefaults()` change does not run on upgrade — it fires only on an explicit user reset. Must be in the changelog.
 - **Semantics changed** (same key, new meaning / new encoding) → BEHAVIOR-CHANGE, possibly BLOCKING if the stored value is now misread.
 - **New key + default** → SAFE.
 
@@ -98,8 +98,8 @@ For each deleted asset, ask: **does any persisted user state reference it by an 
 
 ### 7. Version monotonicity (store gate)
 
-- **Android** `app/build.gradle.kts` `versionCode` — must strictly increase or the store / installer refuses the update. This repo computes `versionCode = (System.currentTimeMillis()/60_000)` → monotonic by construction; just confirm the expression is unchanged. A hardcoded or decreased versionCode → BLOCKING.
-- **iOS** `MARKETING_VERSION` in `project.pbxproj` — must increase for App Store; `make version-mobile x.y.z` writes it on iOS + Android together (the mobile train). macOS + Windows + Linux are the separately numbered **desktop train** (`make version-desktop x.y.z`; `CFBundleVersion` = `MAJOR*10000 + MINOR*100 + PATCH` must increase per shipped pkg). A desktop audit takes `desktop-<version>` (the tag a desktop release creates in this repo since 2026-09-09) or, for anything older, a main-repo commit — the earlier `macos-v*` / `windows-v*` tags live on the website repo and are not in this history. `CURRENT_PROJECT_VERSION` stays 1 by design — App Store Connect numbers a marketing version's uploads itself — so a build number that did NOT move is not a finding. **pbxproj is user-owned** (`docs/contributing/ios-guidelines.md`) — do NOT edit it; read both targets (app + keyboard-extension), and when a bump is needed name the `make version-mobile` / `make version-desktop` command as a user action item.
+- **Android** `android/app/build.gradle.kts` `versionCode` — must strictly increase or the store / installer refuses the update. This repo computes `versionCode = (System.currentTimeMillis()/60_000)` → monotonic by construction; just confirm the expression is unchanged. A hardcoded or decreased versionCode → BLOCKING.
+- **iOS** `MARKETING_VERSION` in `project.pbxproj` — must increase for App Store; `make version-mobile x.y.z` writes it on iOS + Android together (the mobile train). macOS + Windows + Linux are the separately numbered **desktop train** (`make version-desktop x.y.z`; `CFBundleVersion` = `MAJOR*10000 + MINOR*100 + PATCH` must increase per shipped pkg). A desktop audit takes `desktop-<version>` (the tag a desktop release creates in this repo since 2026-09-09) or, for anything older, a main-repo commit — the earlier `macos-v*` / `windows-v*` tags live on the website repo and are not in this history. `CURRENT_PROJECT_VERSION` stays 1 by design — App Store Connect numbers a marketing version's uploads itself — so a build number that did not move is not a finding. **pbxproj is user-owned** (`AGENTS.md` Core Principle #1) — never edit it; read both targets (app + keyboard-extension), and when a bump is needed name the `make version-mobile` / `make version-desktop` command as a user action item.
 
 ## Output
 
@@ -131,6 +131,6 @@ Rules:
 
 ## Notes
 
-- Refs can be tags (`v3.6.2`), branches, or SHAs. `git show <ref>:<path>` reads a file at a ref without checkout.
+- Refs can be tags (`v3.6.2`), branches, or SHAs.
 - If `<base-ref>` is not an ancestor of `<target-ref>`, say so — a non-linear comparison may miss reverts.
 - A path above missing at `<target>` → locate the moved file by its constant name and report the stale path as a finding.

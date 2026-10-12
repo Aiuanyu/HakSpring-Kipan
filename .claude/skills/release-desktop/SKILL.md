@@ -76,8 +76,7 @@ Then, before any edit:
 
 **The desktop train only moves upward.** `CFBundleVersion` derives as
 `MAJOR*10000 + MINOR*100 + PATCH` and is what the macOS Installer compares
-between packages; `set-versions` refuses a downgrade. Never pass
-`--allow-downgrade`.
+between packages; `set-versions` refuses a downgrade (see Guardrails).
 
 `check-versions --train mobile` is not this skill's gate — an iOS/Android
 version differing from `<target>` is expected, not a finding.
@@ -202,9 +201,9 @@ Rules:
 - A patch's file has the lead paragraph and ONLY its platform's `###` section;
   the release page shows what this version ships, and the other platforms ship
   nothing in it.
-- The file must be **committed** before either platform publishes: the release
-  body is read out of the tagged commit, not the working tree, and a version
-  with no changelog in that commit fails the publish outright.
+- The file must be **committed** before staging: the release body is read out
+  of the staged commit (the one the tag will name), not the working tree, and a
+  commit with no changelog fails staging outright.
 - English only: UI labels by their i18n `en` value (look up `"hanji": "<label>"` in `i18n/*.json`), quotes translated; CJK / TL / POJ / TPS only for Taigi example words and readings.
 - This is the GitHub release body users read: concrete user-visible behavior,
   with the PR number in `(#NNN)`. No refactors, tests, tooling, or dependency
@@ -228,8 +227,6 @@ git diff --check
 Then read every section back against the release range: every PR in the range
 that changed user-visible desktop behavior appears in at least one section, and
 every claim in a section is traceable to a commit in the range.
-
-Deterministic validation does not replace the user's factual review.
 
 ## 6. Commit
 

@@ -32,14 +32,14 @@ Open `<run>/report.md`. Order of attention:
 1. **`failed` scenarios** — the detail shows the committed text vs the expectation. Open `<run>/<platform>/<scenario>/trace.jsonl`: the `key` → `preedit` → `candidates` → `commit` events show where it diverged. `framework.log` has the daemon's own output.
 2. **`error` scenarios** — the driver could not finish (candidate not offered, timeout, daemon down). The reason names the step. A `(hanji, tl) not offered` error lists the first cells actually offered — that is often the real finding.
 3. **`bug` findings** — engine panic / error code / adapter reject, with domain + method.
-4. **`perf` findings** — per-op p95 / max over `e2e/budgets.json`, or a regression vs baseline. First runs on a new device calibrate the budget; never loosen one to hide a regression.
+4. **`perf` findings** — per-op p95 / max over `e2e/budgets.json`, or a regression vs baseline. First runs on a new device calibrate the budget; a regression is reported, not budgeted away.
 5. **`trace` / `unverified`** — harness gaps (missing header, an expectation whose events the platform does not write yet), not product bugs.
 
 ## 3. Report, do not fix
 
-- A failure is an **observed failure**: report the scenario, the trace excerpt and the first divergent event to the USER. A bugfix round needs root cause + USER approval first (`AGENTS.md` Core Principle #4).
+- A failure is an **observed failure**: report the scenario, the trace excerpt and the first divergent event to the USER; a fix is its own round (`AGENTS.md` Core Principle #4).
 - Rule out the harness before blaming the IME: a `trace` finding, a timeout on the first key (lexicon load), or a window-focus error point at the driver.
-- Never edit a scenario's expectation to match what the run produced. Expectations come from the `source` the scenario names (USER-quoted dogfood items, `docs/phonetics/`).
+- Expectations come only from the `source` the scenario names (USER-quoted dogfood items, `docs/phonetics/`), never from what a run produced.
 
 ## 4. Add a scenario
 
