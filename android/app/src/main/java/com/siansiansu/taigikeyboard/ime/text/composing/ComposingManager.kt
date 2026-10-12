@@ -131,6 +131,18 @@ class ComposingManager(
         sharedGeneration.incrementAndGet()
     }
 
+    /**
+     * Keyboard hidden: `InputMethodService.onFinishInputView` has already
+     * run `finishComposingText()`, so the host keeps the preedit as plain
+     * text (LatinIME `finishInput` convention). Drop the mirror so the
+     * host's follow-up `-1/-1` report cannot let [reconcileWithHost]
+     * re-mark that text, which the next show's region clear would delete
+     * (USER device report 2026-10-12, `tsit` lost on re-show).
+     */
+    fun onInputViewFinished() {
+        if (_isComposing.value) bumpGeneration()
+    }
+
     companion object {
         private const val TAG = "ComposingManager"
 
