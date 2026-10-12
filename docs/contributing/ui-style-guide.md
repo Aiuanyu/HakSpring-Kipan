@@ -1,6 +1,6 @@
 # UI Style Guide (iOS + Android app UI)
 
-Shared values for the main-app UI. Android takes them from `ui/theme/Theme.kt` (`AppTypography`) and `ui/theme/AppStyle.kt`; iOS from `App/Components/AppStyle.swift`. Screens use those, never inline `.sp` / point sizes or raw colours (Canvas drawing code excepted). A value genuinely missing goes into the style file and this table first, then onto both platforms.
+Shared values for the main-app UI. Android takes them from `ui/theme/Theme.kt` (`AppTypography`) and `ui/theme/AppStyle.kt`; iOS from `App/Components/AppStyle.swift`. Screens use those, never inline `.sp` / point sizes or raw colours (excepted: Canvas drawing code, and the Android-only `ColorPickerDialog.kt` tab labels 13sp / slider labels 15sp — iOS uses the system picker, so no shared tier exists). A value genuinely missing goes into the style file and this table first, then onto both platforms.
 
 ## Typography
 

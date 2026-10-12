@@ -87,8 +87,6 @@ import com.siansiansu.taigikeyboard.ui.components.SegmentedChoiceRow
 import com.siansiansu.taigikeyboard.ui.components.SettingsCard
 import com.siansiansu.taigikeyboard.ui.components.SettingsDivider
 import com.siansiansu.taigikeyboard.ui.components.SliderRow
-import com.siansiansu.taigikeyboard.ui.tabs.layout.ColorPickerDialog
-import com.siansiansu.taigikeyboard.ui.tabs.layout.KeyboardPreviewPanel
 import com.siansiansu.taigikeyboard.ui.theme.AppStyle
 import com.siansiansu.taigikeyboard.ui.theme.SectionHeader
 import kotlinx.coroutines.launch

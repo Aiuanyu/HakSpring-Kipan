@@ -10,7 +10,7 @@ Dependencies flow down only: **App → Platform → Adapter → Engine**. A lowe
 |---|---|---|
 | `App/` (`Tabs/`, `Components/`) | App | host app; view models take services by injection, defaulting to `CompositionRoot` |
 | `Strings/` | App | `Generated/` from `make i18n` + `DisplayLanguage` / `DisplayLanguageStore` / `StringResolver` |
-| `KeyboardExtension/` | Platform | extension entry (`KeyboardViewController`), `Info.plist`, `FontRegistration` |
+| `KeyboardExtension/` | Platform | extension entry (`KeyboardViewController`), `Info.plist`, `FontRegistration`, `ResourceBundleResolver` (`.appex` bundle lookup) |
 | `Actions/`, `Callouts/`, `Emojis/`, `Layout/`, `Overlays/`, `Styling/` (+ `Providers/`), `Theme/`, `Candidates/Views/`, `Candidates/Models/` | Platform | KeyboardKit / SwiftUI / UIKit allowed |
 | `Settings/` UI parts — `SharedSettings`, `KeyboardEnvironment`, `DeviceCapabilities`, `SettingsResetCoordinator`, `SettingsSnapshot` | Platform | |
 | `*Adapter.swift` (e.g. `Actions/KeyboardCaseAdapter.swift`) | Adapter | translation between engine values and KeyboardKit types only |
@@ -23,7 +23,6 @@ Engine-layer files import Foundation, plus SwiftProtobuf in `Engine/` and Observ
 - `Candidates/Services/{Taigi,English}AutocompleteService.swift` subclass `KeyboardKit.AutocompleteService` — the KeyboardKit boundary sits there.
 - `Logging/DebugLogger.swift` — the OSLog sink (`#if DEBUG`).
 - `Engine/UserDataOpening.swift` — the one App Group / filesystem site; it opens the engine's user-data stores (`engine/userdata`). No Swift code opens those files with SQLite.
-- `Lexicon/Utils/` — `Bundle` lookup and external dictionary URLs; Platform code in an Engine folder.
 
 A new Engine-layer file that seems to need KeyboardKit belongs in Platform or Adapter instead.
 
