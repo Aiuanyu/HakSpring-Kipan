@@ -18,6 +18,14 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # uuid 1.27.0 raised its rust-version to 1.89, above the engine's
+      # declared 1.86, so the MSRV job fails on any newer uuid. 1.26.1 stays
+      # until the engine's rust-version is raised; drop this entry then.
+      # Closed as PR #483.
+      - dependency-name: uuid
+        versions:
+          - ">= 1.27.0"
 
   - package-ecosystem: cargo
     directory: /windows
