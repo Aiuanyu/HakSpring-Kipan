@@ -287,7 +287,7 @@ extension ActionHandler: AutocompleteContextUpdater {
     /// Hanji cell then a romanization cell sharing the prediction's identity; a
     /// hanji-only prediction (`subtitle == nil`) lists its Hanji cell alone.
     /// Every other mode emits one dual-script suggestion per prediction.
-    // CROSS-PLATFORM INVARIANT — mirrors android/.../smartbar/NextWordController.kt buildPredictionWords.
+    // CROSS-PLATFORM INVARIANT — mirrors android/.../nextword/NextWordController.kt buildPredictionWords.
     // Drift causes silent divergence (one platform's Hanji with Romanization predictions render hanji-led).
     static func predictionSuggestions(
         _ predictions: [RustEngineBridge.NextWordEnginePrediction],

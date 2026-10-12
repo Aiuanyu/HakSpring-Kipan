@@ -52,7 +52,7 @@ enum AppStyle {
         appFont(size: bodySize)
     }
 
-    /// Caption font (14pt Open Huninn) for trailing values, dates, annotations, tags, badges.
+    /// Caption font (17pt Open Huninn) for trailing values, dates, annotations, tags, badges.
     static var captionFont: Font {
         appFont(size: captionSize)
     }
@@ -86,7 +86,7 @@ enum AppStyle {
         .accentColor
     }
 
-    /// Accent orange for warning and feature icons. Android equivalent: accentOrange.
+    /// Accent orange for warning and feature icons. Android equivalent: `AppStyle.warningOrange()`.
     static var warningOrange: Color {
         .orange
     }

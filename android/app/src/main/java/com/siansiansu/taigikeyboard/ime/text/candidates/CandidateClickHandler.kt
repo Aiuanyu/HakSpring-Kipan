@@ -442,7 +442,7 @@ internal fun shouldAppendAutoSpace(
     committedText: String,
 ): Boolean = isAutoSpaceEnabled && wroteRomanization && !committedText.endsWith("-")
 
-// CROSS-PLATFORM INVARIANT — mirrors ios/Sources/TaigiKeyboard/Keyboard/ActionHandler+Suggestions.swift marked-cell commit resolve
+// CROSS-PLATFORM INVARIANT — mirrors ios/Sources/TaigiKeyboard/Actions/ActionHandler+Suggestions.swift marked-cell commit resolve
 // and the desktop `.alternate` commit rule. Drift causes silent divergence (a bracketed roman-cell commit, or a missing auto-space).
 
 /**

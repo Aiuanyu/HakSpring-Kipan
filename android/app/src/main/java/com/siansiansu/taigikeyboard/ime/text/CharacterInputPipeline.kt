@@ -1,7 +1,8 @@
 // region Shared-Core Candidate
 // Pure logic, Kotlin stdlib only. Eligible for cross-platform extraction.
-// Mirrors iOS Sources/TaigiKeyboard/Input/CharacterInputPipeline.swift.
 // endregion
+
+// Mirrors iOS Sources/TaigiKeyboard/Input/CharacterInputPipeline.swift.
 
 package com.siansiansu.taigikeyboard.ime.text
 
