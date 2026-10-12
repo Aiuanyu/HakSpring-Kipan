@@ -66,6 +66,10 @@ Intentional today:
 - Layouts and callouts: Swift tables on iOS, JSON assets on Android (FlorisBoard loader).
 - Settings UI: SwiftUI `Form` + SF Symbols on iOS; the `ui/components/` row kit + `TaigiIcons` on Android; native toggle colours on each (`ui-style-guide.md` § Switch / Toggle).
 - Committed-text deletion: Android sends a raw key only to `TYPE_NULL` editors (`android-guidelines.md` §5); iOS always uses `deleteBackward()`.
+- Default keyboard font: iOS `system`, Android `openHuninn` — iOS bundles rare-character fonts Android does not (maintainer 2026-10-12).
+- Spacebar: iOS long-press drags the cursor (KeyboardKit); Android long-press opens the IME picker (Gboard / FlorisBoard convention).
+- Layout conventions: Android English bottom row carries `,` `.` and the number row has fraction / superscript popups; iOS symbols bottom row has the emoji key where Android has the numeric-pad key.
+- Feedback and pickers: Settings reset confirms with a toast on Android, a haptic on iOS; a dictionary search result opens an action sheet on iOS, expands inline on Android.
 
 ### 3a. Invariants: constants, tests and docs move together
 

@@ -83,6 +83,22 @@ One line each; the linked section holds the design, the measurements and the ope
 |---|---|---|
 | Retire the old dictionary `frequency` after E1 | Recorded, not started — maintainer 2026-10-08: "record it in the roadmap, handle it when there is time". Still read: the equal-cost tie-break (`CandidateSortKey` −score / −freq; ~69 % of rows are corpus-unseen and share one cost), the search-page tie-break, `association.bin` dictionary-derived counts (`associations.py`), CSV / FST row order + duplicate max-aggregation (`merge_csv.py`), the `dict.bin` u32 field, `CandidateMessage.score`. Steps: pick a replacement tie-break for unseen words, a count source for the association rows, then the format bump. Related: proto `TaigiWord.length_score` (no reader since P5b) was removed 2026-10-09 (round A1b); a custom twin of a dictionary word carries no corpus cost (sorts below its priced homophone in the list) | [`reports/2026-10-08-e1-p5b-list-sort.md`](reports/2026-10-08-e1-p5b-list-sort.md) §5 |
 
+**Mobile parity (inventory 2026-10-12, maintainer decisions the same day)** — pending code; directions decided unless marked.
+
+| Item | Direction | Where |
+|---|---|---|
+| Settings reset drifts from declared defaults | Android drops `GLOBE_KEY_ENABLED = true` (`PrefHelper.kt` reset); iOS reset clears every owned key except user themes (today misses `isCustomDictEnabled`, `inputModeBeforeTps`, `layoutBeforeTps`) | `ime/settings/PrefHelper.kt`, `Settings/SharedSettings.swift` |
+| Android setup guide shows iOS steps (Add keyboard, Allow Full Access, globe) | Android-scoped i18n keys for steps / closing / info note | `i18n/home.json`, `ui/tabs/home/SetupGuideScreen.kt` |
+| Android copyright list lacks the STTI (學科術語) OGDL credit | add entry | `content/CopyrightData.kt` |
+| Enter while composing in an action field (Send / Search) | Android matches iOS: first Enter confirms only, second runs the action; no auto-space in action fields (both) | `TextInputKeyHandler.kt`, `ActionHandler+KeyActions.swift` |
+| Double-space period | both, Taigi and English, when not composing; full-width inserts `。` without a space; iOS gated by KeyboardKit `isPeriodShortcutEnabled` | same |
+| English suggestion pick | both obey Auto-Space (`shouldAppendAutoSpace`, §23 swap arm) | `ActionHandler.swift`, `CandidateClickHandler.kt` |
+| Single-shot Shift | iOS matches Android: only cased letters consume it | `ActionHandler+KeyActions.swift` |
+| Android spacebar swipe | add swipe-to-move-cursor, keep long-press picker | `KeyTouchCoordinator.kt` |
+| Layout | Android: English mode loads TL callouts, globe left of space; iOS: `…` for ellipsis, `@` / `/` by `keyboardType`, return key by `returnKeyType`, full-width symbol `／` | layouts / callouts |
+| Small | iOS: Learning Records Count / Last Used labels, drop strip cap 200, localize backup / CSV import errors; Android: named long-press a11y action, keycap-hint invariant test, no "No words yet" flash, no duplicate setup guide, stale `lastGrapheme` comment | per item |
+| Needs device repro first (UNCONFIRMED) | dismiss while composing drops the preedit (both); Android symbols-page `、` / numeric pad wipes the preedit; Android next-word predictions survive a cursor move | `+Cleanup.swift`, `TextInputManager.kt`, `TextInputKeyHandler.kt` |
+
 **Not to re-propose** (USER-closed): `zh-TW` README, xcconfig signing, Android Gradle proto plugin, dictionary-source licensing follow-up, romanization spelling correction, corpus expansion P1b incl. the TAT application, a full TL / POJ / en / ja proofreading pass of the app UI (fix reported typos per incident instead), `$` sentence-start opener (its `association.bin` data is removed in its own PR), smart-suggestion techniques outside the bigram model (3, 5, 6, 9, 10, 11 incl. the Android `IME_FLAG_NO_PERSONALIZED_LEARNING` gap), Windows candidate-window paint latency and UIA exposure (USER 2026-10-02: "remove"); converted-romanization commit on Enter (`suann2ting3` → `suán-tìng`), TL mode (臺羅模式) tone key commits without a candidate window, and mobile predictions after Space (USER 2026-10-02: "remove"); bigram P6 walker term / P7 hanji-only sources / D7 two-word context; e2e drivers for macOS, Windows, Android, iOS; invariant-label PR2; naming batch C (persisted names stay frozen); shared Swift package for macOS + iOS (open-source round 10, USER 2026-10-04: close — see § Closed phases).
 
 ## Per-round gates (process invariants, project-wide)
