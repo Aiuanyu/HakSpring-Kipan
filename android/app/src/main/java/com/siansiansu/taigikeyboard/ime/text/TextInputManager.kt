@@ -358,6 +358,7 @@ class TextInputManager(
         )
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        getComposingManager()?.onInputViewFinished()
         candidateCoordinator.cancelAll()
         smartbarManager.onFinishInputView()
     }

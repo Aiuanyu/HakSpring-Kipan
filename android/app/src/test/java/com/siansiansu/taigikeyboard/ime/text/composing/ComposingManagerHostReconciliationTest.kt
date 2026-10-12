@@ -234,6 +234,30 @@ class ComposingManagerHostReconciliationTest {
     }
 
     @Test
+    fun inputViewFinished_dropsMirror_soHostReportCannotReMarkFinishedText() {
+        // trace: `tsit` composing → BACK (framework already ran finishComposingText, host holds
+        // plain "Tsit") → late `-1/-1` reconcile must not re-mark it; the re-show region clear
+        // then has nothing to delete (USER device report 2026-10-12).
+        val manager = composing("Tsit")
+        manager.onInputViewFinished()
+        assertFalse(manager.isComposing())
+        val host = FakeHost("Tsit", readsForbidden = true)
+        manager.reconcileWithHost(host.ic)
+        assertTrue(host.regions.isEmpty())
+        assertTrue(host.writes.isEmpty())
+    }
+
+    @Test
+    fun inputViewFinished_whenIdle_writesNothing() {
+        val manager = composingManagerForTest()
+        val host = FakeHost("Tsit ", readsForbidden = true)
+        manager.onInputViewFinished()
+        manager.reconcileWithHost(host.ic)
+        assertFalse(manager.isComposing())
+        assertTrue(host.writes.isEmpty())
+    }
+
+    @Test
     fun bumpGeneration_zeroesMirror_soReconcileCannotKeepDroppedComposition() {
         // trace: input-mode switch with no InputConnection bumps the generation (engine will
         // drop its state) — the mirror must not survive to be "kept" by a later same-text reconcile.
