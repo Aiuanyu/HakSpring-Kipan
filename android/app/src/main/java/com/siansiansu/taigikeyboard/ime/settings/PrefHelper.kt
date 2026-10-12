@@ -862,7 +862,6 @@ class PrefHelper(
             prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] = "phahTaigi"
             prefs[PreferenceKeys.TPS_OR_MAPS_TO_ER] = true
             prefs[PreferenceKeys.TOOLBAR_AUTO_COLLAPSE] = true
-            prefs[PreferenceKeys.GLOBE_KEY_ENABLED] = true
             prefs[PreferenceKeys.SOUND_FEEDBACK_ENABLED] = true
             prefs[PreferenceKeys.VIBRATION_FEEDBACK_ENABLED] = true
             prefs[PreferenceKeys.CUSTOM_DICT_ENABLED] = true
