@@ -22,14 +22,13 @@ Single universal slice: `macos-arm64_x86_64` (`aarch64-apple-darwin` +
 
 The archive is `macos/crates/taigi-macos-ffi`: the engine's
 `engine/swift-ffi` — the same crate iOS links — plus the desktop shell's seam,
-in one static library (docs/architecture/macos-desktop-core-roadmap.md D1). Two
+in one static library. Two
 swift-bridge blocks, one wrapper each: `RustTaigi.swift` for `mod ffi` in
 `engine/swift-ffi/src/lib.rs`, `RustTaigiDesktop.swift` for `mod ffi` in
 `macos/crates/taigi-macos-ffi/src/lib.rs`. The surfaces are not restated here,
 so this README cannot drift from them.
 
-**Drift rule**: `engine/swift-ffi` is shared, so this directory and
-`ios/RustEngine/` must be regenerated together. `make build` does every platform
-in one pass, which is why it is the only command for this — rebuilding one
-platform's artefacts from shared sources leaves the others stale against the same
-commit.
+**Drift rule**: `engine/swift-ffi` is shared, so after an engine change this
+directory and `ios/RustEngine/` are regenerated together — `make build` does
+both (plus Android) in one pass. `make macos-libs` alone is enough only for a
+change confined to `desktop/`, `macos/crates/` or `macos/Cargo.*`.

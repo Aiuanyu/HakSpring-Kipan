@@ -43,12 +43,10 @@ tool list (`mise.toml`), and the build and test command for each platform.
 The `Makefile` at the repository root is the canonical entry point; `make help`
 lists its targets.
 
-One thing worth knowing before you run anything: **if your change touches
-`engine/` or `dictionary/`, regenerate the platform artifacts before testing
-iOS or Android** (`make dict` if the dictionary changed, then `make build`).
-Both platforms link against pre-built binaries, so a stale artifact gives
-passing tests against the *old* engine. That is the single most common source
-of "tests passed but the keyboard misbehaves on device".
+If your change touches `engine/`, `desktop/`, `macos/crates/` or `dictionary/`,
+rebuild the native artifacts before testing iOS, Android or macOS — see
+[`docs/BUILDING.md`](docs/BUILDING.md) §5. A stale artifact gives passing tests
+against the *old* engine.
 
 ## Secrets
 
@@ -65,24 +63,24 @@ do not run `make hooks` while another checkout of this repository is mid-task.
 pass; `.gitleaks-scanned` explains when that recording stops being valid and has
 to be redone with `make scan-secrets-full`.
 
+On GitHub, secret scanning and push protection are enabled for this repository:
+a push carrying a recognised provider credential is rejected before it lands.
+Custom (non-provider) patterns need a paid GitHub Secret Protection licence and
+are off; gitleaks covers generic secrets instead.
+
 Personal data is treated like a credential. Do not put an email address, an
 account / project / server ID, or a private mailbox or chat layout into any
 tracked file, commit message or pull request — describe the person or role
-instead. gitleaks' `personal-email` rule catches addresses; tooling bound to a
-personal account belongs outside this repository, not under `.claude/`.
+instead. gitleaks' `personal-email` rule (`.gitleaks.toml`) and the maintainer's
+private denylist (`tools/secret-scan/private-denylist-scan.sh`) gate commits;
+neither sees pull request bodies or issues, so check those by hand. Tooling bound
+to a personal account belongs outside this repository, not under `.claude/`.
 
 ## Phonetics
 
-Never infer a TL / POJ / TPS rule. Read
-[`docs/phonetics/taigi-phonetics-reference.md`](docs/phonetics/taigi-phonetics-reference.md)
-and check against the `taigi-converter/` submodule, which is the canonical
-converter. A plausible-looking rule that is wrong will silently corrupt the
-dictionary index.
-
-Note that a Taiwanese word is identified by the **pair** (Hanji, romanization),
-never by either alone — 重/tîng and 重/tāng are different words, and so are two
-different Hanji sharing a reading. Anything that deduplicates, looks up, ranks,
-or merges entries must key on the pair.
+Never infer a TL / POJ / TPS rule, and key every dedupe / lookup / ranking on
+the (Hanji, romanization) pair — see
+[`docs/contributing/phonetics.md`](docs/contributing/phonetics.md).
 
 ## Commits and pull requests
 

@@ -32,17 +32,50 @@ Installation and setup for every platform: [`docs/INSTALL.md`](docs/INSTALL.md).
 
 ## How it works
 
-One Rust engine (`engine/`) holds phonetics, composing, lexicon, and ranking. Each platform is a thin shell over it:
+One Rust engine (`engine/`) holds phonetics, composing, lexicon, ranking and user data. Each platform is a thin shell: it owns the text field, the candidate window and settings, and every request reaches the engine's `dispatch` as a protobuf envelope.
 
-| Path | Stack |
-| --- | --- |
-| `ios/` | Swift + KeyboardKit |
-| `android/` | Kotlin + Jetpack Compose |
-| `macos/` | Swift + InputMethodKit |
-| `windows/` | Rust + Text Services Framework |
-| `linux/` | Fcitx5 addon (C++) and IBus engine (Rust) |
-| `desktop/` | Rust crates shared by macOS, Windows and Linux |
-| `dictionary/` | Dictionary sources and build pipeline |
+```text
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│ iOS          │ │ Android      │ │ macOS        │ │ Windows      │ │ Linux        │
+│ Swift        │ │ Kotlin       │ │ Swift        │ │ Rust         │ │ Fcitx5 (C++) │
+│ KeyboardKit  │ │ Compose      │ │ IMKit        │ │ TSF          │ │ IBus (Rust)  │
+└──────┬───────┘ └──────┬───────┘ └───┬─────┬────┘ └──────┬───────┘ └──────┬───────┘
+       │                │             │     │             │                │ C ABI
+       │                │             │     │ macos-ffi   │ path dep       │ crate
+       │                │             │   ┌─┴─────────────┴────────────────┴───────┐
+       │                │             │   │ desktop/  taigi-desktop-core           │
+       │                │             │   │ keys · intent executor · engine bridge │
+       │                │             │   └───────────────────┬────────────────────┘
+       │                │             │                       │
+       │ swift-ffi      │ JNI         │ swift-ffi             │ path dep
+       │                │             │ (user data)           │
+       │                │             │                       │
+┌──────┴────────────────┴─────────────┴───────────────────────┴────────────────────┐
+│ engine/  dispatch::process_request — proto envelope in, proto out                │
+│                                                                                  │
+│   composing · lexicon · ranking · nextword · userdata                            │
+│   phonetics (POJ / TL / TPS) · protos · mmap-host                                │
+└──────────────┬──────────────────────────────────────────────┬────────────────────┘
+               │ mmap, read-only                              │ read / write
+               │                                              │
+┌──────────────┴───────────────────────┐    ┌─────────────────┴────────────────────┐
+│ assets/dictionaries/  (committed)    │    │ engine/userdata  (SQLite, on device) │
+│ dictionary.fst · dictionary.bin      │    │ user_frequency · user_association    │
+│ association.bin · syllables.fst      │    │ custom_dictionary · learned_phrases  │
+└──────────────▲───────────────────────┘    └──────────────────────────────────────┘
+               │ make dict
+               │
+┌──────────────┴───────────────────────┐
+│ dictionary/  sources → normalize     │
+│ (taigi-converter) → merge → build    │
+└──────────────────────────────────────┘
+```
+
+- **iOS / Android** call the engine library directly (`swift-ffi` static library, `android-jni` shared library).
+- **macOS** runs its key path through `taigi-macos-ffi` into the shared `desktop/` core; its user-data pages call `swift-ffi` in the same library.
+- **Windows / Linux** link the engine crates in-process. On Linux the Fcitx5 addon (C++) calls the Rust core over a C ABI, and IBus talks over D-Bus to a Rust engine process; both run `taigi-linux-core`.
+
+Crate graph, build pipeline and keystroke data flow: [`docs/architecture/system-overview.md`](docs/architecture/system-overview.md).
 
 ## Building
 

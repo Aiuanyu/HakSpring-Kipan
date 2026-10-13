@@ -9,7 +9,7 @@ not need every toolchain: pick the row you work on.
 | Android | macOS or Linux | engine + JDK 17, Android SDK, NDK r25+, cargo-ndk |
 | iOS | macOS | engine + Xcode, swift-protobuf |
 | macOS input method | macOS | engine + Xcode, swift-protobuf |
-| Windows input method | Windows for the DLL; macOS or Linux for the compile gate | engine + MSVC (Windows) or mingw-w64 (gate) |
+| Windows input method | Windows for the DLL; macOS or Linux for the compile gate (its `check-box` step needs the maintainer's Windows box) | engine + MSVC (Windows) or mingw-w64 (gate) |
 | Linux input method | Linux; macOS for the compile gate | engine + the distribution packages below |
 | Dictionary | any | Python 3.13+, Node 22+ |
 
@@ -86,7 +86,7 @@ make hooks          # pre-commit: gitleaks + personal-data checks on staged chan
 | Android | native libraries: `make android-libs`; app: `android/gradlew -p android :app:assembleDebug` | `android/gradlew -p android :app:testDebugUnitTest` |
 | iOS | `make ios-libs`, then open `ios/TaigiKeyboard.xcodeproj` and build the keyboard extension | `xcodebuild -project ios/TaigiKeyboard.xcodeproj -scheme TaigiKeyboardTests -destination 'platform=iOS Simulator,name=<an installed iPhone simulator>' test` |
 | macOS | `make macos-libs`, then `make -C macos build` | `make -C macos test` |
-| Windows | on Windows: [`architecture/windows-release.md`](architecture/windows-release.md); elsewhere: `make windows-check` | included in `make windows-check` |
+| Windows | on Windows: [`architecture/windows-release.md`](architecture/windows-release.md); elsewhere: `make windows-check` — its `check-box` step runs on the maintainer's Windows box over ssh and fails without it; run the box-free steps in [`windows/README.md`](../windows/README.md) instead | included in `make windows-check` |
 | Linux | on Linux: `make -C linux build` (packages: `make -C linux deb`); on macOS: `make linux-check` | included in `make linux-check` |
 | Desktop-shared crates | `make desktop-check` | included |
 | macOS Rust workspace (`macos/crates`, the archive the app links) | `make macos-rust-check` | included |

@@ -155,13 +155,7 @@ shared engine). Read before modifying Windows code. Design record: `docs/archite
   (`docs/architecture/windows-release.md`). Nothing reaches a user until the maintainer tests it and publishes by hand, which
   runs the announcement itself (`docs/architecture/desktop-release.md`). Never run any of it
   without the maintainer's explicit release instruction.
-- **Releases ship UNSIGNED** (owner 2026-09-04, no certificate for a year or two):
-  `make windows-release RELEASE_FLAGS=--skip-sign`, which passes `--allow-unsigned` down to the
-  publisher; the artifact keeps the plain `TaigiKeyboard-<version>.exe` name. What admits a
-  downloaded package is `verify::admit` — the manifest's `packageSHA256` ALWAYS, plus the
-  Authenticode checks only when the running copy has a signature of its own, never one instead of
-  the other. `windows-release.md` § Signing status is the single source for this; do not restate
-  the policy elsewhere.
+- Releases currently ship unsigned — policy and the package admission rule: `docs/architecture/windows-release.md` § Signing status (the single source; do not restate it).
 - Signing, when a certificate exists, is by thumbprint (`WINDOWS_SIGNING_THUMBPRINT`); the updater
   pins the signer's LEAF, so a certificate rotation costs the in-app Authenticode check for the
   copies signed with the old one (`windows-release.md` § Notes). Both binaries and the installer
