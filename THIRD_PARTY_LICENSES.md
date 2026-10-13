@@ -22,7 +22,7 @@ copyright lines below were read out of each font's own `name` table.
 | 源樣黑體 GenYoGothic2 TW | `genyogothic2tw_r.otf` | ButTaiwan (<https://github.com/ButTaiwan/genyo-font>); derived from Adobe Source Han Sans. |
 | 源樣明體 GenYoMin2 TW | `genyomin2tw_r.otf` | ButTaiwan (<https://github.com/ButTaiwan/genyo-font>); derived from Adobe Source Han Serif. |
 
-The four files live once, at `assets/fonts/font/`, and all four platforms package that
+The four files live once, at `assets/fonts/font/`, and all five platforms package that
 one copy. The file names follow Android's resource-naming rules so its `res/`
 merge can read the shared directory unchanged; iOS and macOS ask for the PostScript names inside
 the files (`Iansui-Regular`, `jf-openhuninn-2.1`, `GenYoGothic2TW-R`,
@@ -71,10 +71,12 @@ Provenance is recorded in `emoji/data/SOURCES.md`.
 `taigi-converter` ships `jf-openhuninn-2.1.ttf` for its web demo; same OFL-1.1
 terms as above.
 
-## Rust dependencies (engine + Windows)
+## Rust dependencies
 
-The Rust workspaces admit only OSI-approved licences, enforced in CI by
-`cargo deny` against the allowlist in `engine/deny.toml`:
+The engine and macOS workspaces admit only OSI-approved licences, enforced in CI
+(`.github/workflows/security.yml`) by `cargo deny` against the allowlist in
+`engine/deny.toml`; the Windows, desktop and Linux workspaces have no `deny.toml`
+and get `cargo audit` (advisories) only:
 
     MIT, Apache-2.0, Apache-2.0 WITH LLVM-exception, BSD-2-Clause,
     BSD-3-Clause, ISC, Unicode-DFS-2016, Unicode-3.0, Zlib
@@ -87,7 +89,9 @@ cargo deny --manifest-path engine/Cargo.toml   list
 cargo deny --manifest-path windows/Cargo.toml  list
 ```
 
-Direct dependencies of note:
+Direct dependencies of note (engine and Windows workspaces; the Linux
+GTK / libadwaita / zbus stack and other `desktop/` / `linux/` crate dependencies
+are not yet inventoried here):
 
 | Crate | Licence | Note |
 | --- | --- | --- |
@@ -114,7 +118,7 @@ Direct dependencies of note:
 > **LicenseKit is not open source.** It reaches this project only as a
 > transitive dependency of KeyboardKit 10.x on **iOS**, resolved by SwiftPM.
 > It is not vendored here, is not used by any first-party code, and is absent
-> from the macOS, Android, and Windows builds — in particular it is absent
+> from the macOS, Android, Windows and Linux builds — in particular it is absent
 > from the Windows installer and from every artifact this project submits for
 > code signing. It is recorded here rather than omitted, because an accurate
 > inventory is worth more than a clean-looking one.

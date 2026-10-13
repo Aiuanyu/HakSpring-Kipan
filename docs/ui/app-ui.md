@@ -2,15 +2,15 @@
 
 > **Type**: Feature
 > **Keywords**: `App`, `Tab`, `Settings`, `UI`
-> **Related**: theme.md
+> **Related**: theme.md, ../contributing/ui-style-guide.md
 
 ---
 
 ## Summary
 
-- iOS/Android main app UI design specifications
-- 5-Tab structure: Home, Theme, Layout, Dictionary, Settings
-- Supports Light/Dark Mode (iOS)
+- iOS / Android main app: 5 tabs — Home, Theme, Layout, Dictionary, Settings
+- Light and dark appearance on both platforms
+- Typography, sizes, spacing, list rows and cards: [ui-style-guide.md](../contributing/ui-style-guide.md) (canonical)
 
 ---
 
@@ -26,68 +26,13 @@ Tab order is fixed by iOS `App/Tabs/TabType.swift` (`home = 0 … settings = 4`)
 | Dictionary | `Dictionary/DictionaryTab.swift`, `Dictionary/Views/DictionarySourcesView.swift` | `dictionary/DictionarySettingsScreen.kt`, `dictionary/DictionarySourcesScreen.kt` |
 | Settings | `Settings/SettingsTab.swift` | `settings/InputSettingsScreen.kt` |
 
-iOS tab container: `App/ContentView.swift` (`TabView`). Android uses Jetpack Compose screens (not Fragments); tab container: `ui/tabs/MainSettingsScreen.kt` (Material3 `NavigationBar`) mounted by `settings/SettingsMainActivity.kt`. The Theme tab is documented in [theme.md](theme.md).
+iOS tab container: `App/ContentView.swift` (`TabView`). Android uses Jetpack Compose screens (not Fragments); tab container: `ui/tabs/MainSettingsScreen.kt` (Material3 `NavigationBar`) mounted by `settings/SettingsMainActivity.kt`. The Theme tab is documented in [theme.md](theme.md). Concept → file map for both platforms: [cross-platform-alignment.md §2](../contributing/cross-platform-alignment.md#2-where-each-concept-lives).
 
 ---
 
-## iOS Spacing Guidelines (8pt multiples)
+## Home Content
 
-| Use | Spacing |
-|-----|---------|
-| Between sections | 32pt |
-| Horizontal padding | 20pt |
-| Top padding | 24pt |
-| Card interior | 16pt |
-| List item vertical | 14pt |
-
----
-
-## Font Sizes (Apple HIG)
-
-| Use | Size | iOS (`App/Components/AppStyle.swift`) |
-|-----|------|--------|
-| Navigation large title | 34pt | `AppStyle.navBarLargeTitleSize` |
-| Navigation inline title | 22pt | `AppStyle.navBarInlineTitleSize` |
-| Headline / section header | 18pt | `AppStyle.headlineFont` / `AppStyle.sectionHeaderFont` |
-| Body | 17pt | `AppStyle.bodyFont` |
-| Caption | 17pt (aligned with body) | `AppStyle.captionFont` |
-
----
-
-## Navigation Patterns
-
-| Type | Use | Method |
-|------|-----|--------|
-| Sub-pages | Detail pages | `NavigationLink` |
-| First launch | Onboarding | `fullScreenCover` |
-| External links | Web/settings | `openURL` |
-
----
-
-## Component Guidelines
-
-### List Items
-
-```
-[Icon/Number] [Title] [Spacer] [chevron.right]
-```
-
-- Icon: 16pt, width 24pt
-- Chevron: 12pt
-- Horizontal padding: 16pt
-- Vertical padding: 14pt
-
-### Card Container
-
-- cornerRadius: 12pt
-- elevation: 0
-- strokeWidth: 1pt
-
----
-
-## Home Content Architecture (v3.4.7+)
-
-Home tab content is **JSON-driven** — feature descriptions and FAQ are loaded from shared JSON files instead of hardcoded enums.
+Home tab content is **JSON-driven** — feature descriptions and FAQ are loaded from shared JSON files.
 
 | File | Platform | Description |
 |------|----------|-------------|
@@ -96,100 +41,26 @@ Home tab content is **JSON-driven** — feature descriptions and FAQ are loaded 
 | `FeatureContent.swift` / `.kt` | Both | Data model |
 | `FeatureContentLoader.swift` / `.kt` | Both | JSON loader |
 
-These live under `i18n/` to keep all translatable JSON in one folder, but use their own nested-tree schema (NOT the flat i18n namespace schema). The codegen glob is non-recursive (`i18n/*.json`), so the `i18n/content/` subfolder is skipped by `make i18n` — the platforms decode these files directly.
+These live under `i18n/` to keep all translatable JSON in one folder, but use their own nested-tree schema (NOT the flat i18n namespace schema). The codegen glob is non-recursive (`i18n/*.json`), so `make i18n` skips `i18n/content/` — the platforms decode these files directly.
 
-Content sync: both platform resource files are **symlinks** into `i18n/content/`:
-- `ios/Sources/TaigiKeyboard/App/Tabs/Home/{features,faq}.json` → `i18n/content/{features,faq}.json`
-- `android/app/src/main/assets/{features,faq}.json` → `i18n/content/{features,faq}.json`
-
-Editing `i18n/content/{features,faq}.json` is immediately visible on both platforms — no sync step required.
+Both platform resource files are **symlinks** into `i18n/content/`, so an edit there is visible on both platforms with no sync step:
+- `ios/Sources/TaigiKeyboard/App/Tabs/Home/{features,faq}.json`
+- `android/app/src/main/assets/{features,faq}.json`
 
 ---
 
-## Dictionary Data Management (v3.4.5+)
-
-The Dictionary tab expanded from basic dictionary settings to full data management:
+## Dictionary Data Management
 
 | Sub-screen | iOS | Android | Description |
 |------------|-----|---------|-------------|
 | Custom Dictionary | `CustomDictionaryView.swift` | `CustomDictionaryScreen.kt` | CRUD, import/export |
 | Data Management | `DataManagementView.swift` | `DataManagementScreen.kt` | Backup/restore |
 
-Previous Debug screens (`DebugView`, `DebugActivity`) were removed and replaced by these production views. The word-frequency / word-association record viewer pages (list, recording toggle, CSV import/export, clear) were removed 2026-09-22 to declutter the tab; both records stay always on and travel only through the `.taigi` backup.
+Word-frequency and word-association records have no viewer page: both are always on and travel only through the `.taigi` backup.
 
 ---
 
-## Localization Architecture
+## Strings and Preview Images
 
-**Shipped in v3.6.4** (`changelog/mobile-v3.6.4.md`): every app-UI string is generated from the shared JSON source. `i18n/*.json` (one namespace per file — `common`, `nav`, `home`, `layout`, `theme`, `dictionary`, `settings`, `keyboard`, `symbol`, `desktop`) → `make i18n` (`tools/i18n/generate.py`) → typed accessors on each platform:
-
-- iOS: `Strings/Generated/{StringKey,GeneratedTaigiStrings,StringResolverFormats}.swift` + `Localizable.xcstrings`; resolved at runtime by `Strings/StringResolver.swift` against `Strings/DisplayLanguageStore.swift`.
-- Android: `i18n/generated/{L10n,StringKey,GeneratedTaigiStrings,StringResolverFormats}.kt`.
-
-No hand-written `*Texts.swift` / `*Texts.kt` facades remain. Home-tab feature / FAQ content is a separate nested schema under `i18n/content/` (see above). Key-management rules: `docs/contributing/i18n.md`; invariants §37-§39.
-
----
-
-## Image Resources
-
-### Naming Convention
-
-- Must include `@3x` suffix
-- Example: `layout_standard_preview@3x.png`
-
-### Size Specifications
-
-| Type | Display size | @3x image |
-|------|--------------|-----------|
-| Layout preview | 180×120pt | 540×360px |
-| Screenshots | Adaptive | Varies |
-
-### Layout Preview Screenshots
-
-When layout appearance changes (font size, key labels, etc.), update these screenshots.
-
-**iOS** — `ios/Resources/Assets/LayoutPreviewAssets.xcassets/`
-
-| Layout | Light | Dark |
-|--------|-------|------|
-| Standard | `layout_standard_preview.imageset/layout_standard_preview_light@3x.png` | `layout_standard_preview.imageset/layout_standard_preview_dark@3x.png` |
-| PhahTaigi | `layout_phahtaigi_preview.imageset/layout_phahtaigi_preview_light@3x.png` | `layout_phahtaigi_preview.imageset/layout_phahtaigi_preview_dark@3x.png` |
-| MOE1 | `layout_moe1_preview.imageset/layout_moe1_preview_light@3x.png` | `layout_moe1_preview.imageset/layout_moe1_preview_dark@3x.png` |
-| MOE2 | `layout_moe2_preview.imageset/layout_moe2_preview_light@3x.png` | `layout_moe2_preview.imageset/layout_moe2_preview_dark@3x.png` |
-| TPS | `layout_tps_preview.imageset/layout_tps_preview_light@3x.png` | `layout_tps_preview.imageset/layout_tps_preview_dark@3x.png` |
-
-**Android** — `android/app/src/main/res/`
-
-| Layout | Light | Dark |
-|--------|-------|------|
-| Standard | `drawable-xxxhdpi/layout_standard_preview.png` | `drawable-night-xxxhdpi/layout_standard_preview.png` |
-| PhahTaigi | `drawable-xxxhdpi/layout_phahtaigi_preview.png` | `drawable-night-xxxhdpi/layout_phahtaigi_preview.png` |
-| MOE1 | `drawable-xxxhdpi/layout_moe1_preview.png` | `drawable-night-xxxhdpi/layout_moe1_preview.png` |
-| MOE2 | `drawable-xxxhdpi/layout_moe2_preview.png` | `drawable-night-xxxhdpi/layout_moe2_preview.png` |
-| TPS | `drawable-xxxhdpi/layout_tps_preview.png` | `drawable-night-xxxhdpi/layout_tps_preview.png` |
-
-**Android code references** (where screenshots are displayed):
-- `LayoutScreen.kt` — App settings layout selection page (`R.drawable.layout_{name}_preview`)
-- `LayoutSelectionOverlayView.kt` — Keyboard overlay layout switcher (`R.drawable.layout_{name}_preview`)
-
----
-
-## Platform File Correspondence
-
-### iOS
-
-| Component | File |
-|-----------|------|
-| Tab container | `ContentView.swift` |
-| Theme colors | KeyboardKit adaptive colors + the selected theme (`SharedSettings.resolvedAppearance(for:)`) |
-| Localization | `Strings/` i18n resolver — `DisplayLanguageStore` + `StringResolver` + generated `StringKey` / `StringResolverFormats`; strings codegen from `i18n/*.json` → `Localizable.xcstrings`. (All `*Texts.swift` constant files removed in R2b.) |
-| Image assets | `Assets.xcassets/` |
-
-### Android
-
-| Component | File |
-|-----------|------|
-| Tab container | `SettingsMainActivity.kt` + `MainSettingsScreen.kt` |
-| Navigation | Compose Navigation (no XML) |
-| Theme | `Theme.kt` + `AppStyle.kt` |
-| Strings | generated `i18n/generated/{L10n,StringKey,GeneratedTaigiStrings,StringResolverFormats}.kt` — see Localization Architecture above |
+- App-UI strings are generated from `i18n/*.json` by `make i18n`: [tools/i18n/README.md](../../tools/i18n/README.md); key-management rules: [i18n.md](../contributing/i18n.md).
+- Theme / Layout card screenshots are rendered from the real keyboard view by the `previews` skill: [.claude/skills/previews/SKILL.md](../../.claude/skills/previews/SKILL.md) (asset paths and sizes).
