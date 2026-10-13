@@ -18,7 +18,7 @@ trie ships missing `poj:` keys, POJ-mode users silently lose ~5 % of
 candidates and only end-user reports surface the regression. This script
 is the build-time tripwire.
 
-Wired into `dictionary/build.sh` after `build.audit` and before
+Wired into `dictionary/build.sh` after `build.version_snapshot` and before
 `build/deploy.sh`. Run standalone:
 
     python3 -m tools.verify_known_keys              # uses default FST path

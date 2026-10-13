@@ -34,10 +34,10 @@ already contains a fused toneless key for every multi-syllable entry,
 so toneless Roman input like `tsua` retrieves both single-syllable
 (`紙`) and multi-syllable (`珠仔`) candidates without any builder-side
 derivation rule. v3.5.8 Phase 1b verified this on 2026-05-10 and was
-marked N/A — see `docs/roadmap.md` §Phase 1b. Engine-side contract is
+marked N/A — see `docs/releases/v3.5.8/plan.md` § Phase 1b. Engine-side contract is
 pinned by `engine/lexicon/tests/fused_toneless_key.rs`.
 
-Wire format (per docs/engine/lexicon-slice-plan.md §2.2):
+Wire format (per docs/engine/binary-format.md §3):
     key_bytes (UTF-8) || 0xFF || rowid_le_4
 
 The fst itself is built by the Rust binary `engine/build-helpers/fst-builder`;
