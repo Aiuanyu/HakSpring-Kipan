@@ -2,33 +2,35 @@
 
 > **Type**: Feature
 > **Keywords**: `TPS`, `phonetics::tps`, `方音符號`, `Taiwanese Zhuyin`
-> **Related**: tone.md, binary-format.md, ../ui/layout.md
+> **Related**: tone.md, binary-format.md, ../ui/layout.md, ../phonetics/tps-auto-correct-rules.md
 
 ---
 
 ## Summary
 
-- TPS (Taiwanese Phonetic Symbols) input method
-- Input phonetic symbols; the engine looks them up directly in the `tps:` FST key family of `dictionary.fst` (no per-keystroke TPS→TL conversion — see § Tone 1/4 Ambiguous Syllable Matching)
-- QWERTY-style keyboard layout
+- TPS (Taiwanese Phonetic Symbols) input method on every platform (`InputMode::Tps`).
+- Input stays Bopomofo end to end; the engine looks it up directly in the `tps:` FST key family of `dictionary.fst` (no per-keystroke TPS→TL conversion — see § Tone 1/4 Ambiguous Syllables).
+- QWERTY-style keyboard layout.
 
 ---
 
 ## Ownership
 
-Since v3.5.1 (PR #186) all TPS conversion + key-level auto-adjust lives in Rust `engine/phonetics::tps` / `tps_adjust`. Platform side calls via `RustEngineBridge`.
+All TPS conversion and key-level auto-adjust live in Rust `engine/phonetics` (`tps.rs`, `tps_adjust.rs`). Platform code keeps only the keystroke dispatcher and UI.
 
 | Concern | Location |
 |---------|----------|
-| TPS detection / tone-mark tables | Rust `phonetics::tps::is_zhuyin` / `phonetics::api::contains_tps` (Rust-internal: composing, custom search, nextword), `phonetics::tables` |
-| TPS → TL (numeric tone) | Rust `phonetics::tps::from_zhuyin` (re-exported as `phonetics::tps_to_tl`) |
-| TL → TPS (display + numeric) | Rust `phonetics::api::to_tone_marks` + TPS path inside same crate |
-| Key-level auto-adjust (positional ㄇ/ㆬ + ㄫ/ㆭ/ㄥ, palatalization ㄗ→ㄐ, syllabic nasal, ㆮ/ㆯ) | Rust `phonetics::tps_adjust` |
-| Bridge — detection | `RustEngineBridge.isTPSToneMark(_)` (the `ContainsTps` op had no production caller and was removed 2026-09-25) |
-| Bridge — TL → TPS | `RustEngineBridge.tlDisplayToTPS(_)` (the `TlNumericToTps` op lost its last platform caller 2026-09-30 and was removed 2026-10-09 (round A1b); `phonetics::api::tl_numeric_to_tps` stays Rust-internal under `tl_display_to_tps`. TPS → TL stays Rust-internal — `phonetics::tps_to_tl` is consumed only by `phonetics::tps_adjust` for syllable validation; C-1 retired the `lexicon::classify_input` consumer and C-3b retired the `composing::continuous` fold; no FFI surface) |
-| Bridge — input adjust | `RustEngineBridge.tpsInputAdjust(incoming:rawInput:)` returning `(adjusted, replaceLast?)` |
+| TPS detection / tone-mark tables | Rust `phonetics::tps::is_zhuyin`, `is_tps_char`, `is_tps_tone_mark`; `phonetics::api::contains_tps` (Rust-internal) |
+| TPS → TL (numeric tone) | Rust `phonetics::tps::from_zhuyin` (re-exported as `phonetics::tps_to_tl`) — Rust-internal, used by `tps_adjust` syllable validation, `normalization::normalize_input` and `custom_search` |
+| TL → TPS (display) | Rust `phonetics::tps::to_zhuyin`, wrapped by `phonetics::api::tl_display_to_tps` / `tl_numeric_to_tps` |
+| Build-time TPS keys | Rust `tps_num_from_tl`, `tps_notone_from_tl`, `tps_abbrev_from_tl`; pipeline `dictionary/common/stages/numtone.py::_derive_tps_num` |
+| Key-level auto-adjust | Rust `phonetics::tps_adjust::adjust` (rules: [`tps-auto-correct-rules.md`](../phonetics/tps-auto-correct-rules.md)) |
+| Bridge — detection | iOS `RustEngineBridge.isTPSToneMark(_)` |
+| Bridge — TL → TPS | iOS `RustEngineBridge.tlDisplayToTPS(_:orMapsToER:)` |
+| Bridge — input adjust (mobile) | `RustEngineBridge.tpsInputAdjust` (iOS `Engine/RustEngineBridge+Phonetics.swift`, Android `engine/PhoneticsBridge.kt`) returning `(adjusted, replaceLast?)` |
+| Desktop input adjust | `Method::TpsKey` → `composing::transition::tps_key` → `phonetics::tps_input_adjust`, inside the engine |
 | iOS TPS-aware glue | `Layout/TaigiLayouts.swift` (layout def), `Settings/SharedSettings.swift` (`.tps` type), `Candidates/Views/CandidateCellHelper.swift` (candidate TPS display), `Input/CharacterInputPipeline.swift` (calls bridge) |
-| Android TPS-aware glue | `ime/text/CharacterInputPipeline.kt`, `ime/text/keyboard/TextInputKeyHandler.handleTaigiInput()`, layout JSON under `ime/text/characters/tps*.json` |
+| Android TPS-aware glue | `ime/text/CharacterInputPipeline.kt`, `ime/text/keyboard/TextInputKeyHandler.handleTaigiInput()`, layout JSON `assets/ime/text/characters/tps.json` |
 
 ---
 
@@ -40,10 +42,9 @@ User input → key-level adjust → shadow/lattice → tps: key → FST lookup
   ㄉㄧㄠˊ  → phonetics::tps_adjust → composing → tps:ㄉㄧㄠˊ → dictionary hit
 ```
 
-Under `InputMode::Tps` the buffer stays Bopomofo end to end: `phonetics::KeyFamily::for_input_mode` (`engine/phonetics/src/key_family.rs`) selects the `tps` family, and the lexicon fetch (`engine/lexicon/src/continuous/`) looks the key up in `dictionary.fst` populated at build time by `dictionary/build/create_fst.py`. The legacy per-syllable `phonetics::tps_to_tl` fold into `tl:` keys was retired in v3.5.9 D / C-3b (`engine/composing/src/continuous.rs:334-340`); `tps_to_tl` now serves only `phonetics::tps_adjust` syllable validation (`engine/phonetics/src/tps_adjust.rs:179-180`).
+Under `InputMode::Tps`, `phonetics::KeyFamily::for_input_mode` (`engine/phonetics/src/key_family.rs`) selects the `tps` family, and the lexicon fetch (`engine/lexicon/src/continuous/`) looks the key up in `dictionary.fst`, populated at build time by `dictionary/build/create_fst.py`. TPS is never folded into `tl:` keys at runtime.
 
 ---
-
 ## Initial Consonant Mapping
 
 | TPS | TL | Description |
@@ -154,53 +155,42 @@ Under `InputMode::Tps` the buffer stays Bopomofo end to end: `phonetics::KeyFami
 
 ## Keyboard Layout
 
+iOS `tps_iPhone` (`Layout/TaigiLayouts.swift`):
+
 ```
 Row 1 (Voiced/Tones): [ㆠ] [ˋ] [˪] [ㆣ] [ˊ] [ˇ] [˫] [˙] [ㆪ] [ㆩ]
 Row 2 (Stops/Vowels): [ㄅ] [ㄉ] [ㄍ] [ㄏ] [ㄧ] [ㄚ] [ㄞ] [ㄤ] [ㆫ] [ㆧ]
 Row 3 (Aspirated):    [ㄆ] [ㄊ] [ㄎ] [ㄗ] [ㄨ] [ㄛ] [ㄠ] [ㆲ] [ㆥ] [ㆮ]
 Row 4 (Nasals/Other): [ㄇ] [ㄋ] [ㄫ] [ㄘ] [ㄜ] [ㆦ] [ㄢ] [ㆰ] [，] [⌫]
-Row 5 (Function):     [123] [ㄌ] [ㆡ] [ㄙ] [ㆨ] [ㆤ] [Space] [⏎]
+Row 5 (Function):     [123] [ㄌ] [ㆡ] [ㄙ] [ㆨ] [ㆤ] [Space] [emoji] [⏎]
 ```
 
-Entering tone codas (ㆴ/ㆵ/ㆻ/ㆷ) are accessed via **long-press popups**:
+Entering-tone codas (ㆴ/ㆵ/ㆻ/ㆷ) come from Rule 2 auto-selection or the long-press popups on ㄅ/ㄉ/ㄍ/ㄏ (full popup list: [`tps-auto-correct-rules.md` § Long-Press Popup Keys](../phonetics/tps-auto-correct-rules.md#long-press-popup-keys-user-initiated-not-auto-correct)).
 
-| Main key | Popup |
-|----------|-------|
-| ㄅ | ㆴ (-p coda) |
-| ㄉ | ㆵ (-t coda) |
-| ㄍ | ㆻ (-k coda) |
-| ㄏ | ㆷ (-h coda) |
-
-**Important**: ㄏ (U+310F) and ㆷ (U+31B7) are distinct Unicode characters. ㄏ is always an initial consonant; ㆷ is the entering tone -h coda (BOPOMOFO FINAL LETTER H). The `toTL()` converter treats them differently — ㆷ maps to "h4"/"h8" via the tones table, while ㄏ maps to initial "h" via the consonants table.
+**Important**: ㄏ (U+310F) and ㆷ (U+31B7) are distinct characters. ㄏ is always an initial; ㆷ is the entering-tone -h coda (BOPOMOFO FINAL LETTER H). `from_zhuyin` maps ㆷ to `h4` / `h8` via the tones table and ㄏ to initial `h` via the consonants table.
 
 ### Layout Variants
 
-| Suffix | Description |
-|--------|-------------|
+| Name | Description |
+|------|-------------|
 | `tps_iPhone` | No globe key |
 | `tps_withGlobe` | Has globe key (iPhone SE, iPad) |
 
 ---
 
-## Bridge API (called from platform)
+## Bridge API (called from mobile platforms)
 
 ```swift
-// iOS — Engine/RustEngineBridge.swift
-RustEngineBridge.isTPSToneMark("ˋ")                // true
-RustEngineBridge.tlDisplayToTPS("guá",  orMapsToER: false)   // "ㄍㄨㄚˋ"
-
-// TPS → TL is Rust-internal only — `phonetics::tps_to_tl` is consumed by
-// `composing::continuous` for per-span TPS→TL conversion during continuous
-// input. v3.5.7 retired the per-keystroke FFI ladder; C-1 (v3.5.9 D)
-// retired the `lexicon::classify_input` consumer when the `tps:` FST
-// family went live.
+// iOS — Engine/RustEngineBridge+Phonetics.swift
+RustEngineBridge.isTPSToneMark("ˋ")                          // true
+RustEngineBridge.tlDisplayToTPS("guá", orMapsToER: false)    // "ㆣㄨㄚˋ"
 
 // Key-level adjust (positional ㄇ/ㆬ, palatalization ㄗ→ㄐ, syllabic nasal, ㆮ/ㆯ):
 let r = RustEngineBridge.tpsInputAdjust(incoming: "ㄇ", rawInput: "ㄅㄚ")
 // r.adjusted = "ㆬ", r.replaceLast = nil
 ```
 
-Internally the iOS / Android `CharacterInputPipeline` calls `RustEngineBridge.tpsInputAdjust` once per keystroke from `ActionHandler+KeyActions.handleCharacterInput` (iOS) / `TextInputKeyHandler.handleTaigiInput()` (Android) — no platform-side phonetic logic remains.
+The iOS / Android `CharacterInputPipeline` calls `tpsInputAdjust` once per keystroke from `ActionHandler+KeyActions.handleCharacterInput` (iOS) / `TextInputKeyHandler.handleTaigiInput()` (Android). TPS → TL has no FFI surface.
 
 ---
 
@@ -208,243 +198,82 @@ Internally the iOS / Android `CharacterInputPipeline` calls `RustEngineBridge.tp
 
 In TPS mode, candidates display phonetic symbols instead of romanization, and output phonetic symbols on tap.
 
-### Display Logic
+| isHanjiFirst | Title | Subtitle | Tap output |
+|--------------|-------|----------|------------|
+| false (default) | Phonetic symbols | Hanzi | Phonetic symbols |
+| true | Hanzi | Phonetic symbols | Hanzi |
 
-| isHanjiFirst | Title | Subtitle |
-|-------------------|-------|----------|
-| false (default) | Phonetic symbols | Hanzi |
-| true | Hanzi | Phonetic symbols |
+iOS implementation: `CandidateCellHelper.swift` — `displayTitle()`, `displaySubtitle()`, `suggestionToHandle()`.
 
-### Output Logic
+TPS candidates use the same font sizes as every other layout (iOS `CandidateTheme.primaryFontSize` / `secondaryFontSize`, Android `computeCandidateFontSizes` in `ime/text/candidates/CandidateStrip.kt`).
 
-| isHanjiFirst | Tap Candidate Output |
-|-------------------|---------------------|
-| false (default) | Phonetic symbols |
-| true | Hanzi |
+### Conversion Examples (`tl_display_to_tps`)
 
-### Implementation Location
-
-`CandidateCellHelper.swift`:
-- `displayTitle()` - Calculate title
-- `displaySubtitle()` - Calculate subtitle
-- `suggestionToHandle()` - Calculate tap output
-
-### Conversion Examples
-
-| TL (original) | TPS (display/output) |
-|---------------|---------------------|
+| TL | TPS |
+|----|-----|
 | tiau5 | ㄉㄧㄠˊ |
 | su5 | ㄙㄨˊ |
 | peh8 | ㄅㆤㆷ̇ |
 | kau2 | ㄍㄠˋ |
-| gua2-gua2 | ㄍㄨㄚˋ ㄍㄨㄚˋ |
+| gua2-gua2 | ㆣㄨㄚˋ ㆣㄨㄚˋ |
+| tsi̍t-pái | ㄐㄧㆵ̇ ㄅㄞˋ |
 
-### Hyphen Handling
-
-Romanization hyphen `-` converts to TPS space separator:
-
-```
-gua2-gua2  →  ㄍㄨㄚˋ ㄍㄨㄚˋ
-tsi̍t-pái  →  ㄐㄧㆵ̇ ㄅㄞˋ
-```
+A romanization hyphen `-` becomes a TPS space separator.
 
 ---
 
-## TL → TPS Conversion Post-Processing
+## TL → TPS Post-Processing (`phonetics::tps::to_zhuyin`)
 
-`convertSyllableToTPS()` applies several post-processing steps after initial table lookup:
+After the table lookup, `to_zhuyin` applies these display corrections:
 
-### Step 5: Standalone m/ng → Syllabic Form
-
-When consonant is matched but no vowel follows, the consonant is actually a syllabic nasal:
-
-| Consonant | No vowel | Result |
-|-----------|----------|--------|
-| ㄇ (m) | vowel empty | → ㆬ (syllabic m) |
-| ㄫ (ng) | vowel empty | → ㆭ (syllabic ng) |
-
-Examples: `m7` → ㆬ˫, `ng5` → ㆭˊ
-
-### Step 5b: ing Special Case — ㄧㆭ → ㄧㄥ
-
-The `tlToTPSVowels` table maps `"ng"` → `"ㆭ"` (final ng). But when preceded by ㄧ (i), the combination ㄧㆭ should display as ㄧㄥ, because ㄥ is the dedicated symbol for the `-ing` rhyme.
-
-| Vowel result | Correction | Example |
-|-------------|------------|---------|
-| ㄧㆭ | → ㄧㄥ | `ing5` → ㄧㄥˊ, `king5` → ㄍㄧㄥˊ |
-| ㄨㆭ | (no change) | `ung7` → ㄨㆭ˫ |
-| ㆭ alone | (no change) | `ng5` → ㆭˊ |
-
-### Step 6: Palatalized + ㄣㄣ → Nasalized ㆪ
-
-When a palatalized initial (ending in ㄧ) is followed by ㄣㄣ (nn), it collapses to the nasalized vowel ㆪ (inn):
-
-`tsinn5` → ㄐㆪˊ, `tshinn5` → ㄑㆪˊ
-
-### Step 7: o → oo Before Stop Tone
-
-Before checked tone finals ㆴ (p), ㆵ (t), ㆻ (k), the vowel ㄛ (o) becomes ㆦ (oo):
-
-`ok4` → ㆦㆻ, `bok4` → ㆠㆦㆻ
-
-This does not apply to ㆷ (h): `oh4` → ㄛㆷ
+| Step | Rule | Examples |
+|------|------|----------|
+| 5 | Consonant with no vowel is a syllabic nasal: ㄇ→ㆬ, ㄫ→ㆭ | `m7` → ㆬ˫, `ng5` → ㆭˊ |
+| 5b | ㄧㆭ → ㄧㄥ (ㄥ is the dedicated `-ing` rhyme); ㄨㆭ and bare ㆭ unchanged | `ing5` → ㄧㄥˊ, `king5` → ㄍㄧㄥˊ, `ung7` → ㄨㆭ˫ |
+| 6 | Palatalized initial + ㄣㄣ (nn) → nasalized ㆪ | `tsinn5` → ㄐㆪˊ, `tshinn5` → ㄑㆪˊ |
+| 7 | ㄛ → ㆦ before ㆴ/ㆵ/ㆻ (not ㆷ) | `ok4` → ㆦㆻ, `bok4` → ㆠㆦㆻ, `oh4` → ㄛㆷ |
 
 ---
 
-## ㄇ/ㆬ and ㄫ/ㆭ/ㄥ Auto-Selection
+## Input Auto-Correct
 
-In TPS, the same sound has different symbols depending on syllable position:
+Key-level auto-correct (`phonetics::tps_adjust::adjust`) is specified in [`../phonetics/tps-auto-correct-rules.md`](../phonetics/tps-auto-correct-rules.md): Rule 1 palatalization, Rule 2 nasal / stop position with its phonotactic gate, Rule 2b syllabic nasal + tone, Rule 3 ㆮ→ㆯ, plus the tone-9 digit.
 
-| Sound | Initial (syllable start) | Final / Syllabic (other) |
-|-------|-------------------------|--------------------------|
-| m | ㄇ | ㆬ |
-| ng | ㄫ | ㆭ (general) / ㄥ (after ㄧ only) |
-
-### Auto-Selection Rule
-
-**Scope**: TPS layout only. Gated by `inputMode == .tps` (iOS) / `keyboardLayoutType == "tps"` (Android).
-
-When the user taps ㄇ or ㄫ, `tps_adjust::adjust_initial_key()` checks the last character of the raw input:
-
-**At syllable start** (any of the following) → keep initial form (ㄇ / ㄫ):
-- Empty buffer (not composing)
-- Last char is a tone mark: ˋ ˪ ˊ ˇ ˫ ˙ ˆ
-- Last char is a checked tone final: ㆴ ㆵ ㆻ ㆷ
-- Last char is a space
-
-**Not at syllable start** → convert to final/syllabic form:
-
-| Key tapped | After ㄧ | Other position |
-|------------|---------|----------------|
-| ㄇ | → ㆬ | → ㆬ |
-| ㄫ | → ㄥ | → ㆭ |
-
-### Implementation
-
-| Platform | Helper | Call site |
-|----------|--------|-----------|
-| iOS | `RustEngineBridge.tpsInputAdjust` (Rust `phonetics::tps_adjust::adjust_initial_key` under the hood) | `ActionHandler+KeyActions.handleCharacterInput` |
-| Android | `RustEngineBridge.tpsInputAdjust` (Kotlin shim with same Rust backend) | `TextInputKeyHandler.handleTaigiInput()` |
-
-### Syllabic Nasal Tone-Triggered Correction (v3.4.7)
-
-When a tone mark follows bare ㄇ or ㄫ at syllable start, the consonant is retroactively corrected to its syllabic form:
-
-| Input sequence | Auto-corrected to | TL equivalent |
-|----------------|-------------------|---------------|
-| ㄇ + ˫ | ㆬ + ˫ | m7 |
-| ㄫ + ˊ | ㆭ + ˊ | ng5 |
-
-**Implementation**: Rust `phonetics::tps_adjust::syllabic_nasal_replacement` (called via `RustEngineBridge.tpsInputAdjust`).
+`from_zhuyin` inserts a syllable separator (`-`) between adjacent syllables, using tone marks and entering-tone codas as boundaries.
 
 ---
 
-## Font Size
-
-There is no TPS-specific candidate font sizing any more: TPS candidates use the same sizes as every other layout — iOS `CandidateTheme.primaryFontSize` / `secondaryFontSize` (`Candidates/Models/CandidateTheme.swift`, per-device base × `candidateTextSizeScale`), Android `computeCandidateFontSizes` (`ime/text/candidates/CandidateStrip.kt`). The former 0.85× TPS scale (`tpsScale` / `tps*FontSize` in `CandidateViewModels.swift`) no longer exists.
-
----
-
-## Test Cases
+## Test Cases (`from_zhuyin`)
 
 | TPS Input | TL Output | Description |
 |-----------|-----------|-------------|
 | ㄉㄧㄠˊ | tiau5 | Initial + vowel + tone |
-| ㄙㄨˊㄅㆤㆻ̇ | su5pek8 | Multi-syllable + entering tone |
-| ㄍㄠˋㄏㄧㆲˊ | kau2hiong5 | Compound vowel |
+| ㄙㄨˊㄅㆤㆻ̇ | su5-pek8 | Multi-syllable + entering tone |
+| ㄍㄠˋㄏㄧㆲˊ | kau2-hiong5 | Compound vowel |
 | ㄅㄚ | pa | No tone |
-| ㆴ | p4 | Single entering tone final |
+| ㄍㄚㆴ˙ | kap8 | Entering tone 8 |
 
 ---
 
-## Auto-Correct Features (v3.4.6+)
+## Tone 1/4 Ambiguous Syllables
 
-### Palatalization Auto-Correct
-
-Non-palatalized affricates (ㄗ/ㄘ/ㄙ/ㆡ) followed by ㄧ or ㆪ are auto-corrected to palatalized forms:
-
-| Input sequence | Auto-corrected to | TL equivalent |
-|----------------|-------------------|---------------|
-| ㄗ + ㄧ | ㄐ + ㄧ | tsi |
-| ㄘ + ㄧ | ㄑ + ㄧ | tshi |
-| ㄙ + ㄧ | ㄒ + ㄧ | si |
-| ㆡ + ㄧ | ㆢ + ㄧ | ji |
-
-**Implementation**: Rust `phonetics::tps_adjust::palatalization_replacement` (via `RustEngineBridge.tpsInputAdjust`).
-
-Called from:
-- iOS: `ActionHandler+KeyActions.swift` (`handleCharacterInput`)
-- Android: `TextInputKeyHandler.handleTaigiInput()`
-
-### Nasalized Vowel Auto-Correct
-
-ㆮ (ainn) after ㄧ is auto-corrected to ㆯ (aunn), because "iainn" is not a valid Taiwanese final — only "iaunn" exists.
-
-| Input sequence | Auto-corrected to | TL equivalent |
-|----------------|-------------------|---------------|
-| ㄧ + ㆮ | ㄧ + ㆯ | iaunn |
-
-**Implementation**: Rust `phonetics::tps_adjust::adjust_nasalized_vowel_key`.
-
-### Multi-Syllable Boundary Detection (v3.4.7)
-
-TPS multi-syllable input inserts an automatic syllable separator (`-`) at boundaries when a tone mark or entering tone coda is followed by a new consonant or vowel.
-
-**Implementation**: hyphen-insertion logic inside Rust `phonetics::tps::from_zhuyin` uses tone marks (ˋ ˪ ˊ ˇ ˫ ˙) and entering tone codas (ㆴ ㆵ ㆻ ㆷ) as boundary signals.
+TPS tone 1 and tone 4 are **unmarked**. The build pipeline converts each row's TL form to fused Bopomofo (`dictionary/common/stages/numtone.py::_derive_tps_num`), which emits the same `tps_num` for single-syllable `tsua2` (紙) and multi-syllable `tsu1a2` (珠仔) — both render as `ㄗㄨㄚˋ` because the tone-1 `tsu` is unmarked. The `tps:ㄗㄨㄚˋ` key in `dictionary.fst` therefore points to both rowids, and typing `ㄗㄨㄚˋ` recovers both candidates.
 
 ---
 
-## Tone 1/4 Ambiguous Syllable Matching — RESOLVED
+## er↔or Dialect Dual-Emit
 
-> **Status**: RESOLVED by v3.5.9 D / C-0 + C-1 (`tps:` FST family went live).
+`taigi-converter/src/tables.js` collapses TL `er` and `or` to the same glyph ㄜ (U+311C). The Rust `phonetics::tps::to_zhuyin` honors the `or_maps_to_er` user setting and renders TL `or` as ㄛ (U+311B) when the toggle is OFF (the default).
 
-TPS tone 1 and tone 4 are **unmarked** (no symbol). The build pipeline converts each row's TL form to fused Bopomofo via `dictionary/common/stages/numtone.py::_derive_tps_num`, which emits the SAME `tps_num` for both single-syllable `tsua2` (紙) and multi-syllable `tsu1a2` (珠仔) — both render as `ㄗㄨㄚˋ` because the tone-1 syllable on `tsu` is unmarked. The `tps:ㄗㄨㄚˋ` key in `dictionary.fst` therefore points to both rowids, and a TPS user typing `ㄗㄨㄚˋ` recovers both candidates.
-
-Pre-C-1, the engine fell through to `tl:` keys for TPS input, so the user's `ㄗㄨㄚˋ` lookup never reached the dictionary at all without per-keystroke conversion. C-1 flipped TPS input to the `tps:` family directly (today `phonetics::KeyFamily::Tps`, `engine/phonetics/src/key_family.rs`), and C-0 populated that family at build time.
+So that a user typing ㄛ for an `or`-spelled entry still finds it, the build pipeline emits, for every row whose TPS key contains ㄜ, a parallel `tps:<variant>` key at the same rowid with ㄜ → ㄛ (`tps_num_var` / `tps_notone_var` / `tps_abbrev_var` columns, `dictionary/common/stages/{numtone,notone,abbrev}.py`, keyed by `dictionary/build/create_fst.py`). The substitution is always on; `or_maps_to_er` drives **rendering** only (`to_zhuyin` / `tl_display_to_tps`), not recall. A row with two or more ㄜ syllables emits only the fully-swapped variant, not partial mixes.
 
 ---
 
-## er↔or Dialect Dual-Emit (C-3a)
-
-> **Status**: SHIPPED by v3.5.9 D / C-3a.
-
-The Node `taigi-converter` bridge in `taigi-converter/src/tables.js:68` collapses both TL `er` and `or` vowels to the same Bopomofo glyph ㄜ (U+311C). The Rust `phonetics::tps::to_zhuyin` mirror (used by display / candidate rendering) honors the iOS / Android `or_maps_to_er` user setting and renders TL `or` as ㄛ (U+311B) when that toggle is OFF (the default).
-
-This creates a dialect-recall asymmetry: a TPS user typing `ㄛ` for a TL `or`-spelled entry would not find it because the FST key is `ㄜ`-side only. Pre-C-1 the lexicon ran a runtime `key.replace("er", "or")` expansion gated by `SearchRequest.tps_or_mapped_to_er`; C-1 made that ASCII substring branch dead (the TPS key is now Bopomofo, not TL ASCII).
-
-C-3a moves the expansion into the build pipeline: every row whose `tps_num` contains ㄜ gets a parallel `tps:<variant>` key at the same rowid with ㄜ → ㄛ substituted (`tps_num_var` / `tps_notone_var` / `tps_abbrev_var` columns in `dictionary.csv`, emitted by `dictionary/build/create_fst.py`). The substitution is always-on — the lexicon runtime no longer reads `tps_or_mapped_to_er`. The `or_maps_to_er` user setting still drives **rendering** (`engine/phonetics::requests::tps_to_tps_*`) so the candidate display matches the user's dialect preference; only lexicon **recall** unifies the two glyphs.
-
-| Aspect | Before C-3a | After C-3a |
-|---|---|---|
-| User typing ㄜ | matches ㄜ-keyed rows (bridge default) | same |
-| User typing ㄛ for a TL `or` row | misses (runtime branch dead post-C-1) | hits via `tps_*_var` build-time emit |
-| `SearchRequest.tps_or_mapped_to_er` | runtime read | removed with the `Search` op (2026-09-30) |
-| `or_maps_to_er` user setting | recall + rendering | rendering only |
-
-Data scan (`dictionary/output/dictionary.csv` audit 2026-05-25): 1107 rows carry ㄜ in `tps_num`, all sourced from `er` / `or` tokens in `tl_num` (839 er-only, 275 or-only, 0 mixed of distinct tokens within one row, 4 rows with two `er`/`or` tokens). The substitution is safe — no other TL vowel maps to ㄜ in the bridge tables.
-
-Multi-token rows (N≥2 affected syllables, 4 rows total) emit the fully-swapped variant only; partial mixes (some tokens ㄜ, some ㄛ) are intentionally out of scope.
-
----
-
-## Pure Core vs Platform Glue (post-Rust)
-
-All TPS phonetic logic now lives in Rust and is shared by both platforms via the FFI seam. Platform code retains only the keystroke dispatcher + UI rendering.
-
-### Rust core (cross-platform)
-
-| Module | Responsibility |
-|--------|----------------|
-| `engine/phonetics::tables` | Pure data — string → string mappings, no platform deps |
-| `engine/phonetics::tps` | TPS detection (`is_zhuyin`) + TPS → TL (`from_zhuyin`) |
-| `engine/phonetics::tps_adjust` | Key-level adjustments (palatalization, syllabic nasal, positional ㄇ/ㆬ, ㆮ/ㆯ) |
-| `engine/phonetics::api` | TL → TPS display + numeric paths |
-
-### Platform glue (stays per-platform)
+## Platform Glue
 
 | Concern | iOS | Android |
 |---------|-----|---------|
-| Composing platform wrapper | `Input/Composing/ComposingManager.swift` (KeyboardKit / Combine) | `ime/text/composing/ComposingManager.kt` |
+| Composing platform wrapper | `Input/Composing/ComposingManager.swift` | `ime/text/composing/ComposingManager.kt` |
 | Effect → text-region binding | `Input/Composing/ComposingDelegate.swift` (`UITextDocumentProxy`) | `ime/text/composing/ComposingDelegate.kt` (`InputConnection`) |
 | Keystroke dispatcher | `Input/CharacterInputPipeline.swift` | `ime/text/CharacterInputPipeline.kt` |
 | Layout / candidate UI | `Layout/`, `Candidates/Views/` | `ime/text/layout/`, `ime/text/candidates/` |

@@ -2,17 +2,17 @@
 
 > **Type**: Feature
 > **Keywords**: `NextWord`, `Bigram`, `user_association`, `PredictNext`, `nextword crate`
-> **Related**: continuous-candidate-display.md, sort.md, architecture/nextword-engine-boundary.md, binary-format.md
+> **Related**: continuous-candidate-display.md, continuous-input-ranking.md §3.2, architecture/nextword-engine-boundary.md, binary-format.md
 
 ---
 
 ## Summary
 
-- Predicts next possible word after a candidate commit.
+- Predicts the next word after a candidate commit.
 - Hybrid: dictionary bigram (`association.bin`, read-only mmap, byte-identical cross-platform) + user learning (`user_association.db`, SQLite, engine-owned in `engine/userdata`).
 - Decay-weighted scoring with generation-tagged async queries.
 - User associations capped at 50,000 entries (engine-side enforcement, `UserAssociationStore::shipped_capacity`).
-- Engine state machine + scoring lives in Rust `engine/nextword` (since v3.5.5 / PR #198).
+- Engine state machine + scoring live in Rust `engine/nextword`.
 
 ---
 
@@ -20,26 +20,26 @@
 
 ### Hybrid Bigram
 
-| Source | Query key | Prediction result | Description |
-|--------|-----------|-------------------|-------------|
-| Dictionary | Last character of selected word | Bigram (1 char) + Phrase (2-3 chars) | Cold start |
-| User | Full selected word | Full word | After learning |
+| Source | Query key | Description |
+|--------|-----------|-------------|
+| Dictionary | Word key `hanji\u{1}tl` of the committed word; when the TL is empty or the word key has no rows under the source mask, the character key of its last character | Cold start; word → character backoff, never a merge (`engine/lexicon/src/search.rs` `lookup_associations`, `behavioral-invariants.md` §24) |
+| User | Full committed word (Hanji), rows whose `prev_tl` matches first, then `prev_tl = ''`, then other readings | After learning (`UserAssociationStore::rows_following`) |
 
 ### Storage
 
 **Dictionary associations** — `association.bin` (binary mmap, read-only)
-- Sorted key table with binary search by `prev_word` (single character)
+- Sorted key table with binary search by key (word key or single character)
 - Entries per key sorted by count DESC
 - Fields: bitmask (u16), count (u32), next_word, next_tl
 - Bitmask filter replaces SQL WHERE for dictionary source filtering
 
-**User learning** — `user_association.db` (SQLite, writable, schema v6)
+**User learning** — `user_association.db` (SQLite, writable, schema v6, `engine/userdata/src/association.rs`)
 
 ```sql
 CREATE TABLE user_association (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     prev_word TEXT NOT NULL,   -- Previous word (full word, hanzi)
-    prev_tl TEXT DEFAULT '',   -- Previous word TL (added in v4)
+    prev_tl TEXT DEFAULT '',   -- Previous word TL
     next_word TEXT NOT NULL,   -- Next word (full word, hanzi)
     next_tl TEXT DEFAULT '',   -- Next word TL
     count INTEGER DEFAULT 1,
@@ -49,11 +49,7 @@ CREATE TABLE user_association (
 CREATE INDEX idx_user_prev_word_tl ON user_association(prev_word, prev_tl);
 ```
 
-**Migration history**:
-- v0 → v3: `UNIQUE(prev_word, next_word)` → `UNIQUE(prev_word, next_word, next_tl)` (drop + recreate)
-- v3 → v4: `ALTER TABLE ... ADD COLUMN prev_tl TEXT DEFAULT ''` + new index
-- v4 → v5: dropped the redundant single-column `idx_user_prev_word`
-- **→ v6**: `prev_tl` joins the UNIQUE key, so the two readings of a polyphonic previous word stay separate observations (`behavioral-invariants.md` §24). One convergent rebuild replaces the per-version ladder (today the engine takeover in `engine/userdata/src/association.rs`): create-new / copy preserving `id` / drop / rename, reading `pragma_table_info` for the columns actually present rather than inferring them from the version stamp.
+`prev_tl` is part of the UNIQUE key so the two readings of a polyphonic previous word stay separate observations (`behavioral-invariants.md` §24). Older schemas are upgraded by one convergent rebuild in `association.rs` that reads `pragma_table_info` for the columns actually present.
 
 ---
 
@@ -62,16 +58,18 @@ CREATE INDEX idx_user_prev_word_tl ON user_association(prev_word, prev_tl);
 ```
 User selects candidate
     ↓
-Record association (if previous word exists and interval < 10 seconds)
+Record association (if previous word exists and interval < 10 seconds, `decide.rs` ASSOCIATION_TIMEOUT_MS)
     ↓
 Query predictions
-  ├─ Dictionary: association.bin binary search (prev_word = last character) + bitmask filter
+  ├─ Dictionary: association.bin lookup (word key → last-character backoff) + bitmask filter
   └─ User: user_association.db SQL query (prev_word = full word)
     ↓
 Time decay calculation
     ↓
 Merge and sort, display candidates
 ```
+
+The same committed word also re-ranks the continuous-input candidate list through `context_rank` (`behavioral-invariants.md` §56): same tables, user rows over bundled, never the segmentation.
 
 ---
 
@@ -82,10 +80,10 @@ Authoritative scoring lives in Rust `engine/nextword/src/scorer.rs`. The decay c
 | Source | Score component |
 |--------|----------------|
 | User association (`user_association.db`) | `count × USER_WEIGHT × decay(ageHours)` plus `LEARNING_BONUS` for fresh learns |
-| Dictionary bigram (`association.bin`) | `count × DICT_WEIGHT` |
-| Decay model | RIME-style exponential, ~one-week half-life (configurable in `scorer.rs`) |
+| Dictionary bigram (`association.bin`) | `count × DICT_WEIGHT`, summed per prediction and capped at `DICT_SCORE_CAP` (250) — below the lowest possible user score, so every learned prediction outranks every bundled-only one |
+| Decay model | RIME-style exponential, one-week half-life |
 
-Refer to `engine/nextword/src/scorer.rs` for the exact constants — they are the single source of truth and may evolve between releases.
+`scorer.rs` holds the exact constants.
 
 ---
 
@@ -101,7 +99,7 @@ Refer to `engine/nextword/src/scorer.rs` for the exact constants — they are th
 ### Context Reset
 
 - Input sentence-ending punctuation (`。！？.!?`) or a clause mark (`，、；：,;:`)
-- Long idle time (> 30 seconds)
+- Long idle time (> 30 seconds, `decide.rs` CONTEXT_TIMEOUT_MS)
 - Switch input field
 - Backspace to empty
 
@@ -129,45 +127,6 @@ Engine state machine + decision tables + scoring all live in Rust `engine/nextwo
 | Bigram source (read-only) | `association.bin` via Rust `engine/lexicon::lookup_associations` |
 | User association source | `user_association.db` via Rust `userdata::UserAssociationStore` (`rows_following` read, `record` write), wired in `engine/dispatch/src/user_data/with_stores.rs` `handle_nextword` |
 | iOS bridge | `Engine/RustEngineBridge+NextWord.swift` |
-| Android bridge | `engine/RustEngineBridge.kt` |
+| Android bridge | `engine/NextWordBridge.kt` |
 | iOS platform executor | `NextWord/NextWordController.swift` (Timer, DispatchQueue.main, @MainActor) |
 | Android platform executor | `ime/text/nextword/NextWordController.kt` |
-
----
-
-## Reference: librime-predict Ideas
-
-> Source: [librime-predict](https://github.com/rime/librime-predict)
-
-### 1. Sentence-start Prediction
-
-Not adopted (USER 2026-10-02); `association.bin` carries no `$` key. librime-predict uses a special `$` key to query predictions at the beginning of a sentence (no previous word context).
-
-### 2. Continuous Prediction Limit
-
-Prevent infinite loop when user keeps tapping predictions. librime-predict uses `max_iterations`.
-
-```kotlin
-private var iterationCounter = 0
-private val maxIterations = 3
-
-fun onWordSelected(word: String) {
-    if (isShowingPrediction) {
-        iterationCounter++
-        if (iterationCounter >= maxIterations) {
-            clearPrediction()
-            return
-        }
-    }
-    predict(word)
-}
-```
-
-### 3. Comparison
-
-| | librime-predict | TaigiKeyboard |
-|--|-----------------|----------------|
-| Storage | DoubleArray Trie (mmap, read-only) | Burntsushi fst + binary mmap (dict) + SQLite (user) |
-| User learning | None | Yes |
-| Sentence-start | `$` symbol | Not adopted |
-| Iteration limit | `max_iterations` config | Not yet (timeout only) |

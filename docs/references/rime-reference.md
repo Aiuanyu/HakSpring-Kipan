@@ -2,7 +2,7 @@
 
 > **Type**: Reference
 > **Keywords**: `librime`, `RIME`, `Pipeline`, `DAG`, `SpellingAlgebra`
-> **Related**: khiin-reference.md, azookey-reference.md
+> **Related**: khiin-reference.md, mainstream-ime-comparison.md (card #8)
 
 ---
 
@@ -71,7 +71,7 @@ inline double formula_d(double d, double t, double da, double ta) {
 |----------|-------------|
 | 1 | Exact match > Predictive match |
 | 2 | User vocabulary +0.5 bonus |
-| 3 | Complete input > Autocomplete (-1 penalty) |
+| 3 | Complete input > Autocomplete (-1 penalty; both in `src/rime/gear/table_translator.cc:91`) |
 | 4 | Sort by quality value |
 
 ### Storage
@@ -154,10 +154,10 @@ Possible splits: `xi + an` (Xi'an) or `xian` (先)
 
 | Type | Penalty |
 |------|---------|
-| Abbreviation/Fuzzy | -0.693 |
-| Autocomplete | -0.693 |
-| Error correction | -4.605 |
-| Ambiguity | -23.026 |
+| Abbreviation/Fuzzy | -0.693 = log(0.5) (`src/rime/algo/calculus.cc:14-15`) |
+| Completion (autocomplete) | -2.996 = log(0.05) (`src/rime/algo/syllabifier.cc:27`) |
+| Error correction | -4.605 = log(0.01) (`syllabifier.cc:28`, `calculus.cc:16`) |
+| Ambiguous syllable | -2.996 (`src/rime/dict/table.cc:569`) |
 
 ---
 
@@ -171,86 +171,6 @@ Possible splits: `xi + an` (Xi'an) or `xian` (先)
 | Chord | Multiple keys pressed simultaneously |
 | Sentence | Poet + Grammar for best sentence |
 | History | Record recent input |
-
----
-
-## TaigiKeyboard Application Suggestions
-
-### P0 - Immediately Usable
-
-**1. Time Decay Weight**
-```kotlin
-fun calculateWeight(count: Int, lastUsedMs: Long): Double {
-    val ageHours = (System.currentTimeMillis() - lastUsedMs) / 3600000.0
-    val decay = exp(-ageHours / 168.0)  // One week half-life
-    return count * decay
-}
-```
-
-**2. User Vocabulary Fixed Bonus**
-```kotlin
-// Change to addition instead of multiplication
-val finalScore = dictScore + (if (isUserPhrase) USER_BONUS else 0)
-```
-
-### P1 - Short-term Implementation
-
-| Feature | Description |
-|---------|-------------|
-| History | Record recent N words, quick recall |
-| Undo input | Undo wrong selection within 3 seconds |
-| Reverse lookup | Hanzi to romanization, assist learning |
-
-### P2 - Mid-term Planning
-
-| Feature | Description |
-|---------|-------------|
-| POJ/TL unified | Either romanization finds the word |
-| Fuzzy phonetics | Handle n/l, in/ing confusion |
-| Continuous segmentation | Support spaceless continuous input |
-
-### P3 - Long-term Reference
-
-| Feature | Description |
-|---------|-------------|
-| Pipeline | Modularize processing flow |
-| Configuration-driven | Define IME behavior with YAML |
-
----
-
-## Implementation Priority
-
-```
-Phase 1 (NextWord optimization)
-├── Time decay weight
-├── User vocabulary bonus
-└── History
-
-Phase 2 (Input experience)
-├── Undo function
-├── Reverse lookup
-└── POJ/TL unified
-
-Phase 3 (Advanced features)
-├── Fuzzy phonetics
-└── Continuous segmentation
-
-Phase 4 (Architecture upgrade)
-├── Pipeline architecture
-└── Configuration-driven
-```
-
----
-
-## Comparison with This Project
-
-| Item | librime | TaigiKeyboard |
-|------|---------|---------------|
-| Storage | LevelDB | SQLite |
-| Weight | Dynamic weight + time decay | count counter |
-| Segmentation | DAG + Viterbi | Single word search |
-| Variants | Spelling Algebra | Manually create multiple entries |
-| Extension | Plugin system | Directly modify code |
 
 ---
 

@@ -487,12 +487,8 @@ Some finals can form syllables without any initial:
 | Diphthong u+a | ua | oa |
 | Diphthong u+e | ue | oe |
 | Nasalization | -nn | -ⁿ (superscript) |
-| Tone 7 mark | ¯ (macron) | ¯ (macron) |
-| Tone 3 mark | ˋ (grave) | ˋ (grave) |
-| Tone 2 mark | ´ (acute) | ´ (acute) |
-| Tone 5 mark | ˆ (circumflex) | ˆ (circumflex) |
-| Tone 8 mark | \| (vertical) | \| (vertical) |
-| Neutral tone | -- | -- |
+
+Tone marks 2 / 3 / 5 / 7 / 8 and the neutral-tone `--` are the same in both systems — see §5.1.
 
 ---
 
