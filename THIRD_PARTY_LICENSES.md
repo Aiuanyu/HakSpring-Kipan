@@ -19,7 +19,7 @@ copyright lines below were read out of each font's own `name` table.
 | --- | --- | --- |
 | 芫荽 Iansui | `iansui_regular.ttf` | Copyright 2025 The Iansui Project Authors (<https://github.com/ButTaiwan/iansui>). Designed by But Ko / Fontworks Inc.; derived from Klee One. |
 | jf open 粉圓 2.1 | `jf_openhuninn_2_1.ttf` | justfont (<https://justfont.com/huninn>). Latin/kana components: Kosugi Maru © 2010 MOTOYA CO.,LTD.; Varela Round © 2011-2016 The Varela Round Project Authors, with Reserved Font Names "Varela" and "Varela Round". |
-| 源樣黑體 GenYoGothic2 TW | `genyogothic2tw_r.otf` | ButTaiwan (<https://github.com/ButTaiwan/genyo-font>); derived from Adobe Source Han Sans. |
+| 源樣烏體 GenYoGothic2 TW | `genyogothic2tw_r.otf` | ButTaiwan (<https://github.com/ButTaiwan/genyo-font>); derived from Adobe Source Han Sans. |
 | 源樣明體 GenYoMin2 TW | `genyomin2tw_r.otf` | ButTaiwan (<https://github.com/ButTaiwan/genyo-font>); derived from Adobe Source Han Serif. |
 
 The four files live once, at `assets/fonts/font/`, and all five platforms package that

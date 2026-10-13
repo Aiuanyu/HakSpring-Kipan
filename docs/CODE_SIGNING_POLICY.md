@@ -136,10 +136,8 @@ Get-FileHash .\TaigiKeyboard-<version>.exe -Algorithm SHA256
 
 An Authenticode certificate costs a few hundred US dollars a year, so signing
 goes through SignPath Foundation's free programme for open-source projects.
-That application is in progress: the first one was rejected on 2026-10-02, the
-bundled dictionary data's own non-open-source terms being the likely obstacle,
-and the maintainer will reapply. Until a certificate is issued, this page
-describes what a user can verify instead.
+Until a certificate is issued, this page describes what a user can verify
+instead.
 
 ## Licence
 

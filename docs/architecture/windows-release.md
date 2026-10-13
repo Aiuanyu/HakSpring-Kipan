@@ -8,10 +8,8 @@ an Inno Setup installer in place of a product archive.
 
 ## Signing status — UNSIGNED is the current channel
 
-There is no code-signing certificate for this project yet. The SignPath
-Foundation application is in progress — the first one was rejected on
-2026-10-02 and the maintainer will reapply (§ Building on a GitHub-hosted
-runner). Until a certificate is issued, releases are cut and published with
+There is no code-signing certificate for this project yet (signing path:
+§ Building on a GitHub-hosted runner). Until a certificate is issued, releases are cut and published with
 `--skip-sign`, and the published artifact carries the plain
 release name — `TaigiKeyboard-<version>.exe`, the same shape macOS publishes.
 

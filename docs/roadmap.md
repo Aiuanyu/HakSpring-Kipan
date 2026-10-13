@@ -24,12 +24,6 @@
 
 One line each; the linked section holds the design, the measurements and the open questions.
 
-**Project and legal (maintainer)**
-
-| Item | Status | Where |
-|---|---|---|
-| SignPath Foundation code-signing application | rejected 2026-10-02; to be reapplied later — keep `CODE_SIGNING_POLICY.md` + the `windows-build.yml` provenance build | [`CODE_SIGNING_POLICY.md`](CODE_SIGNING_POLICY.md) |
-
 **Engine and dictionary**
 
 | Item | Status | Where |
