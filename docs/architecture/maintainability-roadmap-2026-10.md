@@ -2,9 +2,9 @@
 
 > **Type**: Planning (PR table over the 2026-10-09 audit)
 > **Keywords**: `refactor`, `dead code`, `parity`, `engine-owned commit`, `dictionary search op`, `desktop-core`, `layering`, `docs drift`
-> **Status**: proposed 2026-10-09 — nothing scheduled, nothing started; the maintainer decides order and start
+> **Status**: in progress — H, A1a (#473), A1b (#475), A2 (#490) merged; next A3. The maintainer decides order and start
 > **Source**: `docs/reports/2026-10-09-audit-all.md` (frozen snapshot on `68f2481b`; §2 findings, §4 draft rounds, §5 open decisions)
-> **Predecessor**: `maintainability-roadmap.md` (2026-09-30 audit, R1–R12 complete 2026-10-01)
+> **Predecessor**: the 2026-09-30 audit (`docs/reports/2026-09-30-audit-all.md`), rounds R1–R12 complete 2026-10-01 (#274–#331)
 > **Session memory**: project memory `project_maintainability_audit_2026_10_09.md`
 
 ---
@@ -72,9 +72,9 @@ Active PR pointer: none (next: A3 on a new branch).
 
 **Deliberately not adopted / YAGNI**
 
-- Shared Swift package for iOS + macOS — closed by the maintainer 2026-10-04; the ~430 identical Swift lines stay as data.
+- Shared Swift package for iOS + macOS — closed by the maintainer 2026-10-04: of the 19 same-named Swift files only the 7 generated `*.pb.swift` (already diffed by `checks.yml`) and ~80 lines of `DisplayLanguage` are shared; every other twin genuinely diverged and each bridge is tied to its platform's own Rust archive.
 - macOS candidate-window geometry over desktop-core (~910 lines) — scoped out 2026-10-02; macOS update flow over `taigi-desktop-update` — three recorded blockers (`2026-10-02-macos-desktop-core-inventory.md` §7).
-- One generated FFI header for the three desktops — consumers differ (Swift vs C vs in-process); rejected in `macos-desktop-core-roadmap.md:240`.
+- One generated FFI header for the three desktops — consumers differ (Swift vs C vs in-process); rejected in `macos-desktop-core-roadmap.md` § Deliberately not adopted (hand-written C ABI).
 - Removing the ranker `(display, "")` bucket — it is the identity of a reading-less OOV pick, not a compat fallback; comment fix only (H).
 - Re-deleting the ~82 platform tests that restate engine behaviour — R7-2b (#315) kept them on purpose.
 - Deleting the Android `CandidateClickHandler` English branch — R1 PR2 pre-review found a real path.

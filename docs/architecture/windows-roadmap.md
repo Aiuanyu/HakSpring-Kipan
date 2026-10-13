@@ -2,38 +2,27 @@
 
 > **Type**: Reference (shipped; kept as the design record)
 > **Keywords**: `windows`, `TSF`, `Text Services Framework`, `desktop`, `engine reuse`, `macOS parity`
-> **Status**: shipped — PR1–PR10 + parity audit merged 2026-08-29 (authored without a Windows machine); W17 WinUI 3 settings window merged 2026-08-31 (A0 #647 / A #648 / B1 #649 / B #650 / C #651); first Windows release **desktop v3.6.7** (2026-09-04, unsigned installer; `changelog/desktop-v3.6.7.md`), then **desktop v3.6.8** (2026-09-11; `changelog/desktop-v3.6.8.md`). Box dogfood since 2026-08-30 (`ssh win`); per-feature `Sn` items in `dogfood-checklist.md`. Release mechanics: `windows-release.md`, `desktop-release.md`.
-> **Session memory**: project memory `project_windows_ime.md` (Claude auto-memory)
-> **Sibling**: `docs/architecture/macos-roadmap.md` — the platform this one mirrors
-> **Oracle rule superseded** (2026-10-03, macOS desktop-core P12): "macOS is the behaviour oracle" below is historical — desktop-core and its tests are now the behaviour oracle for the three desktops (`macos-desktop-core-roadmap.md` D8).
+> **Status**: shipped — first Windows release desktop v3.6.7; settings window on WinUI 3 (W17).
+> **Sibling**: `docs/architecture/macos-roadmap.md`
+> **Behaviour oracle**: desktop-core and its tests, for all three desktops (`macos-desktop-core-roadmap.md` D8); "macOS is the behaviour oracle" below is historical.
 
 ---
 
 ## Goal
 
-Add Windows as the fourth platform (second desktop platform beside macOS). USER 2026-08-29 (verbatim):
+Windows as the second desktop platform: window UI, settings, custom dictionary, dictionary management, candidate window, shortcuts and release process match macOS, so a user switching between the two gets the same experience. TPS was added later (`desktop-tps-roadmap.md`).
 
-> I don't have a windows computer yet, but I'd like you to implement the input method for windows; I'll test and build it later once I have one. The window UI, settings menu, custom dictionary, dictionary management, features, candidate window, shortcuts and release process all match macOS. Users switching between macOS and windows get a consistent experience.
+Two consequences shaped every decision below:
 
-Two consequences shape every decision below:
-
-1. **macOS is the behaviour oracle.** Every observable macOS behaviour — key table,
-   modes, auto-space, full-width punctuation, candidate geometry, settings keys and
-   defaults, storage schemas, CSV, update flow, release pipeline — is ported from the
-   `file:line` specs extracted in Phase 0. The Codex pre-impl sharpened this into a
-   five-way classification, used throughout: **identical semantics** · **platform-adapted
-   presentation** · **unsupported host capability** · **intentionally deferred** ·
-   **unverified until Windows dogfood**. Each delta is named per
-   `docs/contributing/cross-platform-alignment.md` §3.
-2. **PR1–PR10 were authored without a Windows machine** and verified on the macOS host
-   (§ W13). Since 2026-08-30 a Windows box exists (`ssh win`, MSVC Rust 1.98, no .NET):
-   W17 and everything after it is built and smoke-run there; the macOS host keeps the
-   fast type-check. First-run breakage on the box is the dogfood's job — see § Dogfood
-   run-book.
-
-**Hard constraints**: release / tag / store actions stay user-gated. TL + POJ only, no
-TPS (same as macOS). Shared-surface changes (engine proto, i18n, release tooling) are
-allowed on their merits and listed in § Shared-surface register.
+1. **macOS was the behaviour oracle** (now desktop-core — see the header). Every observable
+   behaviour — key table, modes, auto-space, full-width punctuation, candidate geometry,
+   settings keys and defaults, storage schemas, CSV, update flow, release pipeline — was
+   ported from `file:line` specs, each delta classified as **identical semantics** ·
+   **platform-adapted presentation** · **unsupported host capability** · **intentionally
+   deferred** · **unverified until Windows dogfood** (`docs/contributing/cross-platform-alignment.md` §3).
+2. **The first PRs were authored without a Windows machine** and verified on the macOS
+   host (§ W13). A Windows box (MSVC Rust, no .NET) now builds and smoke-runs the TIP and
+   the settings window; the macOS host keeps the fast type-check.
 
 ## Architecture (approved, revised per Codex 2026-08-29)
 
@@ -77,7 +66,7 @@ user_association.db, custom_dictionary.db}; install dir %ProgramFiles%\TaigiKeyb
 TaigiKeyboardSettings.exe + the Windows App Runtime files (W17), Dictionaries\*, Fonts\*}.
 ```
 
-## Design decisions (W1–W16, grounded in code; Codex verdict per item)
+## Design decisions (W1–W17, grounded in code; Codex verdict per item)
 
 Citations refer to the Phase-0 spec extracts (macOS `file:line`) and the reference
 IMEs under `references/`. "Codex:" records the ANALYSIS-ONLY verdict and what changed.
@@ -359,8 +348,7 @@ IMEs under `references/`. "Codex:" records the ANALYSIS-ONLY verdict and what ch
   this Mac. **Codex strongly recommends a GitHub Actions Windows runner** (MSVC build,
   `regsvr32` in an isolated runner, settings-exe process smoke, Inno compile) as a v1
   gate. Adopted later: `.github/workflows/windows-build.yml` builds the installer on a
-  GitHub-hosted runner for `desktop-*` tags + dispatch (memory
-  `project_windows_hosted_build.md`); `make windows-check` stays the manual host gate. What `cargo check` cannot catch is listed in
+  GitHub-hosted runner for `desktop-*` tags + dispatch; `make windows-check` stays the manual host gate. What `cargo check` cannot catch is listed in
   `docs/contributing/windows-guidelines.md` § TSF / COM discipline.
   **W17 amendment (2026-08-30)**: `windows-reactor-setup`'s build script refuses the
   gnu target (`unsupported target environment: gnu`, spike), while `windows-reactor`
@@ -511,7 +499,7 @@ IMEs under `references/`. "Codex:" records the ANALYSIS-ONLY verdict and what ch
   **Gate**: § W13 amendment (`make check-box`). Each PR: builds on the box, launches
   headless without crashing (ssh session 0 cannot show a window), USER screenshots on
   the box's console.
-- **W16 Docs** — roadmap = decisions + PR DAG + acceptance; memory = round hand-off;
+- **W16 Docs** — this roadmap = design decisions;
   `docs/architecture/windows-release.md` = operator procedure. **PR10 contract for PR9's
   code** (Codex): sign `TaigiKeyboardSettings.exe` and every installer with the SAME
   Authenticode leaf; VERSIONINFO on both with an identical non-empty `ProductName` and
@@ -529,83 +517,6 @@ IMEs under `references/`. "Codex:" records the ANALYSIS-ONLY verdict and what ch
   certificate-rotation release goes through the download page once;
   `docs/contributing/windows-guidelines.md` = durable constraints; `windows/updates/README.md`
   = manifest contract only. No duplicated truth between them.
-
-## Windows-specific acceptance matrix (Codex W15/F14)
-
-Not "chrome differences" — each needs its own acceptance line in the run-book:
-UI-less candidate hosts (games, some Store apps) · password / secure fields (no
-composition, no learning) · AltGr layouts · high contrast · screen reader (candidate
-window exposes text via UIA — deferred, named) · touch keyboard · remote desktop ·
-Chrome child-HWND focus · Notepad composition length cap · Windows Terminal.
-W17 adds (settings window): native `TextBox` Taigi IME · Narrator/UIA + Tab order ·
-`ContentDialog` focus trap + Escape/Enter · `NavigationView` adaptive width (pane
-collapse below its threshold) · Mica on Windows 10 (falls back) · runtime files
-missing → a readable failure, not a silent exit · clean/offline install · hook
-released on every exit path, keys swallowed only while recording · live system
-theme / high-contrast change · `--check-updates` from the non-interactive scheduled
-task session · uninstall removes the runtime files, keeps `%APPDATA%`.
-
-## Phase / PR table
-
-USER sizing preference (2026-08-17): ~600–1000 LOC per PR, fewer and larger. Every
-coding PR runs the Codex sandwich (pre-impl on that PR's design fork, post-impl on the
-diff) and the W13 gates. Order revised per Codex F12.
-
-| PR | Phase | Scope | Status |
-|---|---|---|---|
-| PR0 | Admin | this roadmap + memory topic + `docs/contributing/windows-guidelines.md` + docs index | direct-to-main |
-| PR1a | Proto | `PLATFORM_WINDOWS` + `make build` regen (mechanical) | **Merged** #623 (`b7090482`) |
-| PR1b | i18n + tooling | `macos` → `desktop` namespace rename; `windows` platform + Rust emitter; `release_notes.py` Windows version writer/check; root Makefile `windows-check` / `windows-release` | **Merged** #624 (`d1fc40a5`) |
-| PR2 | Scaffold + core composing | `windows/` workspace + toolchain; `taigi-desktop-core`: settings model + revision, engine bridge (envelope, AppConfig, generation, lexicon install, logger), `ComposingSessionCoordinator` keyed by context token, ComposingManager port (3-phase apply, effects, fetch protocol, commit outcomes), `ComposingKeyIntent` 7-tier table + `KeyEventSnapshot`; engine round-trip tests against `ios/Resources/Dictionaries`. **Locks**: word identity `(Hanji, canonical TL)`, context ownership + handover, engine generation rules, effect ordering + failure semantics, settings revision | **Merged** #625 (`e4367ef6`) + #626 (`e557297a`) |
-| PR3 | Core candidates | `CandidateMetrics<TextMeasurer>`, `HorizontalPageLayout`, `VerticalLayout`, `ExpandedGridLayout`, positioning, index labels, cell content, document text; macOS oracle numbers as tests | **Merged** #627 (`94b702cb`) |
-| PR4 | Storage + policies | `taigi-desktop-storage`: rusqlite stores (freq v2 / assoc v6 / custom v3, byte-identical SQL, WAL + bounded busy handling, migration under `BEGIN IMMEDIATE`), `LearningCapacity`, CSV codec, seeds, settings file store (atomic replace); core: `AutoSpacePolicy` + attaching set, `FullWidthPunctuation`, `NextWordLearner`, shortcuts model (chords, registries, conflicts, recorder gate) | **Merged** #628 (`ff52af09`) |
-| PR5a | TSF lifecycle | COM exports + class factory + symmetric registration + GUIDs; `TextService` activate/deactivate; thread-mgr / thread-focus sinks; context identity; lang-bar button + menu; settings reload; spawn settings exe; **smoke TIP that composes nothing** | **Merged** #629 (`b9361e72`) |
-| PR5b | TSF composing | key sink → snapshot → intent → manager inside sync edit sessions; composition start/update/commit per context; display attribute; preserved keys; password/read-only gating; handover | **Merged** #630 (`78514a8e`) |
-| PR6 | TSF UI | candidate window (D2D/DWrite renderer, 3 layouts, DPI scope, theme, mouse, private fonts, caret positioning + fallbacks, device loss) + UI-less `ITfCandidateListUIElement` contract; mode flash panel; unfold animation | **Merged** #631 (`7f481296`) |
-| PR7 | Settings exe I | eframe shell + sidebar + General / Appearance / Shortcuts panes + shortcut recorder + display language + fonts; `taigi-windows-platform` (locale / open URL / beep, host stubs); `settings::launch` CLI contract shared with the DLL; core `keys::recorder` decision + choice `label_key`s | **Merged** #632 (`d6247c82`) |
-| PR8 | Settings exe II | Custom Dictionary (paged `egui_extras` table, CRUD sheet, CSV import/export via `rfd`, delete all, clear learning — writes on a background thread behind one work slot + 400 ms spinner) + Dictionary Sources (three sections, MOE dictionary subcollections indented/disabled) + unlisted Dictionary Search (`--pane dictionarySearch`; lexicon loaded on first query) + external lookup URLs; core `engine::lexicon` search ops + `DictionarySource::from_bitmask/badge_key` + `LexiconRow::sorted_for_search`, `engine::external_lookup`, `dictionary_artifacts::dictionary_version` shared with the DLL | **Merged** #633 (`995eb5ee`) |
-| PR9 | Updates | `taigi-windows-update`: `manifest` (wire format = macOS's, `DottedVersion` zero-padded), `checker` (due / stamp-before-fetch / record / announce-once, pure over `SettingsDocument`), `transport` (`ManifestFetcher` + `PackageDownloader` traits; `ureq` over schannel, 64 KiB / 200 MiB ceilings, HTTPS+200 only), `installation` (the `Offer` state machine, staging `%LOCALAPPDATA%\TaigiKeyboard\Updates\<uuid>\<version>.exe`, download + verify on a thread), `verify` (WinVerifyTrust + signer thumbprint pinned to the running exe + VERSIONINFO product/version; ⚠ since 2026-09-04 `verify::admit` also requires the manifest's `packageSHA256` and runs the Authenticode half only when the running copy is signed), `toast` (WinRT, AUMID `TaigiKeyboard.Settings`); settings exe: overdue check at launch, `--check-now` alert, `--check-updates` headless, General-pane pending row per offer | **Merged** #634 (`101034f5`) |
-| PR10 | Installer + release | `windows/installer/TaigiKeyboard.iss` (admin, `{autopf}\TaigiKeyboard`, x64compatible, Inno 6.5+; languages = macOS bundle's zh-Hant/en/ja with Hanji first as fallback, messages generated from `desktop.installer*` into `Messages.iss` by `make i18n` — USER 2026-08-29: "whatever languages macos has, windows has too"; unregister + stop settings exe + rename lock-probe with the sign-out recipe before copying; regsvr32 x64 + SysWOW64 for a staged x86 DLL; AUMID Start-menu shortcut; per-user scheduled task from `update-check-task.xml` created as the original user, `IgnoreNew`; symmetric uninstall, `%APPDATA%` kept) · `build-support/resource.rs` + both crates' `build.rs` (icon id 1 + VERSIONINFO with `VFT_APP`/`VFT_DLL` via rc.exe / llvm-rc / windres; `TAIGI_REQUIRE_RESOURCES=1` = compile failure fatal, no windres on MSVC) · `resources/TaigiKeyboard.ico` (`tools/windows/make-ico.py`) · `scripts/{lib/identity.sh,release-app.sh,publish-release.sh}` (mirror of macOS; signtool by thumbprint, env-gated; VERSIONINFO read back from DLL/exe/installer via PowerShell and compared to the checkout; `dumpbin /dependents` no-VC-runtime gate; publisher pins the installer's signer to `WINDOWS_SIGNING_THUMBPRINT`; `windows-v<ver>` release on the website repo; `appcast/windows.json` + `_data/windows_release.json`; poll live) · root `make windows-release`, `windows/Makefile release` · `tools/release_notes.py` set/check-versions += `windows/Cargo.toml` · docs `windows-release.md`, `windows/updates/README.md`, README | **Merged** #635 (`05c06cd0`) — 2026-08-29 USER「merge all PR」; installer languages = macOS bundle set (hanji/en/ja) via `desktop.installer*` → `Messages.iss` |
-| PR11 | Dogfood fixes | first real-Windows smoke: fixes from the run-book + memory hand-off. Landed as the 2026-09 box rounds rather than one PR: #41 `3b8466e1` (ListView rows before selection index), #43 `7efa0b56` (custom typeface collection outlived its DWrite factory), #44 `d9cb1d8f` (symbol-picker chord as a preserved key), #46 `6c06302f` (Manage Fonts lists OS-installed families); earlier box fixes old #691 (IMMERSIVESUPPORT), #702 (localized app name), installer replace-loaded-files | **Merged** (#41 / #43 / #44 / #46) |
-| W17-A0 | Reactor foundation | pinned `windows-reactor` git dep + MSVC-only `as_self_contained()` in `build.rs` (rc resources coexist), `make check-box` (ssh MSVC clippy) folded into `windows-check`, `release-app.sh` runtime staging + DLL no-WinUI import gate, `.iss` runtime files + uninstall, docs; egui entry point UNTOUCHED | **Merged** #647 (`fdbe647b`) |
-| W17-A | Shell + General + Appearance | `SettingsWindow` component (NavigationView, Mica, theme, size, title, live-reload tick, InfoBar banner, ContentDialog alerts), SettingsCard / choice / switch / action-card widgets, General + Appearance pages, update row + outcome dialog; ALTERNATE entry `--winui` (replaces A0's `--winui-smoke`, which the real window subsumes) — egui stays production until W17-C. Shared seams so nothing is written twice: `updates::UpdateHost` (both windows drive one check / offer / announce), `presentation` (display language, pane titles + glyphs, sponsor link), `user_data::open_at_launch` (the launch store migrations both entries owe). The Reactor sidebar lists only the panes this build has pages for; a stored or `--pane` selection it has no page for opens on General IN MEMORY and is never written back, so a preview launch cannot move the egui window's selection | **Merged** #648 (`cf498ea6`) |
-| W17-B1 | Platform recorder hook | `taigi-windows-platform`: `WH_KEYBOARD` thread hook (RAII + drain, `catch_unwind`, down+up swallow, bounded delivery closure, host stub) + the shared `ToUnicodeEx` translation moved out of the TSF crate so the recorder reads a key exactly as the classifier does (`key_translation::recorded_press`, AppKit reserved scalars for the keys that type nothing); pure tests for the `lParam` decode, the swallow bookkeeping and the scalar table. `make check-box` widens to the platform crate — its key translation IS the Win32 keyboard API, so its tests cannot run on the macOS host | **Merged** #649 (`33c0f844`) |
-| W17-B | Shortcuts + Dictionary Sources | recorder rows over the B1 hook (`RecorderTarget` routes BOTH registries through one `store`, so the conflict pass cannot be forgotten on one of them) + shortcuts page; Dictionary Sources with MOE dictionary as an `Expander` header over its eleven subcollections. Reactor exposes no focus event, so every message that is not the recording itself ends it — the "clicked elsewhere" the egui field watched for — and the tick releases a row the user walked away from. The slot-key-set picker keeps its `resolve_after_slot_key_set_change` pass: `choice_row` answers with the MESSAGE the row means, not a single-key write | **Merged** #650 (`758fe4a0`) |
-| W17-C | Custom Dictionary + Dictionary Search + cutover | `ListView` table + header, paging, CRUD `ContentDialog`, `rfd` CSV over `platform::dialog_owner()` (Reactor hands out no HWND), busy card after 400 ms, delete-all / clear-learning; the unlisted search page; THEN egui goes — `app.rs`, `theme.rs`, `fonts.rs`, `keys.rs`, `panes/**`, `widgets/**`, and the eframe / egui / egui_extras pins. Background work moves from `work::PendingWork` to Reactor's `spawn_background` (`work.rs` survives ONLY for `UpdateState`, which is not a component and has no context). `main()` returns `ExitCode`; `--winui` goes with the window it selected. `check-exe` retires — the exe can only link on MSVC now, so `check-box` builds it | **Merged** #651 (`fdd64e34`) |
-
-W17 merge rule (Codex Q8): A0 may merge alone (no behaviour change). A / B1 / B / C are
-**stacked** — none merges to `main` on its own; `main` never carries a Reactor build
-that lacks a pane. Installer + release plumbing lands in A0 so the first Reactor exe
-starts on a clean install.
-
-**W17 first dogfood, 2026-08-31 — what the blind build cost.** Two panes (Dictionary Sources, Custom Dictionary)
-fail-fasted the process the moment they were opened: each handed a multi-root `View::fragment`
-to a single-child content / slot, which the reactor answers with
-`PumpError::StructureUnsupported` — an unhandled `E_FAIL` out of `OnLaunched` that XAML turns
-into a crash with no message anywhere but Windows Error Reporting. Because the shortcut opens
-the pane the user last had open, visiting either one made every later Ctrl+Shift+S (the settings
-chord at the time) die at once,
-which read as "the shortcut is broken". The tray button was the second miss: a
-`TF_LBI_STYLE_BTN_MENU` item shows no menu in the Windows 8+ taskbar input indicator, which
-routes clicks to `OnClick` and never drives `InitMenu`. Both are fixed, and every pane is now
-mounted headlessly against the reactor's `RecordingRuntime` by `winui::pane_planning` — the
-planning layer is platform-independent, so that test catches this whole class before a device
-ever sees it. Rules in `docs/contributing/windows-guidelines.md` § Authored without a Windows
-machine.
-
-Dependencies: PR2 → PR3/PR4 (parallelisable) → PR5a → PR5b → PR6; PR7 → PR8; PR9 needs
-PR4 + PR7; PR10 last.
-
-## Shared-surface coordination register
-
-| Change | PR | Additive? | ios/android/macos files touched? |
-|---|---|---|---|
-| `PLATFORM_WINDOWS = 4` in `envelope.proto` + regen | PR1a | yes | **yes — generated `.pb.swift` / `.java` only, semantically inert** |
-| `i18n/macos.json` → `desktop.json`, key rename, `windows` scope; Rust emitter | PR1b | rename | `macos/**/*.swift` call sites + generated Swift (mechanical, `swift build` verified) |
-| `tools/release_notes.py` Windows version file | PR1b | yes | no |
-| Root `Makefile` `windows-*` targets | PR1b | yes | no |
-| `engine/` crates consumed by path from `windows/` | PR2 | no change | no |
-| Website repo: `appcast/windows.json`, `_data/windows_release.json` | PR10 | yes | separate repo (the release itself moved to `desktop-*` tags here, 2026-09-09) |
 
 ## Best practices alignment (references)
 
@@ -637,9 +548,6 @@ registration, desktop toast requirements).
 | Inno Setup, `regsvr32 /s` in `[Run]`, DLL-locked rollback + sign-out guidance | rakukan `rakukan_installer.iss:120-158, 290-370` | W8 |
 | `regsvr32` per architecture, `SetRegView 64` | PIME `installer/installer.nsi:299-303, 633-650` | W8 |
 | `+crt-static` for the TIP DLL | khiin `windows/ime/.cargo/config.toml:1-6` | W14 |
-| Candidate geometry / paging / positioning oracles | macOS `Candidates/*.swift` + tests | W4, PR3 |
-| Key table, modes, auto-space, full-width, learning identity | macOS `Keys/*.swift`, `Policies/*.swift`, `Composing/*.swift` | W5, PR2/PR4 |
-| Settings keys/defaults, storage schemas, CSV, update flow | macOS `Settings/*.swift`, `Updates/*.swift`, `Storage/*.swift` | PR2/PR4/PR7-9 |
 
 **Deliberately not adopted**
 
@@ -654,61 +562,5 @@ registration, desktop toast requirements).
 | HKLM → HKCU `CTF\TIP` registry copy | rakukan `rakukan_installer.iss:134-138` | Uninstall deletes the whole HKCU TIP key — other IMEs' settings. Dogfood decides if Windows 11 needs anything. |
 | `MessageBox` in `DllRegisterServer`, `panic!` in edit sessions, advising a second sink object | khiin `dll.rs:173-180`, `edit_session.rs:32`, `key_event_sink.rs:87-88` | Live bugs, not patterns. |
 | Threads spawned from `DllMain` | rakukan `lib.rs:127-130` | Loader lock. |
-| ~~Shift-tap Chinese/English toggle~~ — **ADOPTED 2026-09-04**, see below | Windows CJK convention | Was: macOS has neither, keep the macOS table as the default (Codex F14). USER dogfooded 微軟注音 on the box, confirmed Shift is the platform's switch, and asked for it. It shipped as a settings row (`shiftTogglesEnglishEnabled`) with a tray letter and a mode flash; the row was retired 2026-09-05 (USER: the General pane mirrors the Mac's 1:1, which has no such row) and the tap is unconditional — the tray letter and the flash are what keep it from being the silent default change F14 refused. Space-to-convert stays unadopted. |
 | WiX / MSI-written registry | khiin `installer/Registry.wxs` | `DllRegisterServer` is the single source of registration truth; an MSI mirror drifts. |
 | Resident tray agent | rakukan `rakukan-tray` | Codex F8: a scheduled task + settings-exe overdue check covers the update trigger without a resident process. |
-
-## Dogfood run-book (first Windows machine)
-
-Written before the box existed; the first pass ran 2026-08-30/31 and the fixes are in PR11 above. Ordered in layers — stop at the first foundation failure:
-
-1. Toolchain: `rustup target add` the MSVC targets; `cargo build --release -p
-   taigi-windows-tsf -p taigi-windows-settings`; `iscc` installed.
-2. `regsvr32 TaigiKeyboard.dll` from an elevated prompt → the TIP appears under
-   Settings → Time & language → Language → Chinese (Traditional, Taiwan) → Keyboard. If invisible on Windows 11, evaluate
-   rakukan's HKLM→HKCU copy (W7 open item) before anything else. `regsvr32 /u` removes
-   every key it added (W7 symmetry). **Name**: Settings and the tray show 台語齒盤 on a
-   zh-TW UI, 台湾語キーボード on ja, TaigiKeyboard on en and on any other UI language —
-   never the literal `@C:\...\TaigiKeyboard.dll,-100` (that would mean the shell did not
-   resolve the indirect description: fall back to a plain string in `register_profile`).
-   Switch the Windows display language and sign out/in to see it follow; check all three
-   consumers separately (Settings profile name, tray item text, tray tooltip — different
-   processes resolve them); a UI language with no block (fr-FR) must show `TaigiKeyboard`;
-   an install path with spaces must still resolve; the MSVC release build (rc.exe, not
-   the host's windres) must carry all three `LANGUAGE` blocks — `Get-Content` the
-   installer's DLL through PowerShell's `[System.Diagnostics.FileVersionInfo]` is not
-   enough, read the string table (`resource hacker` or `LoadString` from the settings exe).
-3. Notepad: type `taigi` → underlined preedit, candidate window below the caret,
-   `q` commits slot 0, Return commits highlighted, Space commits the alternate script,
-   Esc cancels, digits are tones. Then Word / Chrome / Windows Terminal / a UWP app
-   (expect W2 degradation there) / a password field (expect no composition).
-4. Lang-bar button in the tray: menu Settings opens the exe; Ctrl+Alt+S / Ctrl+Alt+C /
-   `` ` `` work while the TIP is active.
-5. Settings exe (W17, WinUI 3): each pane matches the macOS pane order and controls;
-   typing Taiwanese INTO the custom-dict `TextBox`es with our own TIP (composition,
-   commit, backspace, caret — a native TSF host); Mica behind the window on Windows 11,
-   a solid ground on Windows 10; the window follows Personalization → Colors (accent) and the
-   system light/dark live, and the app's own Light/Dark overrides it; high contrast
-   (Alt+Shift+PrintScreen) redraws the whole window in the scheme; the five
-   NavigationView items carry Segoe Fluent Icons glyphs; Narrator reads every card's
-   header for its switch/combo; Tab order walks nav → cards → controls with visible
-   focus; Shortcuts recording swallows Tab/Space/Enter only while a row records and
-   releases the hook on Escape, click-away, focus loss, pane change and close (no key
-   ever stays swallowed); `ContentDialog`s trap focus and answer Escape; second launch
-   with `--pane` switches the existing window; changing a setting is visible on the
-   next keystroke without restart; display language Automatic: an English Windows UI with a
-   Taiwan region draws English (UI language wins, as on the Mac), a zh-TW UI draws
-   Hanji in the system's CJK face.
-6. Installer: fresh install, upgrade over a running IME (expect the sign-out note),
-   uninstall leaves `%APPDATA%\TaigiKeyboard` in place; scheduled task exists.
-7. Update: `--check-updates` reads the live manifest; toast appears; download + verify +
-   install from the General pane.
-8. Acceptance matrix: UI-less host, AltGr layout, high contrast, remote desktop.
-   High contrast: turn on a scheme (Alt+Shift+PrintScreen) — the candidate window
-   must draw in the scheme's window / text / highlight colours with no grey of ours,
-   and flip back the moment the scheme goes off, without restarting the host. One
-   black-background and one white-background scheme; check selected, unselected,
-   annotation, separator, the expanded list and the mode flash; toggle the scheme
-   both while a candidate window is showing and while none is.
-
-Per-PR dogfood lists are appended in each PR body.

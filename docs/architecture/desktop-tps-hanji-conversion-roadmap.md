@@ -2,11 +2,11 @@
 
 Under TPS (方音符號, the i18n `en` label "Phonetic Symbols") on macOS, Windows and Linux, the preedit shows the predicted Hanji while the user types, and ↓ opens the candidates of the word at the caret — the way the Zhuyin input methods work. This is arm B of U8 in [`desktop-tps-roadmap.md`](desktop-tps-roadmap.md); arm A (the preedit stays glyphs, D7) is what P1–P6 of that roadmap built.
 
-Status: H-P1 (engine, typing forward) is merged (#398); H-P2 (engine, the caret) is merged (#401); H-P3 (engine, choosing a word and the commits) is merged (#402); H-P4 (desktop core and the three shells) is merged (#403): under TPS the desktops show the conversion. H-P5 (the macOS window's place, the invariant, the dogfood items) is merged (#404): every phase is merged. No release is assigned; scope and timing are the maintainer's call.
+Status: shipped (H-P1–H-P5 merged). The behaviour contract is [`behavioral-invariants.md`](behavioral-invariants.md) §59.
 
 Not next-word prediction. The desktops never suggest a word after a commit (maintainer, 2026-10-03), and nothing here changes that: this converts the glyphs being composed, before any commit. TL and POJ are untouched (U8).
 
-## Maintainer decisions (2026-10-05)
+## Maintainer decisions
 
 The request (2026-10-04, translated): "I want TPS typing to be closer to how the Zhuyin input methods type: on the desktop it predicts Hanji, and the Down arrow opens the candidate menu to choose."
 
@@ -16,42 +16,6 @@ The request (2026-10-04, translated): "I want TPS typing to be closer to how the
 | B2 | Enter commits the Hanji as shown. Shift+Enter commits the glyphs as typed, as today. |
 | B3 | Arm B replaces arm A. No setting keeps the glyph preedit. |
 | B4 | Only a word the user picked from the candidate window is written to user data, under the identity (Hanji, canonical TL) (`AGENTS.md` Core Principle 6). A word the walker chose and the user only accepted with Enter teaches nothing. |
-
-## Today (grounded in code)
-
-`C/` = `engine/composing/src/`, `core/` = `desktop/crates/taigi-desktop-core/src/`. Read at `a758ee2d`.
-
-| Fact | Where |
-|---|---|
-| A TPS buffer goes through the same shadow → lattice → walker as TL and POJ; no gate excludes TPS | `C/continuous.rs:1088-1096`; `C/syllabifier/mod.rs:50-71`; `C/syllabifier/tps.rs:73-131` |
-| A lattice edge spans 1–8 syllables; the lattice itself covers the whole buffer | `C/shadow.rs:188`; `C/lattice/builder.rs:54-103` |
-| The walker's best path is a list of edges, each with its Hanji, reading and syllable count | `C/lattice/walker.rs:40-107` |
-| That path leaves the engine flattened into one row: slot 0 of the candidate list, whose `hanji` is set only when every edge has one | `C/continuous.rs:104-119, 927-938` |
-| Read by running (`engine/composing/tests/candidate_dump.rs`, production artifacts, 2026-10-05): `ㄍㄧㄣ ㄚˋㆢㄧㆵ˙ㄊㆪ ㄎㄧ˪ㄐㄧㄣ ㄏㄛˋ` → slot 0 `今仔日天氣真好`; a twelve-syllable buffer converts whole; a user-frequency row `臺語 / tâi-gí` turns `台語真好` into `臺語真好`, and a single-syllable row changes the homophone the walker shows | same harness, `DUMP_MODE=tps`, `DUMP_FREQ` |
-| The rest of the list is left-anchored: every row's span starts at 0 | `C/continuous.rs:1112-1451`; `C/lattice/mod.rs:11-22` |
-| The preedit of the pending tail never consults the dictionary: under TPS it is the raw glyphs minus the separator | `C/derived.rs:18-26` |
-| A pick of a prefix nails it (nothing is written to the document), the rest stays pending and is fetched again; Backspace on an empty tail un-nails the last segment and restores its glyphs | `C/transition.rs:734-831, 457-487`; `C/api.rs:132-157` |
-| So Hanji already appears in a desktop preedit — after a pick only | `C/api.rs:412-446`; `core/../tests/composing_manager.rs:382-390` |
-| The engine caret is a byte offset in the pending tail and never enters a nailed segment; the display caret assumes one displayed character per raw character | `C/api.rs:17-21`; `C/transition.rs:146-169, 280-288`; `C/derived.rs:96-132` |
-| A mutation does no segmentation; the fetch is a separate request the platform sends, run on a clone of the engine, twice when user data is attached | `C/transition.rs:264-273`; `C/handle.rs:13-22`; `engine/dispatch/src/user_data/with_stores.rs:48-51, 105-126` |
-| A candidate pick records usage in the engine at commit; `CommitRaw` (Enter under D7) records none | `C/transition.rs:863-871, 527-582`; `with_stores.rs:63-76` |
-| A final commit of two or more Hanji segments, six syllables at most, learns the phrase (§50) | `C/transition.rs:1029-1051` |
-| Custom and learned phrases are not walker edges under TPS | `C/continuous.rs:527-529, 648-660` |
-| The desktop fetches nothing on a TPS key; the window opens on demand | `core/composing/intent_executor.rs:76-101, 202-206` |
-| TL and POJ fetch on every key | `core/composing/intent_executor.rs:66-75` |
-| The classifier's TPS branch; "window up" is "the list is not empty" | `core/keys/intent.rs:156-213, 352-396` |
-| Plain ← → are navigation keys: typing, they open the window. The caret chord is Ctrl+← → (⌥ on the Mac) | `core/keys/intent.rs:165-183, 360-367` |
-| Every shell draws the preedit as one string, one caret and one underline; no model carries ranges | Windows `taigi-windows-tsf/src/composition.rs:234-267`, `display_attribute.rs:30-37,118`; IBus `taigikeyboard-ibus/src/wire.rs:94-107`; Fcitx5 `linux/fcitx5/src/engine.cpp:182-193`; macOS `Composing/ClientWriter.swift:28-70`, `taigi-macos-ffi/proto/desktop_shell.proto:292-296` |
-| The macOS candidate window is placed from the length of the marked text | `taigi-macos-ffi/src/session.rs:382-393`; `desktop_shell.proto:315-321` |
-| The three callers of the classifier and the executor | Windows `taigi-windows-tsf/src/session.rs:238-244, 1506`; Linux `taigi-linux-core/src/session.rs:284-290, 550`; macOS `taigi-macos-ffi/src/session.rs:114-122` |
-| A pick that leaves no pending text finalizes: the whole composition is written and the engine goes idle | `C/transition.rs:778-804` |
-| `CommitRaw` writes the nailed segments' display text (Hanji) and the pending glyphs — not the glyphs of the whole composition | `C/transition.rs:527-540` |
-| Frequency rows are looked up only for the words in the candidate rows of the neutral fetch | `engine/dispatch/src/user_data/with_stores.rs:185-192` |
-| A mutation answers with its glyph `UpdatePreedit` at once, and the desktop writes it before any fetch | `C/transition.rs:264-273`; `core/composing/manager.rs:395-424` |
-| `FetchAtPos` field 1 (`position`) is `reserved` | `engine/protos/proto/composing.proto:149-151` |
-| A next-word pair is learned from the terminal word and its preceding segments | `C/transition.rs:999-1051`; `engine/nextword/src/decide.rs:191-199` |
-
-What carries over: the syllabifier, the lattice, the walker, the left-anchored list, nailing and un-nailing, usage recording. What is missing: the path kept as segments, a preedit made from them, a list anchored at a word other than the first, a pick that does not finalize, and a commit that writes the converted text.
 
 ## Design
 
@@ -215,33 +179,15 @@ A glyph of an open reading costs less than a TL key does today — no walk. A ke
 - No TL or POJ test expectation changes in any phase — engine goldens, desktop-core tests, the three shells' session tests. A diff that edits one is a finding, not an update.
 - Each phase's PR runs the TL and POJ suites of every touched platform and says so; each dogfood item opens with a TL and a POJ sentence typed as before.
 
-### Baseline
+## Phase labels (cited from code)
 
-- The cites here are `a758ee2d`. The work other sessions had in flight when this was written has merged (#395, #397, 2026-10-05) and touched no file this plan cites; no other session is working in the repository.
-- H-P1 opens on a rebase and re-reads every Today row and H6's "D7 today" column against the code then; a row that moved is corrected in the phase's PR. Done at `0fdbd6e3`: nothing under `engine/composing`, `engine/dispatch` or the desktop key path changed since `a758ee2d`, so every row stands. Two rows move with H-P1 itself: a mutation now answers with a converted `UpdatePreedit` when the request asks for the conversion, and the walker's path is kept as segments (`C/conversion.rs`) beside being flattened into slot 0.
-- D7 and U8 in `desktop-tps-roadmap.md` are marked as revised only in H-P5, after arm B is on main. Done in H-P5.
-
-## Phases
-
-Sizes are estimates. The engine phases are unreachable until H-P4 sets the switch.
-
-| Phase | Type | Scope | Builds / tests | Size | Status |
-|---|---|---|---|---|---|
-| H-P0 | docs | This roadmap, the `roadmap.md` row | — | — | Merged |
-| H-P1 | feat (engine) | H1, H2 for typing forward: the switch, the conversion in the state, the closed-part boundary, the walk on closing, the derived preedit and caret, Backspace; tests from production syllables (fixture rule: every strict-prefix syllable asserted) | engine; `make build` for the mobile artifacts (additive) | ~450 | Merged #398 `3e81146b` |
-| H-P2 | feat (engine) | H3: the caret by word, the open reading inside the tail, re-opening a nailed segment | engine; `make build` | ~400 | Merged #401 `1f54d61b` |
-| H-P3 | feat (engine) | H4, H5, H7: the word's list and its frequency lookup, the pick that keeps composing, commit as shown, commit as typed, the picked mark and what it withholds | engine, dispatch, nextword; `make build` | ~500 | Merged #402 `241cd651` |
-| H-P4 | feat (desktop-core, all three shells) | H6, H8: the switch on under TPS, the classifier and executor rows, every shell's tests | desktop-core, Windows, Linux, macOS | ~500 | Merged #403 `8ff54b50` |
-| H-P5 | feat (macOS) + docs | The window's place on device; the behavioural invariant for H1–H7; the dogfood items; D7 and U8 in `desktop-tps-roadmap.md` marked as revised, S91 reworded | macOS | ~250 | Merged #404 `5ba4158f` |
-
-Each implementation phase: its own branch and PR; an engine PR with a new op takes the full Codex sandwich; a Claude cloud review per PR (U7).
-
-Regression surface, checked in every phase:
-
-- Engine: request decoding and the exhaustive intent matches (`C/requests.rs:60-73`); the legacy fetch golden (`engine/composing/tests/golden_fetch_at_pos.rs`); the continuous phase, commit-resolution, caret, TPS key / separator / tone, learned-phrase and lifecycle tests; dispatch user-data reads and writes; next-word decisions. Old expectations stay; arm B gets its own matrix.
-- Mobile: regenerated bindings only (`ios/.../RustEngineBridge+Composing.swift`, `android/.../ComposingBridge.kt`); no call changes.
-- Desktop: the engine bridge (`core/engine/composing.rs`), the manager, executor and classifier tests; the three callers listed under Today; Linux `tests/session_characterisation.rs` (`tps_opens_the_table_on_demand_and_the_number_row_picks`, `switch_tps_round_trip_commits_the_glyphs_on_the_next_key`); macOS `taigi-macos-ffi/src/session.rs` tests (`under_tps_the_list_opens_on_demand_and_the_number_row_picks`, `a_tps_keyboard_press_types_its_glyph_even_over_an_open_list`) and the Swift TPS tests; the Windows key sink's Test / Deliver and panel clicks (box harness — the TSF crate tests only on Windows).
-- TL and POJ: nothing above runs without the switch.
+| Phase | Content |
+|---|---|
+| H-P1 | Engine: H1, H2 for typing forward |
+| H-P2 | Engine: H3, the caret by word |
+| H-P3 | Engine: H4, H5, H7 — the word's list, the pick, commit as shown / as typed |
+| H-P4 | desktop-core and the three shells: H6, H8 |
+| H-P5 | macOS window placement; invariant §59 |
 
 ## Best practices alignment
 
@@ -275,29 +221,3 @@ Deliberately not adopted:
 - **Head auto-commit past a length** (`KeyKey41-Eten-Tribute/src/Server/KeyHandler.cpp:1964-1992`; vChewing `InputHandler_CoreProtocol.swift:983-1016`) — see H9.
 - **Converting the reading before it is closed** — the engine can (it probes the inventory), but the word under the fingers would change on every glyph.
 - **Hanji conversion in the TL / POJ preedit** — U8: the romanizations keep their always-on list.
-
-## Reviews
-
-- H-P0 pre-implementation, 2026-10-05: Codex (`codex-cli 0.160.0`, `gpt-6.1-sol`) GO-WITH-CHANGES on a first draft in which a fetch after each key returned the conversion and the commits carried its segments back. Applied: the closed-part boundary comes from the syllabifier and the shadow's barriers, with the unclosable cases named (H1); re-segmentation on completion is stated, not denied (H1); an open reading inside the tail keeps the conversion on both sides and re-walks on closing (H3); field 1 of `FetchAtPos` is reserved, so a new tag (H5); a pick that reaches the end keeps the composition (H4); one preedit write per key (H2); the picked mark also cuts next-word adjacency, compound pairs included (H5, H7); re-opening puts the raw text back in front of a kept tail, and Commit as Typed rebuilds glyphs from every segment (H3, H5); the undefined key states are named (H6); frequency lookup covers the walker's edges (H5); all three desktops flip in one phase and the engine phases stay unreachable before it (Phases).
-- Where this plan goes further than the review: Codex kept the caller-carried conversion and asked for a revision the engine would check under its mutex. The plan moves the conversion into the engine's state instead (H2), which removes the race rather than validating it and is how McBopomofo and vChewing hold their walk. H-P1's pre-implementation review, below, is where this shape was reviewed.
-- H-P1 pre-implementation, 2026-10-05: Codex (`codex-cli 0.160.0`, `gpt-6.1-sol`) AGREE on the conversion as engine state held in `Phase::Continuous` and computed inside the mutation — the shape the H-P0 review had not seen — and GO-WITH-CHANGES on the phase's plan. Applied: no conversion while the caret is inside the tail, instead of a display caret snapped to a word while the raw caret steps by glyph; a conversion is valid only for the source filter it was walked with, and a request without the switch ignores one the state holds; the separator barriers are read from the shadow pipeline, not derived from the merged barrier set, and the boundary is the furthest closing end among the lattice's edges; one lexicon read for the boundary and the walk, the render outside it; the walker is split by extraction only, slot 0 keeping its guard, flattening and order; a segment holds nothing H-P1 does not read.
-- H-P2 pre-implementation, 2026-10-05: Codex (`codex-cli 0.160.0`, `gpt-6.1-sol`) CHANGE on the caret design (words with derived gaps, the at-end path kept from H-P1, the edit-inside path, the separator moved to the word it closes, re-open through `MoveCaret`). Applied: the at-end path re-uses only words that cover the tail from its start; a re-open walks afresh by construction instead of being detected from the text; no new intent, H5 corrected; a walk after the switch returns keeps the caret out of a word; tests for those, a separator in the open text, two nailed segments and a non-BMP word.
-- H-P2 post-implementation, 2026-10-05: Codex SHIP-WITH-FIXES (two tests, added); Claude cloud review SHIP-WITH-FIXES — `cargo test --workspace`, 135k-operation differential against `main` without the switch (identical), 160k-operation caret-invariant fuzz (no violation). Applied: a reading closed at the caret converts even with open text after it (it waited for the end of the uncovered text); a caret step under a request the held conversion is not for walks first; tests for those, a pick with the caret inside the tail, a re-open that closes nothing. Not added: a property test under the switch.
-
-- H-P3 pre-implementation, 2026-10-05: Codex (`codex-cli 0.160.0`, `gpt-6.1-sol`) CONFIRM with changes on the word's list, the pick, the commits, the picked mark and the walk's frequency rows. Applied: the frequency source is an explicit optional argument threaded through the transition, not a hidden one; the walk asks for every edge's homophones through the walker's own per-edge key derivation, in bounded queries, and nothing when no source is supplied; both fetch passes answer from one copy of the engine; the list's context word must end at its start, glyphs before it cut the context; glyphs before the start are nailed byte for byte with no word identity; next-word learning is all or nothing and the desktop forgets the context after a commit that teaches nothing (H-P4); the property test runs under the conversion with a fixture lexicon and random picks.
-
-- H-P3 post-implementation, 2026-10-05: Codex SHIP-WITH-FIXES (context after nailed glyphs, longer words first, H7 wording — fixed); Claude cloud review (`session_0196SUH6K7X5GKLsc5cFheWF`) SHIP-WITH-FIXES — `cargo test --workspace --all-features` 1,432 passed; 48,000-step differential against the merge base without the switch, with and without the stores: byte-identical; fuzz under the conversion (120k fixture / 90k production steps, picks, both commits, re-opens): no panic, no invariant broken but one. Applied: the request is judged on the whole composition (a pick leaving tone marks only finalized); the `word_before_caret` field removed (a pick from a whole-tail list duplicated text); un-nailing to an unpicked segment answers Clear. Not changed: the edge enumeration doubles the lexicon lookups of a closing key — measured against H9 in the H-P4 dogfood.
-
-- H-P4 pre-implementation, 2026-10-05: Codex (`codex-cli 0.160.0`, `gpt-6.1-sol`) CHANGE on the desktop plan (switch in `app_config`, commit as shown through the manager, a commit-as-typed intent, the classifier rows, the pick closing the list, the picker's commit-first). Applied: a TPS commit goes out under the settings its preedit was written with, not only with the input mode forced to TPS (changed dictionary switches would commit glyphs under Hanji); the Windows candidate list's `Finalize` sent the highlighted pick and joins the picker's `commit_first`; the engine's commit-then-insert takes no `raw` / `nailed` arguments any more; tests for a commit after the switches changed, forgetting the context and keeping the learning of an all-picked commit, the refused Space on a converted display, a rebound Commit as Typed row, Backspace after a pick. Confirmed: the engine one-liner instead of two host writes; closing the list on a settings change; Linux focus-out needs no engine commit.
-
-- H-P4 post-implementation, 2026-10-05: Codex SHIP-WITH-FIXES — a list left up across a dictionary-switch change (a settings reload that does not go through `represent_list`) was picked from under the new switches, the engine resolved the list's start as `0`, and the pick nailed the whole tail. Fixed: the fetch and the pick of a TPS composition go out under the settings its preedit was written with, as its commits do; test `a_tps_pick_after_the_dictionaries_change_keeps_the_words_before_it` (without the fix: 罷, 家 lost).
-
-- H-P5 pre-implementation, 2026-10-05: Codex (`codex-cli 0.160.0`, `gpt-6.1-sol`) CONFIRM on anchoring a TPS list at the mirrored display caret (every list reaches the anchor after the manager mirrors the state it was fetched for; `represent_list` closes a TPS list), on gating by `is_tps_composition` rather than the mode in force, and on renaming field 3; CHANGE on the claims and the tests. Applied: the window is not promised under the listed word at the start of the tail (As built in H-P5); tests for an open reading, the end, mid-sentence and the start of the tail after a pick (seam), the mirrored caret and its reset (desktop core), the walk's first index (Swift); §59 names the macOS window as H8; S91 revised for Space, the picks, the commits and the window-off rows; S95 with a wrapped line and TL / POJ controls.
-
-- H-P5 post-implementation, 2026-10-05: Codex SHIP-WITH-FIXES — no regression (TL / POJ anchor values and wire tag unchanged; `desktop_shell.pb.swift` byte-identical to protoc 36.2 output); two §59 claims too broad, fixed: glyphs can sit between words and a key at the end of such a tail walks again; Space opens the list (or commits with the window off) only with the caret at the end. `/simplify`: no change (a Swift settings helper for one test not extracted).
-
-- H-P5 cloud review (`session_01EUBmK4fvCxy33x97fRosmD`, after the merge), 2026-10-05: SHIP-WITH-FIXES — `cargo test` desktop-core 428 + `taigi-macos-ffi` 95 pass; TL / POJ seam differential against `main` (18,000 replies, 7,034 lists): byte-identical; TPS fuzz on production dictionaries (random keys 1,166 lists, real readings 2,859 lists): the anchor equals the mirrored caret and the drawn caret, never past the display, 0 mismatches. Applied on `main`: the window is promised under the character before the caret, not under the listed word — a caret after an uncovered glyph run lists the run's first reading (As built in H-P5, §59); the same wording in the proto, Swift and seam comments; the manager's caret is the last engine snapshot's.
-
-## Dogfood
-
-One `Sn` per phase a shell can reach (H-P4, H-P5) is added to `dogfood-checklist.md` when its PR opens, with sentences from `corpus/taigi-typing`. The engine phases (H-P1 to H-P3) cannot be typed on a device before H-P4; their check is the engine tests (`engine/composing/tests/tps_hanji_conversion.rs`, `tps_hanji_conversion_prod.rs`). S91 (a) ("typing shows no window") stays true; its picks, Space, commits and window-off rows were revised in H-P5. H-P4 added S94, H-P5 S95 (the macOS window's place).

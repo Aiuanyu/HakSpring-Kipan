@@ -1,22 +1,8 @@
 # Learning Records page — roadmap
 
-> **Status**: P0–P6 complete — P0 merged `5bab5b9b`; P1 merged #366 `1716751a`; P2 merged #369 `21f1270a`; P3 + P4 merged #370 `7aacb3e2`; P5 + P6 merged #371 `102c6aa8` (2026-10-03). P7 merged #415 `2988236a` (2026-10-06); P8 (Add to Custom Dictionary for word-frequency rows) merged #422 `88d5d157` (2026-10-06). P10 (one-syllable rows addable) merged #427 `bcb0fcc7` (2026-10-06). Device dogfood pending. 2026-10-09 (round A1b): `LearningRecordKind.ASSOCIATION` (value 2) and `LearningRecord.previous_text` / `previous_tl` (tags 5 / 6) left the wire — only `FREQUENCY` and `LEARNED_PHRASE` kinds exist; the proto sketch below is the P1 design as merged. Requested by the maintainer 2026-10-03: "a page where users can view and edit learning records and ranking scores, for mobile and desktop".
+> **Status**: shipped on all five platforms. Since round A1b only the `FREQUENCY` and `LEARNED_PHRASE` kinds exist (`LearningRecordKind.ASSOCIATION` and `LearningRecord.previous_text` / `previous_tl` left the wire); the proto sketch below is the P1 design.
 
-A settings page, on all five platforms, that lists what the keyboard has learned from the user, lets them correct one row's count and delete one row. Today the only control is "Delete Learning Records", which empties every learning store at once.
-
-## Today (grounded in code)
-
-| Fact | Source |
-|---|---|
-| Three learning stores, engine-owned: word frequency `(word, tl, count, last_used)` cap 20 000; next-word association `(prev_word, prev_tl, next_word, next_tl, count, last_used)` cap 50 000; learned phrases `(hanzi, roman, learn_count, updated_at)` cap 2 000 | `engine/userdata/src/frequency.rs:13-50`, `association.rs:13-64`, `learned_phrases.rs:14-48` |
-| A frequency row feeds ranking as `(boost − 1) × decay`: `boost = min(1 + count × 0.1, 5.0)` (saturates at count 40), decay over `last_used` with τ = 30 days. An internal weight, not a number any UI shows | `engine/ranking/src/score.rs:39-47`, `:196`, `:218`, `:258-269` |
-| An association row's count has no such ceiling and its decay has a floor, so a raised count on an old row still ranks | `engine/nextword/src/scorer.rs:25-32`, `:63-71` |
-| A learned phrase's `learn_count` decides which five rows a whole-buffer match returns and which row is evicted first; it is not handed to candidate ranking | `learned_phrases.rs:156`, `:232-247`, `engine/dispatch/src/user_data/with_stores.rs:274-278` |
-| Frequency and association eviction also order by count, then time | `engine/userdata/src/capacity.rs:81` |
-| No request lists, edits or deletes ONE learning row: the stores expose `all_rows` (tests / backup) and `delete_all` only; `UserDataRequest` has 11 methods, the page ones all custom-dictionary | `engine/protos/proto/user_data.proto:17-29`, `engine/userdata/src/requests.rs:44-86` |
-| "Delete Learning Records" sends `ResetUserData {frequency, association, learned_phrases}`; before P9 it was a row on each Custom Dictionary page, since P9 it is on this page (Design) | desktop `settings/learning_records.rs` `clear_all_job`, macOS `LearningRecordsPage.swift` `clearAll`, iOS `LearningRecordsMenuView.swift`, Android `LearningRecordsMenuScreen.kt` |
-| Custom Dictionary page shape per platform — the style this page copies: iOS / Android load every row and show at most 100, bottom search bar, swipe / icon delete, alert / dialog edit; macOS `Form` + paged `Table` (10 rows) + `UserDataPageChrome`; Windows / Linux share `desktop-core` `settings::custom_dictionary::Listing` (paged, settled filter, one job slot) | iOS `CustomDictionaryView.swift:6-240`, Android `CustomDictionaryScreen.kt:86-441`, macOS `CustomDictionaryPage.swift:21-442` + `UserDataPageChrome.swift`, `desktop/crates/taigi-desktop-core/src/settings/custom_dictionary.rs:18-209`, Windows `pages/custom_dictionary.rs`, Linux `pages/custom_dictionary.rs` |
-| The desktop has no next-word prediction; its association store is write-only | `association.rs:46-48` |
+A settings page, on all five platforms, that lists what the keyboard has learned from the user, lets them correct one row's count and delete one row. "Delete Learning Records" (empties every learning store) lives on the same page.
 
 ## Design
 
@@ -83,10 +69,6 @@ message DeleteLearningRecord { record }                              → Learnin
 
 Every page: a change of kind, order or filter invalidates a load still in flight; "record is gone", "could not read" and "nothing learned yet" are three different states.
 
-### Relation to macOS-over-desktop-core
-
-That track completed 2026-10-03 (P15 merged #365); P1 was rebased onto it. This work leaves the macOS key path, `taigi-macos-ffi` and `CoreComposingBackend` alone — the macOS page uses the Swift user-data client the Custom Dictionary page already uses (the user-data slice is the one macOS still sends itself).
-
 ### Desktop shared model (P2)
 
 - `desktop-core/src/settings/listing.rs` — the paged, filtered list (`Listing<Row: ListedRow>`, `LoadRequest`, `JobOutcome`, page size 10, filter settle, overlay delay), lifted out of `custom_dictionary.rs` so Custom Dictionary and Learning Records share it; `custom_dictionary::Listing` is now `Listing<CustomDictionaryEntry>`.
@@ -98,21 +80,17 @@ That track completed 2026-10-03 (P15 merged #365); P1 was rebased onto it. This 
 
 `learningRecords*` + `learningRecordGone` keys in `i18n/dictionary.json`; `learningRecordsAssociation` and `learningRecordsInfo` were deleted at dogfood (#371, #370). Taigi TL / POJ verified with `taigi-converter` (phonetics-specialist, 2026-10-03). Reused: `searchPlaceholder`, `romanLabel`, `hanziLabel`, `noResults`, `common.delete` / `save` / `cancel`, `desktop.entriesSection`.
 
-## Phases
+## Phase labels (cited from code)
 
-| Phase | Scope | Status |
-|---|---|---|
-| P0 | this roadmap | Done |
-| P1 | engine: proto + store methods + `learning_records.rs` + routing; store tests (id reuse, two connections, phrase keys, paging, NULL TL) + dispatch tests; regenerated Android Java / iOS Swift / macOS Swift protos in the same PR | Merged #366 `1716751a` |
-| P2 | i18n keys with every generated output (incl. `ios/Localizable.xcstrings`) + `desktop-core` page model (+ shared `Listing`) + Linux page; gate = every platform in the keys' scope | Merged #369 `21f1270a` |
-| P3 | Windows page + `SettingsPane::SIDEBAR` entry | Merged #370 `7aacb3e2` |
-| P4 | macOS page | Merged #370 `7aacb3e2` |
-| P5 | iOS page | Merged #371 `102c6aa8` |
-| P6 | Android page | Merged #371 `102c6aa8` |
-| P7 | Add to Custom Dictionary for learned phrases: engine op + store method, protos, two i18n keys, desktop-core job, a verb on the Phrases list of all five pages (macOS context menu + button beside `−`, iOS leading swipe, Android row icon, Windows / Linux third verb) | Merged #415 `2988236a` |
-| P9 | Delete Learning Records moves from Custom Dictionary to this page on all five platforms; confirm body `clearLearningRecordsMessage`; desktop-core `Confirm` enum → `presentation::Confirmation` + `custom_dictionary::DELETE_ALL` / `learning_records::CLEAR_ALL`, `clear_learning_records_job` → `learning_records::clear_all_job` (reloads the list) | Merged #425 `bd57fd76` |
-| P8 | Add to Custom Dictionary for word-frequency rows (copy): tag 15 renamed `Move…` → `AddLearningRecordToCustomDictionary` / `LearningRecordAddedToCustomDictionary` (wire unchanged), `LearningRecord.can_add_to_custom_dictionary` (field 9), `is_hanji` moved `lexicon` → `phonetics` so `userdata` reads it, i18n keys `learningRecordsMove…` / `…Moved…` → `…Add…` / `…Added…` (values unchanged); every page shows the verb on both kinds from the row flag (desktop: the verb is greyed out for a row that cannot be added) | Merged #422 `88d5d157` |
-| P10 | Add to Custom Dictionary drops the two-syllable minimum: `learning_records::can_add_to_custom_dictionary(kind, text)` = learned phrase or frequency row with Hanji (maintainer 2026-10-06: the custom dictionary outranks by design, the user owns what a one-syllable custom word does); no wire change | Merged #427 `bcb0fcc7` |
+| Phase | Content |
+|---|---|
+| P1 | Engine: proto, store methods, `learning_records.rs`, routing |
+| P2 | i18n keys + desktop-core page model (shared `Listing`) + Linux page |
+| P3–P6 | Windows, macOS, iOS, Android pages |
+| P7 | Add to Custom Dictionary for learned phrases (move) |
+| P8 | Add to Custom Dictionary for word-frequency rows (copy) |
+| P9 | Delete Learning Records moves from Custom Dictionary to this page |
+| P10 | Add to Custom Dictionary drops the two-syllable minimum (`can_add_to_custom_dictionary`) |
 
 ## Best practices alignment
 

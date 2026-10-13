@@ -2,35 +2,19 @@
 
 > **Type**: Reference (design record + PR table)
 > **Keywords**: `e2e`, `test mode`, `trace`, `simulator`, `emulator`, `VM`, `container`, `scenario`, `perf`, `Xvfb`, `xdotool`, `UiAutomator`
-> **Status**: Linux live — PR1–PR4 + PR9 merged (`make e2e PLATFORM=linux` / `linux-desktop`, nightly CI matrix `linux-e2e.yml`, skill `/e2e`); PR5 macOS / PR6 Windows dropped and PR7 Android / PR8 iOS not planned (USER 2026-09-24: manual testing). Fedora × IBus runs since 2026-10-04 (§ PR table PR4). Real-desktop-session goal added 2026-09-24 (§ Goal 5). Phase 0 plan written 2026-09-24; Codex ANALYSIS-ONLY pre-review 2026-09-24 = REVISE (revisions applied below); spikes S-A–S-D run 2026-09-24 (§ Spikes — results).
-> **Session memory**: project memory `project_e2e_test_system.md` (Claude auto-memory)
+> **Status**: Linux live — `make e2e PLATFORM=linux` (headless) and `PLATFORM=linux-desktop` (real VM sessions), nightly CI matrix `linux-e2e.yml`, skill `/e2e`. Other platforms are tested by hand.
 
 ---
 
 ## Goal
 
-USER 2026-09-24: "I need an end-to-end automated test system that lets AI open an emulator to test typing and analyse the debug log to assess bugs, performance and other issues; the debug log is visible only in test mode, because an input method should not send any log in production; for all platforms, including every linux distribution"
+An automated typing test an AI agent can run: real key sequences into a real text field of a test build, with a debug trace that exists only in test mode, because a shipped input method writes no log.
 
 1. An AI agent starts a simulator / emulator / VM / container, installs a **test build** of the IME, types real key sequences into a real text field, and reads back the committed text.
 2. The test build writes a **structured trace** (JSON Lines). An analyzer turns trace + expectations into a report: wrong commit, engine errors / panics, latency per operation, memory.
 3. **The trace exists only in test builds.** Release artifacts contain no trace code and write no trace file — enforced by build-script and CI checks (marker string + feature graph), not by a runtime switch. The one exception is swift-bridge's always-present `e2e_trace_open` stub, which returns false (bridge items cannot be cfg-gated, same as `panic_for_test`).
-4. Every platform: iOS, Android, macOS, Windows, Linux (Fcitx5 + IBus) on every packaged distribution (`.deb` Ubuntu / Debian, `.rpm` Fedora, `.pkg.tar.zst` Arch).
-5. **Real desktop sessions beside CI.** USER 2026-09-24: "besides the e2e run on CI, I want to be able to really open emulators for tests on the linux VM, macos and windows". The headless Xvfb run (CI + `make e2e PLATFORM=linux`) stays; the desktop drivers type into the logged-in session of: both Linux VMs (UTM GNOME Wayland + IBus, VirtualBox KDE X11 + Fcitx5). Windows: USER 2026-09-24 「skip windows」 — no Windows e2e driver. macOS: USER 2026-09-24: "skip mac, I'll just test macos manually myself" — no macOS e2e driver; macOS stays manual dogfood. USER decisions 2026-09-24: both Linux VMs; a screenshot per checkpoint is kept as evidence in the run dir, never asserted on.
-
-## Today (grounded in code)
-
-| Piece | Where | State |
-|---|---|---|
-| Engine choke point | `engine/dispatch/src/lib.rs:34` `process_request` → `run` `:55` | every platform's engine call passes here (iOS/macOS `swift-ffi/src/lib.rs:50`, Android `android-jni/src/lib.rs:35`, Windows/Linux `desktop/crates/taigi-desktop-core/src/engine/bridge.rs:43`) |
-| Engine logging | `log` 0.4; sinks `swift-ffi/src/lib.rs:64-106`, `android-jni/src/lib.rs:85-142` (runtime level, default Warn) | free-text, not structured; runtime-gated, not compile-gated |
-| iOS / macOS logging | `ios/Sources/TaigiKeyboard/Logging/DebugLogger.swift:3`, `macos/Sources/TaigiInputMethodCore/Logging/DebugLogger.swift` | `#if DEBUG` `os.Logger`; no-op in release |
-| Android logging | `AndroidLoggerBackend.kt:31-62`, `TraceContext.kt:16-30` | `BuildConfig.DEBUG` gated |
-| Windows logging | `windows/crates/taigi-windows-platform/src/lib.rs:268-294` | `cfg(debug_assertions)` → `OutputDebugStringW` |
-| Linux logging | `linux/crates/taigikeyboard-ibus/src/main.rs:20` (`env_logger`, `RUST_LOG`), `linux/fcitx5/src/engine.cpp:27-29` (`TAIGI_DEBUG`) | **runtime-gated only — present in release** |
-| Desktop composing ops | `desktop/crates/taigi-desktop-core/src/composing/manager.rs` (`append` :142 … `commit_candidate` :377); Linux C API `linux/crates/taigi-linux-ffi/src/lib.rs:413` `taigi_engine_key` | platform-side op boundary for key → commit events |
-| UI / e2e tests | none; only the CI ibus-daemon smoke `.github/workflows/linux-build.yml:124-165` (xvfb + dbus, selects the engine, types nothing) | — |
-| Distro containers in CI | `linux-build.yml:229-230` (`fedora:44`), `:280-281` (`archlinux:latest`), install-check matrix `:320-340` | x86_64, hosted |
-| Dogfood rigs | Windows box `ssh win` (session 0, elevated); VirtualBox Ubuntu KDE VM; UTM arm64 Ubuntu GNOME VM (memory `reference_linux_dogfood_vms.md`) | manual, no scripts in repo |
+4. Linux (Fcitx5 + IBus) on every packaged distribution (Ubuntu / Debian, Fedora, Arch); the other platforms stay manual (§ Decisions).
+5. **Real desktop sessions beside CI.** The headless Xvfb run (CI + `make e2e PLATFORM=linux`) stays; the desktop drivers type into the logged-in session of both Linux dogfood VMs (GNOME Wayland + IBus, KDE X11 + Fcitx5).
 
 ## Design
 
@@ -74,7 +58,7 @@ Codex revisions (2026-09-24), adopted:
 
 The trace file lives in the platform's app sandbox (iOS extension container or App Group — Full Access dependent, decided in PR iOS; Android app files dir; macOS / Linux `$XDG_STATE_HOME`-style dir; Windows `%LOCALAPPDATA%`) and never leaves the device except when the driver pulls it.
 
-**Production zero-log (in scope, Codex 2026-09-24).** Linux release builds log today: `taigi-linux-ffi/src/lib.rs:177` and `taigikeyboard-ibus/src/main.rs:20` install an `env_logger` at `info` by default (spike S-D saw `runtime.probe`, `lexicon.installed`, `key.claim`, `storage.open` lines in the Fcitx5 log of the released 3.6.9 build). The USER requirement covers them: release Linux builds install no logger, Fcitx `TAIGI_DEBUG` compiles out, panics stay silent. The other platforms already compile logging out of release (`DEBUG` / `debug_assertions`) and are unchanged.
+**Production zero-log.** Linux release builds install no logger (`taigi_linux_platform::install_debug_logger` is debug-only), the Fcitx5 `TAIGI_DEBUG` macros compile out under `NDEBUG`, and panics stay silent. The other platforms compile logging out of release (`DEBUG` / `debug_assertions`).
 
 #### Trace schema (Codex revisions)
 
@@ -86,10 +70,6 @@ The trace file lives in the platform's app sandbox (iOS extension container or A
 |---|---|---|---|---|
 | Linux Fcitx5 / IBus | distro container: Xvfb + dbus + `fcitx5` or `ibus-daemon` + a small GTK text client | `xdotool key` (X11 keysyms) | client writes its buffer to a file on exit | GitHub-hosted matrix: Ubuntu 24.04, Debian 13, Fedora 44, Arch × {Fcitx5, IBus}, building the test-mode binaries (`make install E2E=1`) inside each distribution's container, against its own toolchain and libraries — never a shipped package, which carries no trace |
 | Linux desktop sessions (PR3c) | existing VMs: UTM GNOME (Wayland, IBus), VirtualBox KDE (X11, Fcitx5; gdm autologin needed) | in-guest uinput (python3-evdev, one virtual keyboard — works under Wayland and X11 alike, one driver for both VMs; `ydotool` 0.1.8 misparses key names) | the same GTK host window (`host.py`), launched in the session's environment, signals real keyboard focus through a marker file | local; `gnome-screenshot` after every step as evidence only; containers carry the distro matrix |
-| macOS | this Mac, test-build IME installed to `~/Library/Input Methods` | CGEvent from a small Swift driver into a test host window | host writes its text view to a file | local only (needs one-time Accessibility grant; takes keyboard focus for the run); `screencapture` per checkpoint as evidence |
-| Windows | `ssh win` box | `SendInput` from a driver launched **in the interactive session** (scheduled task `/IT`), not the ssh session 0 | host writes its edit control to a file | local box; locked / off → `skipped`; screenshot per checkpoint as evidence |
-| Android | emulator (dedicated e2e AVD, ≥4 GB RAM) | test build writes a **key-geometry manifest** (each laid-out key's rect) to the trace; driver taps those points with `adb shell input tap` — the real `MotionEvent` path through `KeyTouchCoordinator` | host test activity in the e2e APK writes its `EditText` | local; CI later if cheap |
-| iOS | simulator iPhone 17 | per S-A: XCUITest coordinate taps (needs a UI test target the USER adds in Xcode) or `idb`; key points from the same geometry manifest | containing app, `E2E_TRACE`-only text field made first responder on launch | local |
 
 Scenarios share **intent** (text to type, candidate identity to pick, checkpoints); each driver maps intent to its own hardware keys or touches. Platform-specific scenarios stay allowed (desktop double-tap semantics differ, `desktop/crates/taigi-desktop-core/src/engine/bridge.rs:89`). No driver may set text directly in place of input.
 
@@ -97,46 +77,25 @@ Scenarios share **intent** (text to type, candidate identity to pick, checkpoint
 
 `make e2e PLATFORM=<p> [SCENARIO=<glob>]` runs driver + analyzer and prints the report path; a `/e2e` project skill tells the agent how to read the report, rerun one scenario, and turn a failure into a bug report (observed failure → bugfix round per Core Principle #4). The skill never opens a round by itself.
 
-## Spikes (gate the platform PRs — `docs/contributing/known-pitfalls.md` § Tests and diagnosis)
+## Spikes
 
-| # | Question | ≤20-line probe | Blocks |
-|---|---|---|---|
-| S-A | Can an automated driver tap keys of a **third-party keyboard extension** in the iOS simulator, and can the keyboard be enabled without the Settings UI? | `simctl spawn defaults write … AppleKeyboards`; `idb ui describe-all` over Notes with the keyboard up | PR8 |
-| S-B | Does UiAutomator see FlorisBoard-derived Compose keys (content descriptions / bounds), or only one opaque view? | `uiautomator dump` with the keyboard up | PR7 |
-| S-C | Can a process started from `ssh win` inject keys into the logged-in desktop through a `/IT` scheduled task and read Notepad back? | `schtasks /create /it … ` + a 10-line PowerShell `SendKeys` | PR6 |
-| S-D | Does Fcitx5 run headless in a container under Xvfb and commit into a GTK entry via `xdotool`? | `fedora:44` / `archlinux` / `ubuntu:24.04` container, `fcitx5 -d`, `xdotool type` | PR3 |
+A ≤20-line probe gated each platform driver (`docs/contributing/known-pitfalls.md` § Tests and diagnosis). Only the Linux one led to a driver:
 
-A failed spike changes the driver row, never the trace / analyzer design.
-
-### Spike results (2026-09-24)
-
-| # | Result | Evidence |
-|---|---|---|
-| S-D Linux | **PASS (mechanism)** | UTM arm64 Ubuntu 24.04, released 3.6.9 addon: `Xvfb :99` + `dbus-run-session` + `fcitx5` (isolated `HOME`, profile `DefaultIM=taigikeyboard`) + GTK 3 `Gtk.Entry` host (`GTK_IM_MODULE=fcitx NO_AT_BRIDGE=1 GTK_USE_PORTAL=0 GDK_BACKEND=x11`) + `xdotool type` → host saw `preedit 't'→'ta'→'tai'`, Return committed `tai`. Readiness matters: the lexicon loads on first key (~5 s on the VM). **Unconfirmed observation:** Space (`CommitAlternateScript`, `linux/crates/taigi-linux-core/src/session.rs:581`) produced no commit in this harness even after the lexicon loaded — harness artifact or bug; not a round until reproduced on a real session (S74). Containers (distro matrix) not yet run — no container runtime on the Mac; they run in CI. |
-| S-C Windows | **PASS with blocker** | `schtasks /create /it /ru minsi` runs in session 1 with focus; `SendKeys` text was dropped because the console was **locked** (`LogonUI` in session 1). Injection needs an unlocked session during runs. Real driver uses `SendInput`, not `SendKeys`. |
-| S-B Android | **PARTIAL** | Debug APK installs; `ime enable` / `ime set` over adb work; keyboard shows (`onWindowShown`). Keys are not accessibility nodes (`KeyContent.kt:215` null description; touches go through one `KeyTouchCoordinator`) → geometry-manifest driver. The stock AVD (2.5 GB RAM) hit repeated system ANRs (load average 61) → the dedicated e2e AVD needs more RAM. |
-| S-A iOS | **BLOCKED on a USER decision** | App + extension build and install; `defaults write -g AppleKeyboards` over `simctl spawn` is accepted (keyboard appearance unverified — no tap path yet). This Xcode ships no `Simulator.app` (only `SharedFrameworks/SimulatorKit.framework`), so no GUI click path; tap injection needs an XCUITest target (project-file edit = USER-only, Core Principle #1) or `idb` (third-party, Xcode 27 support unknown). |
+- **Linux (PASS)**: `Xvfb` + `dbus-run-session` + `fcitx5` (isolated `HOME`, profile `DefaultIM=taigikeyboard`) + a GTK 3 `Gtk.Entry` host (`GTK_IM_MODULE=fcitx NO_AT_BRIDGE=1 GTK_USE_PORTAL=0 GDK_BACKEND=x11`) + `xdotool type` commits through the real addon. Readiness matters: the lexicon loads on the first key (~5 s on the VM).
+- **Windows**: a `/IT` scheduled task from `ssh win` runs in the logged-in session, but injection needs an unlocked console. **Android**: keys are not accessibility nodes, so a driver would need a geometry manifest. **iOS**: no tap path into a third-party keyboard extension found. None was pursued (§ PR table).
 
 ## PR table
 
-PR1/PR2 of the first draft were over the 500-LOC cap (Codex) — split below.
-
-| Phase | Scope | Status |
-|---|---|---|
-| 0 | this roadmap + project memory + `docs/README.md` row | this commit |
-| PR1 | engine `e2e-trace` feature threaded through every FFI crate, dispatch events, `e2e_trace_open`, marker string, traced-artifact build paths, release-graph absence check in `engine.yml`, `e2e-trace-schema.md` | Merged #162 `18a20c80` 2026-09-24 |
-| PR2 | `e2e/scenarios` intent format + 3 seed scenarios, `e2e/analyzer/analyze.py` (stdlib) + tests, report format | Merged #163 `5fc7b825` 2026-09-24 |
-| PR3a | Linux: release zero-log (`taigi_linux_platform::install_debug_logger`, Fcitx5 `NDEBUG` macros), `e2e-trace` through `taigi-linux-core` / `-ffi` / `-ibus`, platform events (`key` / `preedit` / `commit` / `candidates` / `session_end`), `make build E2E=1` + package refusal + release guard | Merged #165 `34ae8d27` 2026-09-24 |
-| PR3b | Linux: driver `e2e/drivers/linux/driver.py` (Xvfb + D-Bus + Fcitx5 / IBus + GTK 3 host + xdotool, test-mode build in a private prefix), `make e2e PLATFORM=linux` → UTM VM (`e2e/drivers/linux/run.sh`), CI `linux-e2e.yml` (Ubuntu 24.04 runner), `/e2e` skill | Merged #166 `26c03a34` 2026-09-24 (VM + CI 6/6 PASS) |
-| PR3c | Linux desktop sessions: `make e2e PLATFORM=linux-desktop` (`e2e/drivers/linux-desktop/run.sh`, `e2e/drivers/linux/desktop.py`, `uinput.py`) drives both VMs' logged-in sessions. Framework swap (spike + Codex pre-review 2026-09-24, CONFIRM with revisions): IBus = `systemctl --user set-environment IBUS_COMPONENT_PATH` (system components minus ours + the test component, whose `<exec>` sets `IBUS_ADDRESS` then the scenario's private XDG dirs) + private `XDG_CACHE_HOME` + unit restart; Fcitx5 = original daemon's argv + environ saved, test daemon `--replace` with the prefix addon dirs and private XDG dirs. A 0600 restore marker is written before anything changes; every run restores a leftover one first. First runs 2026-09-24: GNOME 3/3 + KDE 3/3 PASS, both restored; VBox runs in NEM mode (VBS holds VT-x) → own calibrated budget in `e2e/budgets.json` | Merged #169 `1fde108f` 2026-09-24 |
-| PR4 | Linux: CI matrix Ubuntu 24.04 / Debian 13 / Fedora 44 / Arch × {Fcitx5, IBus}, each container building `make install E2E=1` from source against its own libraries (packages are never traced — PR3a; the shipped packages keep their `install-check` job). `linux-e2e.yml` becomes one container matrix (`linux-e2e-<distro>` artifacts; deps `e2e/drivers/linux/ci-deps.sh`). USER 2026-09-24: PRs run Ubuntu only, the full matrix runs nightly 19:00 UTC (Taiwan 03:00) + on dispatch. First full runs: Ubuntu / Debian / Arch × both frameworks and Fedora × Fcitx5 PASS; Fedora × IBus was skipped (USER 2026-09-24) until its own round found two stacked causes (2026-10-04, branch `fix/fedora-ibus-e2e`): (1) Fedora's ibus rpm writes `/var/cache/ibus/bus/registry` (`ibus.spec` `%transfiletriggerin` → `ibus write-cache --system`) and the daemon's default `--cache auto` takes that cache before `ibus_registry_load` ever reads `IBUS_COMPONENT_PATH` (ibus `bus/ibusimpl.c:2290-2310`, `src/ibusregistry.c:262-286`, `:376-408`) — the driver now starts `ibus-daemon --cache none`; (2) the Fedora image's `/etc/machine-id` is empty and has no `/var/lib/dbus/machine-id`: libibus keeps the empty id (`src/ibusshare.c:47-73`, socket `-unix-99`) while `taigikeyboard-ibus` `bus.rs` skipped it and looked for `machine-id-unix-99`, so the spawned engine exited — `machine_id()` now mirrors libibus. The `.rpm` path that `linux-build.yml` `install-check (fedora)` covers was not affected: installing the package fires the trigger that rewrites the cache, and that job writes a machine id first. Leftovers of (1), 2026-10-04 (branch `fix/ibus-cache-none-leftovers`): `linux-build.yml`'s `ibus-daemon smoke` also starts the daemon with `--cache none` (it points `IBUS_COMPONENT_PATH` at a throwaway prefix — harmless on its Ubuntu runner, (1) on a Fedora one); `desktop.py` `swap_ibus` now says its private `XDG_CACHE_HOME` does not avoid (1), since `auto` reads the system cache before the user one (`bus/ibusimpl.c:2301-2308`) — no behaviour change, both dogfood VMs run Ubuntu 24.04 with no `/var/cache/ibus`. `install-check` keeps `auto` on purpose: it checks the installed package, whose own cache must list the engine | Merged #173 `6559488c` 2026-09-24 |
-| PR5 | macOS: `-DE2E_TRACE` events, CGEvent driver + host app | Dropped — USER 2026-09-24: "skip mac, I'll just test macos manually myself" (would need a traced xcframework, a renamed E2E bundle beside the dev install, Swift platform events over a new FFI, a TIS + CGEvent driver and an Accessibility grant) |
-| PR6 | Windows: TSF events, `/IT` interactive-session `SendInput` driver over `ssh win` | Dropped — USER 2026-09-24 「skip windows」, after PR6a's first box build hit `os error 4551` (Windows application control blocked a build binary). Unmerged branch `feat/e2e-windows-trace` deleted 2026-09-24 (USER) |
-| PR7 | Android: `e2e` build type, geometry manifest, adb tap driver, e2e AVD | Not planned — USER 2026-09-24: "PR7,8 aren't needed; I can test manually for now" |
-| PR8 | iOS: `E2E_TRACE` events in the extension, geometry manifest, XCUITest driver | Not planned — USER 2026-09-24: "PR7,8 aren't needed; I can test manually for now" |
-| PR9 | More scenarios (USER 2026-09-25: "ok, plan tests covering more scenarios"): 10 from S68 / S69 / S70 / S73 — multi-pick commits, Enter after a pick, backspace + re-pick, learned phrase keeps the separator kind, POJ, Caps Lock; `capslock` key name (the driver releases the lock after the scenario — the display outlives it). Not reachable with today's steps: S1 (no concrete I/O), S2 (desktop has no TPS mode), S62 (`kikhilai` offers no single 記 cell), settings beyond romanization / output, custom-entry seeding, highlight / paging | Merged #192 `ca4ff0f8` 2026-09-25; UTM VM 26/26 PASS |
-
-Each platform PR adds its row to `/e2e` and its budgets; PR sizes 200–500 LOC.
+| Phase | Scope |
+|---|---|
+| PR1 | engine `e2e-trace` feature through every FFI crate, dispatch events, `e2e_trace_open`, marker string, release-graph absence check in `engine.yml`, [`e2e-trace-schema.md`](e2e-trace-schema.md) |
+| PR2 | `e2e/scenarios` intent format, `e2e/analyzer/analyze.py` (stdlib) + tests, report format |
+| PR3a | Linux: release zero-log (`taigi_linux_platform::install_debug_logger`, Fcitx5 `NDEBUG` macros), `e2e-trace` through `taigi-linux-core` / `-ffi` / `-ibus`, platform events (`key` / `preedit` / `commit` / `candidates` / `session_end`), `make build E2E=1` + package refusal + release guard |
+| PR3b | Linux: driver `e2e/drivers/linux/driver.py` (Xvfb + D-Bus + Fcitx5 / IBus + GTK 3 host + xdotool, test-mode build in a private prefix), `make e2e PLATFORM=linux` → the UTM VM (`e2e/drivers/linux/run.sh`), CI `linux-e2e.yml`, `/e2e` skill |
+| PR3c | Linux desktop sessions: `make e2e PLATFORM=linux-desktop` (`e2e/drivers/linux-desktop/run.sh`, `e2e/drivers/linux/desktop.py`, `uinput.py`) drives both VMs' logged-in sessions. IBus: `systemctl --user set-environment IBUS_COMPONENT_PATH` (system components minus ours + the test component) + private `XDG_CACHE_HOME` + unit restart; Fcitx5: the original daemon's argv + environ saved, test daemon `--replace` with the prefix addon dirs. A 0600 restore marker is written before anything changes; every run restores a leftover one first. VirtualBox runs in NEM mode → its own budget in `e2e/budgets.json` |
+| PR4 | Linux CI matrix Ubuntu 24.04 / Debian 13 / Fedora 44 / Arch × {Fcitx5, IBus}, each container building `make install E2E=1` from source (packages are never traced; they keep their `install-check` job). Fedora × IBus: Fedora's rpm writes a system registry cache that ibus-daemon's default `--cache auto` takes before reading `IBUS_COMPONENT_PATH`, so the driver passes `--cache none`; the engine's socket-file lookup takes the first of `/var/lib/dbus/machine-id`, `/etc/machine-id` that reads, even when empty, as libibus does (`taigikeyboard-ibus` `bus.rs`) |
+| PR9 | More scenarios (multi-pick commits, Enter after a pick, backspace + re-pick, separator kind, POJ, Caps Lock) |
+| Other platforms | macOS, Windows, Android, iOS: no driver — tested by hand (maintainer decision; not to re-propose) |
 
 ## Best practices alignment
 
@@ -156,10 +115,9 @@ Rules: an e2e failure is an observed failure and goes through the normal bugfix 
 - **Third-party test frameworks with a service** (Appium server, Detox) — one driver script per platform is smaller than an Appium stack for six key-injection paths.
 - **`tracing` crate** — the engine uses `log` everywhere; one JSONL writer behind a feature is smaller than a subscriber stack.
 
-## USER decisions (2026-09-24)
+## Decisions
 
-USER 2026-09-24: "I'll add iOS later; skip windows if it's powered off; the rest go"
-
-1. iOS: the USER adds an XCUITest target in Xcode later; PR8 waits for it. Superseded USER 2026-09-24: PR8 not planned.
-2. Windows: the driver probes the box first; powered off, unreachable or locked console → the run reports `skipped` with the reason, never a failure.
-3. Linux CI matrix: runs on PRs touching `linux/`, `engine/` or `e2e/`, plus `workflow_dispatch`. Superseded USER 2026-09-25: "switch everything to scheduled runs": no PR trigger; full matrix nightly 19:00 UTC + `workflow_dispatch` only.
+1. A desktop-session run that finds its VM powered off, unreachable or locked reports `skipped` with the reason, never a failure.
+2. The Linux CI matrix is scheduled only: nightly 19:00 UTC plus `workflow_dispatch`, no pull-request trigger (`.github/workflows/linux-e2e.yml`).
+3. macOS, Windows, Android and iOS are tested by hand; no e2e driver is planned for them.
+4. A screenshot per step is kept in the run dir as evidence, never asserted on.
