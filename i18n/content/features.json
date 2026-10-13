@@ -648,7 +648,7 @@
             "tailo": "Jī-hîng ū 5 tsíng thang-hó kíng: hē-thóng ī-siat, hún-înn, ian-sui, guân iūnn bîng-thé, guân iūnn oo thé. Āu 4 tsíng sī tsuan-bûn tsi-uān tâi-gí ti̍k-sû jī hû ê khai-guân jī-hîng, nā kíng hē-thóng ī-siat, ū ê hàn-jī bô-huat-tōo hián-sī.",
             "poj": "Jī-hêng ū 5 chéng thang-hó kéng: hē-thóng ī-siat, hún-îⁿ, ian-sui, goân iūⁿ bêng-thé, goân iūⁿ o͘ thé. Āu 4 chéng sī choan-bûn chi-oān tâi-gí te̍k-sû jī hû ê khai-goân jī-hêng, nā kéng hē-thóng ī-siat, ū ê hàn-jī bô-hoat-tō͘ hián-sī.",
             "en": "There are 5 fonts to choose from: System default, Huninn, Iansui, GenYoMin, and GenYoGothic. The latter 4 are open-source fonts that specifically support Taiwanese special characters; if you choose the system default, some Hanji may not display.",
-            "ja": "フォントは5種類から選べます：システム既定、粉圓（Huninn）、芫荽（Iansui）、源樣明體（GenYoMin）、源樣黑體（GenYoGothic）。後ろの4つは台湾語の特殊文字に対応したオープンソースフォントです。システム既定を選ぶと、一部の漢字が表示されないことがあります。"
+            "ja": "フォントは5種類から選べます：システム既定、粉圓（Huninn）、芫荽（Iansui）、源樣明體（GenYoMin）、源樣烏體（GenYoGothic）。後ろの4つは台湾語の特殊文字に対応したオープンソースフォントです。システム既定を選ぶと、一部の漢字が表示されないことがあります。"
           }
         },
         {
