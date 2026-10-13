@@ -25,20 +25,21 @@ A desktop release happens in two halves with a manual test between them, and
 
 A **full release** bumps the minor number and stages every platform: 3.7.0,
 3.8.0. A **patch** bumps the third number and stages only the platform it fixes:
-3.7.1 macOS, 3.7.2 Windows (USER 2026-09-24). The patch counter is shared, so each
+3.7.1 macOS, 3.7.2 Windows. The patch counter is shared, so each
 patch is one version, one tag, one draft; a platform skips the numbers it did not
 ship (Windows goes 3.7.0 → 3.7.2) and its update check only compares, so the gap is
 harmless. Announcing a patch writes only its platform's `_data` / appcast, so the
 others keep offering the version they have. The next full release lines every
 platform up again. Its changelog `changelog/desktop-v<version>.md` has only the
-patched platform's section. Minor and patch each stop at 99 — macOS's
-`CFBundleVersion` is `MAJOR*10000+MINOR*100+PATCH` (`tools/release_notes.py`).
+patched platform's section. Setting the number, and why minor and patch each stop
+at 99: [`manual-release-notes.md` § Set the version](manual-release-notes.md#set-the-version).
 
 Staging creates no tag — publishing does — and a draft has no public asset URL,
-so no user, no search engine and no installed copy can reach what is staged. A
-tag or a draft target left by an earlier attempt is moved onto the commit being
-staged, so re-staging never has to be untangled by hand; a release that has
-already been **published** is the exception and stops the run.
+so no user, no search engine and no installed copy can reach what is staged.
+`make desktop-release` / `make desktop-patch` delete an existing draft for the
+version first and rebuild everything on it from one commit
+(`tools/release/stage-desktop.sh`); a version that has already been
+**published** stops the run.
 
 Beside each installer goes a `.sha256` of what was staged. On the unsigned
 Windows channel — and the Linux packages, which are not signed either — it is what a
@@ -50,10 +51,10 @@ The release goes in **this** repository; only the website's own data goes to
 
 | What | Where | Why there |
 |---|---|---|
-| Each installer and its `.sha256` | assets on the GitHub release `desktop-<version>` **in this repository**, both platforms on one release | One desktop version is one release, beside the source it was built from: the tag names that commit, the notes are that commit's changelog. Releases lived on the website repository while this one was private and nothing served from it was anonymously reachable; it has been public since 2026-09-07. Release assets live outside git either way, so they cost no repository its size or bandwidth allowance. |
+| Each installer and its `.sha256` | assets on the GitHub release `desktop-<version>` **in this repository**, every desktop platform on one release | One desktop version is one release, beside the source it was built from: the tag names that commit, the notes are that commit's changelog. Release assets live outside git, so they cost the repository no size or bandwidth allowance. |
 | The download mirror: each installer and its `.sha256` | the Cloudflare R2 bucket `taigikeyboard-downloads`, served at `https://dl.taigikeyboard.tw/desktop/<asset>` — copied there by the announcement | GitHub's release-asset host crawls on some Taiwanese ISPs (HiNet measured ~40 KB/s on 2026-10-09, against ~16 MB/s from R2), so the website buttons and both appcasts name the mirror; the GitHub release stays the original it is checked against. See *One-time: the R2 mirror* and *Pruning the mirror*. |
-| `_data/{macos,windows,linux}_release.json` | committed site data in the website repository — written only by the announcement, all in one commit | The landing page's macOS download button reads it and links straight at the package, so its URL carries the version. Keeping it as data the release flow writes is what stops the page hard-coding a version, and what keeps the button off `/releases/latest` — that alias is repository-wide, and this repository's last release may be a Windows installer. |
-| `appcast/{macos,windows}.json` | **rendered** from that data by the site's own build, served from `https://taigikeyboard.tw/appcast/` | Every installed copy has its URL baked in (`UpdateChecker.publishedURL`, `manifest::PUBLISHED_URL`) and expects a fixed shape, so the manifest stays a static file on the project's own domain rather than anything GitHub serves. Rendered rather than written because two files meant two commits, and two Pages runs seconds apart deploy their own trees: see *One published fact, one committed file* in `macos/updates/README.md` for the day the manifest sat a release behind. |
+| `_data/{macos,windows,linux,linux_rpm,linux_arch}_release.json` | committed site data in the website repository — written only by the announcement, all in one commit (`tools/release/lib/release-site.sh`) | The landing page's download buttons read them; the macOS one and links straight at the package, so its URL carries the version. Keeping it as data the release flow writes is what stops the page hard-coding a version, and what keeps the button off `/releases/latest` — that alias is repository-wide, and this repository's last release may be a Windows installer. |
+| `appcast/{macos,windows}.json` | **rendered** from that data by the site's own build, served from `https://taigikeyboard.tw/appcast/` | Every installed copy has its URL baked in (`UpdateChecker.publishedURL`, `manifest::PUBLISHED_URL`) and expects a fixed shape, so the manifest stays a static file on the project's own domain rather than anything GitHub serves. Rendered rather than written, so each release is one committed file per platform: [`macos/updates/README.md` § One published fact, one committed file](../../macos/updates/README.md#one-published-fact-one-committed-file). |
 | `Casks/taigikeyboard.rb` | the `taigikeyboard/homebrew-tap` repository (`brew install --cask taigikeyboard/tap/taigikeyboard`) | Homebrew finds a tap only in a repository named `homebrew-*`. The cask names the last **published** macOS `.pkg` — never a draft or the in-tree version — and its `livecheck` counts only published releases carrying a `TaigiKeyboard-<version>.pkg` asset, so a Linux-only patch release or a `mobile-*` tag never looks like a new macOS version. Its `url` is the R2 mirror (`https://dl.taigikeyboard.tw/desktop/`), so a bump must follow the announcement that mirrors the package; `livecheck` names the GitHub repository explicitly. The app's own update check still applies (`auto_updates true`). |
 
 Each platform's `publish-release.sh` owns only what that OS can assert about its
@@ -75,19 +76,19 @@ own artifact; everything above it is shared (see *Where it all lives* below).
    can point at any file, while the tag and the manifest version come from the
    checkout — a stale artifact would otherwise be staged under the current
    version's name.
-3. Whatever already exists for this version is pointed at this commit. Re-staging
-   is the normal case — a fix, a second attempt, the other platform running a day
-   later — so a draft's `targetCommitish` is rewritten to this exact SHA (never a
-   branch name, which would tag whatever that branch points at on publish day),
-   and a tag left by a hand-push or an earlier attempt is force-moved through the
-   git refs API, since `gh release create` ignores `--target` once a tag exists.
-   The one thing that is refused rather than moved is a release that is already
-   **published**: its installers are downloadable, so moving its tag would rewrite
-   what a version people already have means, and adding an asset to it would go
-   public with no test. Put it back in draft, or cut a new version.
+3. Whatever already exists for this version is pointed at this commit. Under
+   `make desktop-release` the draft was just deleted, so this only matters when a
+   platform's `publish-release.sh` is run directly: a draft's `targetCommitish`
+   is rewritten to this exact SHA (never a branch name, which would tag whatever
+   that branch points at on publish day), and a tag left by a hand-push or an
+   earlier attempt is force-moved through the git refs API, since
+   `gh release create` ignores `--target` once a tag exists. A release that is
+   already **published** is refused rather than moved: its installers are
+   downloadable, so moving its tag would rewrite what a version people already
+   have means. Put it back in draft, or cut a new version.
 4. `gh release create --draft --target <commit>` with the whole
-   `changelog/desktop-v<version>.md` as the notes (both platforms share the
-   page, so both sections belong on it), or an upload into the existing draft.
+   `changelog/desktop-v<version>.md` as the notes (every platform shares the
+   page, so every section belongs on it), or an upload into the existing draft.
    Never `--clobber`, and never over an asset already staged: an identical one
    is verified in place, a differing one stops the run.
 5. The staged asset is downloaded back — authenticated, since a draft has no
@@ -125,11 +126,8 @@ A platform whose installer is not on the release is skipped with a note, and its
 manifest is left where it was: one platform can lag, and announcing the one that
 is ready beats making it wait.
 
-`macos/updates/README.md` documents the manifest wire format.
-
-After installing, the input method has to be added in System Settings → Keyboard
-→ Input Sources. The input-source list is cached per login session, so a first
-install may not appear until the user logs out and back in.
+`macos/updates/README.md` and `windows/updates/README.md` document the manifest
+wire formats.
 
 ### One-time: the announcement's token
 

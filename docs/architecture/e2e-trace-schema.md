@@ -2,14 +2,14 @@
 
 > **Type**: Reference (contract between the test-build trace writers, the scenarios, the drivers and `e2e/analyzer/analyze.py`)
 > **Keywords**: `e2e`, `trace`, `JSON Lines`, `test mode`, `schema_version`, `TAIGI_E2E_TRACE_V1`
-> **Status**: Active — schema version 1 (engine layer PR1, scenarios + analyzer PR2 of `e2e-testing-roadmap.md`); platform-layer events are added by the platform PRs
+> **Status**: Active — schema version 1
 > **Siblings**: `e2e-testing-roadmap.md` (design D1/D2, PR table)
 
 ---
 
 ## Test mode only
 
-The trace exists only in builds compiled with the test switch: cargo feature `e2e-trace` on `engine/dispatch` (forwarded by `swift-ffi`, `android-jni` and, in their PRs, the desktop crates). A build without the feature holds no trace code, opens no file and writes nothing (USER 2026-09-24: the production IME emits no logs).
+The trace exists only in builds compiled with the test switch: cargo feature `e2e-trace` on `engine/dispatch` (forwarded by `swift-ffi`, `android-jni`, `taigi-macos-ffi` and the Linux crates `taigi-linux-core` / `taigi-linux-ffi` / `taigikeyboard-ibus`; the Windows crates have no such feature yet). A build without the feature holds no trace code, opens no file and writes nothing — the production IME emits no logs.
 
 Proof that a shipped library is clean:
 
@@ -28,7 +28,7 @@ The platform resolves a path inside its own sandbox and calls, from test-build c
 | iOS / macOS | `e2e_trace_open(path)` (swift-bridge; returns false in a build without the feature) |
 | Android | `RustEngineBridge.e2eTraceOpen(path)` (JNI symbol exported only with the feature) |
 | Linux | `taigi-linux-core` opens `$XDG_DATA_HOME/taigikeyboard/e2e-trace.jsonl` in `Runtime::probe` (features `taigi-linux-ffi/e2e-trace`, `taigikeyboard-ibus/e2e-trace`; `make -C linux build E2E=1`) |
-| Windows | `dispatch::trace::open(path)` through the desktop crates (its PR) |
+| Windows | not wired yet — no `e2e-trace` feature in `windows/` |
 
 The file is append-created; each `open` writes a `trace_open` line and restarts `t_us` at 0.
 
@@ -60,7 +60,7 @@ Readers ignore fields they do not know, so adding a field is not a version bump;
 | Field | Meaning |
 |---|---|
 | `req_id` | `Response.id` (echoes `envelope.proto` `Request.id`); 0 when the request did not decode |
-| `generation` | `Request.generation` read straight from the request bytes (field 4), so a request that did not decode still logs whatever the field held — 0 when absent (`Response.generation`, the former echo, was removed 2026-10-09 (round A1b)) |
+| `generation` | `Request.generation` read straight from the request bytes (field 4), so a request that did not decode still logs whatever the field held — 0 when absent |
 | `domain` | `phonetics` / `composing` / `lexicon` / `nextword` / `case` / `userdata` (the `Request.payload` field, tags 10–15), `none` when absent or undecodable |
 | `method_tag` | field number of the sub-request's `oneof method` (every sub-request holds only that oneof); the analyzer names it from `engine/protos/proto/*.proto` |
 | `error` | `ErrorCode` value (0 = OK) |
@@ -89,7 +89,7 @@ Written through `dispatch::trace::event` (same file, same clock as the engine ev
 
 The analyzer's "first hanji candidate" is the first `candidates` item whose `hanji` holds a CJK character (the §34 literal slot is skipped) and compares its displayed `tl`, plus its `hanji` when the scenario names one (`analyze.matches_cell`).
 
-Still planned, specified by the PR that first writes them: memory sample, key-geometry manifest (mobile).
+Not written yet: memory sample, key-geometry manifest (mobile).
 
 ## Scenarios
 
@@ -112,4 +112,4 @@ Still planned, specified by the PR that first writes them: memory sample, key-ge
 
 `<platform>` is the driver's name for what it drove: `linux-fcitx5`, `linux-ibus` (Xvfb, one directory per framework), `linux-gnome-ibus`, `linux-kde-fcitx5` (real desktop sessions; each scenario dir also holds `shot-<step>.png`, or `shot-<step>.missing` with the reason, as evidence the analyzer ignores). Entry point: `make e2e PLATFORM=<platform>` (runs `e2e/drivers/<platform>/run.sh`, then the analyzer; skill `/e2e`).
 
-`python3 e2e/analyzer/analyze.py --run <run-dir> [--baseline <earlier report.json>]` writes `report.md` (read by the agent) and `report.json` (baseline for the next run). Scenario status: `passed` / `failed` (expectation mismatch) / `skipped` (driver could not run, e.g. Windows box off — USER 2026-09-24) / `error`. Findings: `bug` (engine error / panic / adapter reject), `perf` (over `e2e/budgets.json` — platform → op, `*` wildcards, most specific wins — or p95 ≥ 1.5× and +2 ms vs baseline), `trace` (missing or wrong header, unparsable line), `unverified` (an expectation whose events the platform does not write yet). Exit 1 on any failed / error scenario or bug / perf / trace finding.
+`python3 e2e/analyzer/analyze.py --run <run-dir> [--baseline <earlier report.json>]` writes `report.md` (read by the agent) and `report.json` (baseline for the next run). Scenario status: `passed` / `failed` (expectation mismatch) / `skipped` (the driver could not run) / `error`. Findings: `bug` (engine error / panic / adapter reject), `perf` (over `e2e/budgets.json` — platform → op, `*` wildcards, most specific wins — or p95 ≥ 1.5× and +2 ms vs baseline), `trace` (missing or wrong header, unparsable line), `unverified` (an expectation whose events the platform does not write yet). Exit 1 on any failed / error scenario or bug / perf / trace finding.

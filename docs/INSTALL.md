@@ -24,7 +24,7 @@ brew install --cask taigikeyboard/tap/taigikeyboard
 
 Or download `TaigiKeyboard-<version>.pkg` from [taigikeyboard.tw](https://taigikeyboard.tw) and open it.
 
-Then add it: System Settings → Keyboard → Input Sources → Edit → + → TaigiKeyboard.
+Then add it: System Settings → Keyboard → Input Sources → Edit → + → TaigiKeyboard. The input-source list is cached per login session, so if TaigiKeyboard is not listed after a first install, log out and back in.
 
 ## Windows
 

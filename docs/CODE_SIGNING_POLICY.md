@@ -12,9 +12,9 @@ user can verify for themselves.
 | macOS | `TaigiKeyboard-<version>.pkg` | Signed and notarized with an Apple Developer ID. |
 | iOS / Android | App Store / Google Play builds | Signed by the respective store pipeline. |
 
-Windows releases being unsigned is the gap this policy exists to close. Until
-it is, the published SHA-256 is the only integrity check a user has, and it
-proves only that the file downloaded is the file published — not who built it.
+Windows releases being unsigned is the gap this policy exists to close. What
+that costs a user (SmartScreen, Smart App Control) and what the published
+SHA-256 does and does not prove: [`docs/architecture/windows-release.md` § Signing status](architecture/windows-release.md#signing-status--unsigned-is-the-current-channel).
 
 ## Roles
 
@@ -41,19 +41,18 @@ where a third party can read it:
 
 - Every change lands on `main` through a pull request from a branch, so the
   diff that entered a release is public and dated.
-- The release script refuses to run on a dirty working tree, and the engine and
-  dictionary it links are pre-built artifacts committed to the repository, so a
-  release ships exactly what the released commit contains.
+- The release scripts refuse a dirty working tree. The dictionary artifacts are
+  committed to the repository; the engine binaries are not (they are generated
+  and gitignored), so every release rebuilds them from the released commit.
 - Each release's artifact digest is published in the update manifest and read
   back from the served file, so it attests what the download URL actually
   serves rather than what was built locally.
 
-Stated plainly because it bears on provenance: Windows releases are built by the
-maintainer on their own Windows machine by `make windows-release`, not on a
-hosted build server, and the source repository is not public.
-`docs/architecture/windows-release.md` owns that procedure. Nothing here asks the reader to take that on
-trust — the published SHA-256 below is what a user can actually check, and it
-proves only that the file downloaded is the file published.
+Stated plainly because it bears on provenance: Windows installers are built
+from the public source repository on a GitHub-hosted runner
+(`.github/workflows/windows-build.yml`), not on a maintainer's machine;
+`docs/architecture/windows-release.md` § Building on a GitHub-hosted runner
+owns that procedure.
 
 If a second maintainer joins, this table is updated in the same commit that
 grants them access.
@@ -133,19 +132,14 @@ locally, so it attests the file that URL actually serves.
 Get-FileHash .\TaigiKeyboard-<version>.exe -Algorithm SHA256
 ```
 
-If Windows releases are signed in future, the in-app updater additionally
-verifies the downloaded package's Authenticode signature before offering to
-install it — that path already exists and activates as soon as a running copy
-carries a signature of its own.
-
 ## Why Windows releases are unsigned
 
-An Authenticode certificate costs a few hundred US dollars a year, and the free
-programme for open source projects requires the whole product — including the
-data it bundles — to be open source. TaigiKeyboard bundles Taiwanese-language
-dictionary data whose sources carry their own, non-open-source terms, so that
-route is closed. Signing may be revisited; until then this page describes what
-a user can verify instead.
+An Authenticode certificate costs a few hundred US dollars a year, so signing
+goes through SignPath Foundation's free programme for open-source projects.
+That application is in progress: the first one was rejected on 2026-10-02, the
+bundled dictionary data's own non-open-source terms being the likely obstacle,
+and the maintainer will reapply. Until a certificate is issued, this page
+describes what a user can verify instead.
 
 ## Licence
 

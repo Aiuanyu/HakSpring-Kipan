@@ -2,7 +2,7 @@
 
 ## Goal
 
-Maintain one concise English What's New source per mobile platform and let the release owner paste it into App Store Connect or Google Play manually. The apps show no version history (USER 2026-09-20: users do not read it); the detailed record lives in `changelog/` only. No store API credentials or publishing automation are involved.
+Maintain one concise English What's New source per mobile platform and let the release owner paste it into App Store Connect or Google Play manually. The apps show no version history, since users do not read it; the detailed record lives in `changelog/` only. No store API credentials or publishing automation are involved.
 
 ## Canonical sources
 
@@ -17,20 +17,20 @@ Platform notes may differ when shipped behavior differs. For a given platform, i
 
 ## Two release trains
 
-Two version numbers, moving independently (USER 2026-08-29):
+Two version numbers, moving independently:
 
 | Train | Platforms | Version files | Detailed record | Announces itself through |
 | --- | --- | --- | --- | --- |
 | **mobile** | iOS + Android | Android `versionName`, iOS shipping targets' `MARKETING_VERSION` | `changelog/mobile-vMAJOR.MINOR.PATCH.md` | App Store / Google Play What's New (`changelog/store/vMAJOR.MINOR.PATCH/{ios,android}.txt`) |
-| **desktop** | macOS + Windows + Linux | both macOS plist keys, the `[workspace.package] version` of `windows/Cargo.toml`, `desktop/Cargo.toml`, `linux/Cargo.toml` and `macos/Cargo.toml` | `changelog/desktop-vMAJOR.MINOR.PATCH.md` | one GitHub release in this repository, tagged `desktop-MAJOR.MINOR.PATCH`, holding every platform's installer, whose body is that whole file. Each platform stages its own asset on it as a **draft** (`tools/release/lib/desktop-release.sh`); a person tests and publishes it, and `make desktop-announce` then tells the website and every installed copy (`tools/release/announce-release.sh`) |
+| **desktop** | macOS + Windows + Linux | both macOS plist keys, the `[workspace.package] version` of `windows/Cargo.toml`, `desktop/Cargo.toml`, `linux/Cargo.toml` and `macos/Cargo.toml` | `changelog/desktop-vMAJOR.MINOR.PATCH.md` | one GitHub release in this repository, tagged `desktop-MAJOR.MINOR.PATCH`, holding every platform's installer, whose body is that whole file — staged as a draft, published by a person, announced automatically ([`desktop-release.md` § The flow](desktop-release.md#the-flow)) |
 
-Within a train the platforms cannot drift apart — `set-versions` writes every version file of the train or none, and `check-versions` holds them all to one number. Across trains nothing is compared: a mobile 3.6.7 and a desktop 3.7.0 are two unrelated facts, and the same number appearing in both is a coincidence, not a link. A train therefore never skips a number because the other train used it: after desktop 3.6.7 the next mobile release is still whatever follows the last *mobile* number. (Mobile 3.6.8 skipped 3.6.6–3.6.7 in 2026-09; that was a one-off, not the rule.) The repository's `vMAJOR.MINOR.PATCH` git tags are the mobile train's (`dictionary/build/version_snapshot.py` reads them); a desktop release is one GitHub release in this repository, tagged `desktop-MAJOR.MINOR.PATCH`, carrying every desktop platform's installers (releases cut before 2026-09-09 are tagged `macos-v…` / `windows-v…` on the website repository, which is where they were published from while this repository was private).
+Within a train the platforms cannot drift apart — `set-versions` writes every version file of the train or none, and `check-versions` holds them all to one number. Across trains nothing is compared: a mobile 3.6.7 and a desktop 3.7.0 are two unrelated facts, and the same number appearing in both is a coincidence, not a link. A train therefore never skips a number because the other train used it: after desktop 3.6.7 the next mobile release is still whatever follows the last *mobile* number. The mobile train's git tags are `mobile-MAJOR.MINOR.PATCH` (bare `vMAJOR.MINOR.PATCH` up to `v3.6.5`; `dictionary/build/version_snapshot.py` reads both); the desktop train's are `desktop-MAJOR.MINOR.PATCH`, created by publishing the release (desktop releases cut before 2026-09-09 are tagged `macos-v…` / `windows-v…` on the website repository).
 
 The store notes cover the mobile train only. Shared-engine work that ships on every platform is a mobile change too, so it belongs in the mobile notes on its own merits — described by what a phone user sees, not by the platforms it happened to land on. Desktop-only work never enters `changelog/mobile-vMAJOR.MINOR.PATCH.md`: it waits for the desktop train's own file.
 
 `validate_notes` enforces the exclusion: `macOS` and `Mac` are forbidden terms in both `ios.txt` and `android.txt`, matched as whole words so ordinary release-note words such as "machine" and "match" still pass.
 
-`check-versions --train desktop` holds `macos/App/Info.plist` to the desktop version — `CFBundleShortVersionString` equals it, and `CFBundleVersion` equals `MAJOR*10000 + MINOR*100 + PATCH`, the same derivation `macos/scripts/release-app.sh` enforces at package time — and `windows/Cargo.toml`, `desktop/Cargo.toml`, `linux/Cargo.toml` and `macos/Cargo.toml` to the same number. That build number is what Installer compares between packages, so the desktop train only ever moves upward; the per-train downgrade guard in `set-versions` is what enforces it.
+`check-versions --train desktop` holds `macos/App/Info.plist` to the desktop version — `CFBundleShortVersionString` equals it, and `CFBundleVersion` equals `MAJOR*10000 + MINOR*100 + PATCH`, the same derivation `macos/scripts/release-app.sh` enforces at package time — and `windows/Cargo.toml`, `desktop/Cargo.toml`, `linux/Cargo.toml` and `macos/Cargo.toml` to the same number. That build number is what Installer compares between packages, so the desktop train only ever moves upward; the per-train downgrade guard in `set-versions` is what enforces it. The formula also caps MINOR and PATCH at 99 each (`MAX_MACOS_VERSION_COMPONENT`, `tools/release_notes.py`); beyond that two versions would collide.
 
 ## Set the version
 
@@ -77,4 +77,4 @@ Always review the clipboard content before saving store metadata. The script che
 
 ## Manual release boundary
 
-The tooling does not authenticate with either store, upload binaries, select builds, create tags, promote tracks, submit review, or release production. Those actions remain entirely manual.
+The tooling does not authenticate with either store, upload binaries, select builds, promote tracks, submit review, or release production. Those actions remain entirely manual. The one git-side step it takes is the `release-mobile` skill's: it tags the release commit `mobile-<version>` and pushes the tag (`.claude/skills/release-mobile/SKILL.md` § 6).

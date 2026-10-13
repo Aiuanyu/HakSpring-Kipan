@@ -6,8 +6,9 @@
 
 How the Linux half of a desktop version ships. The shared flow — one draft
 release `desktop-<version>` for all three desktops, tested and published by a
-person — is `desktop-release.md`; this file is only what the Linux artifact
-is and how it is built.
+person — is `desktop-release.md`; installing one as a user is
+[`docs/INSTALL.md` § Linux](../INSTALL.md#linux). This file is only what the
+Linux artifact is and how it is built.
 
 ## The artifacts
 
@@ -59,7 +60,7 @@ default and what a source install uses):
 | Guideline | Policy §12.5 (`copyright`), FHS 3.0 (`/usr/libexec`), Fonts/PackagingPolicy | Packaging Guidelines (`%license`), Fonts Policy | Arch package guidelines ("Avoid `/usr/libexec`"), font package guidelines |
 
 Fedora's Fonts Policy also discourages typefaces bundled inside an
-application package; they stay bundled (USER 2026-09-25), so `𧉟` never
+application package; they stay bundled, so `𧉟` never
 renders as tofu, with only the path following the guideline. Moving the
 engine is a file move within one package: an upgrade replaces the file and
 the component XML together; IBus reads the new `<exec>` at its next start
@@ -70,7 +71,7 @@ the component XML together; IBus reads the new `<exec>` at its next start
 4.14, libadwaita 1.5, GLib 2.80 on Ubuntu 24.04, the runner that builds it.
 Built and checked in CI on Ubuntu 24.04 (compile, `ibus-daemon` smoke, the
 package's contents and the addon file name); installing and typing with it on
-a real desktop is S74, not yet done. A `.deb` installed by hand adds no apt
+a real desktop is dogfood item S74. A `.deb` installed by hand adds no apt
 source: a newer version is another download.
 
 User data is never in the package: `~/.config/taigikeyboard/settings.json` and
@@ -150,7 +151,7 @@ the way `windows-build.yml` is the Windows half:
 
 Publishing stays a person's (`desktop-release.md`). No signing: a `.deb`
 downloaded from the project page is verified by its `.sha256`, as the unsigned
-Windows channel is; an apt repository with its own key is outside this slice.
+Windows channel is; there is no apt repository with its own key.
 
 ## No in-app update
 
@@ -170,17 +171,3 @@ splits the Linux button into three only when all three name the same tag. The
 website shows that button only while its `enable_linux_download` is `true`;
 that switch hides the entry point, not the asset, which is public the moment
 the release is published.
-
-## Installing by hand
-
-```sh
-sudo apt install ./taigikeyboard_<version>_amd64.deb             # Ubuntu / Debian
-sudo dnf install ./taigikeyboard-<version>-1.x86_64.rpm          # Fedora
-sudo pacman -U ./taigikeyboard-<version>-1-x86_64.pkg.tar.zst    # Arch
-fcitx5 -r            # or: ibus restart
-```
-
-Then add TaigiKeyboard in `fcitx5-configtool` (Fcitx5) or the desktop's input-source
-settings (IBus). First-machine acceptance is the dogfood run-book in
-`linux-roadmap.md` and `dogfood-checklist.md` S74. Uninstall: `sudo apt remove taigikeyboard`
-(`sudo dnf remove taigikeyboard`, `sudo pacman -R taigikeyboard`).

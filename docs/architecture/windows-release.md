@@ -1,17 +1,18 @@
 # Windows release — installed by Inno Setup, web-distributed
 
-The operator procedure for cutting a Windows release (roadmap
-`windows-roadmap.md` W8 / W9). Mirror of `macos-release.md`: the same order,
-the same GitHub release — one per desktop version, holding both platforms'
-installers — the same manifest contract, with Authenticode in place of
-Developer ID + notarization and an Inno Setup installer in place of a product
-archive.
+The Windows half of a desktop release. Mirror of `macos-release.md`: the same
+GitHub release — one per desktop version, holding every desktop platform's
+installers ([`desktop-release.md`](desktop-release.md) owns the flow) — the same
+manifest contract, with Authenticode in place of Developer ID + notarization and
+an Inno Setup installer in place of a product archive.
 
 ## Signing status — UNSIGNED is the current channel
 
-There is no code-signing certificate for this project and none is expected for
-the next year or two (owner's decision, 2026-09-04). Releases are cut and
-published with `--skip-sign`, and the published artifact carries the plain
+There is no code-signing certificate for this project yet. The SignPath
+Foundation application is in progress — the first one was rejected on
+2026-10-02 and the maintainer will reapply (§ Building on a GitHub-hosted
+runner). Until a certificate is issued, releases are cut and published with
+`--skip-sign`, and the published artifact carries the plain
 release name — `TaigiKeyboard-<version>.exe`, the same shape macOS publishes.
 
 What that costs, and what it does not (SmartScreen behaviour per
@@ -39,7 +40,7 @@ or re-uploaded asset, or a URL pointing at another valid executable — not an
 adversary holding that account. That is the same security position as the
 user downloading the installer in a browser, which is what the alternative
 would be; what it buys is that nothing hands somebody an executable it never
-checked. Sole maintainer with 2FA, owner's judgement, 2026-09-04.
+checked. The publishing account is the sole maintainer's, with 2FA.
 
 ⚠ A file this app downloads carries no Mark-of-the-Web (browsers write that;
 we do not), so launching it should not raise the browser-download SmartScreen
@@ -79,14 +80,11 @@ broken.
 built for `i686-pc-windows-msvc`. Everywhere Taiwanese is typically typed is
 64-bit today — browsers, Notepad, the chat clients — except Office: Office
 2016 and earlier, and any Microsoft 365 installed before January 2019,
-defaulted to 32-bit and stays 32-bit until it is reinstalled. It was a
-deliberate gap (USER 2026-09-01: revisit when a user reports it) until a user
-reported that Word could not type (2026-10-04).
+defaulted to 32-bit and stays 32-bit until it is reinstalled.
 
 ### The 32-bit service
 
-Measured on 2026-09-01 and again when it shipped, so it does not have to be
-re-derived.
+Measured, so it does not have to be re-derived.
 
 - **Build**: `release-app.sh` builds `--target i686-pc-windows-msvc -p
   taigi-windows-tsf` after the x64 build — the DLL only; the 64-bit settings
@@ -152,31 +150,26 @@ Arm64/Arm64EC build tools, which the release machine does not have
 
 ## Building on a GitHub-hosted runner
 
-`.github/workflows/windows-build.yml` builds the same installer on a
+`.github/workflows/windows-build.yml` builds the release installer on a
 GitHub-hosted `windows-2025` runner — `bash windows/scripts/release-app.sh
 --skip-sign`, the same entry point, with Inno Setup and `protoc` installed from
 version- and digest-pinned downloads and the MSVC developer environment applied.
+`make desktop-release` dispatches it, and the dispatched run attaches its
+installer to the draft; a run fired by `release: published` rebuilds for
+provenance and publishes nothing.
 
 It exists for provenance, not convenience. SignPath Foundation signs only "a
 valid, automated build resulting from the source code at the noted source code
 repository", and for open-source projects requires every job leading up to the
 signing request to have run on a GitHub-hosted agent, with the artifact handed
-to its action from inside that workflow. A build cut by hand on this machine can
-never satisfy that, however carefully it is done.
+to its action from inside that workflow. A build cut by hand on a Windows
+machine can never satisfy that.
 
-The workflow runs on `release: published` — the manual publish of the draft,
-which is also what creates the tag. It does not publish anything itself, and it
-does **not** vouch for the installer that was staged from the maintainer's box:
-that is the point SignPath changes. When a certificate exists the order has to
-invert — hosted build and sign first, then stage the signed installer on the
-draft — because signing after the release is published is too late.
-
-This section's manual procedure is still how releases are cut. What has to happen before that changes is a certificate; the
-repository went public on 2026-09-07, which is what let the releases move back
-here from the website repository. Note also that SignPath signs an Inno Setup installer as a plain PE
-file, not as a composite — signing the binaries *inside* it is a separate
-signing operation before packaging, which is the shape
-`windows/scripts/release-app.sh` already has.
+When a certificate exists, signing goes into the dispatched run before its
+attach step — signing after the release is published is too late. SignPath
+signs an Inno Setup installer as a plain PE file, not as a composite: signing
+the binaries *inside* it is a separate signing operation before packaging,
+which is the shape `windows/scripts/release-app.sh` already has.
 
 ## One-time machine setup
 
@@ -226,11 +219,10 @@ staged on (`desktop-release.md`). `make windows-release` remains what a person
 runs on a Windows machine to produce an installer by hand — for a dev loop, or
 when CI cannot.
 
-`make windows-release` does not rebuild the engine, and mostly does not need to:
-the TSF service and the settings exe compile the engine crates from source
-through cargo, so they cannot link a stale copy the way the Mac's xcframework
-can. The generated protos are the exception, which is what `make build` above
-covers.
+`make windows-release` does not rebuild the engine, and does not need to: the
+TSF service and the settings exe compile the engine crates from source through
+cargo — the protos included, by prost-build in `engine/protos/build.rs` — so
+they cannot link a stale copy the way the Mac's xcframework can.
 
 What `windows/scripts/release-app.sh` does, in order:
 
@@ -284,15 +276,12 @@ bash windows/scripts/release-app.sh --allow-dirty    # build from a dirty tree
 
 ## Versioning
 
-One number for the desktop train — macOS and Windows share it; iOS and
-Android are the separately numbered mobile train — written by
-`make version-desktop x.y.z` (`tools/release_notes.py set-versions --train
-desktop`): `windows/Cargo.toml`
-`[workspace.package] version` is the Windows source of truth; every crate
-inherits it, the VERSIONINFO blocks and the installer read it, and the
-update manifest announces it. The build number the macOS package carries
-(`MAJOR*10000 + MINOR*100 + PATCH`) is also the dictionary stamp the Windows
-engine caches under (`dictionary_artifacts::dictionary_version`).
+`windows/Cargo.toml` `[workspace.package] version` is the Windows source of
+truth: every crate inherits it, the VERSIONINFO blocks and the installer read
+it, and the update manifest announces it. The engine caches the dictionary
+under the same `MAJOR*10000 + MINOR*100 + PATCH` stamp the macOS package
+carries (`dictionary_artifacts::dictionary_version`). Setting it:
+[`manual-release-notes.md` § Set the version](manual-release-notes.md#set-the-version).
 
 ## What the installer does
 
@@ -333,8 +322,7 @@ every process of every user and `regsvr32` writes HKLM. In order:
   logon, then daily, running `TaigiKeyboardSettings.exe --check-updates`;
   `IgnoreNew` for parallel instances. Created from Setup's own ELEVATED
   context — the Task Scheduler root folder admits no other integrity level,
-  and an unelevated `schtasks /Create` answers `ERROR: Access is denied.`,
-  which is what failed every install before 2026-09-04. The definition names
+  and an unelevated `schtasks /Create` answers `ERROR: Access is denied.`. The definition names
   no principal user, so the task binds to the account Setup runs as (ordinary
   UAC consent keeps that the user's own) and `RunLevel` keeps it
   least-privileged. Its creation failing is NOT an install failure: the input
@@ -352,17 +340,10 @@ reading its own payload.
 
 ## Staging and publishing the installer
 
-The flow — stage on a draft, test, publish, announce — is desktop-wide and lives
-in `desktop-release.md`. The installer reaches the draft from CI; once both
-halves are staged and tested:
-
-```sh
-gh release download desktop-<version> --repo taigikeyboard/taigikeyboard --dir ~/Downloads
-# install it, use it, check SmartScreen behaviour on a machine that has never seen it
-gh release edit desktop-<version> --repo taigikeyboard/taigikeyboard --draft=false
-```
-
-Publishing is the last manual step; the announcement runs itself.
+The flow — stage on a draft, test, publish, announce — is
+[`desktop-release.md` § The flow](desktop-release.md#the-flow). The installer
+reaches the draft from CI; when testing it, check SmartScreen behaviour on a
+machine that has never seen it.
 
 What `windows/scripts/publish-release.sh` asserts that no other platform can:
 
@@ -385,27 +366,12 @@ on — the data file alone does not.
 
 ## Notes
 
-- **Certificate rotation.** The updater pins the signer's LEAF thumbprint
-  (roadmap W9, PR9 Codex): the first release signed with a renewed
+- **Certificate rotation.** The updater pins the signer's LEAF thumbprint: the first release signed with a renewed
   certificate is not accepted in-app by the copies signed with the old one.
   Plan that release as a download-page release (the manifest's
   `downloadPageURL` route, which every copy has); the copies it installs pin
   the new certificate and in-app updates resume.
-- **Unsigned releases** (`--skip-sign`, today's channel — § Signing status)
-  run and install — SmartScreen warns — and DO offer the in-app install: the
-  running settings exe has no signature identity, so the manifest's
-  `packageSHA256` is what admits the download instead. This is where Windows
-  parts from the Mac, which has no digest field and sends an ad-hoc build to
-  the download page.
 - **`rc.exe` absent** — a development build compiles, with a warning, without
   its icon and VERSIONINFO; the release script sets `TAIGI_REQUIRE_RESOURCES=1`,
   under which the build fails instead, and reads the VERSIONINFO back
   afterwards regardless — the updater's package check depends on it.
-- **First real-Windows run (PR11 smoke)** — `schtasks /Create /XML` from the
-  elevated install, then `schtasks /Query` for the task's "Run As User"; an
-  install with a host still holding the DLL (expect the sign-out recipe, not
-  a partial install); the rollback path (make `regsvr32` fail on purpose:
-  expect the old DLL back and Setup reporting failure); the toast under the
-  Start-menu AUMID; `dumpbin` and PowerShell present in the Git Bash `PATH`
-  on the release machine. The `schtasks` and PATH items ran 2026-09-01 through
-  2026-09-04; the rest is still unexercised.

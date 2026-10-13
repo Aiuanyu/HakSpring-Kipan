@@ -62,14 +62,10 @@ maintainer has published the release:
 }
 ```
 
-That file is what the site's Windows download button links at — straight at
-the installer so the download starts on one click, which is why its URL
-carries the version, and deliberately not `/releases/latest/download/...`,
-since `latest` resolves repository-wide and the last release here may be a
-macOS one. Whether the button is shown at all is
-the site's `enable_windows_download` flag, not this file: the release flow
-fills the file the moment any installer is published, a test publish
-included.
+The site's Windows download button links at `downloadURL`, as the macOS one
+does. Whether the button is shown at all is the site's `enable_windows_download`
+flag, not this file: the release flow fills the file the moment any installer
+is published, a test publish included.
 
 The manifest is **rendered** from it by the site's own build:
 `appcast/windows.json` over there is a Jekyll template reading
@@ -79,17 +75,12 @@ it directly. `sha256` is read back from the PUBLISHED asset by the release
 flow, not just computed locally, so the digest the manifest names is one the
 URL was serving.
 
-Same shape as macOS (`macos/updates/README.md` § One published fact, one
-committed file), for the reason recorded there: two literal files meant two
-commits seconds apart, every GitHub Pages run deploys the tree of *its own*
-commit, and on 2026-08-28 the run for the earlier commit finished last and
-served the macOS manifest a release behind for a day. One file cannot race
-with itself. Before the first Windows release the data file names `0.0.0`
-with no download, which notifies nobody.
+Why one data file rather than a written manifest:
+[`macos/updates/README.md` § One published fact, one committed file](../../macos/updates/README.md#one-published-fact-one-committed-file).
 
 ## Who checks, when
 
-Roadmap W9: the installer's per-user scheduled task runs
+The installer's per-user scheduled task runs
 `TaigiKeyboardSettings.exe --check-updates` (headless: due ⇒ fetch, record,
 toast once per version); the settings window checks when overdue at launch;
 Check for Updates in the General pane and the lang-bar menu check on demand; the DLL only
