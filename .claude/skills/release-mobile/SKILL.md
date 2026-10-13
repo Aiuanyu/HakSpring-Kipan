@@ -86,10 +86,9 @@ Run the `upgrade-check` procedure for `<base-tag> → HEAD`:
 **The skill runs these itself** — the artifact shipped must be built from the
 commit being released.
 
-**Always**, not only when the range touched them. The engine binaries iOS and
-Android link are generated and gitignored, so a clean tree says nothing about
-which commit the local copies came from; a machine that last built on another
-branch would ship that.
+**Always**, not only when the range touched them — a clean tree proves nothing
+about the gitignored engine binaries (`docs/architecture/build-artifacts.md`
+§ A release rebuilds first).
 
 ```bash
 make i18n
@@ -122,14 +121,8 @@ If target content already exists, merge new information by topic. Refine an exis
 Canonical store-note rules:
 
 - English only: UI labels by their i18n `en` value, quotes translated; CJK / TL / POJ / TPS only for Taigi example words and readings.
-- One to eight non-empty entries without source bullet markers. The 500-character
-  ceiling usually binds first.
-- Start each entry with `New:`, `Fixed:`, `Improved:`, `Changed:`, or `Updated:`.
-- End each entry with punctuation.
-- Include only concrete user-visible changes.
-- Exclude refactors, tests, tooling, dependencies, issue/PR numbers, URLs, rankings, marketing claims, and future work.
-- Do not mention another platform in platform-specific notes: no Android in `ios.txt`, no App Store in `android.txt`, and no macOS / Mac in either. `validate_notes` rejects all three.
-- Keep rendered bullets and newlines within 500 Unicode characters.
+- Shape (1–8 entries without bullet markers, each starting `New:` / `Fixed:` / `Improved:` / `Changed:` / `Updated:` and ending in punctuation, ≤ 500 rendered characters, no other platform named): `docs/architecture/manual-release-notes.md` § Prepare notes; `release_notes.py check` enforces it.
+- Include only concrete user-visible changes. Exclude refactors, tests, tooling, dependencies, issue/PR numbers, URLs, rankings, marketing claims, and future work.
 
 ## 5. Validate and render
 
@@ -175,9 +168,7 @@ The user pastes iOS text into App Store Connect and Android text into the chosen
 
 ## Desktop train
 
-macOS, Windows and Linux are the **desktop train**: one version number shared by the three, moved by `make version-desktop x.y.z`, independent of the mobile number this skill prepares. It has its own skill (`release-desktop`), its own record (`changelog/desktop-v<version>.md`), and its own publish scripts. This skill never writes that file, runs those scripts, or publishes anything for desktop.
-
-`check-versions --train mobile` verifies iOS + Android only. A macOS, Windows or Linux version that differs from `<target>` is expected, not a finding.
+macOS, Windows and Linux are a separate train with its own version, skill (`release-desktop`) and changelog (`docs/architecture/manual-release-notes.md` § Two release trains). `check-versions --train mobile` verifies iOS + Android only; a desktop version that differs from `<target>` is expected, not a finding.
 
 ## Guardrails
 
