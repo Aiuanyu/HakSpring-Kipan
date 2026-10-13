@@ -327,7 +327,7 @@ mod tests {
     //! kautian subcollection filter (v3) — pure-logic acceptance matrix
     //! driving `from_enabled_bitmask` / `effective_source_bitmask` /
     //! `passes_filter` via hand-built wire masks. Binary-layout round-trip
-    //! lives in `tests/dictionary_reader_v3.rs`.
+    //! lives in `tests/dictionary_reader_v4.rs`.
     use super::*;
 
     const TAIGITV: u16 = 1 << 1;

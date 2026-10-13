@@ -6,7 +6,7 @@
 // Public façade modules — the only externally-supported entry points.
 // Tests and other engine crates depend on these paths; everything else
 // stays mod-private per the domain↔proto boundary rule in
-// docs/contributing/rust-best-practices.md §3a.
+// docs/contributing/rust-ffi-safety.md §2.
 pub mod api;
 pub mod requests;
 

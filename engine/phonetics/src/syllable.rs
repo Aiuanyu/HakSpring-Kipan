@@ -479,8 +479,8 @@ pub fn is_valid_syllable(token: &str) -> bool {
 
 /// Canonical spelling of the nasal final /ɔ̃/ (TL `onn`, POJ `oⁿ`) and the
 /// alternate rendering some writers use for it — POJ `o͘ⁿ`, which reaches the
-/// engine as ASCII `oonn`. `docs/phonetics/taigi-phonetics-reference.md:118` and
-/// `:304`, plus `taigi-converter/src/tables.js` `POJ_FINAL_SUBS`, fix
+/// engine as ASCII `oonn`. `docs/phonetics/taigi-phonetics-reference.md` §3.2.2 and
+/// §4 (row 58), plus `taigi-converter/src/tables.js` `POJ_FINAL_SUBS`, fix
 /// `onn`/`oⁿ` as canonical, so `oonn` is an INPUT spelling only and never
 /// appears in a dictionary column.
 const NASAL_OO_CANONICAL_SPELLING: &str = "onn";

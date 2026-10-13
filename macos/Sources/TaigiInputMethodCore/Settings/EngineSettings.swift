@@ -38,7 +38,7 @@ enum InputModeSwitch: Sendable, Equatable {
 /// `composing/presentation.rs`), or the romanization alone.
 ///
 /// Raw values are the storage contract every platform shares
-/// (`docs/reports/2026-08-30-hanlo-together-mode-research.md` §12) — the same
+/// (`docs/architecture/behavioral-invariants.md` §42) — the same
 /// convention `isHanjiFirst` follows, so a future
 /// settings transfer carries one vocabulary.
 /// CROSS-PLATFORM INVARIANT — mirrors ios/Sources/TaigiKeyboard/Settings/SettingsModels.swift
