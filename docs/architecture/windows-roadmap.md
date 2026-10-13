@@ -434,7 +434,7 @@ IMEs under `references/`. "Codex:" records the ANALYSIS-ONLY verdict and what ch
   the system) are what parity owns, and Windows 11 Settings itself uses a pop-up for
   "Choose your mode"; (b) the window's width floor is 600, not the Mac's fixed 760, so
   `NavigationView` can actually reach the ~641px threshold its adaptive pane behaviour —
-  and acceptance item S124 (d) in `dogfood-checklist.md` — exists for.
+  and dogfood item S124 (adaptive width) — exists for.
   **Timers** (Codex Q5): live reload (W10) = a re-armed single-flight
   `spawn_background(sleep 1 s → Tick{generation})`; the closure checks cancellation after
   the sleep; every message that can arrive late (tick, filter debounce, spinner delay,

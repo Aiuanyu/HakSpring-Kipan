@@ -30,6 +30,12 @@ One line each; the linked section holds the design, the measurements and the ope
 |---|---|---|
 | Retire the old dictionary `frequency` after E1 | Recorded, not started. Still read: the equal-cost tie-break (`CandidateSortKey` −score / −freq; ~69 % of rows are corpus-unseen and share one cost), the search-page tie-break, `association.bin` dictionary-derived counts (`associations.py`), CSV / FST row order + duplicate max-aggregation (`merge_csv.py`), the `dict.bin` u32 field, `CandidateMessage.score`. Steps: pick a replacement tie-break for unseen words, a count source for the association rows, then the format bump. A custom twin of a dictionary word carries no corpus cost (sorts below its priced homophone in the list) | [`reports/2026-10-08-e1-p5b-list-sort.md`](reports/2026-10-08-e1-p5b-list-sort.md) §5 |
 
+**Desktop**
+
+| Item | Status | Where |
+|---|---|---|
+| Windows candidate window is not exposed to UI Automation (Narrator stays silent on it; settings window is covered) | Known gap, not started | `windows/crates/taigi-windows-tsf/src/ui/` |
+
 **Mobile parity (inventory 2026-10-12)** — pending code; directions decided unless marked.
 
 | Item | Direction | Where |
