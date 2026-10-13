@@ -28,5 +28,4 @@ Technical rules distilled from past incidents. The dated narratives that produce
 
 ## Privacy
 
-- No personal identifier in any tracked file, commit message, PR or issue: no email address, no account / project / server ID — write "a former work address", "the maintainer's author email". gitleaks' `personal-email` rule (`.gitleaks.toml`) and the maintainer's private denylist (`tools/secret-scan/private-denylist-scan.sh`) gate commits; neither sees PR bodies or issues, so check those by hand.
-- Tooling bound to a personal account (mailbox triage, chat-server triage, OAuth clients, runtime state) lives outside this repository, never under `.claude/`.
+- No personal identifier in any tracked file, commit message, PR or issue — write "a former work address", "the maintainer's author email". Commit gates cover tracked files only; check PR bodies and issues by hand. Rules and gates: `CONTRIBUTING.md` § Secrets.

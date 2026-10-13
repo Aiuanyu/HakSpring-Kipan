@@ -63,7 +63,7 @@ Intentional today:
 
 - Key-press haptics: Android drives `Vibrator` directly; iOS cannot bypass the System Haptics master (`behavioral-invariants.md` §36 `INVARIANT_KEYPRESS_FEEDBACK_APP_TOGGLE_GATE`).
 - Emoji palette: iOS vendored `ISEmojiView`; Android Compose palette (`docs/ui/emoji.md`).
-- Layouts and callouts: Swift tables on iOS, JSON assets on Android (FlorisBoard loader).
+- Layouts and callouts: Swift tables on iOS, JSON assets on Android (loader modeled on FlorisBoard's).
 - Settings UI: SwiftUI `Form` + SF Symbols on iOS; the `ui/components/` row kit + `TaigiIcons` on Android; native toggle colours on each (`ui-style-guide.md` § Switch / Toggle).
 - Committed-text deletion: Android sends a raw key only to `TYPE_NULL` editors (`android-guidelines.md` §5); iOS always uses `deleteBackward()`.
 - Default keyboard font: iOS `system`, Android `openHuninn` — iOS bundles rare-character fonts Android does not (maintainer 2026-10-12).
@@ -90,5 +90,5 @@ The engine never owns, and these stay in Swift / Kotlin:
 
 - Candidate UI navigation, layout and styling — the engine returns neutral candidate values (as `khiin-rs/protos/src/command.proto:114` leaves display to the client).
 - Platform text-region types (`NSRange`, `UITextDocumentProxy`, `InputConnection`, `EditorInfo`, view types) — protos carry strings, numbers and engine value types only.
-- KeyboardKit / FlorisBoard bindings.
+- KeyboardKit / Android IME bindings.
 - Asset copy and path resolution (`Bundle.main`, `filesDir`, `AssetManager`) — the engine receives a path or handle (`docs/architecture/data-artifacts-portability.md` §7).
