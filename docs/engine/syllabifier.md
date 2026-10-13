@@ -2,17 +2,16 @@
 
 > **Type**: Reference
 > **Keywords**: `syllabifier`, `syllable`, `SyllableInventory`, `syllables.fst`, `valid_span_endings`, `phonotactics`
-> **Related**: composing.md, binary-format.md, tps.md, continuous-input-ranking.md, ../architecture/behavioral-invariants.md
+> **Related**: [composing.md](composing.md), [binary-format.md](binary-format.md), [tps.md](tps.md), [continuous-input-ranking.md](continuous-input-ranking.md), [behavioral-invariants.md](../architecture/behavioral-invariants.md)
 
 ---
 
 ## Summary
 
-- Two distinct primitives feed continuous input: a **table-based syllable parser** (`phonetics::syllable`) and a **runtime FST membership reader** (`lexicon::SyllableInventory`).
+- Two primitives feed continuous input: a **table-based syllable parser** (`phonetics::syllable`) and a **runtime FST membership reader** (`lexicon::SyllableInventory` over `syllables.fst`).
 - The composing crate's `syllabifier` walks a buffer into valid syllable spans (BFS, not longest-match) using the inventory, building the segmentation lattice.
-- `syllables.fst` is a tagged single FST holding three families — `tl:` / `poj:` / `tps:` — each carrying both numeric and toneless canonical keys.
 
-> **Two senses of "valid syllable" — do not conflate.** `phonetics::is_valid_syllable` is a *phonotactic* table test (does this string split into a legal initial+final?). `SyllableInventory::contains_in` is *FST membership* (does this exact canonical syllable appear in the built dictionary's inventory?). They answer different questions.
+> **Two senses of "valid syllable" — do not conflate.** `phonetics::is_valid_syllable` is a *phonotactic* table test (does this string split into a legal initial+final?). `SyllableInventory::contains_in` is *FST membership* (does this exact canonical syllable appear in the built dictionary's inventory?).
 
 ---
 
@@ -20,15 +19,14 @@
 
 | File | Responsibility |
 |------|----------------|
-| `engine/phonetics/src/syllable.rs` | Parse primitive: tone strip, POJ→TL spelling normalize, initial/final split, per-syllable canonicalizers, acronym-key detection |
+| `engine/phonetics/src/syllable.rs` | Parse primitive: tone strip, POJ→TL spelling normalize, initial/final split, per-syllable canonicalizers |
 | `engine/phonetics/src/tables.rs` | `TL_INITIALS` / `TL_FINALS` / `TONE_NUM_TO_COMBINING` lookup tables |
-| `engine/lexicon/src/syllable_inventory.rs` | `SyllableInventory` — mmap'd `syllables.fst` reader, tagged-family membership |
-| `engine/composing/src/syllabifier/mod.rs` | Mode-aware dispatch `valid_span_endings_lowered` |
-| `engine/composing/src/syllabifier/tl.rs` | BFS scanner for TL/POJ/English families |
-| `engine/composing/src/syllabifier/tps.rs` | BFS scanner for the TPS family (same shape) |
+| `engine/lexicon/src/syllable_inventory.rs` | `SyllableInventory` — mmap'd `syllables.fst` reader, per-family membership |
+| `engine/composing/src/syllabifier/mod.rs` | Mode-aware dispatch `valid_span_endings_lowered_with_barriers` |
+| `engine/composing/src/syllabifier/tl.rs` | BFS scanner for TL / POJ / English |
+| `engine/composing/src/syllabifier/tps.rs` | BFS scanner for TPS |
 | `engine/composing/src/shadow.rs` | `span_min_syllable_count` (min-hop BFS) |
-| `engine/build-helpers/fst-builder/src/syllables.rs` | Offline `build-syllables` — emits `syllables.fst` |
-| `dictionary/build/create_syllables_fst.py` | Build driver: stages family inputs, invokes the builder |
+| `engine/build-helpers/fst-builder/src/syllables.rs`, `dictionary/build/create_syllables_fst.py` | Offline build of `syllables.fst` |
 
 ---
 
@@ -44,7 +42,7 @@ Sub-primitives:
 - `strip_tone_mark(text) -> (bare_NFC, tone_digit)` — ASCII fast-path strips a trailing `1..=9`; non-ASCII path NFD-decomposes and finds the combining mark. `0` is **not** a tone.
 - `split_initial_final(text) -> Option<(initial, final)>` — accepts only when `initial ∈ TL_INITIALS` AND `final ∈ TL_FINALS` (input must be pre-lowercased + TL-normalized).
 - `is_valid_syllable(token) -> bool` = `canonicalize_syllable(token).is_some()`.
-- Acronym (all-consonant abbreviation) surfaces are no longer filtered here: abbreviation keys live in their own `*-abbrev:` key family (`phonetics::KeyFamily`, `lexicon::prefix_index`), so a `tl:` prefix scan never meets them. Fused nasals (`tngtng`, `mngkng`) and syllabic-nasal singles (`m`, `ng`) stay ordinary syllable keys.
+- Abbreviation keys live in their own `*-abbrev:` key family (`phonetics::KeyFamily`), so a `tl:` prefix scan never meets them. Fused nasals (`tngtng`, `mngkng`) and syllabic-nasal singles (`m`, `ng`) stay ordinary syllable keys.
 
 **Normalization tables (order is load-bearing):** `NORMALIZE_TO_TL_RULES` = `ch→ts, ou→oo, o͘→oo, ⁿ→nn, oa→ua, oe→ue, eng→ing, ek→ik, oonn→onn` (`oonn` after `oo`). `normalize_to_tl_keep_tl_finals` drops `eng→ing`/`ek→ik` to preserve real TL finals `eng`/`ek`. POJ variants: `NORMALIZE_TO_POJ_RULES` (per-syllable) + `NORMALIZE_TO_POJ_GLYPH_RULES` (whole-buffer glyph-only).
 
@@ -54,59 +52,45 @@ Sub-primitives:
 
 ## 2. `SyllableInventory` — `syllables.fst`
 
-`SyllableInventory` wraps an `fst::Set` over a readonly-mmap'd `syllables.fst`.
+File layout, key families and build: [binary-format.md §3.5](binary-format.md#35-syllablesfst--syllable-inventory).
 
 | Method | Purpose |
 |--------|---------|
 | `open(path) -> Result<Self, LexiconError>` | mmap readonly + validate fst parse |
-| `contains_in(mode, syllable) -> bool` | Membership test. Maps mode → prefix: `Poj`→`poj:`, `Tps`→`tps:`, `Tl`/`English`→`tl:`. **Caller must pre-canonicalize** for the family |
-| `contains(syllable)` | `#[deprecated]` alias of `contains_in(Tl, …)` (B-1 grace period) |
-| `entry_count()` / `is_empty()` | inventory size |
+| `contains_in(mode, syllable) -> bool` | Membership in the family of `mode` (`Tl` / `English` → `tl:`, `Poj` → `poj:`, `Tps` → `tps:`). **Caller must pre-canonicalize** for the family |
+| `contains_in_tps_readings(syllable, final_only_offsets) -> bool` | TPS: true when any reading of `syllable` under the TPS ambiguity families is in the `tps:` inventory (`INVARIANT_TPS_DEFOLD_ENUMERATE` §35); a superset of `contains_in(Tps, …)` |
+| `entry_count()` / `is_empty()` | Inventory size |
 
-The inventory does **not** expose `valid_span_endings` / `span_min_syllable_count` — those live in the composing crate and call `contains_in`.
+The inventory does **not** compute span endings — the composing crate does, calling `contains_in`.
 
-**Key families.** Each phonotactically valid syllable appears as **two keys per family** — numeric (`tl:tsua7`) and toneless (`tl:tsua`) — under one of three prefixes: `tl:` (POJ rows folded to TL), `poj:` (POJ rows kept as POJ ASCII), `tps:` (Bopomofo).
+### Family-split rationale
 
-**Family-split rationale (v3.5.9 B-1).** ~80,000 of ~159,000 dictionary rows have `tl_num != poj_num` (`chit8`/`tsit8`, `goa2`/`gua2`). A single TL-folded inventory loses POJ-side syllable boundaries, so a continuous POJ buffer like `chiah` could not be recognized as one valid syllable. Tagging all families into one FST keeps storage shared (prefix-tree overlap) while `contains_in(mode, …)` serves the correct family. The TPS family was added in v3.5.9 D / C-0.
+About half of the dictionary's rows (~80,000 of ~159,000) have `tl_num != poj_num` (`chit8`/`tsit8`, `goa2`/`gua2`). A single TL-folded inventory loses POJ-side syllable boundaries, so a continuous POJ buffer like `chiah` could not be recognized as one valid syllable. Tagging all families into one FST keeps storage shared (prefix-tree overlap) while `contains_in(mode, …)` serves the correct family.
 
 ---
 
 ## 3. Syllabifier consumption (composing crate)
 
-**`valid_span_endings(input, pos, inv, mode, max_syllables) -> Vec<usize>`** — FIFO BFS from `pos`: for each char-boundary `end` within `MAX_SYLLABLE_BYTES`, accept when `inv.contains_in(mode, &lowered[cur..end])` AND it is not a false toneless boundary AND it is the first arrival. Returns ascending, deduped byte offsets.
+**`valid_span_endings_lowered_with_barriers(lowered, pos, inv, mode, max_syllables, barriers) -> Vec<usize>`** (`syllabifier/mod.rs`) routes `Tps` → `tps::valid_span_endings_lowered`, `Tl` / `Poj` / `English` → `tl::valid_span_endings_lowered`, so the syllabification family always matches the FST key prefix the same `mode` emits. `barriers` are stripped-separator offsets no single-syllable link may cross: TL / POJ treat a typed `-` as the user's syllable boundary (§52, `khi--ah` is never `khiah`) and never cut inside a closed one-syllable stretch (`siam-` is never `sia|m`); TPS also expands ambiguity families and marks the glyph before a barrier Final-only (§35); English ignores them.
 
-- **BFS, not longest-match** — typing `tsua` must surface both `珠` (span 3) and `紙`/`珠仔` (span 4) as candidate sources; pure longest-match (khiin-rs style) would commit to `tsua` and lose `珠`. A full global lattice (librime style) was over-built for scope; depth-capped BFS is the chosen middle ground.
+The scanners are FIFO BFS from `pos`: for each char-boundary `end` within `MAX_SYLLABLE_BYTES` (TL 10 = max initial `tsh` + max final `uainnh` + tone digit; TPS 24), accept when the span is in the inventory AND it is not a false toneless boundary AND it is the first arrival. Returns ascending, deduped byte offsets.
+
+- **BFS, not longest-match** — typing `tsua` must surface both `珠` (span 3) and `紙`/`珠仔` (span 4) as candidate sources; pure longest-match (khiin-rs style) would commit to `tsua` and lose `珠`.
 - `is_false_toneless_boundary` suppresses a toneless match sitting immediately before a tone digit — the digit belongs to the syllable (the FST also holds the numeric form).
-- `MAX_SYLLABLE_BYTES = 10` (max initial `tsh` + max final `uainnh` + optional tone digit).
 
-**Dispatch** — `mod.rs` routes `Tps` → `tps::…`, `Tl`/`Poj`/`English` → `tl::…`, so the syllabification family always ties to the same `mode` that drives the emitted FST key prefix (no drift).
+**`span_min_syllable_count(span, inv, mode) -> Option<usize>`** (`shadow.rs`) — unweighted shortest path (fewest hops) from 0 to end, each hop one valid single syllable, so a span still syllabifiable via a non-greedy split (`ta`+`nia` when `tan`+`ia` dead-ends) is counted. `None` only when the end is not single-syllable-reachable; the caller fail-closes by dropping that lattice edge. It is the **metadata** syllable sum for the synthesized OOV slot-0 candidate, not a ranking penalty.
 
-**`span_min_syllable_count(span, inv, mode) -> Option<usize>`** (`shadow.rs`) — unweighted shortest-path (fewest hops) from 0 to end, each hop one valid single syllable. Returns the fewest-syllable valid reading. It replaced `greedy_longest_syllabification().unwrap_or(1)`, which could dead-end on a span still syllabifiable via a **non-greedy** split (`ta`+`nia` when `tan`+`ia` dead-ends — PR #290 P1). `None` only when the end is not single-syllable-reachable; the caller fail-closes by dropping that lattice edge. This is the **metadata** syllable-sum for the synthesized OOV slot-0 candidate, NOT a ranking penalty.
-
-**Lattice** — `lattice/builder.rs::build_lattice` pushes every `(start, end)` edge from `valid_span_endings_lowered` (both atomic single-syllable and multi-syllable phrase ends). The lattice keeps every edge; the display-layer longest-match suppression lives separately in `composing::continuous` (`INVARIANT_CONTINUOUS_LONGEST_MATCH_PREFIX`, behavioral-invariants.md).
+**Lattice** — `lattice/builder.rs::build_lattice_with_barriers` pushes every `(start, end)` edge the scanner returns (single-syllable and multi-syllable phrase ends). The display-layer longest-match suppression lives separately (`INVARIANT_CONTINUOUS_LONGEST_MATCH_PREFIX`, behavioral-invariants §18).
 
 ---
 
-## 4. Build + runtime
+## 4. Runtime
 
-**Build (offline).** `make dict` → `build.sh` Step 4/9 runs `create_syllables_fst.py`, which loads `dictionary.csv`, stages three temp inputs (`tl_num` lines, `poj_num` lines, and per-syllable TPS lines — the fused `tps_num` is not reusable because tone-1 syllables carry no Bopomofo mark, losing boundaries), then invokes `fst-builder build-syllables` once. The builder splits TL/POJ lines on ASCII tone digits, canonicalizes per family, emits prefixed numeric + toneless keys, sort+dedups, and writes the `fst::Set`. Phonotactically invalid syllables are counted + sample-logged but do not abort the build. The builder is an offline producer, outside the runtime crate dependency graph.
-
-**Runtime.** `lexicon::EngineHandle::install` opens `syllables.fst` via `SyllableInventory::open` (optional path) and stores it on `EngineState`. The composing crate threads `&SyllableInventory` through `build_lattice` / `valid_span_endings_lowered` / `span_min_syllable_count` on the per-keystroke continuous-input path.
-
----
-
-## Constants
-
-- `MAX_SYLLABLE_BYTES = 10`; tone digits `1..=9` (`0` is not a tone); two keys per valid syllable per family; three families in one `fst::Set`.
-- ~80,000 / ~159,000 rows diverge `tl_num != poj_num` (B-1 driver).
+`lexicon::EngineHandle::install` opens `syllables.fst` via `SyllableInventory::open` (optional path, `InstallRequest.syllable_inventory_path`) and stores it on the engine state. The composing crate threads `&SyllableInventory` through the lattice builder, the span-ending scanners and `span_min_syllable_count` on every continuous-input fetch. No inventory → empty keys and no walker.
 
 ---
 
 ## See also
 
-- `binary-format.md` (`syllables.fst` byte format), `tps.md` (TPS canonicalization), `composing.md` (lattice/walker).
-- `continuous-input-ranking.md`, `continuous-commit-and-display.md` (the pipeline this feeds).
-- `architecture/behavioral-invariants.md` (`INVARIANT_CONTINUOUS_LONGEST_MATCH_PREFIX`, §30 literal-no-fold).
+- `tps.md` (TPS canonicalization), `composing.md`, `continuous-input-ranking.md` (the pipeline this feeds).
 - `docs/contributing/phonetics.md` + `docs/phonetics/taigi-phonetics-reference.md` (table-contract authority).
-
-> Note: `syllabifier/tps.rs` shares the TL inv-driven BFS shape but its TPS-specific coda/tone handling was not line-by-line verified for this doc — read it directly when documenting TPS-specific span behavior.
