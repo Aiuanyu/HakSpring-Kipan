@@ -2,7 +2,7 @@
 
 > **Type**: Planning (feature)
 > **Keywords**: `custom layout`, `layout editor`, `romanization keyboard`, `Layout tab`
-> **Status**: Active — phase 1 (iOS) merged; phase 2 (Android) in two PRs, 2a (data, storage, keyboard) in review
+> **Status**: Active — phase 1 (iOS) merged; phase 2 (Android) in two PRs, 2a (data, storage, keyboard) merged (#506), 2b (editor + UI) next
 
 ---
 
@@ -82,7 +82,7 @@ The layout is built once per keyboard view (`KeyboardViewController.swift:167`) 
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | iOS — model + store + keyboard + editor (swap / spare tray / remove / symbols / multi-letter spares / emoji / function keys within row / drag) + Layout tab shelf + in-keyboard picker | Merged #505 `c0fb934c` |
-| 2a | Android — record + tables + DataStore storage + selection + keyboard substitution + refresh; built-in cards / picker uncheck while a custom layout is active; 3-char keys shrink on any layout | In review |
+| 2a | Android — record + tables + DataStore storage + selection + keyboard substitution + refresh; built-in cards / picker uncheck while a custom layout is active; 3-char keys shrink on any layout | Merged (#506) |
 | 2b | Android — editing ops + Compose editor (swap / tray / remove / emoji / function keys / drag) + Layout tab shelf + in-keyboard picker; i18n `layout.editorTitleNew` / `layout.nameHeader` gain Android scope; delete `layout.comingSoon` | Pending |
 
 Phase 1 checks: same-base custom ↔ built-in switch, custom A → B, active edit with a base change, TPS via mode and via card, delete while suspended, reset, globe, email / URL fields, full-width punctuation, shift, callouts, Theme-tab keyboard preview (`KeyboardPreviewPanel.swift:28` also calls `CustomLayoutService`).
