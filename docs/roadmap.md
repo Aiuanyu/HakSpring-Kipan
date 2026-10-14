@@ -40,10 +40,6 @@ One line each; the linked section holds the design, the measurements and the ope
 
 | Item | Direction | Where |
 |---|---|---|
-| Enter while composing in an action field (Send / Search) | Android matches iOS: first Enter confirms only, second runs the action; no auto-space in action fields (both) | `TextInputKeyHandler.kt`, `ActionHandler+KeyActions.swift` |
-| Double-space period | both, Taigi and English, when not composing; full-width inserts `。` without a space; iOS gated by KeyboardKit `isPeriodShortcutEnabled` | same |
-| English suggestion pick | both obey Auto-Space (`shouldAppendAutoSpace`, §23 swap arm) | `ActionHandler.swift`, `CandidateClickHandler.kt` |
-| Single-shot Shift | iOS matches Android: only cased letters consume it | `ActionHandler+KeyActions.swift` |
 | Android spacebar swipe | add swipe-to-move-cursor, keep long-press picker | `KeyTouchCoordinator.kt` |
 | Layout | Android: English mode loads TL callouts, globe left of space; iOS: `…` for ellipsis, `@` / `/` by `keyboardType`, return key by `returnKeyType` | layouts / callouts |
 | Small | iOS: drop strip cap 200; Android: named long-press a11y action, keycap-hint invariant test | per item |
