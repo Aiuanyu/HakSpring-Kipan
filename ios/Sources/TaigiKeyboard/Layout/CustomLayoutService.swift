@@ -84,40 +84,27 @@ class CustomLayoutService {
             return Self.applyInputTypeKey(rows, inputType: inputType)
         }
 
-        // TPS mode — inputMode takes priority over keyboardLayoutType. TPS rows get no
+        // TPS mode or layout — inputMode takes priority over keyboardLayoutType. TPS rows get no
         // input-type key (Android `tps_halfwidth.json` has none).
-        if settings.inputMode == .tps {
-            return resolveLayout(withGlobe: layouts.tps_withGlobe, iPhone: layouts.tps_iPhone, needsGlobe: needsGlobe)
+        let layoutType = settings.keyboardLayoutType
+        if settings.inputMode == .tps || layoutType == .tps {
+            return layouts.table(.tps, script: .tl, withGlobe: needsGlobe)
         }
 
-        switch settings.keyboardLayoutType {
-        case .tps:
-            return resolveLayout(withGlobe: layouts.tps_withGlobe, iPhone: layouts.tps_iPhone, needsGlobe: needsGlobe)
-
-        case .phahTaigi:
-            rows = resolveLayout(withGlobe: layouts.phahTaigi_withGlobe, iPhone: layouts.phahTaigi_iPhone, needsGlobe: needsGlobe)
-
-        case .moe1:
-            rows = settings.inputMode == .poj
-                ? resolveLayout(withGlobe: layouts.moe1_POJ_withGlobe, iPhone: layouts.moe1_POJ_iPhone, needsGlobe: needsGlobe)
-                : resolveLayout(withGlobe: layouts.moe1_TL_withGlobe, iPhone: layouts.moe1_TL_iPhone, needsGlobe: needsGlobe)
-
-        case .moe2:
-            rows = settings.inputMode == .poj
-                ? resolveLayout(withGlobe: layouts.moe2_POJ_withGlobe, iPhone: layouts.moe2_POJ_iPhone, needsGlobe: needsGlobe)
-                : resolveLayout(withGlobe: layouts.moe2_TL_withGlobe, iPhone: layouts.moe2_TL_iPhone, needsGlobe: needsGlobe)
-
-        case .qwerty:
-            rows = settings.inputMode == .poj
-                ? resolveLayout(withGlobe: layouts.qwerty_POJ_withGlobe, iPhone: layouts.qwerty_POJ_iPhone, needsGlobe: needsGlobe)
-                : resolveLayout(withGlobe: layouts.qwerty_TL_withGlobe, iPhone: layouts.qwerty_TL_iPhone, needsGlobe: needsGlobe)
+        // A custom layout keeps the table it was made from (its frozen script) in TL and POJ alike.
+        if let custom = settings.activeCustomLayout {
+            rows = custom.rows(withGlobe: needsGlobe)
+        } else {
+            rows = layouts.table(layoutType, script: LayoutScript(inputMode: settings.inputMode), withGlobe: needsGlobe)
         }
         return Self.applyInputTypeKey(rows, inputType: inputType)
     }
 
     /// Puts `@` (email field) or `/` (URL field) on the bottom row: it replaces the
-    /// `,` key where the row has one, else sits right after the emoji key. Other
-    /// input types return `rows` unchanged. The key is half-width in every mode.
+    /// `,` key where the row has one, else sits right before space (on every built-in
+    /// romanization / English row that is right after the emoji key; a custom layout may move or
+    /// drop emoji). Other input types
+    /// return `rows` unchanged. The key is half-width in every mode.
     // CROSS-PLATFORM INVARIANT — mirrors the Android `mod/*.json` bottom-row
     // `email_address` / `uri` variants: default / english / moe2 swap `,`;
     // moe1 / phah_taigi add the key in those fields only.
@@ -129,19 +116,10 @@ class CustomLayoutService {
         default: return rows
         }
         guard var bottomRow = rows.last else { return rows }
-        var commaIndex: Int?
-        var emojiIndex: Int?
-        for (index, keyDef) in bottomRow.enumerated() {
-            switch keyDef {
-            case .char(",", _): commaIndex = index
-            case .emoji: emojiIndex = index
-            default: break
-            }
-        }
-        if let commaIndex {
+        if let commaIndex = bottomRow.firstIndex(where: { $0.characterLabel == "," }) {
             bottomRow[commaIndex] = .char(key)
-        } else if let emojiIndex {
-            bottomRow.insert(.char(key), at: emojiIndex + 1)
+        } else if let spaceIndex = bottomRow.firstIndex(of: .space) {
+            bottomRow.insert(.char(key), at: spaceIndex)
         } else {
             return rows
         }
