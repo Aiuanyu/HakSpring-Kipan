@@ -2,7 +2,7 @@
 
 > **Type**: Planning (feature)
 > **Keywords**: `custom layout`, `layout editor`, `romanization keyboard`, `Layout tab`
-> **Status**: Active — phase 1 (iOS) in progress
+> **Status**: Active — phase 1 (iOS) merged, phase 2 (Android) next
 
 ---
 
@@ -71,8 +71,8 @@ The layout is built once per keyboard view (`KeyboardViewController.swift:167`) 
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | iOS — model + store + keyboard + editor + Layout tab shelf + in-keyboard picker | In progress |
-| 2 | Android — same model over `LayoutManager.mergeLayouts` (substitute whole `KeyData` so inline popups move with the key) + DataStore string + editor + picker; delete `layout.comingSoon` | Pending |
+| 1 | iOS — model + store + keyboard + editor (swap / spare tray / remove / symbols / multi-letter spares / emoji / function keys within row / drag) + Layout tab shelf + in-keyboard picker | Merged #505 `c0fb934c` |
+| 2 | Android — everything in phase 1, over `LayoutManager.mergeLayouts` (substitute whole `KeyData` so inline popups move with the key) + DataStore string + Compose editor + picker; i18n `layout.editorTitleNew` / `layout.nameHeader` gain Android scope; delete `layout.comingSoon` | Pending |
 
 Phase 1 checks: same-base custom ↔ built-in switch, custom A → B, active edit with a base change, TPS via mode and via card, delete while suspended, reset, globe, email / URL fields, full-width punctuation, shift, callouts, Theme-tab keyboard preview (`KeyboardPreviewPanel.swift:28` also calls `CustomLayoutService`).
 
