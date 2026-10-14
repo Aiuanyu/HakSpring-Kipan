@@ -2,7 +2,7 @@
 
 > **Type**: Planning (PR table over the 2026-10-09 audit)
 > **Keywords**: `refactor`, `dead code`, `parity`, `engine-owned commit`, `dictionary search op`, `desktop-core`, `layering`, `docs drift`
-> **Status**: in progress — H, A1a (#473), A1b (#475), A2 (#490) merged; next A3. The maintainer decides order and start
+> **Status**: in progress — H, A1a (#473), A1b (#475), A2 (#490) merged, D1 (#503) merged; next D2 (phones over `CommitPrediction`). The maintainer decides order and start
 > **Source**: `docs/reports/2026-10-09-audit-all.md` (frozen snapshot on `68f2481b`; §2 findings, §4 draft rounds, §5 open decisions)
 > **Predecessor**: the 2026-09-30 audit (`docs/reports/2026-09-30-audit-all.md`), rounds R1–R12 complete 2026-10-01 (#274–#331)
 > **Session memory**: project memory `project_maintainability_audit_2026_10_09.md`
@@ -32,7 +32,7 @@ Each PR 200–500 LOC. Pre-gates per `~/.claude/rules/round-workflow.md`; Codex 
 | C1 | Engine `DictionarySearch { query, mode, toggles, custom_enabled, limit }` op; delete `IsHanji` / `DictionaryFilters` / `SearchWithSources` / `SearchByHanji` + per-row `TlToPoj` + `u32::MAX` sentinel; golden tests | feature · Codex design pre-review | 1 | Pending |
 | C2 | iOS + Android dictionary search over C1 (orchestration, badge filter, custom-first merge deleted) | refactor · `refactor-reviewer` | 1 | Pending |
 | C3 | desktop-core + macOS / Windows / Linux over C1; `lookup_tl` from the engine (lookup-button drift closed) | refactor · `refactor-reviewer` · Windows box check | 1 | Pending |
-| D1 | `PredictNext` returns `document_text`, `wrote_romanization`, `earns_auto_space` per prediction; golden incl. empty-bracket case | feature · Codex design pre-review · `phonetics-specialist` | 1 | Pending |
+| D1 | `PredictNext` returns `document_text`, `wrote_romanization`, `earns_auto_space` per prediction; golden incl. empty-bracket case | feature · Codex design pre-review · `phonetics-specialist` | 1 | Merged #503 `276b8343` 2026-10-14 — shipped as tap-time composing op `CommitPrediction` (resolves text + counts usage; Codex pre-review F1(c)) instead of per-prediction fields |
 | D2 | iOS + Android prediction taps over D1: `formatOutputText` / `resolveTaigiCommit` (prediction arms), `shouldAppendAutoSpace` ×2, `effectiveSwapped` deleted; usage recorded by the engine | refactor · `refactor-reviewer` · dogfood S1 / S2 | 1 | Pending |
 | D3 | Mobile TPS keys over `TpsKey` (one op per key, engine-owned Space-separator rule, one gate) | refactor · `phonetics-specialist` · dogfood S2 | 1 | Pending |
 | D4 | Engine emits TPS cell text + §42 single-script split in `CandidateMessage`; shells drop per-render `TlDisplayToTps` and split / dedupe ×3 | feature / refactor · `refactor-reviewer` | 1–2 | Pending |
@@ -49,7 +49,7 @@ Each PR 200–500 LOC. Pre-gates per `~/.claude/rules/round-workflow.md`; Codex 
 | G3 | iOS: Platform-layer `SharedSettings.shared` consumers injected; `ActionHandler` deps injected; `UsageRecorder` concrete in `Lexicon/Services`; Engine-layer purity | refactor · `refactor-reviewer` · after #471 | 1 | Pending |
 | G4 | Mobile Learning Records view models (one listing call); English current-word split, last-used date, count rule aligned | refactor + parity · maintainer confirms decisions 7–8 | 1–2 | Pending |
 
-Active PR pointer: none (next: A3 on a new branch).
+Active PR pointer: none (next: D2 on a new branch; A3 still pending).
 
 ## Best practices alignment
 
