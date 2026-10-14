@@ -40,7 +40,6 @@ One line each; the linked section holds the design, the measurements and the ope
 
 | Item | Direction | Where |
 |---|---|---|
-| Android spacebar swipe | add swipe-to-move-cursor, keep long-press picker | `KeyTouchCoordinator.kt` |
 | Layout | Android: English mode loads TL callouts, globe left of space; iOS: `…` for ellipsis, `@` / `/` by `keyboardType`, return key by `returnKeyType` | layouts / callouts |
 | Small | iOS: drop strip cap 200; Android: named long-press a11y action, keycap-hint invariant test | per item |
 | Needs device repro first (UNCONFIRMED) | Android symbols-page `、` / numeric pad wipes the preedit; Android next-word predictions survive a cursor move | `+Cleanup.swift`, `TextInputManager.kt`, `TextInputKeyHandler.kt` |
