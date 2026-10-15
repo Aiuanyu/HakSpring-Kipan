@@ -88,7 +88,7 @@ The layout is built once per keyboard view (`KeyboardViewController.swift:167`) 
 | 2a | Android — record + tables + DataStore storage + selection + keyboard substitution + refresh; built-in cards / picker uncheck while a custom layout is active; 3-char keys shrink on any layout | Merged (#506) |
 | 2b | Android — editing ops + Compose editor (swap / tray / remove / emoji / function keys / drag) + Layout tab shelf + in-keyboard picker; i18n `layout.editorTitleNew` / `layout.nameHeader` gain Android scope; delete `layout.comingSoon` | Merged (#507) |
 | 3 | iOS + Android — tray finals (16 keys, frequency order) | Merged (#508) |
-| 4 | iOS + Android — tray `ee` after `o͘` | In progress |
+| 4 | iOS + Android — tray `ee` after `o͘` | Merged (#510) |
 
 Phase 1 checks: same-base custom ↔ built-in switch, custom A → B, active edit with a base change, TPS via mode and via card, delete while suspended, reset, globe, email / URL fields, full-width punctuation, shift, callouts, Theme-tab keyboard preview (`KeyboardPreviewPanel.swift:28` also calls `CustomLayoutService`).
 
