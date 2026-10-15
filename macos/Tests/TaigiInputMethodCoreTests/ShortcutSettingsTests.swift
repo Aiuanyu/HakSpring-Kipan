@@ -60,9 +60,9 @@ final class ShortcutSettingsTests: XCTestCase {
         let store = SettingsStore(userDefaults: userDefaults)
         let shortcuts = try TestFixtures.composingShortcuts(in: store)
         try store.setComposingChord(
-            TestFixtures.chordNoDefaultHolds(), for: TestFixtures.row("nextCandidate", in: shortcuts),
+            TestFixtures.chordNoDefaultHolds(), for: TestFixtures.row("nextCandidate", in: shortcuts).first,
         )
-        try store.setComposingChord(nil, for: TestFixtures.row("pageBackward", in: shortcuts))
+        try store.setComposingChord(nil, for: TestFixtures.row("pageBackward", in: shortcuts).first)
         userDefaults.set("not a chord", forKey: "composingShortcut.pageForward")
 
         store.resetComposingShortcuts(shortcuts)
@@ -70,7 +70,9 @@ final class ShortcutSettingsTests: XCTestCase {
         let rows = try TestFixtures.composingShortcuts(in: store).rows
         XCTAssertEqual(rows.count, 7)
         for row in rows {
-            XCTAssertEqual(row.chord, row.defaultChord, "\(row.name) did not come back")
+            for field in row.fields {
+                XCTAssertEqual(field.chord, field.shippedChord, "\(field.settingsKey) did not come back")
+            }
         }
     }
 
@@ -92,15 +94,17 @@ final class ShortcutSettingsTests: XCTestCase {
         let store = SettingsStore(userDefaults: userDefaults)
         let shortcuts = try TestFixtures.composingShortcuts(in: store)
         try store.setComposingChord(
-            TestFixtures.chordNoDefaultHolds(), for: TestFixtures.row("nextCandidate", in: shortcuts),
+            TestFixtures.chordNoDefaultHolds(), for: TestFixtures.row("nextCandidate", in: shortcuts).first,
         )
-        try store.setComposingChord(nil, for: TestFixtures.row("pageBackward", in: shortcuts))
+        try store.setComposingChord(nil, for: TestFixtures.row("pageBackward", in: shortcuts).first)
 
         store.resetComposingShortcuts(shortcuts)
 
         XCTAssertEqual(shortcuts.rows.count, 7)
         for row in shortcuts.rows {
-            XCTAssertNil(userDefaults.object(forKey: row.settingsKey), "\(row.name) still has a stored value")
+            for field in row.fields {
+                XCTAssertNil(userDefaults.object(forKey: field.settingsKey), "\(field.settingsKey) still has a stored value")
+            }
         }
     }
 
