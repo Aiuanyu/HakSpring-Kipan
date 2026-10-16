@@ -13,9 +13,9 @@ permalink: /blog/desktop-manual/
 
 ## 一个齒，漢字佮羅馬字換來換去
 
-拍 `taigi`，揤 Enter 輸出「台語」，揤 Space 輸出「tâi-gí」。
+拍 `taigi`，揤 Enter 抑是 Space 輸出「台語」，揤 Shift q 輸出「tâi-gí」。
 
-若你主要寫羅馬字，揤一下 `` ` ``，羅馬字就排頭前，Enter 佮 Space 的角色嘛綴咧對換。
+若你主要寫羅馬字，揤一下 `` ` ``，羅馬字就排頭前，Enter、Space 就輸出羅馬字，Shift q 輸出漢字。
 
 ![漢字排頭前的選字窗](/manual/shots/swap-hanji-first.png)
 ![羅馬字排頭前的選字窗](/manual/shots/swap-roman-first.png)
