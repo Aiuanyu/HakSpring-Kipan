@@ -36,9 +36,9 @@ The dispatch caller runs the fetch twice: a neutral pass discovers the candidate
 |---|---|---|---|
 | 1 | `tier` | 0 first | 0 = the candidate consumes the whole input, 1 = only its front (`taiuanl` → 台灣人 before 台灣) |
 | 2 | `abbreviation` | 0 first | 1 = abbreviation hit (`COVERAGE_KIND_ABBREV`); every reading of the tier — full syllable or partial prefix, custom or not — leads every abbreviation (`thng` → 湯 / 糖 before a custom 退伍 `thui-ńg` reached through its initials; USER 2026-10-16, librime's abbreviation credibility penalty) |
-| 3 | `custom_lead` | 0 first | 0 = custom-dictionary word; leads the readings or the abbreviations of tier 0 ("the word I put in shows up"). §43 bounds which custom words reach it |
+| 3 | `preference_class` | 0 first | 0 = selected (`user_weight > 0`, any source), 1 = never-selected custom-dictionary word, 2 = the rest. The user's picks lead the words the user filed, which lead the rest ("the word I put in shows up", USER 2026-10-12; below the picks, USER 2026-10-16: a bulk-filed custom 屢 `lí` no longer buries 你 on `li2`). A selected partial prefix therefore leads a never-selected full syllable. §43 bounds which custom words reach class 1 |
 | 4 | `coverage_kind` | ascending | full syllable 0 < partial prefix 1 < abbreviation 2 |
-| 5 | `user_weight` | descending | decayed user-selection weight; any selected word precedes every never-selected homophone |
+| 5 | `user_weight` | descending | decayed user-selection weight; orders the selected words (field 3 already put them before every never-selected one) — a picked custom word gets no lift over a heavier-picked dictionary word |
 | 6 | `context_rank` | ascending | continuation of the previous word (behavioral-invariants §56 `INVARIANT_CONTINUOUS_CONTEXT_RERANK`) |
 | 7 | `walker_cost` | ascending | `dictionary.bin` corpus cost (milli-nats); `WALKER_COST_UNPRICED` for custom / learned / synthesized rows, which therefore follow every priced row of their tier unless a field above lifts them |
 | 8 | `score` | descending | `calculate_continuous_score` = `freq × (1 + 0.1 × (syllables − 1))`, purely dictionary-derived |
@@ -47,7 +47,7 @@ The dispatch caller runs the fetch twice: a neutral pass discovers the candidate
 | 11 | `source_rank` | ascending | `source_tier_rank`: custom 0, kautian 1, taigitv 2, stti 3, kungge 4, other 5 |
 | 12 | `stable_idx` | ascending | insertion order |
 
-There is no recency field: recency enters only through the decay inside `user_weight`. Fields 1–4 are `candidate_lead`, which the TPS word list also leads with. `CandidateSortKey::without_context` neutralizes field 6 for the walker's context-free edge pick.
+There is no recency field: recency enters only through the decay inside `user_weight`. Fields 1–2 are `candidate_lead`; the TPS word list leads with them and `coverage_kind`, then puts longer words first whatever the counts or the custom source (H4), each length keeping this order. `CandidateSortKey::without_context` neutralizes field 6 for the walker's context-free edge pick.
 
 **User weight.** `FrequencyData::user_weight(now_ms)` → `decayed_user_weight_delta(count, now_ms, last_used_ms)` ([`engine/ranking/src/score.rs`](../../engine/ranking/src/score.rs)):
 
@@ -75,7 +75,7 @@ The slot-0 path is `min Σ edge_cost` over the lattice (`lattice::walker::walk_b
 
 - **Dictionary edge**: `walker_cost / 1000 / toneless_len^0.2 × syllable_count^0.2 − ln(1 + applied_δ)`. `walker_cost` is the key's lowest homophone cost (`EdgeBest::span_walker_cost`), not the picked word's.
 - **User preference**: `applied_δ` is the edge word's `user_weight`, scaled to 0 on single-syllable edges (`WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE`) so a hot single character cannot sweep the sentence. A selected multi-syllable word's base cost is capped by `user_entry_cost_cap`.
-- **Custom edge**: priced at `CUSTOM_EDGE_COST`.
+- **User rows**: an edge with a custom or learned row under its key is priced at most at `CUSTOM_EDGE_COST` (the key's dictionary cost when cheaper).
 - **OOV edge** (no dictionary hit): `OOV_PER_CHAR_PENALTY (1e10) × toneless_len`, so a dictionary-coverable buffer never collapses to an OOV blob.
 - The edge's word is picked by `CandidateSortKey` among the key's homophones; the walker and its carve-out live in `continuous::fetch_walker_slot0_inner` (`engine/composing/src/continuous.rs`).
 

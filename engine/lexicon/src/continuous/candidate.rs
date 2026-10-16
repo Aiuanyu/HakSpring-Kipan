@@ -143,7 +143,7 @@ fn push_custom_entries(
         }
         out.push(custom_entry_to_candidate(
             entry,
-            raw_len,
+            (0, raw_len),
             ctx.freq_map,
             ctx.now_ms,
             ctx.context,
@@ -224,13 +224,15 @@ pub(super) fn record_to_candidate(
 ///
 /// Shape decisions (Codex pre-impl 2026-05-15, D3 / D4):
 ///
-/// - `consumed_span = (0, raw_len)` — custom entries are outside the
-///   FST/syllabifier span model, so they commit the whole buffer as
-///   one block (final-commit), mirroring the legacy lexicon path's
-///   treatment of custom dict and Item 10 partial-prefix Q15.4. With
-///   `consumed_span_end == raw_len` the downstream `CandidateSortKey.tier` is
-///   `0` (full-buffer) — NO forced Tier-1 promotion
-///   (`docs/releases/v3.5.8/plan.md` § Phase 9: "無強制 Tier 1 promotion").
+/// - `consumed_span = span` — the list paths pass `(0, raw_len)`: custom
+///   entries are outside the FST/syllabifier span model, so they commit
+///   the whole buffer as one block (final-commit), mirroring the legacy
+///   lexicon path's treatment of custom dict and Item 10 partial-prefix
+///   Q15.4. With `consumed_span_end == raw_len` the downstream
+///   `CandidateSortKey.tier` is `0` (full-buffer) — NO forced Tier-1
+///   promotion (`docs/releases/v3.5.8/plan.md` § Phase 9: "無強制 Tier 1
+///   promotion"). The walker's edge pick passes the edge's own span
+///   ([`best_candidate_for_key_with_barriers`](super::best_candidate_for_key_with_barriers)).
 /// - `frequency = 0` — `custom_dictionary.db` carries no
 ///   `dict.bin`-comparable frequency. `syllable_count` is read off the
 ///   canonical TL's separators, as for a learned phrase (陳建中
@@ -239,8 +241,9 @@ pub(super) fn record_to_candidate(
 ///   must not take a multi-syllable word for a single syllable. `is_custom = true`
 ///   gives `source_tier_rank` rank `0`, which is what governs the
 ///   `(canonical_tl, hanji)` dedupe winner. Its place in the list is
-///   `CandidateSortKey`'s `custom_lead`: the head of the whole-input tier
-///   (USER 2026-10-12, `docs/engine/continuous-input-ranking.md`).
+///   `CandidateSortKey`'s `preference_class`: after the selected words,
+///   ahead of the rest of the whole-input tier (USER 2026-10-12 /
+///   2026-10-16, `docs/engine/continuous-input-ranking.md`).
 /// - `display_text = hanji.unwrap_or(canonical_tl_form(roman, mode))` —
 ///   v3.5.9 B-4 closes the bounded asymmetry the pre-B-4
 ///   `unwrap_or(roman)` contract documented at
@@ -254,7 +257,7 @@ pub(super) fn record_to_candidate(
 ///   `dict.bin` candidates (custom entries can also be user-selected).
 pub(super) fn custom_entry_to_candidate(
     entry: &CustomEntry,
-    raw_len: u32,
+    span: ConsumedSpan,
     freq_map: &FrequencyMap,
     now_ms: i64,
     context: &ContextRanks,
@@ -298,7 +301,7 @@ pub(super) fn custom_entry_to_candidate(
     // `user_weight` / `source_rank` / dedupe, not raw freq.
     let score = calculate_continuous_score(0, syllable_count);
     RawCandidate {
-        consumed_span: (0, raw_len),
+        consumed_span: span,
         syllable_count,
         display_text,
         roman,
@@ -566,7 +569,7 @@ mod item12_custom_dedupe_tests {
                 roman: "tâi-gí".to_owned(),
                 hanji: Some("台語".to_owned()),
             },
-            9,
+            (0, 9),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -599,7 +602,7 @@ mod item12_custom_dedupe_tests {
                 roman: "gu\u{00e1}".to_owned(),
                 hanji: None,
             },
-            3,
+            (0, 3),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -626,7 +629,7 @@ mod item12_custom_dedupe_tests {
                 roman: "g\u{00f3}a".to_owned(), // POJ display form
                 hanji: None,
             },
-            3,
+            (0, 3),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -659,7 +662,7 @@ mod item12_custom_dedupe_tests {
                 roman: "g\u{00f3}a".to_owned(), // POJ `góa` (TL would be `guá`)
                 hanji: None,
             },
-            3,
+            (0, 3),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -687,7 +690,7 @@ mod item12_custom_dedupe_tests {
                     roman: "tâi-gí".to_owned(),
                     hanji: Some("台語".to_owned()),
                 },
-                6,
+                (0, 6),
                 &FrequencyMap::new(),
                 0,
                 ContextRanks::empty(),
@@ -706,7 +709,7 @@ mod item12_custom_dedupe_tests {
                 roman: roman.to_owned(),
                 hanji: Some(hanji.to_owned()),
             },
-            6,
+            (0, 6),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -820,7 +823,7 @@ mod item12_custom_dedupe_tests {
                 roman: "tâi-gí".to_owned(),
                 hanji: Some("台語".to_owned()),
             },
-            6,
+            (0, 6),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -844,7 +847,7 @@ mod item12_custom_dedupe_tests {
                 roman: "x".to_owned(),
                 hanji: Some("某".to_owned()),
             },
-            3,
+            (0, 3),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
