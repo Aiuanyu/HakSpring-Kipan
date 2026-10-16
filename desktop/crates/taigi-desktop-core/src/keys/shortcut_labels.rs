@@ -3,6 +3,7 @@
 //! desktop draws them in its own spelling ([`ComposingKeyChord::display`]);
 //! the macOS pane draws these strings in `ShortcutSettingsView.swift`.
 
+use super::action::ComposingAction;
 use super::chord::ComposingKeyChord;
 use super::intent::caret_chord_modifiers;
 use super::slot_key_set::CandidateSlotKeySet;
@@ -17,14 +18,6 @@ pub fn navigation_keys_label(platform: DesktopPlatform) -> &'static str {
     match platform {
         DesktopPlatform::Windows | DesktopPlatform::Linux => "←  →  ↑  ↓  PgUp  PgDn",
         DesktopPlatform::MacOS => "←  →  ↑  ↓  ⇞  ⇟",
-    }
-}
-
-/// The cancel key's keycap legend: `Esc`, the Mac's `⎋`.
-pub fn cancel_key_label(platform: DesktopPlatform) -> &'static str {
-    match platform {
-        DesktopPlatform::Windows | DesktopPlatform::Linux => "Esc",
-        DesktopPlatform::MacOS => "⎋",
     }
 }
 
@@ -91,6 +84,21 @@ pub fn shifted_slot_keys_label(
     )
 }
 
+/// The fixed keys that fire `action` beside its recorder fields, drawn as
+/// the row's subtitle: the shifted slot keys on Output the Other Script, so
+/// the pane needs no second row under the same label. `None` for every
+/// other action, and under TPS.
+pub fn fixed_keys_label(
+    action: ComposingAction,
+    slot_keys: CandidateSlotKeySet,
+    platform: DesktopPlatform,
+) -> Option<String> {
+    match action {
+        ComposingAction::CommitAlternateScript => shifted_slot_keys_label(slot_keys, platform),
+        _ => None,
+    }
+}
+
 /// The nine slot keys of `slot_keys` as one run, in page order.
 fn slot_keys_run(slot_keys: CandidateSlotKeySet) -> String {
     (0..HorizontalPageLayout::PAGE_SIZE)
@@ -114,18 +122,16 @@ mod tests {
                 "Ctrl+←  Ctrl+→  Ctrl+↑  Ctrl+↓  Home  End"
             );
             assert_eq!(navigation_keys_label(platform), "←  →  ↑  ↓  PgUp  PgDn");
-            assert_eq!(cancel_key_label(platform), "Esc");
         }
     }
 
     #[test]
     fn the_mac_fixed_rows_read_in_glyphs() {
-        // trace: caret ⌥ (`caret_chord_modifiers`), the Mac's ⇞ ⇟ ⎋ legends,
+        // trace: caret ⌥ (`caret_chord_modifiers`), the Mac's ⇞ ⇟ legends,
         // no separator.
         let mac = DesktopPlatform::MacOS;
         assert_eq!(caret_chords_label(mac), "⌥←  ⌥→  ⌥↑  ⌥↓  ↖  ↘");
         assert_eq!(navigation_keys_label(mac), "←  →  ↑  ↓  ⇞  ⇟");
-        assert_eq!(cancel_key_label(mac), "⎋");
     }
 
     #[test]
@@ -167,6 +173,30 @@ mod tests {
         assert_eq!(
             shifted_slot_keys_label(CandidateSlotKeySet::Digits, mac).as_deref(),
             Some("⇧123456789")
+        );
+    }
+
+    #[test]
+    fn only_the_alternate_script_row_carries_fixed_keys() {
+        for action in ComposingAction::ALL {
+            let expected = (action == ComposingAction::CommitAlternateScript)
+                .then(|| "Shift+QWDFZXVY;".to_owned());
+            assert_eq!(
+                fixed_keys_label(
+                    action,
+                    CandidateSlotKeySet::BareKeys,
+                    DesktopPlatform::Windows
+                ),
+                expected
+            );
+        }
+        assert_eq!(
+            fixed_keys_label(
+                ComposingAction::CommitAlternateScript,
+                CandidateSlotKeySet::TpsDigits,
+                DesktopPlatform::Windows
+            ),
+            None
         );
     }
 

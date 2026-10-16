@@ -195,7 +195,7 @@ extension ComposingShortcuts {
     init?(_ reply: Taigi_DesktopShell_ComposingShortcutsReply) {
         var rows: [Row] = []
         for action in reply.actions {
-            guard let label = StringKey(rawValue: action.labelKey), action.fields.count == 2 else { return nil }
+            guard let label = StringKey(rawValue: action.labelKey), !action.fields.isEmpty else { return nil }
             let fields = action.fields.map { field in
                 Row.Field(
                     settingsKey: field.settingsKey,
@@ -209,15 +209,14 @@ extension ComposingShortcuts {
                 label: label,
                 group: Int(action.group),
                 fields: fields,
+                fixedKeys: action.fixedKeys,
             ))
         }
         self.init(
             rows: rows,
             slotKeys: reply.slotKeys,
-            shiftedSlotKeys: reply.shiftedSlotKeys,
             navigationKeys: reply.navigationKeys,
             caretChords: reply.caretChords,
-            cancelKey: reply.cancelKey,
         )
     }
 }

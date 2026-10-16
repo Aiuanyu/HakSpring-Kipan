@@ -8,8 +8,8 @@
 /// gate; no chord is on two fields (the one the user recorded keeps it); an
 /// emptied commit row has taken back a free default of its pair.
 struct ComposingShortcuts: Sendable {
-    /// One composing action's row: two fields, either of which fires it
-    /// (`ChordField`).
+    /// One composing action's row: its fields, either of which fires it —
+    /// a second on Confirm Key only (desktop-core `ComposingAction::fields`).
     struct Row: Sendable, Equatable {
         /// One of the row's two recorder fields.
         struct Field: Sendable, Equatable {
@@ -40,6 +40,9 @@ struct ComposingShortcuts: Sendable {
         let group: Int
         /// The first field, then the second.
         let fields: [Field]
+        /// The fixed keys that also fire it, drawn under its label; empty
+        /// for most rows (desktop-core `shortcut_labels::fixed_keys_label`).
+        let fixedKeys: String
 
         var first: Field {
             fields[0]
@@ -48,24 +51,19 @@ struct ComposingShortcuts: Sendable {
 
     /// Every composing action, in the roster's order.
     let rows: [Row]
-    /// The fixed rows, as the pane prints them: the live slot keys bare and
-    /// behind ⇧, the navigation keys, the composing caret's chords, the
-    /// cancel key.
+    /// The fixed rows, as the pane prints them: the live slot keys, the
+    /// navigation keys, the composing caret's chords.
     let slotKeys: String
-    let shiftedSlotKeys: String
     let navigationKeys: String
     let caretChords: String
-    let cancelKey: String
 
     /// No rows and no labels — what the pane draws when the core could not
     /// answer (`KeyRules`, logged there).
     static let unavailable = ComposingShortcuts(
         rows: [],
         slotKeys: "",
-        shiftedSlotKeys: "",
         navigationKeys: "",
         caretChords: "",
-        cancelKey: "",
     )
 
     /// The rows of one block, in roster order.
