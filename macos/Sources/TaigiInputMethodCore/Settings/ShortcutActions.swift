@@ -157,6 +157,18 @@ enum ShortcutAction: CaseIterable, Sendable {
     /// the one row that leaves the typing session.
     case openLastSettingsPane
 
+    /// The roster split into the blocks the Shortcuts pane draws under the
+    /// composing rows (USER 2026-10-16), each with its title: Romanization,
+    /// the switches about a romanization's candidates; Phonetic Symbols, the
+    /// TPS switch and its key panel; Other, the symbol picker, the Telex guide
+    /// and the settings window. Each block keeps `allCases`' order. Mirrors
+    /// desktop-core `ShortcutAction::GROUPS` / `GROUP_TITLES`.
+    static let groups: [(title: StringKey, actions: [ShortcutAction])] = [
+        (.settingsOutputScriptRoman, [.toggleRomanization, .toggleTranslateSwapped, .cycleCandidateDisplayMode]),
+        (.settingsTpsMode, [.toggleTps, .showTpsKeyboard]),
+        (.commonOther, [.showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
+    ]
+
     var name: KeyboardShortcuts.Name {
         switch self {
         case .toggleRomanization: .toggleRomanization

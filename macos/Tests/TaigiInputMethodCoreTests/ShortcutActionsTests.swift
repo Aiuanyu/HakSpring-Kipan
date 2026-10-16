@@ -34,6 +34,21 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(Set(names).count, names.count, "two actions share a storage name: \(names)")
     }
 
+    /// The pane draws the roster through `groups`, so a case missing there has no row.
+    func testGroups_holdEveryActionOnceInRosterOrder() {
+        let grouped = ShortcutAction.groups.flatMap(\.actions)
+
+        XCTAssertEqual(grouped.count, ShortcutAction.allCases.count)
+        XCTAssertEqual(Set(grouped), Set(ShortcutAction.allCases))
+        for group in ShortcutAction.groups {
+            XCTAssertEqual(ShortcutAction.allCases.filter(group.actions.contains), group.actions)
+        }
+        XCTAssertEqual(
+            ShortcutAction.groups.map(\.title),
+            [.settingsOutputScriptRoman, .settingsTpsMode, .commonOther],
+        )
+    }
+
     func testEveryAction_hasItsOwnLabel() {
         let rows = labels()
 
@@ -46,7 +61,7 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(
             labels(),
             [
-                "切換台羅/白話字", "切換方音符號", "切換漢字/羅馬字", "切換候選詞顯示", "拍開符號選單", "拍開 Telex 說明",
+                "切換台羅/白話字", "切換方音符號", "切換漢字/羅馬字", "切換羅馬字顯示", "拍開符號選單", "拍開 Telex 說明",
                 "顯示方音符號小齒盤", "拍開設定選單",
             ],
         )
