@@ -1,12 +1,13 @@
 # desktop v3.8.0
 
-Two keys per action, and better candidates. Every composing row on the
-Shortcuts pane now takes two keys, and Space joins Enter as a Confirm Key.
+Two keys per action, and better candidates. The Output rows on a shorter
+Shortcuts pane now take two keys, and Space joins Enter as a Confirm Key.
 Candidates that cover everything you typed come before ones that cover only
-the start, and your own Custom Dictionary words lead their group but no longer
-appear after only a letter or two. Phonetic Symbols keeps the tone marks and
-spaces you type. The MOE Dictionary gains a separate Alternative Readings
-switch and 49 contracted readings such as `lueh` 落去. Upgrade from v3.7.0.
+the start, and your own Custom Dictionary words follow the words you pick and
+no longer appear after only a letter or two. Phonetic Symbols keeps the tone
+marks and spaces you type. The MOE Dictionary gains a separate Alternative
+Readings switch and 49 contracted readings such as `lueh` 落去. Upgrade from
+v3.7.0.
 
 ### macOS
 
@@ -31,10 +32,13 @@ switch and 49 contracted readings such as `lueh` 落去. Upgrade from v3.7.0.
 - **Whole-input candidates come first.** A candidate covering everything you
   typed now comes before ones covering only the first syllables: `taiuanl`
   gives 台灣人 first, `taig` 台語. (#482)
-- **Custom Dictionary words lead their group and follow the dictionary's
-  rules.** A custom word comes first among candidates of the same kind. It is
-  no longer offered after just one or two letters: a custom 陳建中 appears from
-  `tankiant` or its abbreviation `tkt`, not from `t` or `ta`. (#481, #482)
+- **Custom Dictionary words follow the dictionary's rules.** Words you have
+  picked come first; a custom word you never picked comes next, ahead of the
+  rest of the dictionary. A custom word reached by its abbreviation comes after
+  the full readings: `thng` lists 湯 and 糖 before a custom 退伍. A custom word
+  is no longer offered after just one or two letters: a custom 陳建中 appears
+  from `tankiant` or its abbreviation `tkt`, not from `t` or `ta`. (#481, #482,
+  #515, #517)
 - **49 contracted readings from the MOE Dictionary** (合音唸作), such as
   `lueh` 落去 and `tsa̋u-kiánn` 查某囝. (#509)
 - About 50 MOE Dictionary words with 一 now have a space where they had a
@@ -42,9 +46,21 @@ switch and 49 contracted readings such as `lueh` 落去. Upgrade from v3.7.0.
 
 #### Settings
 
-- **Two keys per action on the Shortcuts pane.** Every Candidate Selection and
-  Output row has two fields, and either key does the action. Clearing one field
-  leaves the other. Confirm Key ships with Enter and Space. (#512)
+- **Two keys per Output action on the Shortcuts pane.** Confirm Key, Output
+  What You Are Typing and Output the Other Script each have two fields, and
+  either key does the action. Clearing one field leaves the other. Confirm Key
+  ships with Enter and Space. (#512, #521)
+- **A shorter Shortcuts pane.** The rows that only listed fixed keys are gone:
+  Delete What You Are Typing (Esc still cancels), Move Through Candidates (the
+  arrow and page keys still move) and Pick a Candidate Directly (the candidate
+  window shows each key). The ⇧ number keys now sit under Output the Other
+  Script. The global shortcuts are split into Romanization, Phonetic Symbols
+  and Other. (#518, #520, #523, #524)
+- **Delete All Custom Words and Delete Learning Records run on press**, with no
+  confirmation dialog. A notice appears only when it fails. Export a `.taigi`
+  backup first if you may want the data back. (#519)
+- **Hanji labels write 的 for ê**, for example 修正拍的字 and 輸出拍的字.
+  Romanized labels keep ê. (#522)
 - **Alternative Readings (又唸作) has its own switch** under the MOE Dictionary,
   on by default. Turn it off to drop the readings the dictionary lists only as
   alternatives. (#474)
@@ -77,10 +93,13 @@ switch and 49 contracted readings such as `lueh` 落去. Upgrade from v3.7.0.
 - **Whole-input candidates come first.** A candidate covering everything you
   typed now comes before ones covering only the first syllables: `taiuanl`
   gives 台灣人 first, `taig` 台語. (#482)
-- **Custom Dictionary words lead their group and follow the dictionary's
-  rules.** A custom word comes first among candidates of the same kind. It is
-  no longer offered after just one or two letters: a custom 陳建中 appears from
-  `tankiant` or its abbreviation `tkt`, not from `t` or `ta`. (#481, #482)
+- **Custom Dictionary words follow the dictionary's rules.** Words you have
+  picked come first; a custom word you never picked comes next, ahead of the
+  rest of the dictionary. A custom word reached by its abbreviation comes after
+  the full readings: `thng` lists 湯 and 糖 before a custom 退伍. A custom word
+  is no longer offered after just one or two letters: a custom 陳建中 appears
+  from `tankiant` or its abbreviation `tkt`, not from `t` or `ta`. (#481, #482,
+  #515, #517)
 - **49 contracted readings from the MOE Dictionary** (合音唸作), such as
   `lueh` 落去 and `tsa̋u-kiánn` 查某囝. (#509)
 - About 50 MOE Dictionary words with 一 now have a space where they had a
@@ -88,9 +107,21 @@ switch and 49 contracted readings such as `lueh` 落去. Upgrade from v3.7.0.
 
 #### Settings
 
-- **Two keys per action on the Shortcuts pane.** Every Candidate Selection and
-  Output row has two fields, and either key does the action. Clearing one field
-  leaves the other. Confirm Key ships with Enter and Space. (#512)
+- **Two keys per Output action on the Shortcuts pane.** Confirm Key, Output
+  What You Are Typing and Output the Other Script each have two fields, and
+  either key does the action. Clearing one field leaves the other. Confirm Key
+  ships with Enter and Space. (#512, #521)
+- **A shorter Shortcuts pane.** The rows that only listed fixed keys are gone:
+  Delete What You Are Typing (Esc still cancels), Move Through Candidates (the
+  arrow and page keys still move) and Pick a Candidate Directly (the candidate
+  window shows each key). The Shift number keys now sit under Output the Other
+  Script. The global shortcuts are split into Romanization, Phonetic Symbols
+  and Other. (#518, #520, #523, #524)
+- **Delete All Custom Words and Delete Learning Records run on press**, with no
+  confirmation dialog. A notice appears only when it fails. Export a `.taigi`
+  backup first if you may want the data back. (#519)
+- **Hanji labels write 的 for ê**, for example 修正拍的字 and 輸出拍的字.
+  Romanized labels keep ê. (#522)
 - **Alternative Readings (又唸作) has its own switch** under the MOE Dictionary,
   on by default. Turn it off to drop the readings the dictionary lists only as
   alternatives. (#474)
@@ -123,10 +154,13 @@ switch and 49 contracted readings such as `lueh` 落去. Upgrade from v3.7.0.
 - **Whole-input candidates come first.** A candidate covering everything you
   typed now comes before ones covering only the first syllables: `taiuanl`
   gives 台灣人 first, `taig` 台語. (#482)
-- **Custom Dictionary words lead their group and follow the dictionary's
-  rules.** A custom word comes first among candidates of the same kind. It is
-  no longer offered after just one or two letters: a custom 陳建中 appears from
-  `tankiant` or its abbreviation `tkt`, not from `t` or `ta`. (#481, #482)
+- **Custom Dictionary words follow the dictionary's rules.** Words you have
+  picked come first; a custom word you never picked comes next, ahead of the
+  rest of the dictionary. A custom word reached by its abbreviation comes after
+  the full readings: `thng` lists 湯 and 糖 before a custom 退伍. A custom word
+  is no longer offered after just one or two letters: a custom 陳建中 appears
+  from `tankiant` or its abbreviation `tkt`, not from `t` or `ta`. (#481, #482,
+  #515, #517)
 - **49 contracted readings from the MOE Dictionary** (合音唸作), such as
   `lueh` 落去 and `tsa̋u-kiánn` 查某囝. (#509)
 - About 50 MOE Dictionary words with 一 now have a space where they had a
@@ -134,9 +168,21 @@ switch and 49 contracted readings such as `lueh` 落去. Upgrade from v3.7.0.
 
 #### Settings
 
-- **Two keys per action on the Shortcuts pane.** Every Candidate Selection and
-  Output row has two fields, and either key does the action. Clearing one field
-  leaves the other. Confirm Key ships with Enter and Space. (#512)
+- **Two keys per Output action on the Shortcuts pane.** Confirm Key, Output
+  What You Are Typing and Output the Other Script each have two fields, and
+  either key does the action. Clearing one field leaves the other. Confirm Key
+  ships with Enter and Space. (#512, #521)
+- **A shorter Shortcuts pane.** The rows that only listed fixed keys are gone:
+  Delete What You Are Typing (Esc still cancels), Move Through Candidates (the
+  arrow and page keys still move) and Pick a Candidate Directly (the candidate
+  window shows each key). The Shift number keys now sit under Output the Other
+  Script. The global shortcuts are split into Romanization, Phonetic Symbols
+  and Other. (#518, #520, #523, #524)
+- **Delete All Custom Words and Delete Learning Records run on press**, with no
+  confirmation dialog. A notice appears only when it fails. Export a `.taigi`
+  backup first if you may want the data back. (#519)
+- **Hanji labels write 的 for ê**, for example 修正拍的字 and 輸出拍的字.
+  Romanized labels keep ê. (#522)
 - **Alternative Readings (又唸作) has its own switch** under the MOE Dictionary,
   on by default. Turn it off to drop the readings the dictionary lists only as
   alternatives. (#474)
