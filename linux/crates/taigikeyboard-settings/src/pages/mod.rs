@@ -17,7 +17,6 @@ use adw::prelude::*;
 use std::any::Any;
 use std::cell::Cell;
 use std::rc::Rc;
-use taigi_desktop_core::settings::presentation::Confirmation;
 use taigi_desktop_core::settings::{SettingChoice, SettingsDocument, SettingsKey, SettingsPane};
 use taigi_desktop_core::strings::{StringKey, StringResolver};
 
@@ -155,12 +154,6 @@ impl<'a> PageContext<'a> {
             }
         }));
         row
-    }
-
-    /// The flag a refresh raises while it sets the rows, for a handler
-    /// that is not one of the shapes above (the MOE dictionary expander's switch).
-    pub fn refreshing_flag(&self) -> Rc<Cell<bool>> {
-        Rc::clone(&self.suppress)
     }
 
     /// A combo row over a `SettingChoice` roster, bound to its key.
@@ -396,31 +389,6 @@ pub(crate) fn destructive_row(
     row.set_activatable_widget(Some(&button));
     group.add(&row);
     button
-}
-
-/// Asks `confirmation` over `shell`'s window and runs `on_confirmed` on
-/// Delete: Delete is the destructive response; Escape, Cancel and a
-/// dismissal all leave the store alone.
-pub(crate) fn confirm(
-    shell: &Shell,
-    strings: StringResolver,
-    confirmation: Confirmation,
-    on_confirmed: impl Fn() + 'static,
-) {
-    let dialog = adw::AlertDialog::new(
-        Some(strings.resolve(confirmation.title)),
-        Some(strings.resolve(confirmation.message)),
-    );
-    dialog.add_response("cancel", strings.resolve(StringKey::CommonCancel));
-    dialog.add_response("delete", strings.resolve(StringKey::CommonDelete));
-    dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
-    dialog.set_close_response("cancel");
-    dialog.connect_response(None, move |_, response| {
-        if response == "delete" {
-            on_confirmed();
-        }
-    });
-    dialog.present(shell.window().as_ref());
 }
 
 /// The file a chooser answered: `Ok(None)` for a dismissal, `Err` for any

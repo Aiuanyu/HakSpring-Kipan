@@ -6,6 +6,11 @@
     "phahTaigiLayout": { "hakha": "PhahTaigi" },
     "tpsLayout": { "hakha": "方音符號企盤" },
     "moe1Layout": { "hakha": "教育部排列 1" },
-    "moe2Layout": { "hakha": "教育部排列 2" }
+    "moe2Layout": { "hakha": "教育部排列 2" },
+    "customLayoutsSection": { "hakha": "自訂排列" },
+    "createNewLayout": { "hakha": "新排列…" },
+    "editorTitleNew": { "hakha": "新排列" },
+    "nameHeader": { "hakha": "排列名稱" },
+    "commonLayoutsSection": { "hakha": "通用" }
   }
 }

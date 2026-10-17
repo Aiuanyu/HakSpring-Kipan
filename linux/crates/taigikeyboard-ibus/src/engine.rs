@@ -93,7 +93,7 @@ impl Engine {
                     Self::update_lookup_table(emitter, empty_table_value(), false).await
                 }
                 Emit::ModeChanged => {
-                    Self::update_property(emitter, menu_root_value(&self.runtime)).await
+                    Self::update_property(emitter, menu_values(&self.runtime).root).await
                 }
                 // NAMED DIVERGENCE (roadmap L4): the daemon has no HUD; the
                 // indicator's symbol is the only notice.
@@ -113,12 +113,27 @@ impl Engine {
     }
 
     /// `RegisterProperties` with the menu as it stands — on `Enable`, and
-    /// again on every `FocusIn` so a display language or a chord recorded
-    /// in the settings window shows on the next focus.
+    /// again on every `FocusIn` so an Input Script, a display language or a
+    /// chord changed in the settings window shows on the next focus.
+    ///
+    /// GNOME Shell honours only the FIRST registration after an engine
+    /// change (GNOME 46 `js/misc/ibusManager.js` `_engineChanged` disconnects
+    /// its `register-properties` handler once it fires), so a re-registration
+    /// alone never reaches its indicator. `UpdateProperty` always does, and
+    /// it matches by key and copies no sub-properties (ibus
+    /// `ibus_property_update`): every row, then the root, goes out as its own
+    /// update. Panels that do take a re-registration (ibus-ui-gtk3) receive
+    /// the same values twice.
     async fn register_menu(&self, emitter: &SignalEmitter<'_>) {
-        let props = wire::prop_list(vec![menu_root_value(&self.runtime)]);
+        let menu = menu_values(&self.runtime);
+        let props = wire::prop_list(vec![menu.root.clone()]);
         if let Err(error) = Self::register_properties(emitter, props).await {
             log::error!("engine.register_properties_failed error={error}");
+        }
+        for prop in menu.rows.into_iter().chain([menu.root]) {
+            if let Err(error) = Self::update_property(emitter, prop).await {
+                log::error!("engine.update_property_failed error={error}");
+            }
         }
     }
 
@@ -141,17 +156,7 @@ impl Engine {
 }
 
 fn table_value(content: &LookupTableContent) -> Value<'static> {
-    // A table with no labels (the Telex guide): the panel fills an empty
-    // label list — and empty strings — with its own `1…9, 0` (GNOME 46
-    // `ibusCandidatePopup.js` `setCandidates`), so a label-less table
-    // sends one space per page position instead.
-    let blank_labels: Vec<String>;
-    let labels = if content.labels.is_empty() {
-        blank_labels = vec![" ".to_owned(); content.page_size as usize];
-        &blank_labels
-    } else {
-        &content.labels
-    };
+    let labels = panel_labels(content);
     LookupTable {
         page_size: content.page_size,
         cursor_pos: content.cursor,
@@ -163,7 +168,7 @@ fn table_value(content: &LookupTableContent) -> Value<'static> {
             Orientation::Horizontal
         },
         candidates: &content.candidates,
-        labels,
+        labels: &labels,
     }
     .to_value()
 }
@@ -173,13 +178,19 @@ fn table_value(content: &LookupTableContent) -> Value<'static> {
 /// row — the recorded chord rides in the tooltip, the one text column the
 /// panel draws beside a row. Label, symbol and icon come from one settings
 /// snapshot, so a change made in the settings window between two reads
-/// cannot split them.
-fn menu_root_value(runtime: &Runtime) -> Value<'static> {
+/// cannot split them. The rows ride beside the root as well: a registration
+/// sends the one tree, an in-place refresh sends each property on its own.
+struct MenuValues {
+    root: Value<'static>,
+    rows: Vec<Value<'static>>,
+}
+
+fn menu_values(runtime: &Runtime) -> MenuValues {
     let settings = runtime.settings.current();
     let label = chrome::mode_label(runtime, &settings);
     let indicator = chrome::mode_indicator(&settings);
-    let rows = chrome::menu_items(runtime);
-    let sub_props = rows
+    let items = chrome::menu_items(runtime);
+    let rows: Vec<Value<'static>> = items
         .iter()
         .enumerate()
         .map(|(index, item)| match item {
@@ -205,16 +216,33 @@ fn menu_root_value(runtime: &Runtime) -> Value<'static> {
             .to_value(),
         })
         .collect();
-    Property {
+    let root = Property {
         key: MENU_ROOT_KEY,
         kind: PropType::Menu,
         label: &label,
         tooltip: "",
         icon: indicator.icon_name(),
         symbol: indicator.symbol(),
-        sub_props,
+        sub_props: rows.clone(),
     }
-    .to_value()
+    .to_value();
+    MenuValues { root, rows }
+}
+
+/// The labels as the panel must receive them. It fills an empty label list —
+/// and each empty string — with its own `1…9, 0` (GNOME 46
+/// `ibusCandidatePopup.js` `setCandidates`), so a label-less table (the
+/// Telex guide) sends one space per page position, and a blank label (the
+/// unkeyed §34 literal) a space.
+fn panel_labels(content: &LookupTableContent) -> Vec<String> {
+    if content.labels.is_empty() {
+        return vec![" ".to_owned(); content.page_size as usize];
+    }
+    content
+        .labels
+        .iter()
+        .map(|label| if label.is_empty() { " " } else { label }.to_owned())
+        .collect()
 }
 
 fn empty_table_value() -> Value<'static> {
@@ -488,5 +516,30 @@ impl Service {
                 })
             })
             .ok();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn table(labels: &[&str]) -> LookupTableContent {
+        LookupTableContent {
+            candidates: Vec::new(),
+            labels: labels.iter().map(|label| (*label).to_owned()).collect(),
+            cursor: 0,
+            cursor_visible: true,
+            page_size: 3,
+            vertical: false,
+        }
+    }
+
+    #[test]
+    fn a_blank_label_reaches_the_panel_as_a_space() {
+        // The unkeyed §34 literal: GNOME would number an empty string.
+        assert_eq!(panel_labels(&table(&["", "q", "w"])), [" ", "q", "w"]);
+        // The Telex guide: no labels at all, one space per page position.
+        assert_eq!(panel_labels(&table(&[])), [" ", " ", " "]);
+        assert_eq!(panel_labels(&table(&["q", "w", "d"])), ["q", "w", "d"]);
     }
 }

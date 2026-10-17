@@ -309,7 +309,8 @@ impl SettingsWindow {
         // it. A refused send means the queue is full or the component is
         // going away — either way the key stays hidden from the form
         // rather than being typed into it.
-        self.recorder.hook = KeyboardHook::install(move |press| {
+        let layout = self.document().key_reading_layout();
+        self.recorder.hook = KeyboardHook::install(layout, move |press| {
             if sender.send(Message::RecordedPress(generation, press)) {
                 Delivery::Accepted
             } else {
@@ -363,10 +364,10 @@ impl SettingsWindow {
     }
 
     /// What a pane needs the first time it is shown: Custom Dictionary and
-    /// Learning Records fetch their first page, Manage Typefaces reads the
+    /// Learning Records fetch their first page, Manage Fonts reads the
     /// user's font folder. Each once.
     ///
-    /// Manage Typefaces reads even in a read-only launch: the folder is the user's
+    /// Manage Fonts reads even in a read-only launch: the folder is the user's
     /// own, and a window that cannot WRITE the selection can still say which
     /// typefaces are there.
     fn enter_pane(&mut self, context: &ComponentContext<Self>) {
@@ -727,6 +728,12 @@ impl Component for SettingsWindow {
         });
 
         let page = page_view(self.pane).unwrap_or(pages::general::view);
+        // Keyed by pane so a pane switch unmounts the old page and mounts the
+        // new one whole. Unkeyed, the two pages' fragments are diffed slot by
+        // slot, and a slot that changes type is inserted at an index the
+        // native StackPanel does not reach until the deferred child sync runs
+        // — `InsertChild` E_BOUNDS, which reactor turns into an abort
+        // (Shortcuts ⇄ Dictionary Sources, 2026-10-08).
         let content = ScrollViewer::new()
             .vertical_scroll_bar_visibility(ScrollBarVisibility::Auto)
             .content(
@@ -735,7 +742,7 @@ impl Component for SettingsWindow {
                     .margin(Thickness::uniform(FORM_INSET))
                     .children((
                         self.banners(&strings),
-                        page(self, &strings, context),
+                        View::keyed_fragment([(self.pane.raw(), page(self, &strings, context))]),
                         self.dialogs(&strings, context),
                     )),
             );

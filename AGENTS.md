@@ -64,7 +64,7 @@ Writing in the vault — only when asked, and following `hub-template.md`:
 ```
 android/  ios/  macos/  windows/  linux/   # platform apps
                    # macos/ links one Rust archive, macos/crates/taigi-macos-ffi (engine seam + taigi-desktop-core)
-engine/            # Shared Rust engine — Cargo workspace, FFI to every platform
+engine/            # Shared Rust engine — Cargo workspace; FFI to iOS / Android / macOS, linked in-process by Windows / Linux
 desktop/           # Rust crates shared by the desktops — taigi-desktop-core (all three), -storage (Windows + Linux), -update (Windows)
 dictionary/        # Dictionary sources + build pipeline + output artifacts
 assets/            # Committed shipped data every platform packages — dictionaries/ (pipeline output), fonts/, symbols/
@@ -107,30 +107,32 @@ emoji/             # Emoji data generator (own instructions file)
 
 ## Build & Test
 
-Full setup: [`docs/BUILDING.md`](docs/BUILDING.md). **Bootstrap**: clone with `--recurse-submodules`, then `make build` once per machine — generates the xcframeworks, `jniLibs/*.so` and platform protos the app builds link (not committed).
+Full setup: [`docs/BUILDING.md`](docs/BUILDING.md). **Bootstrap**: clone with `--recurse-submodules`, then `make build` once per machine — generates the xcframeworks and `jniLibs/*.so` the app builds link (not committed) and regenerates the committed platform protos.
 
 **Test what you touched**: `python3 tools/test_select.py --run --platform <p>` per touched platform (no args = print the selection; `make test-changed` runs the whole selection). The full suites below are for release prep or a deliberate catch-net. `make lint` runs every formatter / linter gate CI enforces.
 
 | Platform | Build | Test |
 |---|---|---|
-| engine | `cargo build --workspace` | `cargo test --workspace` |
+| engine | `cargo build --manifest-path engine/Cargo.toml --workspace` | `make test` |
 | iOS | Xcode → keyboard extension | `xcodebuild -project ios/TaigiKeyboard.xcodeproj -scheme TaigiKeyboardTests -destination 'platform=iOS Simulator,name=<device>' test` |
 | Android | `android/gradlew -p android :app:assembleDebug` | `android/gradlew -p android :app:testDebugUnitTest` |
 | macOS | `make -C macos build` (`install` before dogfood) | `make -C macos test` |
-| Windows | `make windows-check` (host gate; TSF DLL builds only on Windows — `docs/architecture/windows-release.md`) | included |
+| Windows | `make windows-check` (host gate; its `check-box` step needs the maintainer's Windows box over ssh — others run the sub-targets in `windows/README.md`; the DLL builds only on Windows — `docs/architecture/windows-release.md`) | included |
 | Linux | `make linux-check` (host gate; `.deb` via `make -C linux deb` — `docs/architecture/linux-release.md`) | included |
+| desktop-shared / macOS Rust crates | `make desktop-check` (`desktop/`) · `make macos-rust-check` (`macos/crates`) | included |
 | taigi-converter | — | `npm test` in `taigi-converter/` |
 
 **Stale-artifact gate — run before every iOS / Android / macOS build+test** (stale binaries give false-green tests):
 
 | Diff touches… | Run first |
 |---|---|
-| `engine/` (Rust, `.proto`, `Cargo.toml`) | `make build` |
+| `engine/` (Rust, `Cargo.toml`) | `make build` (or the one platform's `make ios-libs` / `android-libs` / `macos-libs`) |
+| a `.proto` file | `make build` (or `make protos`, then the platform's target) |
 | `dictionary/` | `make dict` then `make build` |
-| `desktop/`, `macos/crates/`, `macos/Cargo.*` (the archive macOS links) | `make build` before a macOS build or test |
+| `desktop/`, `macos/crates/`, `macos/Cargo.*` (the archive macOS links) | `make macos-libs` (or `make build`) before a macOS build or test |
 | platform-only Swift / Kotlin / docs | nothing |
 
-Details and timings: `docs/architecture/build-artifacts.md`.
+Canonical: `docs/BUILDING.md` §4–5; rationale and timings: `docs/architecture/build-artifacts.md`.
 
 ## Conventions
 
@@ -138,7 +140,7 @@ Details and timings: `docs/architecture/build-artifacts.md`.
 - Code, comments and docs in **English** (Kipan exception: commit messages and PR descriptions are in Hakfa — § Issues, PRs, commits). Living docs name UI labels by their i18n `en` value. CJK only for Taigi content (phonetic / Hanji examples, test data, proper names of dictionaries and fonts). Dated snapshots (`docs/reports/**`, `docs/releases/**`) are frozen.
 - Conventional Commits `type(scope): subject`; one PR per logical change; say which platforms you built and tested.
 - `changelog/` is edited only at release time.
-- No personal identifiers in tracked files, commits or PRs (`docs/contributing/known-pitfalls.md` § Privacy).
+- No personal identifiers in tracked files, commits or PRs (`CONTRIBUTING.md` § Secrets).
 
 ## References
 

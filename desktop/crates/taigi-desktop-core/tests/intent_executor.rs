@@ -15,8 +15,8 @@ use taigi_desktop_core::dictionary_artifacts::DictionaryArtifacts;
 use taigi_desktop_core::engine::{self, Effect};
 use taigi_desktop_core::keys::{
     CandidateNavigation, CaretDirection, ComposingKeyIntent, KeyEventSnapshot, KeyModifiers,
+    TpsKeyCapIndex,
 };
-use taigi_desktop_core::platform::DesktopPlatform;
 use taigi_desktop_core::settings::{keys, InputMode, SettingsDocument, StaticSettingsProvider};
 
 /// One lock, one lexicon install: the engine is one per process.
@@ -47,6 +47,9 @@ struct Surface {
     can_swap: bool,
     has_failed: bool,
     selected: Option<usize>,
+    /// The caps of the TPS keys the engine took, in order
+    /// (`tps_keyboard_cap_typed`).
+    typed_tps_caps: Vec<TpsKeyCapIndex>,
 }
 
 impl ComposingEffectExecutor for Surface {
@@ -95,6 +98,10 @@ impl IntentSurface for Surface {
     fn navigate(&mut self, direction: CandidateNavigation) {
         self.calls.push(format!("navigate {direction:?}"));
     }
+
+    fn tps_keyboard_cap_typed(&mut self, cap: TpsKeyCapIndex) {
+        self.typed_tps_caps.push(cap);
+    }
 }
 
 struct Rig {
@@ -114,11 +121,8 @@ fn new_rig(is_auto_space_enabled: bool) -> Rig {
     settings.set_bool(&keys::IS_LITERAL_ROMAN_CANDIDATE_ENABLED, true);
     let manager = ComposingManager::new(
         Arc::new(StaticSettingsProvider::new(settings.clone())),
-        Box::new(EngineNextWord {
-            platform: DesktopPlatform::Windows,
-        }),
+        Box::new(EngineNextWord),
         Box::new(SystemClock),
-        DesktopPlatform::Windows,
         fresh_generation(),
     );
     Rig {
@@ -289,6 +293,22 @@ fn a_picked_symbol_swaps_only_when_it_attaches() {
     assert_eq!(rig.calls(), ["swap \"， \"", "arm"]);
 }
 
+/// No chord types the other width (USER 2026-10-07): outside TPS, Ctrl on a
+/// punctuation key is the host's in either width mode — not consumed, nothing
+/// written, no swap even with one armed.
+#[test]
+fn outside_tps_ctrl_punctuation_is_never_consumed_or_written() {
+    let mut rig = new_rig(true);
+    rig.surface.can_swap = true;
+    let ctrl_comma = KeyEventSnapshot::chord(None, ",", KeyModifiers::CONTROL);
+    for is_hanji_first in [true, false] {
+        rig.settings.set_bool(&keys::IS_HANJI_FIRST, is_hanji_first);
+        assert!(!pass_through_may_consume(&ctrl_comma, &rig.settings, true));
+        assert!(!rig.run(ComposingKeyIntent::PassThrough, &ctrl_comma));
+        assert!(rig.calls().is_empty(), "{:?}", rig.calls());
+    }
+}
+
 #[test]
 fn a_pass_through_key_is_consumed_for_punctuation_or_an_armed_swap() {
     let mut settings = SettingsDocument::default();
@@ -307,10 +327,61 @@ fn a_pass_through_key_is_consumed_for_punctuation_or_an_armed_swap() {
     assert!(!pass_through_may_consume(&no_key(), &settings, true));
 }
 
+/// A key read in the user's Dvorak / Colemak layout (`is_remapped`): the
+/// host would type the QWERTY key's text, so the input method writes what
+/// the user's layout types — Dvorak's `,` sits on the US `W`.
+fn remapped(key: KeyEventSnapshot) -> KeyEventSnapshot {
+    KeyEventSnapshot {
+        is_remapped: true,
+        ..key
+    }
+}
+
 #[test]
-fn enter_commits_the_highlighted_cell_and_space_its_other_script() {
-    // trace (read by running): cell 1 is 好 hó; Enter writes 好 (Hanji takes
-    // no space), Space writes hó, which earns the space and its arm.
+fn remapped_half_width_text_outside_a_composition_is_written_not_passed() {
+    let mut rig = new_rig(true);
+    rig.settings.set_bool(&keys::IS_HANJI_FIRST, false);
+    rig.surface.can_swap = false;
+    let dvorak_comma = remapped(comma());
+    assert!(pass_through_may_consume(
+        &dvorak_comma,
+        &rig.settings,
+        false
+    ));
+    assert!(rig.run(ComposingKeyIntent::PassThrough, &dvorak_comma));
+    // trace: Roman-first → no full-width map; the swap is asked first (as
+    // for the unremapped comma, `half_width_punctuation_outside_…`), then
+    // the remapped text is written.
+    assert_eq!(rig.calls(), ["swap \", \"", "insert \",\""]);
+}
+
+#[test]
+fn a_remapped_mark_takes_an_armed_swap_and_writes_nothing_more() {
+    let mut rig = new_rig(true);
+    rig.settings.set_bool(&keys::IS_HANJI_FIRST, false);
+    rig.surface.can_swap = true;
+    // trace: the swap is tried before the write (PassThrough arm), and a
+    // swap that lands answers true there — the remapped text never writes.
+    assert!(rig.run(ComposingKeyIntent::PassThrough, &remapped(comma())));
+    assert_eq!(rig.calls(), ["swap \", \"", "arm"]);
+}
+
+#[test]
+fn a_remapped_host_chord_stays_the_hosts() {
+    let mut rig = new_rig(true);
+    // trace: Ctrl held → `document_text` answers None (host chord), so
+    // neither the consume check nor the PassThrough arm writes anything.
+    let ctrl_comma = remapped(KeyEventSnapshot::chord(None, ",", KeyModifiers::CONTROL));
+    assert!(!pass_through_may_consume(&ctrl_comma, &rig.settings, false));
+    assert!(!rig.run(ComposingKeyIntent::PassThrough, &ctrl_comma));
+    assert!(rig.calls().is_empty(), "{:?}", rig.calls());
+}
+
+#[test]
+fn confirm_commits_the_highlighted_cell_and_the_other_script_row_its_other_script() {
+    // trace (read by running): cell 1 is 好 hó; Confirm Key writes 好 (Hanji
+    // takes no space), Output the Other Script writes hó, which earns the
+    // space and its arm.
     let mut rig = new_rig(true);
     rig.type_word("ho");
     rig.surface.selected = Some(1);
@@ -423,11 +494,8 @@ fn new_tps_rig() -> Rig {
     settings.set_choice(&keys::INPUT_MODE, InputMode::Tps);
     let manager = ComposingManager::new(
         Arc::new(StaticSettingsProvider::new(settings.clone())),
-        Box::new(EngineNextWord {
-            platform: DesktopPlatform::Windows,
-        }),
+        Box::new(EngineNextWord),
         Box::new(SystemClock),
-        DesktopPlatform::Windows,
         fresh_generation(),
     );
     Rig {
@@ -615,9 +683,9 @@ fn tps_a_flipped_slot_commits_the_cells_own_hanji_never_the_tl() {
 
 #[test]
 fn tps_ctrl_comma_writes_the_full_width_mark() {
-    // trace: under TPS the width is full and the Ctrl chord is no flip, so
-    // `policies::document_punctuation(",", true, false)` → `，`; the swap is
-    // tried first and the surface refuses it.
+    // trace: under TPS the derived width is full, so the chord's key maps:
+    // `policies::full_width_mapped(",")` → `，`; the swap is tried first and
+    // the surface refuses it.
     let mut rig = new_tps_rig();
     let ctrl_comma = KeyEventSnapshot::chord(Some(","), ",", KeyModifiers::CONTROL);
     assert!(rig.run(ComposingKeyIntent::PassThrough, &ctrl_comma));
@@ -709,6 +777,47 @@ fn tps_a_settings_change_closes_the_open_list() {
     }
 }
 
+/// D6 flash: the surface hears the cap of every TPS glyph the engine took,
+/// and nothing else: not the separator (no cap), not a refused Space, not a
+/// slot key picking.
+#[test]
+fn tps_the_surface_hears_the_cap_of_each_glyph_the_engine_took() {
+    let mut rig = new_tps_rig();
+    for key in ["ㄏ", "ㄛ", " "] {
+        assert!(rig.run(ComposingKeyIntent::TpsKey(key.to_owned()), &no_key()));
+    }
+    // trace: KEYS `c` = ㄏ (row 3 cap 2: z x c), `i` = ㄛ (row 1 cap 7:
+    // q w e r t y u i); the separator Space took, but has no cap.
+    assert_eq!(
+        rig.surface.typed_tps_caps,
+        [
+            TpsKeyCapIndex { row: 3, cap: 2 },
+            TpsKeyCapIndex { row: 1, cap: 7 }
+        ]
+    );
+    drop(rig);
+
+    // trace: `ㄏㄛˋ` closes the syllable, so the Space is refused and opens
+    // the window (O1 revised by D7); slot 0 then picks from it.
+    let mut rig = new_tps_rig();
+    rig.type_tps("ㄏㄛˋ");
+    rig.surface.typed_tps_caps.clear();
+    assert!(rig.run(ComposingKeyIntent::TpsKey(" ".to_owned()), &no_key()));
+    assert!(!rig.list.is_empty(), "the refused Space opened the window");
+    assert!(rig.run(
+        ComposingKeyIntent::SelectCandidateSlot {
+            slot: 0,
+            flip: false
+        },
+        &no_key()
+    ));
+    assert!(
+        rig.surface.typed_tps_caps.is_empty(),
+        "{:?}",
+        rig.surface.typed_tps_caps
+    );
+}
+
 #[test]
 fn tps_space_refused_inside_the_composition_does_nothing() {
     // trace: caret walked to the start of `ㄏㄛ`; nothing precedes it, so the
@@ -728,16 +837,39 @@ fn tps_space_refused_inside_the_composition_does_nothing() {
     assert_eq!(rig.manager.raw_input(), "ㄏㄛ");
 }
 
+/// TPS is full width with no way out (USER 2026-10-07): the Ctrl chord on a
+/// mark outside the layout flips nothing, idle or composing.
 #[test]
-fn tps_ctrl_on_a_non_layout_mark_still_flips_to_half_width() {
-    // trace: `[` is no TPS layout key, so its Ctrl chord keeps the flip:
-    // full width under TPS → `policies::document_punctuation("[", true, true)`
-    // = `Some("[")` (full_width.rs: the flip names its width), written by the
-    // input method itself; `[` attaches to nothing, so no swap is tried.
+fn tps_ctrl_on_a_non_layout_mark_stays_full_width() {
+    // trace: under TPS the derived width is full → `policies::full_width_mapped(
+    // "[")` = `Some("「")`; `「` attaches to nothing, so no swap is tried.
+    // Composing: the commit is TPS (no auto space, H6) → `好「`.
     let mut rig = new_tps_rig();
     let ctrl_bracket = KeyEventSnapshot::chord(Some("["), "[", KeyModifiers::CONTROL);
     assert!(rig.run(ComposingKeyIntent::PassThrough, &ctrl_bracket));
-    assert_eq!(rig.calls(), ["insert \"[\""]);
+    assert_eq!(rig.calls(), ["insert \"「\""]);
+
+    rig.surface.calls.clear();
+    rig.type_tps("ㄏㄛˋ");
+    assert!(rig.run(
+        ComposingKeyIntent::CommitThenInsert("[".to_owned()),
+        &ctrl_bracket
+    ));
+    assert_eq!(rig.calls(), ["commit 好「", "list closed"]);
+}
+
+/// An auto space armed before a switch into TPS: a bare attaching mark
+/// swaps with it in full width, the only width TPS writes.
+#[test]
+fn tps_a_bare_mark_swaps_the_armed_space_in_full_width() {
+    // trace: `?` is no TPS layout key → PassThrough; the width is full and
+    // the swap attaches what is written: `full_width_mapped("?")` = `？`,
+    // attaching (`punctuation.rs` ATTACHING) → swap `？ `.
+    let mut rig = new_tps_rig();
+    rig.surface.can_swap = true;
+    let question = KeyEventSnapshot::text("?", KeyModifiers::SHIFT);
+    assert!(rig.run(ComposingKeyIntent::PassThrough, &question));
+    assert_eq!(rig.calls(), ["swap \"？ \"", "arm"]);
 }
 
 /// A composition a switch across TPS left behind, reached by a commit that

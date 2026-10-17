@@ -28,7 +28,7 @@ use protos::engine::{
 
 use crate::common::Fetch;
 use crate::common::{
-    build_dictionary_fst, build_syllables_fst, build_tkdb_v3, cell_with_hanji, commit_text, config,
+    build_dictionary_fst, build_syllables_fst, build_tkdb_v4, cell_with_hanji, commit_text, config,
     empty_association_bin, fetch_cells, install_lexicon, req, Cell, Row,
 };
 use test_support::{engine_install_lock, write_temp};
@@ -67,7 +67,7 @@ fn fixture_rows() -> Vec<Row> {
 }
 
 fn install_rows(rows: &[Row], syllables: &[&str]) {
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(rows));
     let fst_path = build_dictionary_fst(rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst(syllables);

@@ -70,8 +70,6 @@ object L10n {
         @Composable get() = stringRes(StringKey.DESKTOP_TELEX_GUIDE_HYPHEN)
     val desktopDictionarySourcesLink: String
         @Composable get() = stringRes(StringKey.DESKTOP_DICTIONARY_SOURCES_LINK)
-    val dictionaryClear: String
-        @Composable get() = stringRes(StringKey.DICTIONARY_CLEAR)
     val dictionaryCustomDictionary: String
         @Composable get() = stringRes(StringKey.DICTIONARY_CUSTOM_DICTIONARY)
     val dictionaryCustomDictEnabled: String
@@ -100,8 +98,6 @@ object L10n {
         @Composable get() = stringRes(StringKey.DICTIONARY_HANZI_PLACEHOLDER)
     val dictionaryDeleteAll: String
         @Composable get() = stringRes(StringKey.DICTIONARY_DELETE_ALL)
-    val dictionaryDeleteAllMessage: String
-        @Composable get() = stringRes(StringKey.DICTIONARY_DELETE_ALL_MESSAGE)
     val dictionaryCustomDictPrivacyWarning: String
         @Composable get() = stringRes(StringKey.DICTIONARY_CUSTOM_DICT_PRIVACY_WARNING)
     val dictionaryImportCSV: String
@@ -150,6 +146,8 @@ object L10n {
         @Composable get() = stringRes(StringKey.DICTIONARY_KAUTIAN_ACCENT_TAICHUNG)
     val dictionaryKautianNameAppendix: String
         @Composable get() = stringRes(StringKey.DICTIONARY_KAUTIAN_NAME_APPENDIX)
+    val dictionaryKautianAltReading: String
+        @Composable get() = stringRes(StringKey.DICTIONARY_KAUTIAN_ALT_READING)
     val dictionarySearchPlaceholder: String
         @Composable get() = stringRes(StringKey.DICTIONARY_SEARCH_PLACEHOLDER)
     val dictionaryNoResults: String
@@ -214,10 +212,6 @@ object L10n {
         @Composable get() = stringRes(StringKey.DICTIONARY_LKK_TAG)
     val dictionaryClearLearningRecords: String
         @Composable get() = stringRes(StringKey.DICTIONARY_CLEAR_LEARNING_RECORDS)
-    val dictionaryClearLearningRecordsMessage: String
-        @Composable get() = stringRes(StringKey.DICTIONARY_CLEAR_LEARNING_RECORDS_MESSAGE)
-    val dictionaryClearLearningRecordsDone: String
-        @Composable get() = stringRes(StringKey.DICTIONARY_CLEAR_LEARNING_RECORDS_DONE)
     val dictionaryClearLearningRecordsFailed: String
         @Composable get() = stringRes(StringKey.DICTIONARY_CLEAR_LEARNING_RECORDS_FAILED)
     val dictionaryLearningRecords: String
@@ -262,18 +256,18 @@ object L10n {
         @Composable get() = stringRes(StringKey.HOME_SETUP_GUIDE)
     val homeSetupGuideDescription: String
         @Composable get() = stringRes(StringKey.HOME_SETUP_GUIDE_DESCRIPTION)
-    val homeSetupInfoMessage: String
-        @Composable get() = stringRes(StringKey.HOME_SETUP_INFO_MESSAGE)
+    val homeSetupPrivacyNote: String
+        @Composable get() = stringRes(StringKey.HOME_SETUP_PRIVACY_NOTE)
     val homeSetupBrandWarning: String
         @Composable get() = stringRes(StringKey.HOME_SETUP_BRAND_WARNING)
-    val homeSetupGuideCompletedMessage: String
-        @Composable get() = stringRes(StringKey.HOME_SETUP_GUIDE_COMPLETED_MESSAGE)
+    val homeSetupGuideCompletedSwitch: String
+        @Composable get() = stringRes(StringKey.HOME_SETUP_GUIDE_COMPLETED_SWITCH)
     val homeSetupGuideGoToSettings: String
         @Composable get() = stringRes(StringKey.HOME_SETUP_GUIDE_GO_TO_SETTINGS)
     val homeSetupGuideStep1Settings: String
         @Composable get() = stringRes(StringKey.HOME_SETUP_GUIDE_STEP1_SETTINGS)
-    val homeSetupGuideStep2AddKeyboard: String
-        @Composable get() = stringRes(StringKey.HOME_SETUP_GUIDE_STEP2_ADD_KEYBOARD)
+    val homeSetupGuideStep2TurnOn: String
+        @Composable get() = stringRes(StringKey.HOME_SETUP_GUIDE_STEP2_TURN_ON)
     val homeRateUs: String
         @Composable get() = stringRes(StringKey.HOME_RATE_US)
     val homeAboutKeyboard: String
@@ -354,6 +348,16 @@ object L10n {
         @Composable get() = stringRes(StringKey.KEYBOARD_ONE_HANDED_SWAP_SIDE)
     val layoutRomanizationKeyboard: String
         @Composable get() = stringRes(StringKey.LAYOUT_ROMANIZATION_KEYBOARD)
+    val layoutCustomLayoutsSection: String
+        @Composable get() = stringRes(StringKey.LAYOUT_CUSTOM_LAYOUTS_SECTION)
+    val layoutCreateNewLayout: String
+        @Composable get() = stringRes(StringKey.LAYOUT_CREATE_NEW_LAYOUT)
+    val layoutEditorTitleNew: String
+        @Composable get() = stringRes(StringKey.LAYOUT_EDITOR_TITLE_NEW)
+    val layoutNameHeader: String
+        @Composable get() = stringRes(StringKey.LAYOUT_NAME_HEADER)
+    val layoutCommonLayoutsSection: String
+        @Composable get() = stringRes(StringKey.LAYOUT_COMMON_LAYOUTS_SECTION)
     val layoutStandardLayout: String
         @Composable get() = stringRes(StringKey.LAYOUT_STANDARD_LAYOUT)
     val layoutPhahTaigiLayout: String
@@ -448,10 +452,6 @@ object L10n {
         @Composable get() = stringRes(StringKey.SETTINGS_TPS_OR_MAPS_TO_E_R_INFO)
     val settingsResetSettings: String
         @Composable get() = stringRes(StringKey.SETTINGS_RESET_SETTINGS)
-    val settingsResetSettingsMessage: String
-        @Composable get() = stringRes(StringKey.SETTINGS_RESET_SETTINGS_MESSAGE)
-    val settingsResetSuccess: String
-        @Composable get() = stringRes(StringKey.SETTINGS_RESET_SUCCESS)
     val settingsResetFailed: String
         @Composable get() = stringRes(StringKey.SETTINGS_RESET_FAILED)
     val settingsNoEmailApp: String

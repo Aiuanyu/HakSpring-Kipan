@@ -1,25 +1,6 @@
 {
   "namespace": "dictionary",
   "keys": {
-    "clear": {
-      "comment": "Generic clear button label (e.g. confirm clearing a custom dictionary).",
-      "scope": {
-        "platforms": [
-          "android",
-          "ios"
-        ],
-        "surfaces": [
-          "host"
-        ]
-      },
-      "values": {
-        "hanji": "清除",
-        "tailo": "Tshing-tî",
-        "poj": "Chheng-tî",
-        "en": "Clear",
-        "ja": "クリア"
-      }
-    },
     "customDictionary": {
       "comment": "Custom dictionary section/page title.",
       "scope": {
@@ -139,7 +120,7 @@
         ]
       },
       "values": {
-        "hanji": "自訂詞庫使用 CSV 純文字檔案，第 1 欄囥欲拍 ê 羅馬字，第 2 欄囥漢字，毋免囥標題。",
+        "hanji": "自訂詞庫使用 CSV 純文字檔案，第 1 欄囥欲拍的羅馬字，第 2 欄囥漢字，毋免囥標題。",
         "tailo": "Tsū-tīng-sû-khòo sú-iōng CSV sûn bûn-jī tòng-àn, tē 1 lân khǹg beh phah ê lô-má-jī, tē 2 lân khǹg hàn-jī, m̄-bián khǹg piau-tê.",
         "poj": "Chū-tēng-sû-khò͘ sú-iōng CSV sûn bûn-jī tòng-àn, tē 1 lân khǹg beh phah ê lô-má-jī, tē 2 lân khǹg hàn-jī, m̄-bián khǹg piau-tê.",
         "en": "The custom dictionary uses a plain-text CSV file: column 1 holds the romanization to type, column 2 holds the Hanji. No header row.",
@@ -314,28 +295,6 @@
         "poj": "San-tû choân-pō͘ chū-tēng-sû",
         "en": "Delete All Custom Words",
         "ja": "すべてのカスタム単語を削除"
-      }
-    },
-    "deleteAllMessage": {
-      "comment": "Confirmation dialog body for deleting all custom-dictionary entries.",
-      "scope": {
-        "platforms": [
-          "android",
-          "ios",
-          "macos",
-          "windows",
-          "linux"
-        ],
-        "surfaces": [
-          "host"
-        ]
-      },
-      "values": {
-        "hanji": "確定欲刪除所有自訂詞？",
-        "tailo": "Khak-tīng beh san-tû sóo-iú tsū-tīng-sû?",
-        "poj": "Khak-tēng beh san-tû só͘-iú chū-tēng-sû?",
-        "en": "Delete all custom words?",
-        "ja": "すべてのカスタム単語を削除しますか？"
       }
     },
     "customDictPrivacyWarning": {
@@ -604,8 +563,8 @@
       },
       "values": {
         "hanji": "漢羅合用建議用字",
-        "tailo": "Hàn-lô ha̍h-īng kiàn-gī iōng-jī",
-        "poj": "Hàn-lô ha̍h-ēng kiàn-gī iōng-jī",
+        "tailo": "Hàn-lô ha̍p-iōng kiàn-gī iōng-jī",
+        "poj": "Hàn-lô ha̍p-iōng kiàn-gī iōng-jī",
         "en": "Han-Lo Recommended Characters",
         "ja": "漢羅併用 推奨用字"
       }
@@ -874,6 +833,28 @@
         "ja": "姓名付録"
       }
     },
+    "kautianAltReading": {
+      "comment": "MOE dictionary sub-source: the alternative readings (又唸作) of a headword.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "又唸作",
+        "tailo": "Iū liām-tsò",
+        "poj": "Iū liām-chò",
+        "en": "Alternative Readings",
+        "ja": "別の読み方"
+      }
+    },
     "searchPlaceholder": {
       "comment": "Search-field placeholder in the dictionary browser, and the filter box on the macOS Custom Dictionary pane.",
       "scope": {
@@ -1131,7 +1112,7 @@
         ]
       },
       "values": {
-        "hanji": "對 106 年開始，共語文、數學、社會、自然科學、藝術、綜合活動、科技、健康佮體育這 8 大領域 ê 學科術語編做台語。",
+        "hanji": "對 106 年開始，共語文、數學、社會、自然科學、藝術、綜合活動、科技、健康佮體育這 8 大領域的學科術語編做台語。",
         "tailo": "Tuì 106 nî khai-sí, kā gí-bûn, sòo-ha̍k, siā-huē, tsū-jiân kho-ha̍k, gē-su̍t, tsong-ha̍p ua̍h-tōng, kho-ki, kiān-khong kah thé-io̍k tsit 8 tāi líng-i̍k ê ha̍k-kho su̍t-gí pian-tsò tâi-gí.",
         "poj": "Tuì 106 nî khai-sí, kā gí-bûn, sò͘-ha̍k, siā-hōe, chū-jiân kho-ha̍k, gē-su̍t, chong-ha̍p oa̍h-tōng, kho-ki, kiān-khong kah thé-io̍k chit 8 tāi léng-e̍k ê ha̍k-kho su̍t-gí pian-chò tâi-gí.",
         "en": "Since 2017, the project has translated academic terminology from eight fields into Taigi: language arts, mathematics, social studies, natural science, arts, integrative activities, technology, and health and physical education.",
@@ -1150,7 +1131,7 @@
         ]
       },
       "values": {
-        "hanji": "收規一千兩百組重要 ê 台語工藝詞，包括陶瓷、木藝、金工、竹藤、纖維、玻璃、漆藝、石藝、皮革、紙藝這 11 項工藝類別。",
+        "hanji": "收規一千兩百組重要的台語工藝詞，包括陶瓷、木藝、金工、竹藤、纖維、玻璃、漆藝、石藝、皮革、紙藝這 11 項工藝類別。",
         "tailo": "Siu kui it-tshian nn̄g-pah tsoo tiōng-iàu ê tâi-gí kang-gē sû, pau-kuat tô-tsû, bo̍k-gē, kim-kang, tik-tîn, siam-uî, po-lê, tshat-gē, tsio̍h-gē, phuê-kik, tsuá-gē tsit 11 hāng kang-gē luī-pia̍t.",
         "poj": "Siu kui it-chhian nn̄g-pah cho͘ tiōng-iàu ê tâi-gí kang-gē sû, pau-koat tô-chû, bo̍k-gē, kim-kang, tek-tîn, siam-ûi, po-lê, chhat-gē, chio̍h-gē, phôe-kek, chóa-gē chit 11 hāng kang-gē lūi-pia̍t.",
         "en": "Over 1,200 key Taigi craft terms covering eleven categories such as ceramics, woodcraft, metalwork, bamboo and rattan, fiber, glass, lacquer, stonework, leather, and paper craft.",
@@ -1170,8 +1151,8 @@
       },
       "values": {
         "hanji": "李江却台語文教基金會漢羅合用建議用字。",
-        "tailo": "Lí Kang Khioh tâi-gí bûn-kàu ki-kim-huē hàn-lô ha̍h-īng kiàn-gī iōng-jī.",
-        "poj": "Lí Kang Khioh tâi-gí bûn-kàu ki-kim-hōe hàn-lô ha̍h-ēng kiàn-gī iōng-jī.",
+        "tailo": "Lí Kang Khioh tâi-gí bûn-kàu ki-kim-huē hàn-lô ha̍p-iōng kiàn-gī iōng-jī.",
+        "poj": "Lí Kang Khioh tâi-gí bûn-kàu ki-kim-hōe hàn-lô ha̍p-iōng kiàn-gī iōng-jī.",
         "en": "Suggested Han-Roman mixed-script characters from the Lí Kang-Khioh Taigi Culture and Education Foundation.",
         "ja": "李江却台語文教基金会による漢字ローマ字混在表記の推奨用字。"
       }
@@ -1188,7 +1169,7 @@
         ]
       },
       "values": {
-        "hanji": "補充政府機關、常見人名、行政區、數字、時間、日期佮其他教典較少收錄 ê 詞。",
+        "hanji": "補充政府機關、常見人名、行政區、數字、時間、日期佮其他教典較少收錄的詞。",
         "tailo": "Póo-tshiong tsìng-hú ki-kuan, siông-kiàn jîn-miâ, hîng-tsìng-khu, sòo-jī, sî-kan, ji̍t-kî kah kî-thann kàu-tián khah tsió siu-lio̍k ê sû.",
         "poj": "Pó͘-chhiong chèng-hú ki-koan, siông-kiàn jîn-miâ, hêng-chèng-khu, sò͘-jī, sî-kan, ji̍t-kî kah kî-thaⁿ kàu-tián khah chió siu-lio̍k ê sû.",
         "en": "Adds government agencies, common names, administrative divisions, dates, times, numbers, and other words with limited coverage in the MOE Dictionary.",
@@ -1207,7 +1188,7 @@
         ]
       },
       "values": {
-        "hanji": "一个群眾編輯 ê 開放台語辭典",
+        "hanji": "一个群眾編輯的開放台語辭典",
         "tailo": "Tsi̍t-ê kûn-tsiòng pian-tsi̍p ê khai-hòng tâi-gí sû-tián",
         "poj": "Chi̍t-ê kûn-chiòng pian-chi̍p ê khai-hòng tâi-gí sû-tián",
         "en": "A crowd-edited open Taigi dictionary.",
@@ -1226,7 +1207,7 @@
         ]
       },
       "values": {
-        "hanji": "日本時代小川尚義編纂 ê 台語辭典。",
+        "hanji": "日本時代小川尚義編纂的台語辭典。",
         "tailo": "Ji̍t-pún sî-tāi Siáu-tshuan Siōng-gī pian-tshuàn ê tâi-gí sû-tián.",
         "poj": "Ji̍t-pún sî-tāi Siáu-chhoan Siōng-gī pian-chhoàn ê tâi-gí sû-tián.",
         "en": "A Taigi dictionary compiled by Ogawa Naoyoshi during the Japanese era.",
@@ -1264,7 +1245,7 @@
         ]
       },
       "values": {
-        "hanji": "日本時代佐佐木舜一整理 ê 台灣植物台語名。",
+        "hanji": "日本時代佐佐木舜一整理的台灣植物台語名。",
         "tailo": "Ji̍t-pún sî-tāi Tsò-tsò-bo̍k Sùn-it tsíng-lí ê Tâi-uân si̍t-bu̍t tâi-gí miâ.",
         "poj": "Ji̍t-pún sî-tāi Chò-chò-bo̍k Sùn-it chéng-lí ê Tâi-oân si̍t-bu̍t tâi-gí miâ.",
         "en": "Taigi names for Taiwanese plants, compiled by Sasaki Shun'ichi during the Japanese era.",
@@ -1321,7 +1302,7 @@
         ]
       },
       "values": {
-        "hanji": "補充「水台文」佮「台字田」使用 ê 在來字，拍開了後會加入候選詞。",
+        "hanji": "補充「水台文」佮「台字田」使用的在來字，拍開了後會加入候選詞。",
         "tailo": "Póo-tshiong \"Tsuí-tâi-bûn\" kah \"Tâi-jī-tshân\" sú-iōng ê tsāi-lâi jī, phah-khui liáu-āu ē ka-ji̍p hāu-suán sû.",
         "poj": "Pó͘-chhiong \"Chúi-tâi-bûn\" kah \"Tâi-jī-chhân\" sú-iōng ê chāi-lâi jī, phah-khui liáu-āu ē ka-ji̍p hāu-soán sû.",
         "en": "Adds conventional characters used by Tsuí Tâi-bûn and Tâi-jī-tshân to candidate suggestions.",
@@ -1520,14 +1501,14 @@
       },
       "values": {
         "hanji": "漢羅合用",
-        "tailo": "Hàn-lô ha̍h-īng",
-        "poj": "Hàn-lô ha̍h-ēng",
+        "tailo": "Hàn-lô ha̍p-iōng",
+        "poj": "Hàn-lô ha̍p-iōng",
         "en": "Han-Roman",
         "ja": "漢羅併用"
       }
     },
     "clearLearningRecords": {
-      "comment": "Destructive row at the bottom of the Learning Records page (desktop) / subpage (mobile): deletes every learning record (word frequency, next-word association, learned phrases) in one go; custom words are kept. Every platform confirms first, with this as the dialog title.",
+      "comment": "Destructive row at the bottom of the Learning Records page (desktop) / subpage (mobile): deletes every learning record (word frequency, next-word association, learned phrases) in one go; custom words are kept. Runs on the press, no confirmation.",
       "scope": {
         "platforms": [
           "android",
@@ -1546,50 +1527,6 @@
         "poj": "San-tû ha̍k-si̍p kì-lio̍k",
         "en": "Delete Learning Records",
         "ja": "学習記録を削除"
-      }
-    },
-    "clearLearningRecordsMessage": {
-      "comment": "Confirmation dialog body for Delete Learning Records: every learning record goes, the custom words stay.",
-      "scope": {
-        "platforms": [
-          "android",
-          "ios",
-          "macos",
-          "windows",
-          "linux"
-        ],
-        "surfaces": [
-          "host"
-        ]
-      },
-      "values": {
-        "hanji": "確定欲刪除所有學習紀錄？袂影響自訂詞。",
-        "tailo": "Khak-tīng beh san-tû sóo-iú ha̍k-si̍p kì-lio̍k? Buē íng-hióng tsū-tīng-sû.",
-        "poj": "Khak-tēng beh san-tû só͘-iú ha̍k-si̍p kì-lio̍k? Bōe éng-hióng chū-tēng-sû.",
-        "en": "Delete all learning records? Custom words are unaffected.",
-        "ja": "すべての学習記録を削除しますか？カスタム単語には影響しません。"
-      }
-    },
-    "clearLearningRecordsDone": {
-      "comment": "Alert title after the Delete Learning Records row finishes.",
-      "scope": {
-        "platforms": [
-          "android",
-          "ios",
-          "macos",
-          "windows",
-          "linux"
-        ],
-        "surfaces": [
-          "host"
-        ]
-      },
-      "values": {
-        "hanji": "學習紀錄已經刪掉",
-        "tailo": "Ha̍k-si̍p kì-lio̍k í-king thâi-tiāu",
-        "poj": "Ha̍k-si̍p kì-lio̍k í-keng thâi-tiāu",
-        "en": "Learning Records Cleared",
-        "ja": "学習記録を消去しました"
       }
     },
     "clearLearningRecordsFailed": {

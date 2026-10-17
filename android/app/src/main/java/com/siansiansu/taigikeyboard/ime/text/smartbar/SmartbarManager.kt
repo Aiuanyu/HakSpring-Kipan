@@ -43,8 +43,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Smartbar manager — owns the candidate StateFlow and display state, dynamically
- * generating up to 200 candidate buttons (limit controlled by LexiconService).
+ * Smartbar manager — owns the candidate StateFlow and display state; the strip
+ * renders the whole candidate list.
  */
 class SmartbarManager(
     private val taigikeyboard: TaigiKeyboard,
@@ -84,11 +84,10 @@ class SmartbarManager(
     private var keyboardHeight: Int = 0
 
     // EFFECTIVE script-flag cache (avoid DataStore async write timing issues). Holds the
-    // derived pair (stored AND mode != ROMAN_ONLY) plus the mode itself; every strip /
-    // overlay / click / layout reader goes through these, never the stored prefs.
+    // derived Hanji-first flag (stored AND mode != ROMAN_ONLY); every strip /
+    // overlay / layout reader goes through these, never the stored prefs.
     private var cachedIsHanjiFirst: Boolean = false
     private var cachedIsFullWidthPunctuation: Boolean = false
-    private var cachedOutputBothScripts: Boolean = false
 
     // Compose-side render state. Subsystems that read `currentSuggestions` /
     // `hasCandidates` continue to do so directly; this flow drives only the
@@ -154,12 +153,9 @@ class SmartbarManager(
 
     private val candidateClickHandler =
         CandidateClickHandler(
-            prefs = prefs,
             taigikeyboard = taigikeyboard,
             usage = EngineUsageRecorder,
             getCurrentSuggestions = { currentSuggestions },
-            getIsHanjiFirst = { cachedIsHanjiFirst },
-            getOutputBothScripts = { cachedOutputBothScripts },
             getComposingManager = { taigikeyboard.textInputManager.getComposingManager() },
             onClearCandidates = { clearCandidates() },
             onNextWordPrediction = { displayText, roman -> handleNextWordPrediction(displayText, roman) },
@@ -193,9 +189,9 @@ class SmartbarManager(
      * via the [com.siansiansu.taigikeyboard.ime.text.composing.NextWordEffectRouter]
      * constructor parameter.
      *
-     * Unrelated to [handleNextWordPrediction] which is the platform candidate-
-     * tap path for `Phase::Composing` (engine does NOT emit
-     * `NextWordWordSelected` there, so the two paths do not double-fire).
+     * Unrelated to [handleNextWordPrediction], the platform tap path for a
+     * NextWord prediction (engine `Phase::Idle`, where the engine does NOT
+     * emit `NextWordWordSelected`, so the two paths do not double-fire).
      */
     fun dispatchComposingNextWordEffect(effect: com.siansiansu.taigikeyboard.engine.RustEngineBridge.ComposingTransition.Effect) {
         when (effect) {
@@ -552,7 +548,6 @@ class SmartbarManager(
     private fun refreshScriptFlagCache() {
         cachedIsHanjiFirst = prefs.isHanjiFirst
         cachedIsFullWidthPunctuation = prefs.isFullWidthPunctuation
-        cachedOutputBothScripts = prefs.isOutputBothScripts
     }
 
     private fun refreshSurfacesForScriptFlags() {
@@ -566,10 +561,7 @@ class SmartbarManager(
 
         textInputManager.reloadCurrentLayout()
         textInputManager.reloadAllLayoutsInBackground()
-        textInputManager.invalidateKeysByCode(
-            com.siansiansu.taigikeyboard.ime.text.key.KeyCode.TRANSLATE,
-            com.siansiansu.taigikeyboard.ime.text.key.KeyCode.VIEW_NUMERIC_ADVANCED,
-        )
+        textInputManager.invalidateAllKeys()
     }
 
     /**

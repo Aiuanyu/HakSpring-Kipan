@@ -277,7 +277,6 @@ dependencies = [
  "protos",
  "ranking",
  "thiserror",
- "unicode-normalization",
 ]
 
 [[package]]
@@ -725,7 +724,7 @@ dependencies = [
 
 [[package]]
 name = "taigi-desktop-core"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "dispatch",
  "log",
@@ -738,7 +737,7 @@ dependencies = [
 
 [[package]]
 name = "taigi-macos-ffi"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "dispatch",
  "log",

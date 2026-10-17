@@ -63,20 +63,7 @@ final class SettingsKeyTests: XCTestCase {
         XCTAssertTrue(defaults.value(for: key), "Non-Bool stored value falls back to descriptor default")
     }
 
-    // MARK: - Double / CGFloat codec
-
-    func test_doubleKey_roundTrip_andAbsentDefault() {
-        let key = SettingsKey<Double>.double("doubleKey", default: 3.14)
-        XCTAssertEqual(defaults.value(for: key), 3.14)
-        defaults.set(2.5, for: key)
-        XCTAssertEqual(defaults.value(for: key), 2.5)
-    }
-
-    func test_doubleKey_storedNonNumeric_fallsBackToDefault() {
-        let key = SettingsKey<Double>.double("doubleMalformed", default: 1.0)
-        defaults.set("not-a-number", forKey: "doubleMalformed")
-        XCTAssertEqual(defaults.value(for: key), 1.0, "Non-numeric stored value falls back to descriptor default")
-    }
+    // MARK: - CGFloat codec
 
     func test_cgFloatKey_roundTripThroughDoubleStorage() {
         let key = SettingsKey<CGFloat>.cgFloat("cgFloatKey", default: 1.0)
@@ -246,6 +233,7 @@ final class SettingsKeyTests: XCTestCase {
         settings.isLiteralRomanCandidateEnabled = true
         settings.syllableSeparator = .space
         settings.isGlobeKeyEnabled = !DeviceCapabilities.prefersGlobeKeyByDefault
+        settings.isCustomDictEnabled = false
 
         // RawRep enums + font.
         settings.setInputMode(.poj)
@@ -271,6 +259,7 @@ final class SettingsKeyTests: XCTestCase {
         XCTAssertEqual(settings.syllableSeparator, .hyphen)
         XCTAssertTrue(settings.isMoeDictEnabled)
         XCTAssertTrue(settings.isNewwordDictEnabled)
+        XCTAssertTrue(settings.isCustomDictEnabled)
         XCTAssertTrue(settings.isKunggeDictEnabled)
         XCTAssertFalse(settings.isITaigiDictEnabled)
         XCTAssertFalse(settings.isTaiwanJapanDictEnabled)

@@ -14,7 +14,7 @@ use unicode_normalization::UnicodeNormalization;
 use crate::api::{tl_display_to_poj_display, InputMode};
 use crate::normalization::{is_combining_tone_mark, normalize_input};
 use crate::syllable::normalize_to_poj;
-use crate::tps::{normalize_tps_tone8_scalar, tps_notone_from_tl};
+use crate::tps::{normalize_tps_lookup_scalar, tps_notone_from_tl};
 
 /// A phonetic key family.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -157,6 +157,14 @@ pub fn abbrev_family_key(key: &str) -> Option<String> {
     Some(format!("{family}{ABBREV_FAMILY_SUFFIX}:{body}"))
 }
 
+/// The inverse of [`abbrev_family_key`]: `tl-abbrev:tkt` → `("tl", "tkt")`,
+/// the bare family tag ([`KeyFamily::tag`]) and the body. `None` for a key
+/// outside an abbreviation family.
+pub fn split_abbrev_family_key(key: &str) -> Option<(&str, &str)> {
+    let (family, body) = key.split_once(':')?;
+    Some((family.strip_suffix(ABBREV_FAMILY_SUFFIX)?, body))
+}
+
 /// Normalize raw TPS input into the body of a `tps:` FST key.
 ///
 /// The build pipeline emits fused Bopomofo with no separators and tone-8
@@ -165,13 +173,14 @@ pub fn abbrev_family_key(key: &str) -> Option<String> {
 /// `taigi-converter/src/tables.js` `ZHUYIN_TONES`). Platform keyboards
 /// type the standalone modifier-letter dot `U+02D9` (see iOS
 /// `TaigiLayouts.swift` + Android `tps.json`), so substitute one for the
-/// other and drop the separators `-`, space and tab.
+/// other, fold the ㆳ glyph alias onto ㆪ ([`crate::fold_tps_glyph_alias`]),
+/// and drop the separators `-`, space and tab.
 pub(crate) fn tps_key_body(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
     for ch in input.chars() {
         match ch {
             '-' | ' ' | '\t' => {}
-            _ => out.push(normalize_tps_tone8_scalar(ch)),
+            _ => out.push(normalize_tps_lookup_scalar(ch)),
         }
     }
     out
@@ -243,6 +252,11 @@ mod tests {
             KeyFamily::Tps.search_key("\u{3110}\u{3127}\u{02D9}"),
             "tps:\u{3110}\u{3127}\u{0307}"
         );
+    }
+
+    #[test]
+    fn tps_search_key_folds_the_innn_glyph_onto_inn() {
+        assert_eq!(KeyFamily::Tps.search_key("ㄒㆳˋ"), "tps:ㄒㆪˋ");
     }
 
     #[test]

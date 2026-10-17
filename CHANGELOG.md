@@ -4,6 +4,8 @@ Two release trains, two version numbers (`docs/architecture/manual-release-notes
 
 ## Desktop — macOS + Windows + Linux
 
+- [v3.8.0](changelog/desktop-v3.8.0.md)
+- [v3.7.0](changelog/desktop-v3.7.0.md)
 - [v3.6.10](changelog/desktop-v3.6.10.md) — Linux-only patch
 - [v3.6.9](changelog/desktop-v3.6.9.md)
 - [v3.6.8](changelog/desktop-v3.6.8.md)
@@ -12,6 +14,8 @@ Two release trains, two version numbers (`docs/architecture/manual-release-notes
 
 ## Mobile — iOS + Android
 
+- [v3.8.0](changelog/mobile-v3.8.0.md)
+- [v3.7.0](changelog/mobile-v3.7.0.md)
 - [v3.6.13](changelog/mobile-v3.6.13.md)
 - [v3.6.12](changelog/mobile-v3.6.12.md)
 - [v3.6.11](changelog/mobile-v3.6.11.md)

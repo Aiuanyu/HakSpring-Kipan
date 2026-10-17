@@ -26,14 +26,11 @@ mod tone_input_scheme;
 mod tps_keyboard_rows;
 mod tps_layout;
 
-pub use action::ComposingAction;
+pub use action::{ChordField, ComposingAction};
 pub use bindings::ComposingKeyBindings;
-pub use chord::{ChordRejection, ComposingKeyChord};
+pub use chord::{ChordRejection, ComposingKeyChord, SEMICOLON_KEY_CODE};
 pub use input_method_menu::{menu_rows, MenuCommand, MenuRow, MENU};
-pub use intent::{
-    caret_chord_modifiers, CandidateNavigation, CaretDirection, ComposingKeyIntent,
-    WIDTH_FLIP_MODIFIERS,
-};
+pub use intent::{caret_chord_modifiers, CandidateNavigation, CaretDirection, ComposingKeyIntent};
 pub use language_mode::LanguageMode;
 pub use recorder::{
     evaluate_press, rejection_message_key, RecordedPress, RecorderOutcome, RecorderTarget,
@@ -49,5 +46,7 @@ pub use snapshot::{KeyEventSnapshot, KeyModifiers, LineEdgeKey, NavigationKey};
 pub use symbol_picker::SymbolPickerIntent;
 pub use telex_guide_rows::{telex_guide_rows, TelexGuideRow};
 pub use tone_input_scheme::ToneInputScheme;
-pub use tps_keyboard_rows::{tps_keyboard_rows, TpsKeyCap, TpsKeyboardRow};
-pub use tps_layout::{tps_glyph_for_event, types_a_tps_glyph};
+pub use tps_keyboard_rows::{
+    tps_keyboard_cap_of, tps_keyboard_rows, TpsKeyCap, TpsKeyCapIndex, TpsKeyboardRow,
+};
+pub use tps_layout::tps_glyph_for_event;

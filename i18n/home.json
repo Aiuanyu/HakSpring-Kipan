@@ -111,7 +111,7 @@
         ]
       },
       "values": {
-        "hanji": "第三方齒盤愛手動啟用，請照下跤 ê 步驟設定。",
+        "hanji": "第三方齒盤愛手動啟用，請照下跤的步驟設定。",
         "tailo": "Tē-sann hong khí-puânn ài tshiú-tōng khé-iōng, tshiánn tsiàu ē-kha ê pōo-tsōo siat-tīng.",
         "poj": "Tē-saⁿ hong khí-pôaⁿ ài chhiú-tōng khé-iōng, chhiáⁿ chiàu ē-kha ê pō͘-chō͘ siat-tēng.",
         "en": "Third-party keyboards must be enabled manually. Follow the steps below.",
@@ -122,7 +122,6 @@
       "comment": "Setup-guide note explaining that 'Allow Full Access' permits app/keyboard data sharing and stating the network privacy policy.",
       "scope": {
         "platforms": [
-          "android",
           "ios"
         ],
         "surfaces": [
@@ -130,11 +129,29 @@
         ]
       },
       "values": {
-        "hanji": "「允准完整取用」予齒盤會當佮 App 共用設定佮使用資料。台語齒盤袂共你拍 ê 內容送去網路。",
+        "hanji": "「允准完整取用」予齒盤會當佮 App 共用設定佮使用資料。台語齒盤袂共你拍的內容送去網路。",
         "tailo": "\"Ún-tsún uân-tsíng tshú-iōng\" hōo khí-puânn ē-tàng kah App kiōng-iōng siat-tīng kah sú-iōng tsu-liāu. Tâi-gí khí-puânn buē kā lí phah ê luē-iông sàng khì bāng-lōo.",
         "poj": "\"Ún-chún oân-chéng chhú-iōng\" hō͘ khí-pôaⁿ ē-tàng kah App kiōng-iōng siat-tēng kah sú-iōng chu-liāu. Tâi-gí khí-pôaⁿ bōe kā lí phah ê lōe-iông sàng khì bāng-lō͘.",
         "en": "\"Allow Full Access\" lets the keyboard share settings and usage data with the app. TaigiKeyboard does not send what you type over the network.",
         "ja": "「フルアクセスを許可」すると、キーボードとアプリで設定や利用データを共有できます。台語キーボードは入力内容をネットワークへ送信しません。"
+      }
+    },
+    "setupPrivacyNote": {
+      "comment": "Setup-guide privacy note on Android: typed text never leaves the device.",
+      "scope": {
+        "platforms": [
+          "android"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "台語齒盤袂共你拍的字送去網路。",
+        "tailo": "Tâi-gí Khí-puânn buē kā lí phah ê jī sàng khì bāng-lōo.",
+        "poj": "Tâi-gí Khí-pôaⁿ bōe kā lí phah ê jī sàng khì bāng-lō͘.",
+        "en": "TaigiKeyboard does not send what you type over the network.",
+        "ja": "台湾語キーボードは入力内容をネットワークへ送信しません。"
       }
     },
     "setupBrandWarning": {
@@ -149,7 +166,7 @@
         ]
       },
       "values": {
-        "hanji": "無仝牌子 ê 手機仔，設定方式可能淡薄仔無仝。",
+        "hanji": "無仝牌子的手機仔，設定方式可能淡薄仔無仝。",
         "tailo": "Bô kâng pâi-tsú ê tshiú-ki-á, siat-tīng hong-sik khó-lîng tām-po̍h-á bô kâng.",
         "poj": "Bô kâng pâi-chú ê chhiú-ki-á, siat-tēng hong-sek khó-lêng tām-po̍h-á bô kâng.",
         "en": "Steps may differ slightly between phone brands.",
@@ -160,7 +177,6 @@
       "comment": "Setup-guide full-screen closing paragraph: restart the app and switch via the globe key.",
       "scope": {
         "platforms": [
-          "android",
           "ios"
         ],
         "surfaces": [
@@ -168,11 +184,29 @@
         ]
       },
       "values": {
-        "hanji": "完成了後，重開你目前使用 ê App。紲落來，佇會當拍字 ê 所在揤牢地球圖示，切去台語齒盤。",
+        "hanji": "完成了後，重開你目前使用的 App。紲落來，佇會當拍字的所在揤牢地球圖示，切去台語齒盤。",
         "tailo": "Uân-sîng liáu-āu, tîng-khui lí ba̍k-tsîng sú-iōng ê App. Suà--lo̍h-lâi, tī ē-tàng phah-jī ê sóo-tsāi tshi̍h tiâu tuē-kiû tôo-sī, tshiat khì tâi-gí khí-puânn.",
         "poj": "Oân-sêng liáu-āu, têng-khui lí ba̍k-chêng sú-iōng ê App. Sòa--lo̍h-lâi, tī ē-tàng phah-jī ê só͘-chāi chhi̍h tiâu tōe-kiû tô͘-sī, chhiat khì tâi-gí khí-pôaⁿ.",
         "en": "Once done, restart the app you are using. Then, wherever you can type, press and hold the globe icon to switch to TaigiKeyboard.",
         "ja": "完了したら、使用中のアプリを再起動してください。その後、文字を入力できる場所で地球儀アイコンを長押しして、台湾語キーボードに切り替えます。"
+      }
+    },
+    "setupGuideCompletedSwitch": {
+      "comment": "Setup-guide closing line on Android: switch to the keyboard when typing (the switcher differs by device, so no icon is named).",
+      "scope": {
+        "platforms": [
+          "android"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拍字的時，共齒盤切換做台語齒盤。",
+        "tailo": "Phah-jī ê sî, kā khí-puânn tshiat-uānn tsò Tâi-gí Khí-puânn.",
+        "poj": "Phah-jī ê sî, kā khí-pôaⁿ chhiat-ōaⁿ chò Tâi-gí Khí-pôaⁿ.",
+        "en": "Switch to TaigiKeyboard when you type.",
+        "ja": "入力するときに台湾語キーボードに切り替えます。"
       }
     },
     "setupGuideGoToSettings": {
@@ -217,7 +251,6 @@
       "comment": "Setup-guide step 2 title: tap 'Add keyboard' and 'Allow Full Access'.",
       "scope": {
         "platforms": [
-          "android",
           "ios"
         ],
         "surfaces": [
@@ -230,6 +263,24 @@
         "poj": "Tiám-chhi̍h \"cheng-ka khí-pôaⁿ\", \"ún-chún oân-chéng chhú-iōng\"",
         "en": "Tap \"Add keyboard\" and \"Allow Full Access\"",
         "ja": "「キーボードを追加」「フルアクセスを許可」をタップ"
+      }
+    },
+    "setupGuideStep2TurnOn": {
+      "comment": "Setup-guide step 2 title on Android: turn on the TaigiKeyboard switch in the on-screen keyboard list.",
+      "scope": {
+        "platforms": [
+          "android"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拍開台語齒盤",
+        "tailo": "Phah-khui Tâi-gí Khí-puânn",
+        "poj": "Phah-khui Tâi-gí Khí-pôaⁿ",
+        "en": "Turn on TaigiKeyboard",
+        "ja": "台湾語キーボードをオンにする"
       }
     },
     "rateUs": {
@@ -288,7 +339,7 @@
         ]
       },
       "values": {
-        "hanji": "台語齒盤是一个自由、開源 ê 台語拍字家私，永遠免費、無廣告，嘛袂推出付費功能。毋管是一般使用者、先生、學校抑是台語教育團體，攏會當自由使用。希望予逐家用台語、教台語 ê 時，免有額外 ê 負擔。",
+        "hanji": "台語齒盤是一个自由、開源的台語拍字家私，永遠免費、無廣告，嘛袂推出付費功能。毋管是一般使用者、先生、學校抑是台語教育團體，攏會當自由使用。希望予逐家用台語、教台語的時，免有額外的負擔。",
         "tailo": "Tâi-gí Khí-puânn sī tsi̍t ê tsū-iû, khai-guân ê Tâi-gí phah-jī ke-si, íng-uán bián-huì, bô kóng-kò, mā bē tshui-tshut hù-huì kong-lîng. M̄-kuán sī it-puann sú-iōng-tsiá, sian-sinn, ha̍k-hāu ia̍h-sī Tâi-gí kàu-io̍k thuân-thé, lóng ē-tàng tsū-iû sú-iōng. Hi-bāng hōo ta̍k-ke iōng Tâi-gí, kà Tâi-gí ê sî, bián ū gia̍h-guā ê hū-tam.",
         "poj": "Tâi-gí Khí-pôaⁿ sī chi̍t ê chū-iû, khai-goân ê Tâi-gí phah-jī ke-si, éng-oán bián-hùi, bô kóng-kò, mā bē chhui-chhut hù-hùi kong-lêng. M̄-koán sī it-poaⁿ sú-iōng-chiá, sian-siⁿ, ha̍k-hāu ia̍h-sī Tâi-gí kàu-io̍k thoân-thé, lóng ē-tàng chū-iû sú-iōng. Hi-bāng hō͘ ta̍k-ke iōng Tâi-gí, kà Tâi-gí ê sî, bián ū gia̍h-gōa ê hū-tam.",
         "en": "TaigiKeyboard is a free, open-source Taiwanese input method — free forever, with no ads and no paid features ever. Everyday users, teachers, schools and Taiwanese-language education groups are all free to use it. The hope is that using and teaching Taiwanese comes with no extra burden.",
@@ -310,7 +361,7 @@
         ]
       },
       "values": {
-        "hanji": "這个計畫目前由我一个人利用上班以外 ê 時間開發佮維護。向望會當一直做落去，予逐个想欲用母語拍字 ê 人，攏會當輕鬆用母語拍字。",
+        "hanji": "這个計畫目前由我一个人利用上班以外的時間開發佮維護。向望會當一直做落去，予逐个想欲用母語拍字的人，攏會當輕鬆用母語拍字。",
         "tailo": "Tsit ê kè-uē bo̍k-tsiân iû guá tsi̍t ê lâng lī-iōng siōng-pan í-guā ê sî-kan khai-huat kah uî-hōo. Ǹg-bāng ē-tàng it-ti̍t tsò lo̍h-khì, hōo ta̍k ê siūnn-beh iōng bó-gí phah-jī ê lâng, lóng ē-tàng khin-sang iōng bó-gí phah-jī.",
         "poj": "Chit ê kè-ōe bo̍k-chiân iû goá chi̍t ê lâng lī-iōng siōng-pan í-gōa ê sî-kan khai-hoat kah ûi-hō͘. Ǹg-bāng ē-tàng it-ti̍t chò lo̍h-khì, hō͘ ta̍k ê siūⁿ-beh iōng bó-gí phah-jī ê lâng, lóng ē-tàng khin-sang iōng bó-gí phah-jī.",
         "en": "This project is developed and maintained by one person, in the hours outside a day job. I hope to keep it going, so that everyone who wants to type in their mother tongue can do so with ease.",

@@ -12,7 +12,7 @@ use lexicon::{fetch_abbrev_candidates, COVERAGE_KIND_ABBREV};
 use phonetics::{InputMode, KeyFamily};
 use ranking::{FrequencyData, FrequencyMap};
 
-use crate::common::{build_tkdb_v3, build_wire_index, hanji_of, neutral_ctx};
+use crate::common::{build_tkdb_v4, build_wire_index, hanji_of, neutral_ctx};
 use test_support::write_temp;
 
 const DEFAULT_SOURCE: u16 = 1 << 11;
@@ -38,7 +38,7 @@ fn rows() -> Vec<DictRow> {
 }
 
 fn open_dict(name: &str, rows: &[DictRow]) -> DictionaryReader {
-    let path = write_temp(name, &build_tkdb_v3(b"TKDB", rows));
+    let path = write_temp(name, &build_tkdb_v4(b"TKDB", rows));
     DictionaryReader::open(&path).expect("dict.bin opens")
 }
 

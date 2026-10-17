@@ -70,26 +70,6 @@ final class RetiredSettingsCleanupTests: XCTestCase {
         )
     }
 
-    /// The first shape of the composing-key settings. Nothing reads them any
-    /// more, so clearing them changes no behaviour — it keeps the domain from
-    /// carrying values a later setting reusing one of these names would
-    /// inherit.
-    func testTheFirstShapeOfTheComposingKeySettings_isRemoved() {
-        let names = [
-            "returnKeyBehavior", "spaceKeyBehavior",
-            "bracketPagingBehavior", "tabCycleBehavior",
-        ]
-        for name in names {
-            userDefaults.set("commitLiteral", forKey: name)
-        }
-
-        RetiredSettingsCleanup.run(userDefaults: userDefaults)
-
-        for name in names {
-            XCTAssertNil(userDefaults.object(forKey: name), "\(name) should be gone")
-        }
-    }
-
     /// The two retired script commits. A chord recorded on either row is
     /// stored under the roster's `composingShortcut.<name>`, and no row can reach it
     /// once the action is gone — so it is cleared rather than left in the
@@ -202,8 +182,6 @@ final class RetiredSettingsCleanupTests: XCTestCase {
     /// put a second handler on whatever the user had recorded.
     func testRetiredHotkeyChords_areCleared() {
         let retiredNames = [
-            KeyboardShortcuts.Name("toggleBothScripts"),
-            KeyboardShortcuts.Name("toggleLiteralRomanCandidate"),
             KeyboardShortcuts.Name("openSettings"),
             KeyboardShortcuts.Name("openGeneralPane"),
             KeyboardShortcuts.Name("openAppearancePane"),
@@ -211,7 +189,7 @@ final class RetiredSettingsCleanupTests: XCTestCase {
             KeyboardShortcuts.Name("openCustomDictionaryPane"),
             KeyboardShortcuts.Name("openDictionarySourcesPane"),
         ]
-        let keys: [KeyboardShortcuts.Key] = [.k, .j, .l, .f13, .f14, .f15, .f16, .f17]
+        let keys: [KeyboardShortcuts.Key] = [.l, .f13, .f14, .f15, .f16, .f17]
         let saved = retiredNames.map { ($0, KeyboardShortcuts.getShortcut(for: $0)) }
         defer {
             for (name, shortcut) in saved {

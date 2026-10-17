@@ -54,7 +54,7 @@
 use std::path::PathBuf;
 
 use crate::common::{
-    build_syllables_fst, build_tkdb_v3, config, derive_poj_notone, empty_association_bin,
+    build_syllables_fst, build_tkdb_v4, config, derive_poj_notone, empty_association_bin,
     fetch_at_pos_response, install_lexicon, wire_fetch_at_pos_response, Fetch, Row, Selected,
 };
 use lexicon::CustomEntry;
@@ -261,7 +261,7 @@ const SYLLABLE_SAMPLES: &[&str] = &[
 
 fn install_union_fixture() {
     let rows = fixture_rows();
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst(&rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst(SYLLABLE_SAMPLES);
@@ -528,35 +528,17 @@ fn run_case(c: &Case) -> String {
         Some(cont) if cont.candidates.is_empty() => block.push_str("(no candidates)\n"),
         Some(cont) => {
             for cand in cont.candidates {
-                // Signed-zero canonicalization keeps `-0.0` from churning
-                // the golden vs `0.0` — applied to BOTH score columns so
-                // the bits column agrees with the human one (spec NIT).
-                let score = if cand.score == 0.0 { 0.0 } else { cand.score };
                 let hanji = cand.hanji.as_deref().unwrap_or("⌀");
-                // Two score columns. `{:.4}` is the spec §1.3 human-readable
-                // behavioral-equivalence value (engine's own equality is
-                // `abs() < 1e-4`); the trailing `{:#010x}` is the EXACT
-                // `f32::to_bits()` so the golden truly freezes the full
-                // proto wire vector — a sub-1e-4 score regression can no
-                // longer pass with a byte-identical golden (Codex post-impl
-                // BLOCK). S0's real consumers (A1/A2 relocation, the D1
-                // single-build fold) are pure code-movement and keep these
-                // bits identical, so this strengthens the gate without
-                // introducing FP-reassociation false positives; spec §1.3's
-                // anti-bit-exact rationale targeted bits-INSTEAD-OF the
-                // behavioral value, not bits-ALONGSIDE it.
+                // The display wire fields in list order. The score only
+                // ranks and left the wire in round A1a (2026-10-09); the
+                // list order still freezes it.
                 block.push_str(&format!(
-                    "{}|{}|{}|{}|{}|{}|{}|{}|{:.4}|{:#010x}\n",
-                    cand.consumed_span_start,
+                    "{}|{}|{}|{}|{}\n",
                     cand.consumed_span_end,
                     cand.syllable_count,
-                    cand.form,
-                    cand.script_kind,
                     cand.display_text,
                     cand.roman,
                     hanji,
-                    score,
-                    score.to_bits(),
                 ));
             }
         }

@@ -12,12 +12,14 @@ use lexicon::{
     fetch_candidates_for_keys_with_barriers, ConsumedSpan, ContinuousFetchCtx, RawCandidate,
 };
 use phonetics::InputMode;
-use test_support::{build_tkdb, fst_entry, write_fst_set, TkdbRow};
+use test_support::{
+    build_tkdb, fst_entry, walker_cost_from_fixture_frequency, write_fst_set, TkdbRow,
+};
 
 /// `(key, rowid)` → FST `key || 0xFF || rowid_le_4` (`key` carries its
 /// family prefix, `tl:tsua`). `lookup_exact` resolves `rowid`;
 /// `DictionaryReader::record` is 1-based, so FST rowid `N` maps to
-/// `build_tkdb_v3` row index `N-1`.
+/// `build_tkdb_v4` row index `N-1`.
 pub fn write_synthetic_fst(name: &str, pairs: &[(&str, u32)]) -> PathBuf {
     write_fst_set(
         name,
@@ -28,40 +30,46 @@ pub fn write_synthetic_fst(name: &str, pairs: &[(&str, u32)]) -> PathBuf {
     )
 }
 
-/// 4-tuple convenience for v2 fixtures: `(bitmask, frequency, syllable_count,
-/// hanji, tl)`. Emits a VERSION-2 binary (no subtag) — used only by the
-/// v2-loud-reject test now that the reader requires v3.
-pub fn build_tkdb_v2(magic: &[u8; 4], rows: &[(u16, u32, u8, &str, &str)]) -> Vec<u8> {
+/// `(bitmask, frequency, syllable_count, hanji, tl)` rows in a pre-v4 layout:
+/// VERSION 2 (no subtag) or 3 (subtag 0), never a walker cost — used only by
+/// the loud-reject tests now that the reader requires v4.
+pub fn build_tkdb_legacy(
+    magic: &[u8; 4],
+    version: u32,
+    rows: &[(u16, u32, u8, &str, &str)],
+) -> Vec<u8> {
     let dict_rows: Vec<TkdbRow<'_>> = rows
         .iter()
         .map(|(bm, freq, syll, hanji, tl)| TkdbRow {
             bitmask: *bm,
             frequency: *freq,
             syllable_count: Some(*syll),
-            kautian_subtag: None,
+            kautian_subtag: (version >= 3).then_some(0),
+            walker_cost: None,
             hanji,
             tl,
         })
         .collect();
-    build_tkdb(magic, 2, &dict_rows)
+    build_tkdb(magic, version, &dict_rows)
 }
 
-/// 5-tuple convenience for v3 fixtures: `(bitmask, frequency, syllable_count,
-/// hanji, tl)` with `kautian_subtag = 0` on every row. The default for tests
-/// that don't exercise subcollection provenance. Delegates to
-/// `build_tkdb_v3_subtag` (mirrors the `build_tkdb_v2` → `build_tkdb`
-/// thin-wrapper pattern).
-pub fn build_tkdb_v3(magic: &[u8; 4], rows: &[(u16, u32, u8, &str, &str)]) -> Vec<u8> {
+/// 5-tuple convenience for v4 fixtures: `(bitmask, frequency, syllable_count,
+/// hanji, tl)` with `kautian_subtag = 0` and the walker cost derived from the
+/// frequency ([`walker_cost_from_fixture_frequency`]) on every row.
+/// The default for tests that don't exercise subcollection provenance.
+/// Delegates to `build_tkdb_v4_subtag`.
+pub fn build_tkdb_v4(magic: &[u8; 4], rows: &[(u16, u32, u8, &str, &str)]) -> Vec<u8> {
     let with_subtag: Vec<(u16, u32, u8, u16, &str, &str)> = rows
         .iter()
         .map(|(bm, freq, syll, hanji, tl)| (*bm, *freq, *syll, 0u16, *hanji, *tl))
         .collect();
-    build_tkdb_v3_subtag(magic, &with_subtag)
+    build_tkdb_v4_subtag(magic, &with_subtag)
 }
 
-/// 6-tuple convenience for v3 fixtures with explicit kautian subtags:
-/// `(bitmask, frequency, syllable_count, kautian_subtag, hanji, tl)`.
-pub fn build_tkdb_v3_subtag(magic: &[u8; 4], rows: &[(u16, u32, u8, u16, &str, &str)]) -> Vec<u8> {
+/// 6-tuple convenience for v4 fixtures with explicit kautian subtags:
+/// `(bitmask, frequency, syllable_count, kautian_subtag, hanji, tl)`;
+/// the walker cost derived from the frequency on every row.
+pub fn build_tkdb_v4_subtag(magic: &[u8; 4], rows: &[(u16, u32, u8, u16, &str, &str)]) -> Vec<u8> {
     let dict_rows: Vec<TkdbRow<'_>> = rows
         .iter()
         .map(|(bm, freq, syll, subtag, hanji, tl)| TkdbRow {
@@ -69,11 +77,12 @@ pub fn build_tkdb_v3_subtag(magic: &[u8; 4], rows: &[(u16, u32, u8, u16, &str, &
             frequency: *freq,
             syllable_count: Some(*syll),
             kautian_subtag: Some(*subtag),
+            walker_cost: Some(walker_cost_from_fixture_frequency(*freq)),
             hanji,
             tl,
         })
         .collect();
-    build_tkdb(magic, 3, &dict_rows)
+    build_tkdb(magic, 4, &dict_rows)
 }
 
 /// Test-only span-local fetch: every dictionary candidate whose toneless
@@ -142,6 +151,7 @@ pub fn fetch_candidates_for_endings(
         mode: ctx.mode,
         context: ctx.context,
         tone_pin: ctx.tone_pin.clone(),
+        whole_buffer_key: ctx.whole_buffer_key.clone(),
     };
     fetch_candidates_for_keys_with_barriers(&keys, &[], &[], input.len() as u32, &inner)
 }
@@ -172,6 +182,7 @@ pub fn neutral_ctx<'a>(
         mode,
         context: ranking::ContextRanks::empty(),
         tone_pin: lexicon::TonePin::None,
+        whole_buffer_key: None,
     }
 }
 

@@ -12,40 +12,16 @@ Each rule is tagged with one or more of `[R]`, `[S]`, `[A]`.
 
 ## 1. Workspace layout `[R]` `[A]`
 
-Cargo workspace with one crate per concern. Models khiin-rs (`references/khiin-rs/Cargo.toml`) with deliberate deviations. Full crate list lives in `docs/architecture/system-overview.md`; the runtime dependency graph + layering invariant in §1a below.
+Cargo workspace with one crate per concern. Models khiin-rs (`references/khiin-rs/Cargo.toml`) with deliberate deviations. Crate list and dependency graph: `docs/architecture/system-overview.md` §2; layering rule: §1a below.
 
 - **`phonetics`** — pure POJ/TL/TPS / Unicode / tone, no I/O, zero platform dependencies, portable to any Rust target. Corresponds to `docs/phonetics/` reference content + `taigi-converter/` behavior.
-- **Domain crates** (`composing`, `lexicon`, `ranking`, `nextword`, `userdata`) own the state machines, candidate scoring, and next-word prediction. Dependency direction per §1a.
+- **Domain crates** (`composing`, `lexicon`, `ranking`, `nextword`, `userdata`) own the state machines, candidate scoring, next-word prediction and the user's stores.
 - **FFI crates** (`android-jni`, `swift-ffi`) are **thin** — protobuf in / protobuf out / `catch_unwind`. No domain logic. Each crate's `lib.rs` should be < 300 LOC.
 - Depend via `workspace.dependencies` in root `Cargo.toml` with pinned versions. Workspace-internal deps use relative paths (`phonetics = { path = "./phonetics" }`).
 
 ## 1a. Crate layering & dependency direction `[R]` `[A]`
 
-Current runtime crates — dependency edges flow **one way, top → bottom** (the offline `build-helpers/fst-builder` producer sits outside this runtime graph):
-
-```
-┌─ adapters ─────────────────────────────────────────────────┐
-│  swift-ffi · android-jni   thin: bytes in/out, catch_unwind │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ depends ↓
-┌─ use-case ────────────────┴─────────────────────────────────┐
-│  dispatch                  only crate that sees all domains  │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ depends ↓
-┌─ domain ──────────────────┴─────────────────────────────────┐
-│  composing → lexicon, ranking, phonetics, protos             │
-│  lexicon   → ranking, phonetics, mmap-host, protos           │
-│  ranking   → (no internal deps; pure scoring primitives)     │
-│  nextword  → phonetics, protos                               │
-│  userdata  → phonetics, protos  (SQLite stores)              │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ depends ↓
-┌─ leaf / shared kernel ────┴─────────────────────────────────┐
-│  phonetics  pure fns (POJ/TL/TPS, tone, normalize)           │
-│  protos     prost-generated message types (shared by all)    │
-│  mmap-host  unsafe mmap carve-out (infra)                     │
-└──────────────────────────────────────────────────────────────┘
-```
+Runtime crates sit in four layers, and dependency edges flow **one way, top → bottom**: **adapters** (`swift-ffi`, `android-jni`, and outside this workspace `taigi-desktop-core`; thin — bytes in / out, `catch_unwind`) → **use-case** (`dispatch`, the only crate that sees all domains) → **domain** (`composing`, `lexicon`, `ranking`, `nextword`, `userdata`) → **leaf / shared kernel** (`phonetics`, `protos`, `mmap-host`). The offline `build-helpers/fst-builder` sits outside this runtime graph. The drawn graph is canonical in `docs/architecture/system-overview.md` §2.
 
 **Dependency-direction invariant** — a crate may depend only on crates in its own layer or below:
 
@@ -53,8 +29,6 @@ Current runtime crates — dependency edges flow **one way, top → bottom** (th
 - **`dispatch` is the only orchestrator** — the single crate allowed to reference every domain. FFI crates (`swift-ffi` / `android-jni`) see only `dispatch` + `protos`. Outside this workspace, `taigi-desktop-core` sees only `dispatch` + `protos` too.
 - **Cargo enforces acyclicity at build time** (a cycle fails to compile) — that is the hard backstop. This layering rule is the *soft* guide that stops the graph degrading into flat all-depends-on-all while still technically acyclic.
 - **New crate / new edge**: place it so the arrow still points down. If a domain crate appears to need something currently in `dispatch`, that is an inversion — push the shared piece **down** into `phonetics` / `protos`, never add an upward edge (mirrors `AGENTS.md` § Design principles § No redundant fallback — keep data flow one-direction).
-
-A visual copy of this graph plus the per-keystroke request lane lives in `docs/architecture/system-overview.md` § 2 Engine crate dependency graph.
 
 ## 2. Error handling `[R]` `[S]`
 
@@ -76,13 +50,12 @@ Pinned choices (deviations require written justification):
 | JNI wrapper | **`jni` crate** | Idiomatic safe wrapper; rejects hand-rolled `extern` fns per khiin-rs style. |
 | Swift-bridge | **`swift-bridge` crate** | Matches khiin-rs; proven on iOS + macOS. |
 | Logging | **`log` crate** + per-platform adapter | Standard Rust idiom. |
-| Error types | **`thiserror`** (libs) + `anyhow` (bins/scripts only) | Community standard. |
 | Async runtime | **None — sync only** | IME latency budget (< 50ms keystroke roundtrip) does not require async. Rejects `tokio` / `async-std` complexity. |
 
 Type-shape preferences that cross FFI:
 
 - `#[repr(transparent)]` newtype for opaque handles (see `docs/contributing/rust-ffi-safety.md` § Opaque handle pattern).
-- **Explicit numeric widths**: `i64` / `f64` at the boundary (not `isize` / `usize`). Mirrors `docs/contributing/android-guidelines.md` §1 Kotlin→Rust shape rules.
+- **Explicit numeric widths**: `i64` / `f64` at the boundary (not `isize` / `usize`).
 - **UTF-8 strings only** — protobuf `string` already enforces; never use `&[u8]` for text data.
 
 ## 4. Cross-compile + build tooling `[A]`
@@ -98,7 +71,7 @@ Type-shape preferences that cross FFI:
 - **Integration tests**: `engine/<crate>/tests/` exercise each crate through its public API with protobuf messages, no FFI.
 - **One test binary per concern, not per file** (`composing` / `lexicon` / `phonetics` / `userdata`): `autotests = false` + explicit `[[test]]` roots (`tests/it.rs`, `tests/prod.rs`, composing `tests/no_lexicon.rs`) that declare each `tests/<file>.rs` as `mod <file>;` and `mod common;` once (`use crate::common::…` in the file). A new test file joins a root by process-wide state: hermetic fixtures → `it` (install under `test_support::engine_install_lock`), production lexicon / shipped CSVs → `prod`, lexicon never installed → `no_lexicon`. The `it` guard test fails on a file no root declares. Filter by module: `cargo test -p composing --test prod candidate_dump -- --ignored --nocapture`. `dispatch` keeps one binary per file (process-isolated user-data handle, logger, trace sink).
 - **Crate-neutral test helpers live in `engine/test-support`** (dev-dependency; temp files, TKDB / TKWA / FST serializers, install lock, production artifacts, the once-per-process `dictionary.csv` loader). It depends on no engine crate, so `lexicon`'s own tests can use it; helpers that need an engine type stay in that crate's `tests/common/mod.rs`.
-- **Invariant tests**: every `INVARIANT_*` label from `docs/architecture/behavioral-invariants.md` has a matching Rust test. Drift between platform tests and Rust tests = regression.
+- **Invariant tests**: every `INVARIANT_*` label for behaviour a Rust slice owns has a matching test in `engine/<crate>/tests/`; platform-only labels are pinned by platform tests (`docs/architecture/behavioral-invariants.md` § Test references). Drift between platform tests and Rust tests = regression.
 - **`cargo test --workspace`** must pass in CI before any PR merges.
 - **Property tests** (`proptest`) for phonetics round-trip invariants (TL↔POJ↔TPS) — complements hand-written invariant tests.
 
@@ -111,7 +84,7 @@ Type-shape preferences that cross FFI:
 
 ## 7. CI gate + supply chain `[A]`
 
-CI (`.github/workflows/engine.yml`) runs `cargo test --workspace`, `cargo fmt --check` and `cargo clippy -D warnings` on every PR touching `engine/`; `.github/workflows/desktop.yml` runs the desktop-shared workspace's tests + clippy and the desktop + Windows fmt check on PRs touching `desktop/`, `windows/` or `engine/`; `.github/workflows/security.yml` runs `cargo-audit` over all five Cargo workspaces + `cargo-deny` over the engine and macOS (`engine/deny.toml`) on PRs touching Cargo manifests / lockfiles and weekly. Post-PR verification follows AGENTS.md § Build & Test.
+CI (`.github/workflows/engine.yml`) runs `cargo test --workspace`, `cargo fmt --check` and `cargo clippy -D warnings` on every PR touching `engine/`; `.github/workflows/desktop.yml` runs the desktop-shared workspace's tests + clippy and the desktop + Windows fmt check on PRs touching `desktop/`, `windows/` or `engine/`; `.github/workflows/macos.yml` runs the `macos/` workspace's tests, clippy and fmt check plus the archive build and `make -C macos test` on PRs touching `macos/`, `desktop/` or `engine/`; `.github/workflows/linux-build.yml` (nightly, on release and on manual dispatch — not per PR) runs the `linux/` workspace's clippy, tests, fmt check and release build; `.github/workflows/security.yml` runs `cargo-audit` over all five Cargo workspaces + `cargo-deny` over the engine and macOS (`engine/deny.toml`) on PRs touching Cargo manifests / lockfiles and weekly. Post-PR verification follows AGENTS.md § Build & Test.
 
 - `make`-target shortcuts available for round-internal iteration (fast paths) AND canonical form (full paths). See root `Makefile help` for the current target list.
 - **`cargo-audit`** scans against the RustSec advisory DB (CI `security.yml`; locally, install via `cargo install cargo-audit --locked`).
@@ -121,9 +94,8 @@ CI (`.github/workflows/engine.yml`) runs `cargo test --workspace`, `cargo fmt --
 
 ## 8. Explicit non-goals
 
-Codifying `docs/contributing/cross-platform-alignment.md` §4.1 in Rust terms:
+What the engine never owns on the platform side: `docs/contributing/cross-platform-alignment.md` §4.1. Rust-side non-goals (no async runtime: §3):
 
-- **No async runtime** (`tokio`, `async-std`, `smol`). Engine is synchronous. Platform wrappers handle threading.
 - **No stray global state.** Process-wide engine state lives only in each stateful domain crate's `handle.rs` singleton behind a `Mutex` / `RwLock`. Immutable lookup tables may use `once_cell::sync::Lazy`. No other mutable globals.
 - **No Rust-side UI in `engine/`.** No GTK / Tauri / egui. The `engine/` workspace ships engine + phonetics + CLI only. The Windows (`windows/`: TSF DLL + WinUI 3 settings) and Linux (`linux/`: IBus engine + GTK settings in Rust, Fcitx5 addon in C++ over `taigi-linux-ffi`) frontends live in separate Cargo workspaces governed by `windows-guidelines.md` / `linux-guidelines.md`; the `macos/` workspace builds the one archive the macOS app links (`taigi-macos-ffi`: engine seam + `taigi-desktop-core`, governed by `rust-ffi-safety.md`). iOS / Android UI and the macOS UI stay in Swift / Kotlin.
 - **No web-target builds** (`wasm32-*`). Future consideration, not a current deliverable.
@@ -136,8 +108,7 @@ Codifying `docs/contributing/cross-platform-alignment.md` §4.1 in Rust terms:
 - `docs/contributing/rust-migration-policy.md` — when to start a slice migration, design goals, no toggles, mirror deletion
 - khiin-rs reference study: `docs/references/khiin-reference.md` (clone under `references/khiin-rs/`).
 - `docs/contributing/cross-platform-alignment.md` §4.1 — Rust shared-core non-goals.
-- `docs/contributing/android-guidelines.md` §1 Kotlin→Rust shape preferences — mirror of the type-shape rules here.
-- `docs/contributing/ios-architecture.md` §5 — the iOS-side equivalent of what counts as a candidate for Rust extraction.
+- `docs/contributing/cross-platform-alignment.md` §1c — what counts as a shared-core candidate on iOS and Android.
 - `docs/architecture/behavioral-invariants.md` — invariant contracts the Rust implementation must preserve.
 - Rust API Guidelines (https://rust-lang.github.io/api-guidelines/) — adopted as the naming + docs baseline.
 - Rustonomicon (https://doc.rust-lang.org/nomicon/) — authoritative `unsafe` reference.

@@ -33,7 +33,6 @@
     <string name="i18n_common_fontGenYoGothic">GenYoGothic</string>
     <string name="i18n_desktop_telexGuideHyphen">Hyphen</string>
     <string name="i18n_desktop_dictionarySourcesLink">Manage Dictionaries</string>
-    <string name="i18n_dictionary_clear">Clear</string>
     <string name="i18n_dictionary_customDictionary">Custom Dictionary</string>
     <string name="i18n_dictionary_customDictEnabled">Enable Custom Dictionary</string>
     <string name="i18n_dictionary_customDictEnabledInfo">When on, words you add appear among the candidates.</string>
@@ -48,7 +47,6 @@
     <string name="i18n_dictionary_hanziLabel">Hanji</string>
     <string name="i18n_dictionary_hanziPlaceholder">Example: 𠢕早</string>
     <string name="i18n_dictionary_deleteAll">Delete All Custom Words</string>
-    <string name="i18n_dictionary_deleteAllMessage">Delete all custom words?</string>
     <string name="i18n_dictionary_customDictPrivacyWarning">Do not store ID numbers, passwords, credit-card numbers, or other sensitive data in the custom dictionary.</string>
     <string name="i18n_dictionary_importCSV">Import Custom Words</string>
     <string name="i18n_dictionary_exportCSV">Export Custom Words</string>
@@ -74,6 +72,7 @@
     <string name="i18n_dictionary_kautianAccentSintik">Hsinchu (Quanzhou-leaning)</string>
     <string name="i18n_dictionary_kautianAccentTaichung">Taichung (Zhangzhou-leaning)</string>
     <string name="i18n_dictionary_kautianNameAppendix">Surname Appendix</string>
+    <string name="i18n_dictionary_kautianAltReading">Alternative Readings</string>
     <string name="i18n_dictionary_searchPlaceholder">Type to search</string>
     <string name="i18n_dictionary_noResults">No results</string>
     <string name="i18n_dictionary_lookupChhoe">ChhoeTaigi Dictionary</string>
@@ -107,8 +106,6 @@
     <string name="i18n_dictionary_sttiTag">Academic Terms</string>
     <string name="i18n_dictionary_lkkTag">Han-Roman</string>
     <string name="i18n_dictionary_clearLearningRecords">Delete Learning Records</string>
-    <string name="i18n_dictionary_clearLearningRecordsMessage">Delete all learning records? Custom words are unaffected.</string>
-    <string name="i18n_dictionary_clearLearningRecordsDone">Learning Records Cleared</string>
     <string name="i18n_dictionary_clearLearningRecordsFailed">Could Not Clear Learning Records</string>
     <string name="i18n_dictionary_learningRecords">Learning Records</string>
     <string name="i18n_dictionary_learningRecordsFrequency">Word Frequency</string>
@@ -131,12 +128,12 @@
     <string name="i18n_home_newFeatures">Feature Settings</string>
     <string name="i18n_home_setupGuide">How to Enable</string>
     <string name="i18n_home_setupGuideDescription">Third-party keyboards must be enabled manually. Follow the steps below.</string>
-    <string name="i18n_home_setupInfoMessage">\"Allow Full Access\" lets the keyboard share settings and usage data with the app. TaigiKeyboard does not send what you type over the network.</string>
+    <string name="i18n_home_setupPrivacyNote">TaigiKeyboard does not send what you type over the network.</string>
     <string name="i18n_home_setupBrandWarning">Steps may differ slightly between phone brands.</string>
-    <string name="i18n_home_setupGuideCompletedMessage">Once done, restart the app you are using. Then, wherever you can type, press and hold the globe icon to switch to TaigiKeyboard.</string>
+    <string name="i18n_home_setupGuideCompletedSwitch">Switch to TaigiKeyboard when you type.</string>
     <string name="i18n_home_setupGuideGoToSettings">Open Settings</string>
     <string name="i18n_home_setupGuideStep1Settings">Tap \"Keyboards\"</string>
-    <string name="i18n_home_setupGuideStep2AddKeyboard">Tap \"Add keyboard\" and \"Allow Full Access\"</string>
+    <string name="i18n_home_setupGuideStep2TurnOn">Turn on TaigiKeyboard</string>
     <string name="i18n_home_rateUs">Rate Us</string>
     <string name="i18n_home_aboutKeyboard">About the Keyboard</string>
     <string name="i18n_home_aboutIntroProject">TaigiKeyboard is a free, open-source Taiwanese input method — free forever, with no ads and no paid features ever. Everyday users, teachers, schools and Taiwanese-language education groups are all free to use it. The hope is that using and teaching Taiwanese comes with no extra burden.</string>
@@ -177,6 +174,11 @@
     <string name="i18n_keyboard_oneHandedOff">Normal</string>
     <string name="i18n_keyboard_oneHandedSwapSide">Switch side</string>
     <string name="i18n_layout_romanizationKeyboard">Romanization Keyboards</string>
+    <string name="i18n_layout_customLayoutsSection">Custom Layouts</string>
+    <string name="i18n_layout_createNewLayout">New Layout…</string>
+    <string name="i18n_layout_editorTitleNew">New Layout</string>
+    <string name="i18n_layout_nameHeader">Layout Name</string>
+    <string name="i18n_layout_commonLayoutsSection">Universal</string>
     <string name="i18n_layout_standardLayout">Lohankha</string>
     <string name="i18n_layout_phahTaigiLayout">PhahTaigi</string>
     <string name="i18n_layout_tpsLayout">Phonetic Symbols</string>
@@ -223,9 +225,7 @@
     <string name="i18n_settings_nasalMarkerUppercaseSmall">ⁿ (SIÂⁿ)</string>
     <string name="i18n_settings_tpsOrMapsToER">Map or → ㄜ</string>
     <string name="i18n_settings_tpsOrMapsToERInfo">When on, \'or\' appears as ㄜ; when off, as ㄛ. Search results are unaffected.</string>
-    <string name="i18n_settings_resetSettings">Reset Settings</string>
-    <string name="i18n_settings_resetSettingsMessage">This resets all settings. Learning records and custom words are kept. Continue?</string>
-    <string name="i18n_settings_resetSuccess">Settings reset</string>
+    <string name="i18n_settings_resetSettings">Reset to Defaults</string>
     <string name="i18n_settings_resetFailed">Failed to reset settings. Please try again.</string>
     <string name="i18n_settings_noEmailApp">No email app found</string>
     <string name="i18n_settings_diagnosticSectionTitle">Device Info</string>

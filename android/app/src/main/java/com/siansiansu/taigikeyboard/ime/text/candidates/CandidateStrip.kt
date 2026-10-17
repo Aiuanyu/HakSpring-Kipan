@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,7 +117,6 @@ fun TaigiCandidateStrip(
     LazyRow(
         state = listState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(end = 48.dp),
     ) {
         // No explicit `key` lambda: candidate ids are not unique (e.g.
         // custom-dictionary markers collide on `TaigiWord(id = -2, …)`) and
@@ -226,14 +224,13 @@ private fun CandidateCell(
 
     // First candidate (engine ranker top, index 0) gets a filled keycap-color background as a
     // visual hint — matches the iOS strip + the Rime-family highlighted-candidate convention.
-    // Keyed on literal index 0, not the dead isComposingText metadata (no producer since the
-    // v3.5.8 continuous redesign removed the composing-text cell).
     val backgroundColor =
-        when {
-            isPressed -> Color(display.themePressedHighlightColor)
-            index == 0 -> Color(display.themeKeyBgColor)
-            else -> Color.Transparent
-        }
+        candidateCellBackground(
+            isPressed = isPressed,
+            isFirstCandidate = index == 0,
+            firstCandidateColor = Color(display.themeKeyBgColor),
+            pressedColor = Color(display.themePressedHighlightColor),
+        )
 
     val isTPSLayout = display.layoutType == "tps"
     val displayRoman =

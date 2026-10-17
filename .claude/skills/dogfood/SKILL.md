@@ -17,14 +17,14 @@ Prints random 教典 sentences: hanji, TL, keystrokes, `dic_url`.
    the script only greps. No argument → `git show --stat HEAD` + its commit message
    gives the typed form the fix changed. Examples:
 
-   | 敘述 | pattern |
+   | Description | pattern |
    |---|---|
-   | 輕聲 / khinsiann boundary | `--` · `--lâi` |
-   | 連字符佇詞內 | `-tāng-` · `siong-` |
-   | 疊字 | `(\w+)-\1` |
-   | 鼻化 | `nn|ⁿ` |
-   | 某一个詞 / 漢字 | `放重利` |
-   | 長句 | `.{40,}` |
+   | khinsiann (neutral-tone) boundary | `--` · `--lâi` |
+   | hyphen inside a word | `-tāng-` · `siong-` |
+   | reduplication | `(\w+)-\1` |
+   | nasalization | `nn|ⁿ` |
+   | one word / Hanji | `放重利` |
+   | long sentence | `.{40,}` |
 
    No hit → widen (`pang-tang-lai` → `-tang-`).
 2. **Pick.** Run the script. Take 2–4 sentences; keep the whole sentence's keys but

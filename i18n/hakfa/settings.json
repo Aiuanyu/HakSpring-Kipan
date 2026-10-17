@@ -49,8 +49,6 @@
     "tpsOrMapsToER": { "hakha": "or 對應 ㄜ" },
     "tpsOrMapsToERInfo": { "hakha": "開啟時 or 顯示做 ㄜ，關閉時顯示做 ㄛ。毋會影響尋詞結果。" },
     "resetSettings": { "hakha": "恢復設定" },
-    "resetSettingsMessage": { "hakha": "這會恢復所有設定。學習紀錄摎自訂詞攏會保留。敢愛繼續？" },
-    "resetSuccess": { "hakha": "設定已恢復" },
     "resetFailed": { "hakha": "恢復設定失敗，請重試" },
     "noEmailApp": { "hakha": "尋無 Email App" },
     "diagnosticSectionTitle": { "hakha": "裝置資訊" },

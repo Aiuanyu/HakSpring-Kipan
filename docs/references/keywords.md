@@ -6,7 +6,7 @@ Standardized keyword mapping for core input method functionality and UI componen
 
 ## Code Naming Conventions
 
-How engine and platform identifiers name recurring concepts (maintainability rounds R9 / R10, 2026-10-01). New code follows these; the frozen names below keep their spelling because data on users' devices or in shipped files already uses it.
+How engine and platform identifiers name recurring concepts. New code follows these; the frozen names below keep their spelling because data on users' devices or in shipped files already uses it.
 
 | Term | Meaning in code | Examples |
 |------|-----------------|----------|
@@ -35,29 +35,28 @@ How engine and platform identifiers name recurring concepts (maintainability rou
 ## Core Input Method Keywords
 
 ### 1. Composing (`engine/composing.md`)
-Engine state machine lives in Rust `engine/composing` (since v3.5.4). Platform side is the effect interpreter.
+Engine state machine lives in Rust `engine/composing`. Platform side is the effect interpreter.
 
 | Keyword | Definition | Owner |
 |---------|-----------|-------|
 | **rawInput** | Numeric-tone ASCII preedit (e.g. `gua2`) — drives lexicon search-key | Rust `composing::Phase::Continuous { raw }` (the pending tail) |
 | **composingText** | Derived display text (e.g. `guá`) — Rust applies tone marks per `AppConfig.input_mode` | Rust `composing::derived` |
-| **ComposingState** | `Phase::Idle` or `Phase::Continuous { raw, caret, nailed }` | Rust `composing::EngineState` |
-| **Intent** | Input intents: text input (Start / Append / AppendHyphen / ReplaceLast / DeleteBackward / CommitRaw / SelectCandidate / CommitPreeditThenInsertExternal / Reset), continuous input (FetchAtPos / CommitContinuous), desktop editing keys (TelexKey / MoveCaret); `CommitDerived` / `EnterContinuous` / `ResetContinuous` were removed in R12 (tags 15 / 30 / 33 reserved) | Rust `composing::Intent` |
-| **Effect** | Platform-neutral effect enum (updatePreedit / clearPreeditWithoutCommit / commitTextReplacingPreedit / clearCandidates / refreshCandidates / resetCandidateContext / nextWord*; `deleteBackwardFromDocument` was removed in R12, tag 4 reserved) | Rust `composing::transition` |
+| **ComposingState** | `Phase::Idle` or `Phase::Continuous { raw, caret, nailed, conversion }` | Rust `composing::EngineState` |
+| **Intent** | Input intents: text input (Start / Append / AppendHyphen / ReplaceLast / DeleteBackward / CommitRaw / CommitPreeditThenInsertExternal / Reset), continuous input (FetchAtPos / CommitContinuous), desktop keys (TelexKey / MoveCaret / TpsKey / CommitAsShown / CommitAsTyped) — the `composing.proto` `oneof method` | Rust `composing::Intent` |
+| **Effect** | Platform-neutral effect enum (updatePreedit / clearPreeditWithoutCommit / commitTextReplacingPreedit / clearCandidates / refreshCandidates / resetCandidateContext / nextWord*) | Rust `composing::transition` |
 | **commitComposition** | Effect interpreter inserts derived text + clears preedit | iOS `ComposingDelegate.execute(_:)` / Android `ComposingDelegate` |
 | **markedText** | iOS inline composition display via `setMarkedText` | iOS `HostTextWriter.update(_:)` |
 
 ### 2. Autocomplete (`engine/continuous-candidate-display.md`)
 | Keyword | Definition | Owner |
 |---------|-----------|-------|
-| **Suggestion** | A candidate word (text + title + subtitle + metadata) | iOS `Autocomplete.Suggestion` / Android `CandidateAdapter` |
-| **InputType** | Retired 2026-09-30 with the `Search` op: the proto enum, `SearchRequest` and the in-process `SearchInputType` are gone; romanization queries go through `lexicon::search::search`, hanji queries through `search_by_hanji` | `engine/lexicon/src/search.rs` |
-| **composingTextSuggestion** | Position 0 candidate — always the current composing text | iOS `createComposingTextSuggestion()` |
-| **phraseSuggestion** | Learned phrase candidates inserted at position 1 | Rust `lexicon::lookup_associations` |
+| **Suggestion** | A candidate word (text + title + subtitle + metadata) | iOS KeyboardKit `AutocompleteSuggestion` (built in `Candidates/Services/TaigiAutocompleteService.swift`) / Android `ime/text/candidates/CandidateStrip.kt` composable |
+| **literalRomanCandidate** | The typed-text candidate (the romanization as typed), built in the engine; `FetchAtPos.literal_roman_candidate_disabled` (§34 / S22) gates it | `engine/protos/proto/composing.proto` (`literal_roman_candidate_disabled`), `engine/composing/src/requests.rs` |
+| **learnedPhrase** | A learned phrase (`learned_phrases.db`) handed to the continuous fetch | Rust `lexicon::LearnedEntry` (`engine/lexicon/src/continuous/mod.rs`) |
 | **searchKey** | fst lookup key (`tl:` / `poj:` / `hanzi:` prefix + normalized form) | Rust `phonetics::KeyFamily::search_key` (`hanzi:` = `phonetics::HANJI_KEY_PREFIX`) |
 
 ### 3. Tone Engine (`engine/tone.md`)
-All tone logic lives in Rust `engine/phonetics` (since v3.5.1). Bridge surface: `RustEngineBridge+Phonetics.swift` / `PhoneticsBridge.kt` (`tlToPoj`, `externalLookupDigitForm`, …); preedit tone rendering runs inside composing ops.
+All tone logic lives in Rust `engine/phonetics`. Bridge surface: `RustEngineBridge+Phonetics.swift` / `PhoneticsBridge.kt` (`tlToPoj`, `externalLookupDigitForm`, …); preedit tone rendering runs inside composing ops.
 
 | Keyword | Definition | Owner |
 |---------|-----------|-------|
@@ -65,30 +64,25 @@ All tone logic lives in Rust `engine/phonetics` (since v3.5.1). Bridge surface: 
 | **toneMarks** | Unicode diacritics: á(2), à(3), â(5), ā(7), a̍(8) | Rust `phonetics::api::to_tone_marks` |
 | **tonePosition** | Vowel receiving the diacritic (TL vs POJ rules differ) | Rust `phonetics::poj::to_poj` / `phonetics::tl::to_tl` |
 
-### 4. Dictionary & Lexicon (`engine/binary-format.md`, `engine/sort.md`)
-fst prefix index (replaced MARISA in v3.5.6) + dictionary/association mmap readers all live in Rust `engine/lexicon`.
+### 4. Dictionary & Lexicon (`engine/binary-format.md`, `engine/continuous-input-ranking.md` §3.2)
+fst prefix index + dictionary/association mmap readers all live in Rust `engine/lexicon`.
 
 | Keyword | Definition | Owner |
 |---------|-----------|-------|
 | **fst prefix index** | `dictionary.fst` — Burntsushi `fst` crate, stores `key → rowid` for `tl:` / `poj:` / `hanzi:` keys | Rust `lexicon::prefix_index::PrefixIndex` |
 | **prefixSearch** | Iterate keys with a given prefix, returning rowid list | Rust `lexicon::search::search` |
-| **DictionaryReader** | Binary mmap reader: rowid → `DictionaryRecord {bitmask, frequency, hanji, tl, syllable_count, kautian_subtag}` | Rust `lexicon::dictionary_reader::DictionaryReader` |
+| **DictionaryReader** | Binary mmap reader: rowid → `DictionaryRecord {bitmask, frequency, hanji, tl, syllable_count, kautian_subtag, walker_cost}` | Rust `lexicon::dictionary_reader::DictionaryReader` |
 | **AssociationReader** | Binary mmap reader: prev_word → bigram entries | Rust `lexicon::association_reader::AssociationReader` |
-| **EnabledDictionaries** | Per-source toggle + 16-bit `source_bitmask` for filter | Rust `lexicon::dictionary_filters` (`DictionarySourceToggles` → `dictionary_filter_bitmask` / `association_bitmask`; replaced the deleted iOS / Android `EnabledDictionaries` files; bitmask layout from `binary-format.md`) |
+| **EnabledDictionaries** | Per-source toggle + 16-bit `source_bitmask` for filter | Rust `lexicon::dictionary_filters` (`DictionarySourceToggles` → `dictionary_filter_bitmask` / `association_bitmask`; bitmask layout in `binary-format.md`) |
 | **bitmaskFilter** | 16-bit source bitmask replaces SQL WHERE for dictionary filtering | Rust `lexicon::dictionary_reader::Filter` |
 | **InputNormalizer** | Converts any input form to TL numeric tone format | Rust `phonetics::normalization::normalize_input` |
 | **searchKey** | Normalized key format: prefix + lowercase, no hyphens, numeric tones (e.g. `tl:gua2si7`) | Rust `phonetics::KeyFamily::search_key` |
-| **scoringFormula** | `userFreqScore(×100) + completionPenalty(-1000) + closenessBonus(+500) + recencyBonus(+200) + exactBonus(+100) + baseFreqScore` | Rust `ranking::score` |
+| **sortKey** | Ranking is the lexicographic `CandidateSortKey`: `tier`, `abbreviation`, `preference_class`, `coverage_kind`, `-user_weight`, `context_rank`, `walker_cost`, `-score`, `-frequency`, `-coverage`, `source_rank`, `stable_idx` | Rust `ranking::sort_key::CandidateSortKey` (`engine/ranking/src/sort_key.rs`) |
 | **userFrequency** | Per-word usage count, dominates ranking. `user_frequency.db`, engine-owned; read inside `FetchAtPos`, written by `RecordUsage` | Rust `userdata::UserFrequencyStore` |
-| **timeDecay** | Exponential decay with 1-hour recency window for ranking-side bonus | Rust `ranking::score` constants (`RECENCY_WINDOW_MS=3_600_000`) |
+| **timeDecay** | Exponential decay of the user weight, `exp(−age / USER_WEIGHT_DECAY_TAU_MS)` (τ = 30 days) | Rust `ranking::score::decayed_user_weight_delta` (`USER_WEIGHT_DECAY_TAU_MS`) |
 
-### 5. Segmentation — ARCHIVED (removed in v3.4.6)
-| Keyword | Definition | Notes |
-|---------|-----------|-------|
-| ~~**SyllableSegmenter**~~ | Removed in v3.4.6 | Replaced by Rust `composing::syllabifier` (see `engine/syllabifier.md`) |
-
-### 6. Next-Word Prediction (`engine/nextword.md`)
-NextWord state machine lives in Rust `engine/nextword` (since v3.5.5). Platform glue handles timer/threading + UI.
+### 5. Next-Word Prediction (`engine/nextword.md`)
+NextWord state machine lives in Rust `engine/nextword`. Platform glue handles timer/threading + UI.
 
 | Keyword | Definition | Owner |
 |---------|-----------|-------|
@@ -98,22 +92,21 @@ NextWord state machine lives in Rust `engine/nextword` (since v3.5.5). Platform 
 | **decayScoring** | RIME-style decay + dict/user weighting | Rust `nextword::scorer` |
 | **currentGeneration** | u64 counter that drops stale async results | Rust `nextword::PersistedState.current_generation` |
 
-### 7. Custom Dictionary (`engine/custom-dictionary.md`)
+### 6. Custom Dictionary (`engine/custom-dictionary.md`)
 | Keyword | Definition | Key Class/Method |
 |---------|-----------|-----------------|
 | **CustomDictionaryEntry** | User-defined word (roman + hanji; search keys derived into `custom_search_key`) | proto `CustomDictionaryEntry` / Rust `userdata::CustomDictionaryRow` |
 | **notone** | Toneless romanization for prefix matching (e.g. `"lí hó"` → `"liho"`) | Rust `phonetics` `derive_notone` |
 | **abbrev** | Leading-spelling-unit abbreviation (§46) for quick lookup (e.g. `"lí hó"` → `"lh"`) | Rust `phonetics::derive_abbrev` |
 | **batchImport** | CSV import with deduplication by `roman\|hanzi` key | engine op `ImportCustomCsv` → `CustomDictionaryStore::batch_import` |
-| **customWordMarker** | Custom entries use `id = -2` to distinguish from system dictionary | iOS `DictionarySearchResult.customDictMarkerId`; Android `DictionarySearchResult.CUSTOM_DICT_MARKER_ID` |
 
-### 8. Diagnostics (`engine/diagnostics.md`)
+### 7. Diagnostics (`engine/diagnostics.md`)
 | Keyword | Definition | Key Class/Method |
 |---------|-----------|-----------------|
 | **DiagnosticInfo** | Minimal device metadata (appVersion, buildNumber, osVersion, deviceModel) | `DiagnosticService.gather()` |
 | **diagnosticActions** | Copy / Share / Email — user-initiated only, no automatic transmission | Tab4 UI buttons |
 
-### 9. Keyboard Overlays (v3.4.5+)
+### 8. Keyboard Overlays
 | Keyword | Definition | Key Class/Method |
 |---------|-----------|-----------------|
 | **SymbolOverlay** | Quick symbol insertion overlay on candidate bar | `SymbolSelectionOverlay` / `SymbolSelectionOverlayView` |
@@ -122,14 +115,14 @@ NextWord state machine lives in Rust `engine/nextword` (since v3.5.5). Platform 
 | **SymbolData** | Symbol definitions (punctuation, math, etc.) | `SymbolData` |
 | **ToolbarManager** | Toolbar visibility and overlay mode switching (Android) | `ToolbarManager.kt` |
 
-### 10. Data Management (v3.4.5+)
+### 9. Data Management
 | Keyword | Definition | Key Class/Method |
 |---------|-----------|-----------------|
 | **Backup (`.taigi`)** | Export/import user data (custom dict, frequency, associations) | engine ops `ExportBackup` / `ImportBackup` → `userdata::export_backup` / `import_backup` |
-| **DataManagement** | Production UI for user data (replaced Debug screens) | `DataManagementView` / `DataManagementScreen` |
+| **DataManagement** | Production UI for user data | `DataManagementView` / `DataManagementScreen` |
 | **DictionarySearch** | In-app dictionary search from settings (uses `RustEngineBridge.searchByHanji` for hanzi inputs) | iOS / Android `DictionarySearchService` (policy, over a `LexiconClient`); Android `DictionarySearchViewModel`; Windows + Linux `taigi_desktop_core::engine::dictionary_search` (one lookup for both settings windows, custom rows through `SearchCustomEntries`) |
 
-### 11. Input Flow (`architecture/system-overview.md` §4)
+### 10. Input Flow (`architecture/system-overview.md` §4)
 | Keyword | Definition | Key Class/Method |
 |---------|-----------|-----------------|
 | **ActionHandler** | Central dispatcher for all keyboard actions | `ActionHandler` |
@@ -171,12 +164,12 @@ NextWord state machine lives in Rust `engine/nextword` (since v3.5.5). Platform 
 ### App Screens (Main App, not keyboard extension)
 | Keyword | Tab | Description | Key View |
 |---------|-----|-------------|----------|
-| **HomeTab** | Tab 1 | Setup guide, feature overview | `ContentView` |
-| **LayoutTab** | Tab 2 | Keyboard layout preview & selection | `LayoutSettingsView` |
-| **DictionaryTab** | Tab 3 | Dictionary management | `DictionarySettingsView` |
-| **SettingsTab** | Tab 4 | Input mode, appearance, advanced settings | `SettingsView` |
+| **HomeTab** | Tab 1 | Setup guide, feature overview | `App/Tabs/Home/HomeTab.swift` (tabs hosted by `App/ContentView.swift`) |
+| **LayoutTab** | Tab 2 | Keyboard layout preview & selection | `App/Tabs/Layout/LayoutTab.swift` |
+| **DictionaryTab** | Tab 3 | Dictionary management | `App/Tabs/Dictionary/DictionaryTab.swift` |
+| **SettingsTab** | Tab 4 | Input mode, appearance, advanced settings | `App/Tabs/Settings/SettingsTab.swift` |
 
-### Device Adaptation (`ui/device.md`)
+### Device Adaptation (iOS `ScreenSizeClass`, `Layout/DeviceConfiguration.swift`)
 | Keyword | Definition |
 |---------|-----------|
 | **phoneCompact** | iPhone SE / small screens |
@@ -191,5 +184,4 @@ NextWord state machine lives in Rust `engine/nextword` (since v3.5.5). Platform 
 | **ButtonFontProvider** | Resolves font + scale per action/layout |
 | **ButtonTextProvider** | Button labels, tone hints, punctuation hints |
 | **ButtonImageProvider** | SF Symbols images for special keys |
-| **deviceFont** | Font size scaled by device classification |
 

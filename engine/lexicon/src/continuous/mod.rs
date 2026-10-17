@@ -45,9 +45,9 @@
 //!
 //! # Ordering
 //!
-//! Returned candidates are sorted by the 9-dimensional `CandidateSortKey`
-//! documented at [`fetch_candidates_for_keys_with_barriers`];
-//! `calculate_continuous_score` provides only one of those dimensions.
+//! Returned candidates are sorted by the `CandidateSortKey` documented at
+//! [`fetch_candidates_for_keys_with_barriers`]; the corpus `walker_cost` and
+//! `calculate_continuous_score` provide two of its dimensions.
 //! Within-tier ties keep insertion order (`endings` order, then
 //! `prefix_index` rowid order — `lookup_exact` is deterministic per
 //! build). The comparator coerces `NaN` scores to `f64::MIN` so even a
@@ -59,10 +59,11 @@
 //! syllabifier endings → `(span, key)` pairs) lives in
 //! `engine/lexicon/tests/common/mod.rs`.
 
-use phonetics::{KeyFamily, HANJI_KEY_PREFIX};
-use unicode_normalization::UnicodeNormalization;
+use std::borrow::Cow;
 
-use crate::dictionary_reader::{DictionaryReader, Filter};
+use phonetics::{KeyFamily, HANJI_KEY_PREFIX};
+
+use crate::dictionary_reader::{DictionaryReader, Filter, WALKER_COST_UNPRICED};
 use crate::prefix_index::PrefixIndex;
 use ranking::{
     sort_by_candidate_key, CandidateRankFacts, CandidateSortKey, ContextRanks, FrequencyMap,
@@ -72,46 +73,22 @@ mod candidate;
 mod toneless_match;
 
 use candidate::{
-    dedupe_by_roman_hanji_span, learned_entry_to_candidate, merge_custom_dedupe_sort,
-    record_to_candidate,
+    custom_entry_to_candidate, dedupe_by_roman_hanji_span, learned_entry_to_candidate,
+    merge_custom_abbreviations, merge_custom_dedupe_sort, record_to_candidate,
 };
 use toneless_match::{
     matches_continuous_toneless_key, matches_continuous_toneless_prefix_key, tps_face_starts_with,
     with_tps_or_variant, KeyFace,
 };
 
-/// `RawCandidate.form` discriminator. Every candidate this module emits
-/// carries the notone form: span-local keys are `<prefix>:<toneless>`
-/// bodies, and the tone-pinned (`tl_num` / `poj_num`) keys the same
-/// guards accept resolve to the same records. The other form ordinals
-/// (hanji 0 / numeric 2 / abbrev 3) are reserved for carriers the proto
-/// side does not have.
-pub const FORM_NOTONE: u8 = 1;
-
-/// v3.5.8 Phase 9 Item 10 — `RawCandidate.coverage_kind` ordinal for
-/// full-syllable hits (the pre-Item-10 path: `valid_span_endings`
-/// returned at least one ending and `fetch_candidates_for_keys_with_barriers`
-/// produced the candidate via `prefix_index.lookup_exact`).
-pub const COVERAGE_KIND_FULL: u8 = 0;
-
-/// v3.5.8 Phase 9 Item 10 — `RawCandidate.coverage_kind` ordinal for
-/// partial-prefix hits (syllabifier returned no ending, engine fell
-/// through to [`fetch_partial_prefix_candidates`] via
-/// `prefix_index.lookup_prefix`). Ranks strictly below
-/// [`COVERAGE_KIND_FULL`] in [`CandidateSortKey`] regardless of any other
-/// dimension; see `docs/engine/continuous-candidate-display.md` §15.5.
-pub const COVERAGE_KIND_PARTIAL_PREFIX: u8 = 1;
-
-/// `RawCandidate.coverage_kind` ordinal for whole-buffer abbreviation hits
-/// ([`fetch_abbrev_candidates`]): the typed buffer is an acronym-shaped
-/// string (`ss`, `tk`, `ㄙㄒ`) and the record's per-syllable-initial face
-/// (`tl_abbrev` / `poj_abbrev` / `tps_abbrev`) equals it. Ranks strictly
-/// below [`COVERAGE_KIND_PARTIAL_PREFIX`] in [`CandidateSortKey`]: an acronym-shaped
-/// buffer that is also a valid onset (`ts`, `kh`) is mid-syllable at least
-/// as often as it is an abbreviation, so the single-syllable partial hits
-/// the user was reaching for keep their positions and the abbreviated
-/// words trail them.
-pub const COVERAGE_KIND_ABBREV: u8 = 2;
+/// `RawCandidate.coverage_kind` ordinals, owned by the sort that reads them.
+/// Which fetcher stamps which: `fetch_candidates_for_keys_with_barriers`
+/// (`prefix_index.lookup_exact`) → [`COVERAGE_KIND_FULL`];
+/// [`fetch_partial_prefix_candidates`] (`prefix_index.lookup_prefix`, the
+/// syllabifier found no ending) → [`COVERAGE_KIND_PARTIAL_PREFIX`];
+/// [`fetch_abbrev_candidates`] (the buffer equals a record's
+/// `tl_abbrev` / `poj_abbrev` / `tps_abbrev` face) → [`COVERAGE_KIND_ABBREV`].
+pub use ranking::{COVERAGE_KIND_ABBREV, COVERAGE_KIND_FULL, COVERAGE_KIND_PARTIAL_PREFIX};
 
 /// Worst-case rowid hydration budget per partial-prefix lookup.
 /// Single-char prefixes (`tl:k`, `tl:t`) match hundreds of FST entries;
@@ -138,69 +115,6 @@ pub const PARTIAL_PREFIX_HYDRATE_CAP: usize = 500;
 /// byte-sort prefix. Matches the legacy `LexiconService` per-request
 /// output size to keep the candidate strip visually stable.
 pub const PARTIAL_PREFIX_OUTPUT_CAP: usize = 30;
-
-/// MOE-aligned candidate-type discriminator (`VocType` analog). Carried
-/// on every [`RawCandidate`] and wire-encoded onto
-/// `protos::taigi::engine::CandidateMessage.script_kind` (Phase 9.2). Derived
-/// from `DictionaryRecord.hanji` presence + NFKD-normalized Latin-letter
-/// detection by [`derive_script_kind`]; never emitted as
-/// [`CandidateScriptKind::Unspecified`] from Rust.
-///
-/// **Metadata-only in v3.5.8 Phase 9.2** — does NOT enter the nine-
-/// dimension [`CandidateSortKey`] tie-break (per `docs/releases/v3.5.8/plan.md` § Phase 9 R2
-/// Q3.a "reserve rank use until real collisions are measured"). The
-/// existing `form` axis remains orthogonal (toneless / numeric / hanji
-/// / abbrev) and unaffected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub enum CandidateScriptKind {
-    /// Proto3 default — Rust never emits this; platforms reading the
-    /// wire treat it as "unknown carrier, ignore" rather than HANT.
-    Unspecified = 0,
-    /// Hanji-only display (no Latin letters after NFKD normalization).
-    Hant = 1,
-    /// Roman/romanization-only display — `DictionaryRecord.hanji` was
-    /// `None`, so `display_text` fell back to the TL field.
-    Tailo = 2,
-    /// Hanji display containing at least one Latin letter after NFKD
-    /// (e.g. `iáu未`, `ê早`, `屎î`, hypothetical fullwidth `Ａ字`).
-    Mixed = 3,
-}
-
-impl CandidateScriptKind {
-    /// Wire-format integer matching `protos::CandidateScriptKind`'s prost
-    /// representation. Kept as a method so a future reshuffle of the
-    /// proto enum values would fail this cast at compile time via the
-    /// `as u32` discriminant.
-    pub const fn to_proto_i32(self) -> i32 {
-        self as i32
-    }
-}
-
-/// Derive the [`CandidateScriptKind`] for a dictionary record. `hanji.is_none()`
-/// is the only TAILO path; otherwise the hanji string is NFKD-normalized
-/// (folding `ê` → `e` + combining circumflex and `Ａ` → `A`) and any
-/// resulting ASCII alphabetic codepoint flips the candidate to MIXED.
-/// Digits / punctuation / kana / private-use glyphs alone do NOT flip
-/// MIXED — the intent is "Roman letters inside the hanji display",
-/// matching MOE `VT_MIXED` for entries like `台BAR`.
-///
-/// **Single source of truth for `CandidateScriptKind`.** `record_to_candidate`,
-/// `custom_entry_to_candidate`, and the v3.5.8 S2 whole-sentence
-/// walker's slot-0 synthesis (`composing::continuous::fetch_walker_slot0_inner`)
-/// all derive `script_kind` through this fn so `CandidateMessage.script_kind` is
-/// classified identically for span-local, custom, and synthesized
-/// full-buffer candidates (Codex PR #285 P2, 2026-05-16 — a hand-rolled
-/// `hanji.is_some()` binary in the synth path mis-emitted HANT for
-/// mixed-script paths like `…hip相`). `pub` so `composing` reuses the
-/// wire-visible classification instead of duplicating the NFKD rule.
-pub fn derive_script_kind(hanji: Option<&str>) -> CandidateScriptKind {
-    match hanji {
-        None => CandidateScriptKind::Tailo,
-        Some(text) if text.nfkd().any(|c| c.is_ascii_alphabetic()) => CandidateScriptKind::Mixed,
-        Some(_) => CandidateScriptKind::Hant,
-    }
-}
 
 /// One span-local candidate. Mirrors the 5-field shape pinned by
 /// `docs/releases/v3.5.8/plan.md` § Phase 5 — Each Candidate carries (5-field shape).
@@ -258,8 +172,6 @@ pub struct RawCandidate {
     pub canonical_tl: String,
     /// Result of [`ranking::calculate_continuous_score`].
     pub score: f32,
-    /// Always [`FORM_NOTONE`] in Phase 5.
-    pub form: u8,
     /// Raw dictionary frequency before any bias / boost. Carried
     /// alongside the multiplicative `score` so the v3.5.8 Phase 9.1
     /// `CandidateSortKey` can use raw freq as an explicit tie-break dimension
@@ -267,6 +179,13 @@ pub struct RawCandidate {
     /// `DictionaryRecord::frequency` for candidates produced by
     /// `fetch_candidates_for_keys_with_barriers`.
     pub frequency: u32,
+    /// The record's `dict.bin` `walker_cost` (corpus `−ln p`, milli-nats) —
+    /// the [`CandidateSortKey`] dimension above `score` that the list and the
+    /// walker's edge pick share (E1 P5b). [`WALKER_COST_UNPRICED`] for a
+    /// candidate the corpus does not price: custom, learned, the walker's
+    /// slot-0 synth, the literal roman row. Internal — NOT emitted on
+    /// `CandidateMessage`.
+    pub walker_cost: u16,
     /// Dictionary source bitmask copied verbatim from
     /// [`DictionaryRecord::bitmask`](crate::dictionary_reader::DictionaryRecord::bitmask). Used by the v3.5.8 Phase 9.1
     /// `CandidateSortKey` to derive `source_tier_rank` at sort time per
@@ -274,10 +193,6 @@ pub struct RawCandidate {
     /// re-reading the dictionary record) lets the sort be a pure
     /// function of the returned `RawCandidate` vector.
     pub bitmask: u16,
-    /// MOE-aligned candidate-type discriminator (HANT / TAILO / MIXED).
-    /// Derived by [`derive_script_kind`] from `DictionaryRecord.hanji`.
-    /// Metadata-only in Phase 9.2 — not consulted by [`CandidateSortKey`].
-    pub script_kind: CandidateScriptKind,
     /// Time-decayed user-selection weight for this candidate's
     /// `(display_text, canonical_tl)` pair
     /// ([`ranking::FrequencyData::user_weight`]; `0.0` = never selected,
@@ -301,19 +216,21 @@ pub struct RawCandidate {
     /// Internal axis only — does NOT enter `CandidateMessage` (same
     /// pattern as [`user_weight`](Self::user_weight); see
     /// `docs/engine/continuous-candidate-display.md` §15.5). Consumed
-    /// solely by [`CandidateSortKey`] to push every partial-prefix candidate
-    /// strictly below every full-syllable candidate in lexicographic
-    /// order, irrespective of `tier`, user weight, score, dict freq, or
-    /// source rank.
+    /// solely by [`CandidateSortKey`], below `tier`, `abbreviation` and
+    /// `preference_class`: within a tier and preference class a
+    /// partial-prefix candidate follows every full-syllable one,
+    /// irrespective of user weight, score, dict freq, or source rank.
     pub coverage_kind: u8,
     /// v3.5.8 Phase 9 Item 12 — `true` for candidates synthesized from
     /// a `custom_dictionary.db` entry ([`custom_entry_to_candidate`](candidate::custom_entry_to_candidate)),
     /// `false` for `dict.bin` FST hits ([`record_to_candidate`]). Read
-    /// by [`CandidateSortKey::new`] (→ `source_tier_rank(bitmask, is_custom)`
-    /// returns rank `0` when `true`, ahead of every `dict.bin` source
-    /// tier) and by the `(roman, hanji)` dedupe winner policy
+    /// by [`CandidateSortKey::new`] (`preference_class` places a
+    /// never-selected custom word after the selected words and before the
+    /// rest; `source_tier_rank(bitmask, is_custom)` returns rank `0` when
+    /// `true`, ahead of every `dict.bin` source tier) and by the
+    /// `(canonical_tl, hanji)` dedupe winner policy
     /// (`docs/engine/continuous-commit-and-display.md` §10.10): on a
-    /// duplicate `(roman, hanji)` pair the lowest `source_tier_rank`
+    /// duplicate `(canonical_tl, hanji)` identity the lowest `source_tier_rank`
     /// survivor wins, so a custom entry always beats a `dict.bin`
     /// duplicate. Internal axis only — NOT emitted on
     /// `CandidateMessage` (same pattern as [`coverage_kind`] /
@@ -329,6 +246,7 @@ impl RawCandidate {
             consumed_span: self.consumed_span,
             user_weight: self.user_weight,
             context_rank: self.context_rank,
+            walker_cost: self.walker_cost,
             score: self.score,
             frequency: self.frequency,
             bitmask: self.bitmask,
@@ -339,12 +257,12 @@ impl RawCandidate {
 
 /// v3.5.8 Phase 9 Item 12 — one `custom_dictionary.db` row, as the engine
 /// reads it from its store (`composing::UserRows`). `roman` / `hanji` are
-/// the raw stored columns, verbatim (no display capitalization) so the engine's
-/// `(roman, hanji)` dedupe key collides correctly against
+/// the raw stored columns, verbatim (no display capitalization); the
+/// engine folds `roman` to `canonical_tl` (NFC, POJ → TL) so its
+/// `(canonical_tl, hanji)` dedupe key collides correctly against
 /// `dict.bin`'s `DictionaryRecord.tl` / `.hanji`. `hanji = None`
 /// is a romanization-only custom entry (mirrors
-/// `DictionaryRecord.hanji` / `RawCandidate.hanji` `Option` semantics
-/// — drives [`derive_script_kind`] → `CandidateScriptKind::Tailo`).
+/// `DictionaryRecord.hanji` / `RawCandidate.hanji` `Option` semantics).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CustomEntry {
     pub roman: String,
@@ -420,6 +338,12 @@ pub struct ContinuousFetchCtx<'a> {
     /// per-key pin instead. [`TonePin::None`] is the legacy all-tones
     /// behavior.
     pub tone_pin: TonePin,
+    /// The whole typed buffer's partial-prefix key (`tl:tankiant`) — what a
+    /// `custom_dictionary.db` entry is measured against on the exact
+    /// span-local path, which has no whole-buffer key of its own
+    /// ([`custom_reach`]). `None` admits no custom entry there: there is
+    /// nothing typed to match it to.
+    pub whole_buffer_key: Option<String>,
 }
 
 /// Post-lookup tone constraint on the readings one continuous lookup
@@ -437,17 +361,21 @@ pub struct ContinuousFetchCtx<'a> {
 pub enum TonePin {
     /// No tone constraint: a toneless TL/POJ span (the deliberate
     /// "show all tones" affordance, §17 case 2), any English span (a
-    /// digit there is not a tone), or a TPS span not closed by the space.
+    /// digit there is not a tone), or a TPS span with no tone mark and no
+    /// space in it or at its end.
     #[default]
     None,
-    /// A3 (§41) — a TPS span whose TAIL syllable was closed by the
-    /// keyboard's space with no tone mark of its own: only the unmarked
-    /// tone (1 on an open rime, 4 on a stop coda) may surface. Carries
-    /// the fused `tps_notone` body of the span / buffer, which is what
-    /// the whole-buffer sources align against; the exact / walker paths
+    /// §17 case 4 + §41 — a TPS span carrying a tone mark or a keyboard
+    /// space: every [`TpsClose`] is a point where the user closed a
+    /// syllable, so a reading must end a syllable there and carry the tone
+    /// the close names. `ㄉㄞ˫ㄨㄢ` keeps 大員 `tāi-uân` and drops 台灣
+    /// `tâi-uân`; `ㄌㄧˋㄫ` drops 靈 `lîng` (no syllable ends after ㄧ);
+    /// `ㄒㄧ`␣ keeps 詩 si1 and drops 是 sī. `body` is the fused
+    /// `tps_notone` body of the span / buffer, which the whole-buffer
+    /// sources align against; the exact / walker / partial-prefix paths
     /// align against the MATCHED key instead (a §35 substituted reading
     /// reconstructs to the matched key, never the typed one).
-    TpsSpaceEnd(String),
+    TpsTyped { body: String, closes: Vec<TpsClose> },
     /// §17 case 3 — a TL/POJ span carrying at least one ASCII tone digit:
     /// the hyphenless typed body with its digits (`teng5sek`) and the
     /// mode whose numeric-tone face it is read against. Every syllable
@@ -460,10 +388,15 @@ pub enum TonePin {
     /// into `typed` where the user typed a `-`: a reading must end a
     /// syllable on every one, so `khi|ah` keeps 去啊 `khì--ah` and drops
     /// 隙 `khiah`. A span with a boundary but no digit is pinned too.
+    /// `one_syllable_stretches` are the `(start, end)` ranges of `typed` a
+    /// typed `-` closed as one inventory syllable: a reading may end no
+    /// syllable strictly inside one, so `ai-` keeps 愛 `ài` and drops 阿姨
+    /// `a-î`, both under the key `ai`.
     TypedTones {
         mode: phonetics::InputMode,
         typed: String,
         boundaries: Vec<TypedBoundary>,
+        one_syllable_stretches: Vec<(usize, usize)>,
     },
 }
 
@@ -479,26 +412,55 @@ pub struct TypedBoundary {
     pub khinsiann: bool,
 }
 
+/// One syllable close the user typed inside (or at the end of) a TPS span:
+/// `body_end` is the byte offset into the span's TONELESS body where the
+/// closed syllable ends.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TpsClose {
+    pub body_end: usize,
+    pub kind: TpsCloseKind,
+}
+
+/// What a [`TpsClose`] asks of the syllable ending there.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TpsCloseKind {
+    /// A typed tone mark: the syllable carries exactly this numeric tone.
+    Marked(char),
+    /// The keyboard space closing the span's unmarked last syllable (§41):
+    /// tone 1 on an open rime, 4 on a stop coda.
+    SpaceClosed,
+    /// A space inside the span: a syllable boundary of any tone, never a
+    /// tone-1 instruction (§31 `ㄍㄠ`␣`ㄉㄞ˪` 交代, §35 `ㄇ`␣`ㄒㄧ` 毋是).
+    Boundary,
+}
+
 impl TonePin {
     /// Does `reading` (a canonical TL reading — `DictionaryRecord.tl`, or
     /// a custom roman folded through `phonetics::api::canonical_tl_form`)
     /// satisfy this pin? `matched_key` is the FST key the reading came
-    /// back under on the exact / walker paths; the whole-buffer sources
-    /// (custom merge, partial-prefix extensions) pass `None` and the pin
-    /// aligns against its own carried body — for a strict-prefix
-    /// extension the matched key runs past the pin point, and a custom
-    /// entry has no key at all.
+    /// back under on the exact / walker / partial-prefix paths (for a
+    /// strict-prefix extension it runs past the typed text — only the TPS
+    /// pin reads it, cut at each close); the custom and learned merges
+    /// pass `None` and the pin aligns against its own carried body, since
+    /// a custom entry has no key at all.
     pub fn admits(&self, matched_key: Option<&str>, reading: &str) -> bool {
         match self {
             TonePin::None => true,
-            TonePin::TpsSpaceEnd(body) => {
-                reading_passes_space_pin(matched_key.unwrap_or(body), reading)
+            TonePin::TpsTyped { body, closes } => {
+                reading_passes_tps_closes(matched_key.unwrap_or(body), closes, reading)
             }
             TonePin::TypedTones {
                 mode,
                 typed,
                 boundaries,
-            } => reading_passes_typed_tones(*mode, typed, boundaries, reading),
+                one_syllable_stretches,
+            } => reading_passes_typed_tones(
+                *mode,
+                typed,
+                boundaries,
+                one_syllable_stretches,
+                reading,
+            ),
         }
     }
 
@@ -506,11 +468,20 @@ impl TonePin {
     /// entries are synthesized whole-buffer (no matched key), and their
     /// roman may be stored in the user's native POJ form, so it is folded
     /// to canonical TL first — the same fold `custom_entry_to_candidate`
-    /// applies for the identity key. The fold is skipped when nothing is
-    /// pinned, the common toneless-buffer case.
+    /// applies for the identity key. TPS mode's identity fold leaves the
+    /// Latin roman as stored, so there the pin reads the same
+    /// [`phonetics::api::custom_search_reading`] the TPS search keys and
+    /// [`custom_reach`] are derived from. The fold is skipped when nothing
+    /// is pinned, the common toneless-buffer case.
     pub fn admits_custom(&self, roman: &str, mode: phonetics::InputMode) -> bool {
-        matches!(self, TonePin::None)
-            || self.admits(None, &phonetics::api::canonical_tl_form(roman, mode))
+        if matches!(self, TonePin::None) {
+            return true;
+        }
+        let reading = match mode {
+            phonetics::InputMode::Tps => phonetics::api::custom_search_reading(roman),
+            _ => phonetics::api::canonical_tl_form(roman, mode),
+        };
+        self.admits(None, &reading)
     }
 }
 
@@ -523,10 +494,13 @@ impl TonePin {
 /// `--` constrains the NEXT word, not this one. A boundary at 0 is the
 /// run typed right before the span: only a reading that itself opens with
 /// `--` (a custom `--ah`) reads it, and then the run must be `--` too.
+/// No syllable of the reading may end strictly inside a one-syllable
+/// stretch.
 fn reading_passes_typed_tones(
     mode: phonetics::InputMode,
     typed: &str,
     boundaries: &[TypedBoundary],
+    one_syllable_stretches: &[(usize, usize)],
     reading: &str,
 ) -> bool {
     let Some(walk) =
@@ -550,6 +524,10 @@ fn reading_passes_typed_tones(
                     .get(index + 1)
                     .is_none_or(|&k| k == b.khinsiann)
         })
+    }) && !walk.ends.iter().any(|&at| {
+        one_syllable_stretches
+            .iter()
+            .any(|&(start, end)| start < at && at < end)
     })
 }
 
@@ -605,18 +583,23 @@ fn is_unmarked_tps_tone(tone: char) -> bool {
     matches!(tone, '1' | '4')
 }
 
-/// A3 (§41) — does `reading` satisfy the space pin implied by `tps_body`?
-/// True when the reading has a syllable boundary exactly at the end of
-/// `tps_body` AND the syllable ending there carries an unmarked tone
-/// ([`is_unmarked_tps_tone`]).
+/// §17 case 4 + §41 — does `reading` honour every syllable close the user
+/// typed? For each [`TpsClose`] the reading must end a syllable exactly at
+/// `body_end` of the toneless body and that syllable's tone must fit the
+/// close's [`TpsCloseKind`] — one walk of the reading for every close
+/// ([`phonetics::tps_notone_boundary_tones`]).
 ///
 /// `tps_body` is either a full `tps:`-family FST key — the MATCHED key on
-/// the exact / walker dictionary paths, since §35 substitutions
-/// reconstruct to the matched form and the literal query key would reject
-/// legitimate ambiguity-family hits — or a bare body, which is the shape
-/// the whole-buffer sources (custom entries, the walker's custom override)
-/// carry. A key in any other family passes through: TL/POJ tones are
-/// ASCII digits, already pinned by the verbatim toned key (§17).
+/// the exact / walker / partial-prefix dictionary paths, since §35
+/// substitutions reconstruct to the matched form and the literal query key
+/// would reject legitimate ambiguity-family hits — or a bare body, which is
+/// the shape the whole-buffer sources (custom entries, the walker's custom
+/// override) carry. Its tone marks are stripped before aligning (a
+/// fully-toned span matched the verbatim toned key; every §35 substitution
+/// is byte-length preserving), and it may run past the last close (a
+/// partial-prefix extension's later syllables). A key in any other family
+/// passes through: TL/POJ tones are ASCII digits, pinned by
+/// [`TonePin::TypedTones`].
 ///
 /// A missing boundary is a REJECT, not a pass: the user closed a syllable
 /// there, so a reading that runs through that point mid-syllable is not
@@ -624,7 +607,7 @@ fn is_unmarked_tps_tone(tone: char) -> bool {
 ///
 /// `reading` is a canonical TL reading — `DictionaryRecord.tl` for a
 /// dictionary hit, `CustomEntry.roman` for a custom entry.
-fn reading_passes_space_pin(tps_body: &str, reading: &str) -> bool {
+fn reading_passes_tps_closes(tps_body: &str, closes: &[TpsClose], reading: &str) -> bool {
     let body = match tps_body.strip_prefix(KeyFamily::Tps.prefix()) {
         Some(body) => body,
         // Bare body — the whole-buffer form, TPS by construction.
@@ -632,18 +615,36 @@ fn reading_passes_space_pin(tps_body: &str, reading: &str) -> bool {
         // Another FST family (`tl:` / `poj:` / `hanzi:`) — never pinned.
         None => return true,
     };
-    if body.chars().any(phonetics::is_tps_tone_mark) {
-        // Marked body — the verbatim toned key already filtered by tone.
-        return true;
-    }
-    phonetics::tps_notone_prefix_boundary_tone(reading, body).is_some_and(is_unmarked_tps_tone)
+    // A partial-tone span keys the toneless body, so most matched keys
+    // carry no mark and need no copy.
+    let toneless: Cow<str> = if body.chars().any(phonetics::is_tps_tone_mark) {
+        Cow::Owned(
+            body.chars()
+                .filter(|&c| !phonetics::is_tps_tone_mark(c))
+                .collect(),
+        )
+    } else {
+        Cow::Borrowed(body)
+    };
+    let ends = closes.iter().map(|close| close.body_end);
+    phonetics::tps_notone_boundary_tones(reading, &toneless, ends).is_some_and(|tones| {
+        closes
+            .iter()
+            .zip(tones)
+            .all(|(close, tone)| match close.kind {
+                TpsCloseKind::Marked(typed) => tone == typed,
+                TpsCloseKind::SpaceClosed => is_unmarked_tps_tone(tone),
+                TpsCloseKind::Boundary => true,
+            })
+    })
 }
 
 /// Every dictionary candidate for one exact continuous key, in FST rowid
-/// order, handed to `sink` one at a time. The single visitor the span-local
-/// fetch ([`fetch_candidates_for_keys_with_barriers`], collects all) and the
+/// order, handed to `sink` one at a time (each carries its record's
+/// `walker_cost`). The single visitor the span-local fetch
+/// ([`fetch_candidates_for_keys_with_barriers`], collects all) and the
 /// walker edge provider ([`best_candidate_for_key_with_barriers`], keeps
-/// the max) share, so the two layers cannot drift on which rows qualify —
+/// the min cost) share, so the two layers cannot drift on which rows qualify —
 /// §35: an edge the expanded segmenter admitted must find its dictionary
 /// payload, or the layers split authority (Codex pre-impl BLOCK 3).
 ///
@@ -653,9 +654,10 @@ fn reading_passes_space_pin(tps_body: &str, reading: &str) -> bool {
 /// `poj_abbrev` / `tps_abbrev` acronym-collision guard
 /// ([`matches_continuous_toneless_key`] — continuous input is
 /// phonetic-syllable, not acronym; normal-mode `lexicon::search` keeps
-/// acronym matching), and the key's [`TonePin`] — the A3 (§41) space pin
-/// (`ㄒㄧ`␣ keeps si1, drops si2/5/7; `ㄐㄧㆵ`␣ keeps tsit4, drops tsit8)
-/// or the §17 typed-tone pin (`teng5sek` keeps têng-sek, drops téng-sek).
+/// acronym matching), and the key's [`TonePin`] — the TPS typed closes
+/// (§17 case 4 / §41: `ㄉㄞ˫ㄨㄢ` keeps tāi-uân, drops tâi-uân; `ㄒㄧ`␣
+/// keeps si1, drops si2/5/7; `ㄐㄧㆵ`␣ keeps tsit4, drops tsit8) or the §17
+/// typed-tone pin (`teng5sek` keeps têng-sek, drops téng-sek).
 /// Without the pin on the walker side the span-local list and the
 /// whole-sentence slot 0 would disagree and a wrong-tone word would
 /// reappear at index 0.
@@ -724,12 +726,10 @@ fn exact_candidates_for_key(
 /// `raw_len` is the byte length of the original pending buffer
 /// (`Phase::Continuous { raw }.len()`); it is the predicate input
 /// for Tier 1 (`consumed_span_end == raw_len`). Sorting follows
-/// `docs/releases/v3.5.8/plan.md` § Phase 9 sort_key formula:
+/// [`CandidateSortKey`] (field order and why: `docs/engine/continuous-input-ranking.md` §3.2).
 ///
-/// ```text
-/// (coverage_kind, tier, -user_weight, context_rank, -adjusted_score,
-///  -freq, -coverage_bytes, source_tier_rank, stable_idx)
-/// ```
+/// E1 P5b: `walker_cost` (the record's corpus cost) orders the list on the
+/// walker's scale; `-adjusted_score` / `-freq` break an equal cost.
 ///
 /// v3.5.8 whole-sentence lattice + walker S8: `-coverage_bytes` was relocated
 /// from dim 3 to dim 6 (below `-adjusted_score` / `-freq`). With the
@@ -801,7 +801,13 @@ pub fn fetch_candidates_for_keys_with_barriers(
             out.push(cand)
         });
     }
-    merge_custom_dedupe_sort(out, ctx, raw_len, COVERAGE_KIND_FULL)
+    merge_custom_dedupe_sort(
+        out,
+        ctx,
+        raw_len,
+        ctx.whole_buffer_key.as_deref(),
+        COVERAGE_KIND_FULL,
+    )
 }
 
 /// v3.5.8 Phase 9 Item 10 — partial-prefix candidate fetch for the
@@ -826,10 +832,9 @@ pub fn fetch_candidates_for_keys_with_barriers(
 /// 4. Build candidates with `coverage_kind = COVERAGE_KIND_PARTIAL_PREFIX`
 ///    and `consumed_span = key.0` (caller pins `(0, raw.len())` per
 ///    Q15.4 — partial-prefix candidates always final-commit).
-/// 5. Sort via the same nine-dimension [`CandidateSortKey`]; the leading
-///    `coverage_kind` dim is `1` here so the whole batch ranks below
-///    any concurrent full-syllable hits if a caller ever merges them
-///    (this fn produces partial-prefix candidates only).
+/// 5. Sort via the same [`CandidateSortKey`] (`coverage_kind` is `1` for
+///    the whole batch; never-selected custom rows lead the never-selected
+///    rest through `preference_class`).
 /// 6. Truncate to [`PARTIAL_PREFIX_OUTPUT_CAP`] after the sort, so the
 ///    returned slice is the globally best-scoring subset (not the FST
 ///    byte-sort prefix). Custom entries participate in the sort and
@@ -986,17 +991,18 @@ pub fn fetch_partial_prefix_candidates_unbounded(
             }
             // Tone pin: a strict-prefix extension is only eligible when
             // the syllables typed so far carry the typed tones (§17) / the
-            // space-closed unmarked tone (§41). Checked against the TYPED
-            // body (the pin point), not the matched key — the matched key
-            // runs past the pin into the extension's later syllables.
-            if !ctx.tone_pin.admits(None, &record.tl) {
+            // space-closed unmarked tone (§41). TL / POJ read the typed body
+            // the pin carries; TPS aligns its closes on the MATCHED key (a
+            // §35 hit `tps:ㆬㄒㄧ` under typed `ㄇ˫ㄒ` reconstructs to `ㆬ`),
+            // each close cut at its own offset, so the extension's later
+            // syllables past the last close never take part.
+            if !ctx.tone_pin.admits(Some(&matched_key), &record.tl) {
                 continue;
             }
             // Syllable reach: a strict-prefix extension may not carry a
             // syllable the user never typed into (`tsuisi` must not surface
-            // 水社寮 `tsuí-siā-liâu`). Dictionary rows only — the custom-entry
-            // loop below is deliberately exempt (product owner 2026-08-21: a
-            // word the user added themselves stays prefix-visible).
+            // 水社寮 `tsuí-siā-liâu`). The custom merge below answers the
+            // same rule through [`custom_reach`].
             if !reach
                 .as_ref()
                 .is_none_or(|reach| reach.admits(&matched_key, &record.tl))
@@ -1019,15 +1025,17 @@ pub fn fetch_partial_prefix_candidates_unbounded(
             ));
         }
     }
-    merge_custom_dedupe_sort(out, ctx, raw_len, COVERAGE_KIND_PARTIAL_PREFIX)
+    let typed_key = (!fst_key.is_empty()).then_some(fst_key.as_str());
+    merge_custom_dedupe_sort(out, ctx, raw_len, typed_key, COVERAGE_KIND_PARTIAL_PREFIX)
 }
 
 /// v3.5.8 S2 — single best dictionary candidate for one exact FST
-/// key. Returns the [`CandidateSortKey`]-first [`record_to_candidate`] over
-/// `prefix_index.lookup_exact(key)` (user-selected word before
-/// dictionary frequency; NaN coerced low via `CandidateSortKey`; ties keep
-/// the first FST rowid for determinism) together with the key's
-/// max frequency ([`EdgeBest::span_frequency`]), or `None` when the
+/// key. Returns the [`record_to_candidate`] over
+/// `prefix_index.lookup_exact(key)` that [`pick_edge_word`] chooses
+/// (user-selected word, then the corpus `walker_cost`, then the dictionary
+/// score; NaN coerced low via `CandidateSortKey`; ties keep the first
+/// inserted row for determinism) together with the key's
+/// min walker cost ([`EdgeBest::span_walker_cost`]), or `None` when the
 /// key has no dict hit. PR-9.6 — the walker reads the
 /// SAME `ctx.enabled_sources_bitmask` filter the span-local path
 /// applies (`composing::continuous::assemble_candidates` builds one
@@ -1045,7 +1053,7 @@ pub fn fetch_partial_prefix_candidates_unbounded(
 /// (Codex pre-impl S2 Q1b, 2026-05-16). `consumed_span` is stamped
 /// onto the returned candidate verbatim; the walker reads `roman` /
 /// `hanji` / `syllable_count` / `user_weight` off the candidate and
-/// prices the edge on [`EdgeBest::span_frequency`].
+/// prices the edge on [`EdgeBest::span_walker_cost`].
 ///
 /// `tps_final_only` is the §35 barrier restriction for this edge's key
 /// (byte offsets of Final-only pattern slots, family prefix included).
@@ -1053,23 +1061,27 @@ pub fn fetch_partial_prefix_candidates_unbounded(
 /// separator, so it needs the same restriction the span-local fetch
 /// gets — without it a walker edge could re-read a separator-closed
 /// coda as the next syllable's onset. Empty slice = no barriers.
+///
+/// `custom` and `learned` are the user rows the caller matched to this
+/// edge's key and tone pin. They join the dictionary homophones in ONE pick,
+/// after the same `(reading, hanji, span)` dedupe the candidate list runs —
+/// so the edge's word is the list's own order (USER 2026-10-16: a
+/// never-selected custom 屢 `lí` no longer takes the `li2` edge from 你 the
+/// user picks, nor from a custom 李 the user picks).
 pub fn best_candidate_for_key_with_barriers(
     key: &str,
     tps_final_only: &[usize],
     tone_pin: &TonePin,
     consumed_span: ConsumedSpan,
+    custom: &[&CustomEntry],
     learned: &[&LearnedEntry],
     ctx: &ContinuousFetchCtx<'_>,
 ) -> Option<EdgeBest> {
     let filter = Filter::from_enabled_bitmask(ctx.enabled_sources_bitmask);
-    let mut span_frequency = 0;
+    // `span_walker_cost` is the dictionary's own minimum — custom and
+    // learned rows join the pick below but carry no corpus probability.
+    let mut span_walker_cost = WALKER_COST_UNPRICED;
     let mut homophones: Vec<RawCandidate> = Vec::new();
-    // `span_frequency` is the dictionary's own maximum — a learned row
-    // carries `frequency = 0`.
-    let mut consider = |cand: RawCandidate| {
-        span_frequency = span_frequency.max(cand.frequency);
-        homophones.push(cand);
-    };
     exact_candidates_for_key(
         key,
         tps_final_only,
@@ -1077,16 +1089,29 @@ pub fn best_candidate_for_key_with_barriers(
         consumed_span,
         &filter,
         ctx,
-        &mut consider,
+        |cand| {
+            span_walker_cost = span_walker_cost.min(cand.walker_cost);
+            homophones.push(cand);
+        },
     );
-    // Learned phrases (§50) — the caller matched these rows to this edge's
-    // key; they join the SAME pick with `frequency = 0` (score 0, default
-    // source rank), so a dictionary homophone wins unless the user's
-    // `user_frequency` says otherwise, and the learned row is the edge only
-    // when the dictionary has nothing under the key. The caller floors the
-    // edge's `span_frequency` for segmentation.
+    // Custom rows, then learned phrases (§50). Both join the SAME pick with no corpus cost ([`WALKER_COST_UNPRICED`]) and
+    // `frequency = 0`: a never-selected custom row leads the never-selected
+    // dictionary homophones (`preference_class`), a learned row wins only
+    // on the user's `user_frequency` or the previous word's context, and
+    // either is the edge when the dictionary has nothing under the key.
+    for entry in custom {
+        homophones.push(custom_entry_to_candidate(
+            entry,
+            consumed_span,
+            ctx.freq_map,
+            ctx.now_ms,
+            ctx.context,
+            COVERAGE_KIND_FULL,
+            ctx.mode,
+        ));
+    }
     for entry in learned {
-        consider(learned_entry_to_candidate(
+        homophones.push(learned_entry_to_candidate(
             entry,
             consumed_span,
             ctx.freq_map,
@@ -1095,37 +1120,52 @@ pub fn best_candidate_for_key_with_barriers(
             COVERAGE_KIND_FULL,
         ));
     }
+    // A custom row repeating a dictionary word replaces it, as in the list,
+    // so slot 0 and the list show the same copy. A learned twin needs no
+    // dedupe — it shares its dictionary row's weight and context and is
+    // unpriced, so the dictionary row wins the pick anyway — and skipping it
+    // keeps the per-edge hot path allocation-free.
+    if !custom.is_empty() {
+        dedupe_by_roman_hanji_span(&mut homophones);
+    }
     let candidate = pick_edge_word(homophones, consumed_span.1, ctx.context.is_empty())?;
     Some(EdgeBest {
         candidate,
-        span_frequency,
+        span_walker_cost,
     })
 }
 
-/// The edge's word among its homophones: the same `CandidateSortKey` order as the
-/// span-local list so slot 0 and the list agree. Every homophone shares
-/// `coverage_kind` / `consumed_span`, so `raw_len = consumed_span.1` pins
-/// `tier` equal and only the user-weight / context / score / freq / source
-/// dims decide; the insertion index breaks a full tie (first FST rowid).
+/// The edge's word among its homophones: the [`CandidateSortKey`] the
+/// candidate list sorts by (E1 P5a / P5b) — a selected word first, then a
+/// context hit, then the word the corpus writes most (`walker_cost`), with the
+/// dictionary score / freq / source dims only breaking an equal cost. Every homophone
+/// shares `coverage_kind` / `consumed_span`, so `raw_len = consumed_span.1`
+/// pins `tier` equal; the insertion index breaks a full tie.
 ///
 /// With a previous-word context (§56) the pick may change the WORD but never
 /// the edge's COST, so segmentation is frozen: the context-free winner is
 /// found first, and the contextual winner is chosen only among homophones
 /// with its `syllable_count`. `context_rank` sits below `user_weight` in the
 /// key, so the winner keeps the context-free `user_weight` (the span max) —
-/// and `EdgeBest::span_frequency` is the key max regardless of the pick —
+/// and `EdgeBest::span_walker_cost` is the key min regardless of the pick —
 /// which are the pick's only inputs to `lattice::edge_cost`.
 fn pick_edge_word(
     homophones: Vec<RawCandidate>,
     raw_len: u32,
     context_free: bool,
 ) -> Option<RawCandidate> {
+    let edge_key = |i: usize, cand: &RawCandidate, with_context: bool| {
+        let facts = cand.rank_facts();
+        if with_context {
+            CandidateSortKey::new(&facts, raw_len, i as u32)
+        } else {
+            CandidateSortKey::without_context(&facts, raw_len, i as u32)
+        }
+    };
     let (baseline_index, syllable_count) = homophones
         .iter()
         .enumerate()
-        .min_by_key(|(i, cand)| {
-            CandidateSortKey::without_context(&cand.rank_facts(), raw_len, *i as u32)
-        })
+        .min_by_key(|(i, homophone)| edge_key(*i, homophone, false))
         .map(|(i, cand)| (i, cand.syllable_count))?;
     let index = if context_free {
         baseline_index
@@ -1134,7 +1174,7 @@ fn pick_edge_word(
             .iter()
             .enumerate()
             .filter(|(_, cand)| cand.syllable_count == syllable_count)
-            .min_by_key(|(i, cand)| CandidateSortKey::new(&cand.rank_facts(), raw_len, *i as u32))
+            .min_by_key(|(i, homophone)| edge_key(*i, homophone, true))
             .map(|(i, _)| i)
             .unwrap_or(baseline_index)
     };
@@ -1173,17 +1213,19 @@ pub fn homophone_words_for_key(
 #[derive(Debug)]
 pub struct EdgeBest {
     /// The homophone the user sees for this edge — user-selected word
-    /// first, then dictionary frequency (the [`CandidateSortKey`] order).
+    /// first, then the previous word's context, then the corpus
+    /// `walker_cost` ([`pick_edge_word`]).
     pub candidate: RawCandidate,
-    /// Highest `dict.bin` frequency among the key's homophones that
+    /// Lowest `dict.bin` `walker_cost` among the key's homophones that
     /// pass the edge's source / tone-pin / barrier filters — not the
-    /// picked word's own. The walker prices the edge's segmentation on
-    /// this so a rarer preferred homophone does not price its span out
-    /// of the best path: "is this span a word" is decoupled from "which
-    /// word". (`candidate.user_weight` is likewise the span's max, since
-    /// user weight is the leading pick dimension.) Rationale + numbers:
-    /// `docs/engine/continuous-input-ranking.md` §3.2.
-    pub span_frequency: u32,
+    /// picked word's own (E1 D3). The walker prices the edge's
+    /// segmentation on this so a rarer preferred homophone does not price
+    /// its span out of the best path: "is this span a word" is decoupled
+    /// from "which word". (`candidate.user_weight` is likewise the span's
+    /// max, since user weight is the leading pick dimension.)
+    /// [`WALKER_COST_UNPRICED`] when only user rows sit under the key.
+    /// Rationale + numbers: `docs/engine/continuous-input-ranking.md` §3.2.
+    pub span_walker_cost: u16,
 }
 
 /// Does the exact hanji `hanji` resolve to a dictionary entry of
@@ -1260,8 +1302,9 @@ pub fn compound_hanji_exists(
 /// `syllable_count` stays the record's (鎖匙 = 2). Sorted by the same
 /// [`CandidateSortKey`]; **not truncated** — the caller excludes rows already on
 /// screen first, then applies [`PARTIAL_PREFIX_OUTPUT_CAP`] (the Step 4b
-/// lesson, Codex PR #351). Custom entries are not merged here; the fetch
-/// that ran before already merged them for the same buffer. Hydration is
+/// lesson, Codex PR #351). A custom entry whose abbreviation face IS the
+/// key body joins the block the same way ([`merge_custom_abbreviations`]);
+/// the phonetic fetches never offer it on an acronym. Hydration is
 /// uncapped: `tl-abbrev:tt` resolves ~8.5k rowids and a rank-blind cap in
 /// rowid order would drop the frequent words the sort exists to surface.
 pub fn fetch_abbrev_candidates(
@@ -1294,20 +1337,9 @@ pub fn fetch_abbrev_candidates(
             COVERAGE_KIND_ABBREV,
         ));
     }
+    merge_custom_abbreviations(&mut out, fst_key, raw_len, ctx);
+    // Kipan: learned phrases answer to abbreviations too (upstream keeps them out).
     let target = fst_key.split_once(':').map(|(_, k)| k).unwrap_or(fst_key);
-    for entry in ctx.custom {
-        if phonetics::derive_abbrev(&entry.roman) == target {
-            out.push(candidate::custom_entry_to_candidate(
-                entry,
-                raw_len,
-                ctx.freq_map,
-                ctx.now_ms,
-                ctx.context,
-                COVERAGE_KIND_ABBREV,
-                ctx.mode,
-            ));
-        }
-    }
     for entry in ctx.learned {
         if phonetics::derive_abbrev(&entry.canonical_tl) == target {
             out.push(candidate::learned_entry_to_candidate(
@@ -1322,6 +1354,81 @@ pub fn fetch_abbrev_candidates(
     }
     dedupe_by_roman_hanji_span(&mut out);
     sort_by_candidate_key(out, raw_len, RawCandidate::rank_facts)
+}
+
+/// Where a `custom_dictionary.db` entry stands against the typed whole-buffer
+/// key — the dictionary's own rules applied to a word the user added
+/// (product owner 2026-10-12, reversing the 2026-08-21 custom exemption: a
+/// custom 陳建中 `Tân Kiàn-tiong` surfaced from `t`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum CustomReach {
+    /// The reading's face IS the typed body — a full-buffer word.
+    Exact,
+    /// A strict-prefix extension the typed body reaches into the final
+    /// syllable of ([`SyllableReach`]).
+    Extension,
+    /// Anything else: a syllable never typed into, an acronym, or a face
+    /// that does not start with the typed body at all.
+    Unreached,
+}
+
+/// The whole-buffer key a custom entry is measured against: typed spaces and
+/// hyphens dropped, as the store's query key drops them — a face carries
+/// none, and the tone pin already holds every typed boundary to a syllable
+/// end. Built once per merge, then handed to [`custom_reach`] per entry.
+pub(super) fn fused_custom_typed_key(typed_key: &str) -> String {
+    typed_key
+        .chars()
+        .filter(|c| !matches!(c, ' ' | '-'))
+        .collect()
+}
+
+/// [`CustomReach`] of the custom `roman` under `fused_key`
+/// ([`fused_custom_typed_key`]).
+///
+/// Measured on [`phonetics::api::custom_search_reading`] — the reading the
+/// store's search keys were derived from, so a row the store matched is
+/// judged on the same surface (not the identity fold
+/// `canonical_tl_form`, which keeps a TL-literal `eng` the search keys
+/// fold).
+///
+/// Fail-closed where [`SyllableReach::admits`] fails open: a face that does
+/// not cover the typed body is exactly what the store's loose prefix query
+/// lets through (an acronym, a longer spelling), so it is not offered.
+pub(super) fn custom_reach(fused_key: &str, roman: &str) -> CustomReach {
+    let Some(reach) = SyllableReach::new(fused_key) else {
+        return CustomReach::Unreached;
+    };
+    let body = &fused_key[reach.family.len()..];
+    let reading = phonetics::api::custom_search_reading(roman).to_lowercase();
+    let Some(ends) = reach.syllable_ends(body, &reading) else {
+        return CustomReach::Unreached;
+    };
+    if ends
+        .last()
+        .is_some_and(|&end| end as usize == reach.typed_body_len)
+    {
+        CustomReach::Exact
+    } else if reach.reaches_final_syllable(&ends) {
+        CustomReach::Extension
+    } else {
+        CustomReach::Unreached
+    }
+}
+
+/// Whether one of the custom `roman`'s abbreviation search keys in
+/// `abbrev_key`'s family (`tl-abbrev:tkt`) is exactly the key body — read
+/// off the store's own write-side bundle
+/// ([`phonetics::api::derive_custom_search_keys`], TPS `ㄜ`→`ㄛ` variant
+/// included), so the engine and the store's whole-abbreviation match cannot
+/// drift.
+pub(super) fn custom_abbreviation_matches(abbrev_key: &str, roman: &str) -> bool {
+    let Some((tag, body)) = phonetics::split_abbrev_family_key(abbrev_key) else {
+        return false;
+    };
+    phonetics::api::derive_custom_search_keys(roman)
+        .iter()
+        .any(|key| key.family == tag && key.form == "abbrev" && key.key == body)
 }
 
 /// The typed input must reach INTO a record's FINAL syllable for a
@@ -1399,7 +1506,13 @@ impl<'a> SyllableReach<'a> {
         let Some(ends) = self.syllable_ends(matched_body, record_tl) else {
             return true;
         };
-        // A single-syllable reading is reached by any non-empty typed prefix.
+        self.reaches_final_syllable(&ends)
+    }
+
+    /// Whether the typed body runs past the second-to-last of `ends` — into
+    /// the final syllable. A single-syllable reading is reached by any
+    /// non-empty typed prefix.
+    fn reaches_final_syllable(&self, ends: &[u32]) -> bool {
         match ends.len() {
             0 | 1 => true,
             count => (ends[count - 2] as usize) < self.typed_body_len,
@@ -1480,168 +1593,12 @@ impl<'a> SyllableReach<'a> {
 }
 
 #[cfg(test)]
-mod mode_derive_tests {
-    //! Hermetic unit tests for the v3.5.8 Phase 9.2 `CandidateScriptKind`
-    //! derive (`derive_script_kind`). Covers the four classification axes
-    //! Codex co-decided 2026-05-11:
-    //!
-    //! 1. `hanji.is_none()` → TAILO
-    //! 2. Plain-ASCII Latin in hanji → MIXED
-    //! 3. NFC-composed Latin (e.g. `ê`) in hanji → MIXED via NFKD
-    //! 4. Fullwidth Latin (e.g. `Ａ`) in hanji → MIXED via NFKD
-    //! 5. Pure CJK → HANT
-    //! 6. Digits / punctuation alone do NOT flip MIXED
-    use super::*;
-
-    #[test]
-    fn no_hanji_means_tailo() {
-        // Roman-only entries (`hanji = None`, `display_text` falls back
-        // to the TL field).
-        assert_eq!(derive_script_kind(None), CandidateScriptKind::Tailo);
-    }
-
-    #[test]
-    fn pure_cjk_is_hant() {
-        // Canonical hanji-only display.
-        assert_eq!(
-            derive_script_kind(Some("臺灣台語")),
-            CandidateScriptKind::Hant
-        );
-        assert_eq!(derive_script_kind(Some("珠仔")), CandidateScriptKind::Hant);
-        assert_eq!(derive_script_kind(Some("台")), CandidateScriptKind::Hant);
-    }
-
-    #[test]
-    fn plain_ascii_latin_in_hanji_is_mixed() {
-        // Real dictionary entries: `hip相`, `iah是`, `ing暗`. The first
-        // Latin codepoint is plain ASCII so it would flip MIXED even
-        // without NFKD; this test pins the easy path.
-        assert_eq!(
-            derive_script_kind(Some("hip相")),
-            CandidateScriptKind::Mixed
-        );
-        assert_eq!(
-            derive_script_kind(Some("iah是")),
-            CandidateScriptKind::Mixed
-        );
-        assert_eq!(
-            derive_script_kind(Some("ing暗")),
-            CandidateScriptKind::Mixed
-        );
-        // Hypothetical "台BAR" — Codex Q-F3 example.
-        assert_eq!(
-            derive_script_kind(Some("台BAR")),
-            CandidateScriptKind::Mixed
-        );
-    }
-
-    #[test]
-    fn s2_synth_concatenated_hanji_is_mixed_when_any_edge_has_latin() {
-        // v3.5.8 S2 (Codex PR #285 P2): the whole-sentence walker
-        // synthesizes the slot-0 hanji by concatenating each edge's
-        // hanji and classifies the WHOLE joined string through this
-        // fn (`composing::continuous::fetch_walker_slot0_inner`). A Latin
-        // letter in a NON-first segment (e.g. path `臺灣` + `hip相`)
-        // must still flip MIXED — equivalent to the per-edge OR and
-        // matching how a single multi-syllable record would classify.
-        assert_eq!(
-            derive_script_kind(Some("臺灣hip相")),
-            CandidateScriptKind::Mixed
-        );
-        // All-CJK concatenation stays HANT (the common phrase path).
-        assert_eq!(
-            derive_script_kind(Some("臺灣台語")),
-            CandidateScriptKind::Hant
-        );
-    }
-
-    #[test]
-    fn composed_latin_in_hanji_is_mixed_via_nfkd() {
-        // Real entries `ê早` (line 22953 of dictionary.csv), `ē得`
-        // (22960), `屎î` (42037). The Latin codepoint is NFC-composed
-        // (e.g. `ê` = U+00EA, NOT `e` + combining circumflex), so
-        // `is_ascii_alphabetic` on the original chars would miss it.
-        // NFKD decomposes to base ASCII `e` / `i` + combining mark.
-        assert_eq!(derive_script_kind(Some("ê早")), CandidateScriptKind::Mixed);
-        assert_eq!(derive_script_kind(Some("ē得")), CandidateScriptKind::Mixed);
-        assert_eq!(derive_script_kind(Some("屎î")), CandidateScriptKind::Mixed);
-    }
-
-    #[test]
-    fn fullwidth_latin_in_hanji_is_mixed_via_nfkd() {
-        // Theoretical: U+FF21..U+FF3A fullwidth Latin folds to ASCII
-        // under NFKD (NOT NFD). Pins the "K/D normalization, not just
-        // D" choice from Codex F3-c.
-        assert_eq!(derive_script_kind(Some("Ａ字")), CandidateScriptKind::Mixed);
-        assert_eq!(derive_script_kind(Some("字Ｚ")), CandidateScriptKind::Mixed);
-    }
-
-    #[test]
-    fn digits_or_punctuation_alone_stay_hant() {
-        // F3-d: `123` is HANT (no Latin LETTERS). `3Q` is MIXED via the
-        // `Q`. Punctuation likewise does not flip MIXED.
-        assert_eq!(derive_script_kind(Some("123")), CandidateScriptKind::Hant);
-        assert_eq!(derive_script_kind(Some("3Q")), CandidateScriptKind::Mixed);
-        assert_eq!(derive_script_kind(Some("。、")), CandidateScriptKind::Hant);
-    }
-
-    #[test]
-    fn empty_hanji_string_stays_hant() {
-        // Defensive: `hanji = Some("")` (shouldn't happen but the
-        // contract is "any Some without Latin letters = HANT", and an
-        // empty NFKD iterator finds no ASCII alphabetic codepoint).
-        assert_eq!(derive_script_kind(Some("")), CandidateScriptKind::Hant);
-    }
-
-    #[test]
-    fn proto_wire_value_matches_enum_discriminant() {
-        // The proto enum (`CandidateScriptKind` in composing.proto) uses
-        // exactly UNSPECIFIED=0, HANT=1, TAILO=2, MIXED=3. The cast
-        // here pins the wire integers so a future reshuffle of the
-        // Rust `repr(u8)` discriminants would fail this test.
-        assert_eq!(CandidateScriptKind::Unspecified.to_proto_i32(), 0);
-        assert_eq!(CandidateScriptKind::Hant.to_proto_i32(), 1);
-        assert_eq!(CandidateScriptKind::Tailo.to_proto_i32(), 2);
-        assert_eq!(CandidateScriptKind::Mixed.to_proto_i32(), 3);
-    }
-
-    #[test]
-    fn local_enum_matches_prost_generated_proto_enum() {
-        // Cross-pin: the local `CandidateScriptKind` (in this crate) must agree
-        // byte-for-byte with `protos::engine::CandidateScriptKind` (prost-
-        // generated from `engine/protos/proto/composing.proto`). If the
-        // proto definition is reshuffled the cast in
-        // `raw_to_proto_candidate` (which feeds prost via `i32`) would
-        // silently misroute; this test fails first.
-        //
-        // Per Codex post-impl finding #2 (P3, 2026-05-11).
-        use protos::engine::CandidateScriptKind as ProtoCandidateScriptKind;
-        assert_eq!(
-            CandidateScriptKind::Unspecified.to_proto_i32(),
-            ProtoCandidateScriptKind::Unspecified as i32
-        );
-        assert_eq!(
-            CandidateScriptKind::Hant.to_proto_i32(),
-            ProtoCandidateScriptKind::Hant as i32
-        );
-        assert_eq!(
-            CandidateScriptKind::Tailo.to_proto_i32(),
-            ProtoCandidateScriptKind::Tailo as i32
-        );
-        assert_eq!(
-            CandidateScriptKind::Mixed.to_proto_i32(),
-            ProtoCandidateScriptKind::Mixed as i32
-        );
-    }
-}
-
-#[cfg(test)]
 mod typed_tone_pin_tests {
-    use super::{reading_passes_typed_tones, TonePin, TypedBoundary};
+    use super::{reading_passes_typed_tones, TonePin, TpsClose, TpsCloseKind, TypedBoundary};
     use phonetics::InputMode::{self, Poj, Tl};
 
     fn passes(mode: InputMode, typed: &str, reading: &str) -> bool {
-        reading_passes_typed_tones(mode, typed, &[], reading)
+        reading_passes_typed_tones(mode, typed, &[], &[], reading)
     }
 
     // §17 case 3 — the reported shape. Faces via `poj_num_syllable_ends_from_tl`:
@@ -1751,7 +1708,36 @@ mod typed_tone_pin_tests {
             .iter()
             .map(|&(at, khinsiann)| TypedBoundary { at, khinsiann })
             .collect();
-        reading_passes_typed_tones(mode, typed, &boundaries, reading)
+        reading_passes_typed_tones(mode, typed, &boundaries, &[], reading)
+    }
+
+    /// Plain `-` boundaries at the ends of `stretches`, each one syllable.
+    fn passes_stretches(typed: &str, stretches: &[(usize, usize)], reading: &str) -> bool {
+        let boundaries: Vec<TypedBoundary> = stretches
+            .iter()
+            .map(|&(_, at)| TypedBoundary {
+                at,
+                khinsiann: false,
+            })
+            .collect();
+        reading_passes_typed_tones(Tl, typed, &boundaries, stretches, reading)
+    }
+
+    // trace: typed `ai-` → stretch 0..2.
+    //   愛 ài → one syllable over `ai`, walk ends [2] ✓ nothing inside.
+    //   阿姨 a-î → `a` + `i`, walk ends [1, 2]; 1 lies inside 0..2 ✗.
+    //   `siamtioh`, stretch 0..4: 閃著 siám-tio̍h ends [4, 8] ✓;
+    //   si-am-tio̍h ends [2, 4, 8]; 2 lies inside 0..4 ✗.
+    #[test]
+    fn a_reading_may_not_split_a_one_syllable_stretch() {
+        assert!(passes_stretches("ai", &[(0, 2)], "ài"));
+        assert!(!passes_stretches("ai", &[(0, 2)], "a-î"));
+        assert!(passes_stretches("siamtioh", &[(0, 4)], "siám-tio̍h"));
+        assert!(!passes_stretches("siamtioh", &[(0, 4)], "si-am-tio̍h"));
+        assert!(passes_stretches("aiai", &[(0, 2), (2, 4)], "ài-ài"));
+        assert!(!passes_stretches("aiai", &[(0, 2), (2, 4)], "ài-a-î"));
+        // A boundary with no one-syllable stretch keeps the split (`taigi-`).
+        assert!(passes_boundaries(Tl, "ai", &[2], "a-î"));
     }
 
     // The kind of the typed run must match the reading's own separator at
@@ -1826,6 +1812,7 @@ mod typed_tone_pin_tests {
             mode: Poj,
             typed: "teng5sek".to_owned(),
             boundaries: Vec::new(),
+            one_syllable_stretches: Vec::new(),
         };
         assert!(typed.admits(Some("poj:tengsek"), "tîng-sik"));
         assert!(!typed.admits(Some("poj:tengsek"), "tíng-sik"));
@@ -1836,11 +1823,153 @@ mod typed_tone_pin_tests {
         assert!(TonePin::None.admits_custom("téng-sek", Poj));
         // TPS: exact path aligns on the matched key, whole-buffer on the body.
         // trace: 詩 si → tps notone `ㄒㄧ`, tone 1 → passes; 是 sī tone 7 → rejected.
-        let space = TonePin::TpsSpaceEnd("ㄒㄧ".to_owned());
+        let space = TonePin::TpsTyped {
+            body: "ㄒㄧ".to_owned(),
+            closes: vec![TpsClose {
+                body_end: "ㄒㄧ".len(),
+                kind: TpsCloseKind::SpaceClosed,
+            }],
+        };
         assert!(space.admits(None, "si"));
         assert!(!space.admits(None, "sī"));
         assert!(space.admits(Some("tps:ㄒㄧ"), "si"));
         assert!(!space.admits(Some("tps:ㄒㄧ"), "sī"));
+    }
+}
+
+#[cfg(test)]
+mod tps_close_pin_tests {
+    use super::{reading_passes_tps_closes, TpsClose, TpsCloseKind};
+    use TpsCloseKind::{Boundary, Marked, SpaceClosed};
+
+    fn close(body_end: usize, kind: TpsCloseKind) -> TpsClose {
+        TpsClose { body_end, kind }
+    }
+
+    // trace: `ㄉㄞ˫ㄨㄢ` → toneless `ㄉㄞㄨㄢ`, ˫ = 7 closes at `ㄉㄞ`.len() = 6.
+    // 大員 tāi-uân: tai7 ends at 6 ✓; 台灣 tâi-uân: tai5 ✗; uan is free.
+    #[test]
+    fn marked_close_keeps_the_typed_tone_only() {
+        let closes = [close(6, Marked('7'))];
+        assert!(reading_passes_tps_closes("ㄉㄞㄨㄢ", &closes, "tāi-uân"));
+        assert!(!reading_passes_tps_closes("ㄉㄞㄨㄢ", &closes, "tâi-uân"));
+        assert!(reading_passes_tps_closes(
+            "tps:ㄉㄞㄨㄢ",
+            &closes,
+            "tāi-uan"
+        ));
+    }
+
+    // trace: `ㄌㄧˋㄫ` → toneless `ㄌㄧㄫ`, ˋ = 2 at 6; §35 matched key
+    // `ㄌㄧㄥ` for 靈 lîng accumulates `ㄌㄧㄥ` (9 bytes) — no syllable ends
+    // at 6 → reject; 你 lí ends at 6 with tone 2 ✓.
+    #[test]
+    fn marked_close_rejects_a_reading_that_runs_through_the_mark() {
+        let closes = [close(6, Marked('2'))];
+        assert!(!reading_passes_tps_closes("tps:ㄌㄧㄥ", &closes, "lîng"));
+        assert!(!reading_passes_tps_closes("tps:ㄌㄧㄥ", &closes, "líng"));
+        assert!(reading_passes_tps_closes("tps:ㄌㄧㄫ", &closes, "lí-n̂g"));
+    }
+
+    // trace: `ㄌㄧ`␣`ㄫ` — interior space at 6. 靈 lîng ✗ (no end at 6);
+    // 你硬 lí-ngē ✓ whatever the tones; the space sets no tone.
+    #[test]
+    fn boundary_close_needs_a_syllable_end_but_no_tone() {
+        let closes = [close(6, Boundary)];
+        assert!(!reading_passes_tps_closes(
+            "tps:ㄌㄧㄥㆤ",
+            &closes,
+            "lîng-ē"
+        ));
+        assert!(reading_passes_tps_closes("tps:ㄌㄧㄫㆤ", &closes, "lí-ngē"));
+        assert!(reading_passes_tps_closes("tps:ㄌㄧㄫㆤ", &closes, "li-ngē"));
+    }
+
+    // trace: S23 `ㄇ`␣`ㄒㄧ` — §35 matches `tps:ㆬㄒㄧ` for 毋是 m̄-sī; m7's
+    // notone `ㆬ` ends at 3 ✓. The bare typed body keeps `ㄇ`, which no
+    // reading reconstructs — the matched key is what makes the hit align.
+    #[test]
+    fn boundary_close_aligns_on_the_substituted_matched_key() {
+        let closes = [close(3, Boundary)];
+        assert!(reading_passes_tps_closes("tps:ㆬㄒㄧ", &closes, "m̄-sī"));
+        assert!(!reading_passes_tps_closes("ㄇㄒㄧ", &closes, "m̄-sī"));
+    }
+
+    // trace: §41 — tsit4 這 ✓ (unmarked stop), tsit8 一 ✗ (dotted), si1 ✓, sī ✗.
+    #[test]
+    fn space_closed_keeps_tone_one_and_four_only() {
+        let at = |body: &str| [close(body.len(), SpaceClosed)];
+        assert!(reading_passes_tps_closes("ㄐㄧㆵ", &at("ㄐㄧㆵ"), "tsit"));
+        assert!(!reading_passes_tps_closes("ㄐㄧㆵ", &at("ㄐㄧㆵ"), "tsi̍t"));
+        assert!(reading_passes_tps_closes("ㄒㄧ", &at("ㄒㄧ"), "si"));
+        assert!(!reading_passes_tps_closes("ㄒㄧ", &at("ㄒㄧ"), "sī"));
+    }
+
+    // trace: `ㄏㄛˋㄇㄚ`␣ → ˋ 2 at 6 + space closing `ㄇㄚ` at 12.
+    #[test]
+    fn marked_and_space_closes_combine() {
+        let closes = [close(6, Marked('2')), close(12, SpaceClosed)];
+        assert!(reading_passes_tps_closes("ㄏㄛㄇㄚ", &closes, "hó-ma"));
+        assert!(!reading_passes_tps_closes("ㄏㄛㄇㄚ", &closes, "hó-má"));
+        assert!(!reading_passes_tps_closes("ㄏㄛㄇㄚ", &closes, "hō-ma"));
+    }
+
+    // A fully-toned span matched the verbatim toned key: marks are stripped
+    // before aligning, and ˙ (tone 8) sits on the toneless offsets too.
+    // trace: `ㄐㄧㆵ˙ㆤˊ` (key form U+0307) → toneless `ㄐㄧㆵㆤ`; closes
+    // 9 (8) and 12 (5). 一个 tsi̍t-ê ✓; 這个 tsit-ê (tone 4) ✗.
+    #[test]
+    fn verbatim_toned_matched_key_aligns_on_toneless_offsets() {
+        let closes = [close(9, Marked('8')), close(12, Marked('5'))];
+        assert!(reading_passes_tps_closes(
+            "tps:ㄐㄧㆵ\u{0307}ㆤˊ",
+            &closes,
+            "tsi̍t-ê"
+        ));
+        assert!(!reading_passes_tps_closes(
+            "tps:ㄐㄧㆵ\u{0307}ㆤˊ",
+            &closes,
+            "tsit-ê"
+        ));
+        let toned = [close(6, Marked('7')), close(12, Marked('5'))];
+        assert!(reading_passes_tps_closes(
+            "tps:ㄉㄞ˫ㄨㄢˊ",
+            &toned,
+            "tāi-uân"
+        ));
+        assert!(!reading_passes_tps_closes(
+            "tps:ㄉㄞ˫ㄨㄢˊ",
+            &toned,
+            "tâi-uân"
+        ));
+    }
+
+    // A partial-prefix extension's matched key runs past the last close;
+    // only the typed part is checked. A close past the body is a reject.
+    #[test]
+    fn closes_ignore_the_matched_key_past_the_last_close() {
+        let closes = [close(6, Marked('7'))];
+        assert!(reading_passes_tps_closes(
+            "tps:ㄉㄞㄨㄢㄒㄧ",
+            &closes,
+            "tāi-uân-si"
+        ));
+        assert!(!reading_passes_tps_closes(
+            "ㄉㄞ",
+            &[close(9, Boundary)],
+            "tāi"
+        ));
+        assert!(!reading_passes_tps_closes(
+            "ㄉㄞ",
+            &[close(4, Boundary)],
+            "tāi"
+        ));
+    }
+
+    #[test]
+    fn other_key_families_pass_through() {
+        let closes = [close(1, Marked('2'))];
+        assert!(reading_passes_tps_closes("tl:tai", &closes, "tâi"));
     }
 }
 
@@ -1864,10 +1993,9 @@ mod edge_word_pick_tests {
             hanji: Some(hanji.to_owned()),
             canonical_tl: "tse".to_owned(),
             score: frequency as f32,
-            form: FORM_NOTONE,
             frequency,
+            walker_cost: EQUAL_COST,
             bitmask: 0,
-            script_kind: CandidateScriptKind::Hant,
             user_weight,
             context_rank,
             coverage_kind: COVERAGE_KIND_FULL,
@@ -1875,12 +2003,89 @@ mod edge_word_pick_tests {
         }
     }
 
+    /// A typical seen word's corpus cost; the tests that do not exercise the
+    /// corpus dimension give every homophone this one.
+    const EQUAL_COST: u16 = 7_000;
+
+    fn costed(candidate: RawCandidate, walker_cost: u16) -> RawCandidate {
+        RawCandidate {
+            walker_cost,
+            ..candidate
+        }
+    }
+
     fn picked(homophones: Vec<RawCandidate>, context_free: bool) -> Option<String> {
         pick_edge_word(homophones, 3, context_free).map(|c| c.display_text)
     }
 
+    // E1 P5a: the word the corpus writes most fills the edge, whatever the
+    // dictionary frequency (production `koh`: 擱 and 閣 share frequency
+    // 29,890; `kap`: 甲 outranks 佮 on source rank).
+    #[test]
+    fn corpus_cost_takes_the_word_over_frequency() {
+        let key = vec![
+            costed(homophone("擱", 29_890, 1, 0.0, CONTEXT_RANK_NONE), 9_000),
+            costed(homophone("閣", 29_890, 1, 0.0, CONTEXT_RANK_NONE), 6_000),
+            costed(homophone("故", 40_000, 1, 0.0, CONTEXT_RANK_NONE), 8_000),
+        ];
+        assert_eq!(picked(key, true).as_deref(), Some("閣"));
+    }
+
+    // E1 P5a: an equal cost (corpus-unseen words share one smoothed cost)
+    // leaves the pick to the dictionary score, as before P5a.
+    #[test]
+    fn equal_cost_falls_to_the_dictionary_score() {
+        let key = vec![
+            costed(homophone("狗巢", 25, 2, 0.0, CONTEXT_RANK_NONE), 13_180),
+            costed(homophone("狗岫", 50, 2, 0.0, CONTEXT_RANK_NONE), 13_180),
+        ];
+        assert_eq!(picked(key, true).as_deref(), Some("狗岫"));
+    }
+
+    // A selected word still leads the corpus: user weight is the first
+    // dimension of the pick.
+    #[test]
+    fn selected_word_beats_the_corpus_choice() {
+        let key = vec![
+            costed(homophone("教授", 10, 2, 0.0, CONTEXT_RANK_NONE), 7_000),
+            costed(homophone("狗岫", 25, 2, 0.2, CONTEXT_RANK_NONE), 13_180),
+        ];
+        assert_eq!(picked(key, true).as_deref(), Some("狗岫"));
+    }
+
+    // Learned phrases (§50) carry no corpus cost: a dictionary homophone
+    // wins unless the user's weight or the previous word's context favours
+    // the learned row, and a learned row alone is the edge.
+    #[test]
+    fn learned_row_competes_through_user_weight_and_context_only() {
+        let dictionary = || costed(homophone("這", 1000, 1, 0.0, CONTEXT_RANK_NONE), 7_000);
+        let learned = |user_weight, context_rank| {
+            costed(
+                homophone("姊", 0, 1, user_weight, context_rank),
+                WALKER_COST_UNPRICED,
+            )
+        };
+        assert_eq!(
+            picked(vec![learned(0.0, CONTEXT_RANK_NONE), dictionary()], true).as_deref(),
+            Some("這")
+        );
+        assert_eq!(
+            picked(vec![dictionary(), learned(0.3, CONTEXT_RANK_NONE)], true).as_deref(),
+            Some("姊")
+        );
+        assert_eq!(
+            picked(vec![dictionary(), learned(0.0, CONTEXT_RANK_USER)], false).as_deref(),
+            Some("姊")
+        );
+        assert_eq!(
+            picked(vec![learned(0.0, CONTEXT_RANK_NONE)], true).as_deref(),
+            Some("姊")
+        );
+    }
+
     // INVARIANT_CONTINUOUS_CONTEXT_RERANK (§56): a context hit takes the
-    // edge's word; the context-free pick is today's frequency order.
+    // edge's word; with every corpus cost equal here, the context-free pick
+    // is the frequency order.
     #[test]
     fn context_hit_takes_the_word() {
         let key = || {
@@ -1914,6 +2119,29 @@ mod edge_word_pick_tests {
             homophone("濟", 100, 1, 0.5, CONTEXT_RANK_USER),
         ];
         assert_eq!(picked(hit_among_equals, false).as_deref(), Some("濟"));
+    }
+
+    // INVARIANT_CONTINUOUS_CONTEXT_RERANK with corpus costs: the context-free
+    // winner is now the cheapest word, and the contextual pick keeps its
+    // `syllable_count` and `user_weight` — with `span_walker_cost` taken
+    // over the key regardless of the pick, every `lattice::edge_cost` input
+    // is the same with and without the context.
+    #[test]
+    fn context_hit_keeps_the_corpus_winners_cost_inputs() {
+        let key = || {
+            vec![
+                costed(homophone("這", 1000, 1, 0.0, CONTEXT_RANK_NONE), 7_000),
+                costed(homophone("這兜", 10, 2, 0.0, CONTEXT_RANK_NONE), 5_000),
+                costed(homophone("濟", 100, 1, 0.0, CONTEXT_RANK_USER), 9_000),
+                costed(homophone("姊妹", 1, 2, 0.0, CONTEXT_RANK_BUNDLED), 12_000),
+            ]
+        };
+        let context_free = pick_edge_word(key(), 3, true).expect("a word");
+        let contextual = pick_edge_word(key(), 3, false).expect("a word");
+        assert_eq!(context_free.display_text, "這兜");
+        assert_eq!(contextual.display_text, "姊妹");
+        assert_eq!(contextual.syllable_count, context_free.syllable_count);
+        assert_eq!(contextual.user_weight, context_free.user_weight);
     }
 
     #[test]

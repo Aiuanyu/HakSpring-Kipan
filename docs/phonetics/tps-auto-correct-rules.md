@@ -2,7 +2,7 @@
 
 Cross-referenced with `taigi-phonetics-reference.md` and the codebase implementations.
 
-**Scope**: These rules apply ONLY when `inputMode == .tps` (iOS) / `keyboardLayoutType == "tps"` (Android). They do not affect POJ/TL/English layouts.
+**Scope**: TPS input only, on every platform. iOS / Android call `RustEngineBridge.tpsInputAdjust` only when the TPS layout is active (`inputMode == .tps` / `keyboardLayoutType == "tps"`); the desktops reach the same code through `Method::TpsKey` (`engine/composing/src/transition.rs` `tps_key` → `phonetics::tps_input_adjust`). POJ / TL / English input is unaffected.
 
 ---
 
@@ -13,7 +13,7 @@ TPS auto-correct handles cases where:
 2. The user types a phonetically invalid sequence that has a clear correct form
 3. The display form (rawInput) should accurately reflect standard TPS notation
 
-All rules operate on `rawInput` at keystroke time, before `toTL()` conversion.
+All rules operate on `rawInput` at keystroke time, before the character joins the raw input.
 
 ---
 
@@ -47,9 +47,7 @@ When the incoming character is **ㄧ** or **ㆪ**, and the last character of raw
 
 ### Implementation
 
-Rust shared-core single source: `engine/phonetics/src/tps_adjust.rs::palatalization_replacement`. Both iOS and Android call into the Rust engine via `Method::TpsInputAdjust` (the platform `TPSConverter.swift` / `TPSConverter.kt` mirrors were deleted in the Path G migration).
-
-Called after `adjust_initial_key` inside `tps_adjust::adjust`; the result comes back as `replace_last`, which the platform applies to rawInput retroactively.
+`engine/phonetics/src/tps_adjust.rs::palatalization_replacement`, called after `adjust_initial_key` inside `tps_adjust::adjust`; the result comes back as `replace_last`, which the platform applies to rawInput retroactively.
 
 ---
 
@@ -106,36 +104,17 @@ by `is_valid_syllable(tps_to_tl(pending_open_syllable + final))` against `TL_FIN
 Covers stops AND nasals. See `docs/architecture/behavioral-invariants.md` §32
 (`INVARIANT_TPS_STOPCODA_PHONOTACTIC_GATE`) + §33 (`INVARIANT_TPS_NASALCODA_PHONOTACTIC_GATE`).
 
-### Examples
-
-| Input sequence | rawInput result | TL |
-|---|---|---|
-| (empty) + ㄇ | ㄇ | m (initial) |
-| (empty) + ㄋ | ㄋ | n (initial) |
-| (empty) + ㄅ | ㄅ | p (initial) |
-| ㄚ + ㄇ | ㄚㆬ | am |
-| ㄚ + ㄋ | ㄚㄣ | an |
-| ㄒㄧ + ㄋ | ㄒㄧㄣ | sin |
-| ㄧ + ㄫ | ㄧㄥ | ing |
-| ㄚ + ㄫ | ㄚㆭ | ang |
-| ㄍㄚ + ㄅ | ㄍㄚㆴ | kap4 |
-| ㄍㄚ + ㄅ + ˙ | ㄍㄚㆴ˙ | kap8 |
-| ㄍㄚ + ㄉ | ㄍㄚㆵ | kat4 |
-| ㄍㄚ + ㄍ | ㄍㄚㆻ | kak4 |
-| ㄍㄚ + ㄏ | ㄍㄚㆷ | kah4 |
-| ˋ + ㄇ | ...ˋㄇ | m (new syllable) |
-| ˋ + ㄅ | ...ˋㄅ | p (new syllable) |
-| ㆴ + ㄅ | ...ㆴㄅ | p (new syllable — ㆴ is in syllableBoundaryChars) |
+Examples: [§ Manual test checklist](#manual-test-checklist), Rule 2.
 
 ### Why auto-correction is necessary
 
-Initial forms (ㄅ/ㄉ/ㄍ/ㄏ/ㄋ) are in the consonant table; final forms (ㆴ/ㆵ/ㆻ/ㆷ/ㄣ) are in the tone/vowel tables. Without auto-correction, `toTL()` treats the initial form as a new syllable and inserts a space:
-- ㄍㄚㄅ → `"ka p"` (broken) instead of ㄍㄚㆴ → `"kap4"` (correct)
-- ㄒㄧㄋ → `"si n"` (broken) instead of ㄒㄧㄣ → `"sin"` (correct)
+Initial forms (ㄅ/ㄉ/ㄍ/ㄏ/ㄋ) are in the consonant table; final forms (ㆴ/ㆵ/ㆻ/ㆷ/ㄣ) are in the tone/vowel tables. Without auto-correction, `phonetics::tps::from_zhuyin` cannot read an initial form in coda position and leaves it as residue:
+- ㄍㄚㄅ → `"kaㄅ"` (broken) instead of ㄍㄚㆴ → `"kap4"` (correct)
+- ㄒㄧㄋ → `"siㄋ"` (broken) instead of ㄒㄧㄣ → `"sin"` (correct)
 
 ### Implementation
 
-Rust shared-core single source: `engine/phonetics/src/tps_adjust.rs::adjust_initial_key`. Platform-side mirrors (iOS `TPSConverter.swift`, Android `TPSConverter.kt`) were deleted in the Path G migration; both iOS and Android call into the Rust engine via `Method::TpsInputAdjust`.
+`engine/phonetics/src/tps_adjust.rs::adjust_initial_key` (coda glyph from `dual_final_form`).
 
 ---
 
@@ -158,7 +137,7 @@ When the incoming character is a **tone mark** (ˋ ˪ ˊ ˇ ˫ ˙ ˆ), and the l
 
 ### Why auto-correction is necessary
 
-Without correction, `toTL("ㄇ˫")` produces `"m 7"` (with space — consonant-only + tone is invalid), which does not match any dictionary entry. With correction, `toTL("ㆬ˫")` produces `"m7"` (valid syllabic m).
+Lookup would work either way (`from_zhuyin` reads both ㄇ˫ and ㆬ˫ as `m7`), but standard TPS writes the syllabic form, so the raw input and preedit show ㆬ˫ rather than ㄇ˫.
 
 ### Why this is safe
 
@@ -166,9 +145,7 @@ If ㄇ were after a vowel, `adjust_initial_key` (Rule 2) would have already conv
 
 ### Implementation
 
-Rust shared-core single source: `engine/phonetics/src/tps_adjust.rs::syllabic_nasal_replacement`. Both iOS and Android call into the Rust engine via `Method::TpsInputAdjust` (the platform `TPSConverter.swift` / `TPSConverter.kt` mirrors were deleted in the Path G migration).
-
-Called after `adjust_nasalized_vowel_key` and before `palatalization_replacement` inside `tps_adjust::adjust`; the result comes back as `replace_last` (same pattern as Rule 1).
+`engine/phonetics/src/tps_adjust.rs::syllabic_nasal_replacement`, called after `adjust_nasalized_vowel_key` and before `palatalization_replacement` inside `tps_adjust::adjust`; the result comes back as `replace_last` (same pattern as Rule 1).
 
 ---
 
@@ -194,13 +171,13 @@ When the incoming character is **ㆮ** (ainn) and the last character of rawInput
 
 ### Implementation
 
-Rust shared-core single source: `engine/phonetics/src/tps_adjust.rs::adjust_nasalized_vowel_key`. Both iOS and Android call into the Rust engine via `Method::TpsInputAdjust` (the platform `TPSConverter.swift` / `TPSConverter.kt` mirrors were deleted in the Path G migration).
+`engine/phonetics/src/tps_adjust.rs::adjust_nasalized_vowel_key`.
 
 ---
 
 ## Input Pipeline Execution Order
 
-All auto-correct rules run in one engine call, `engine/phonetics/src/tps_adjust.rs::adjust` (`Method::TpsInputAdjust`), BEFORE the platform appends the character to the raw input. The platform gates the call by the TPS layout and applies both results:
+All auto-correct rules run in one engine call, `engine/phonetics/src/tps_adjust.rs::adjust` (mobile: `Method::TpsInputAdjust`; desktop: inside `Method::TpsKey`), BEFORE the character is appended to the raw input. The caller gates the call by TPS input and applies both results:
 
 ```
 User taps key
@@ -221,31 +198,9 @@ User taps key
 
 ---
 
-## toTL() Fallback Handling
+## Unadjusted Input
 
-The `toTL()` converter has built-in compensation for invalid TPS sequences that were NOT auto-corrected (e.g., user typed via popup or pasted text):
-
-| Invalid sequence | toTL() behavior | Correct auto-corrected form |
-|---|---|---|
-| ㄙㄧ (non-palatalized + ㄧ) | Insert space: `"s i"` | ㄒㄧ → `"si"` |
-| ㄗㄧ | Insert space: `"ts i"` | ㄐㄧ → `"tsi"` |
-| ㄘㄧ | Insert space: `"tsh i"` | ㄑㄧ → `"tshi"` |
-| ㆡㄧ | Insert space: `"j i"` | ㆢㄧ → `"ji"` |
-
-These fallbacks produce broken TL (two syllables instead of one), so auto-correction at input time is preferred.
-
----
-
-## TL → TPS Post-Processing (convertSyllableToTPS)
-
-These are display-only corrections applied when converting TL back to TPS for candidate display. They are NOT input auto-corrections, but they enforce the same phonetic rules:
-
-| Step | Rule | Example |
-|---|---|---|
-| 5 | Standalone m/ng → syllabic form: ㄇ→ㆬ, ㄫ→ㆭ | `m7` → ㆬ˫ |
-| 5b | ㄧ + ㆭ → ㄧㄥ (ing special case) | `ing5` → ㄧㄥˊ |
-| 6 | Palatalized + ㄣㄣ → ㆪ (nasalized collapse) | `tsinn5` → ㄐㆪˊ |
-| 7 | ㄛ → ㆦ before ㆴ/ㆵ/ㆻ (not ㆷ) | `ok4` → ㆦㆻ |
+Text that skipped auto-correct (popup keys, paste) still converts: `from_zhuyin` reads non-palatalized ㄙㄧ / ㄗㄧ / ㄘㄧ / ㆡㄧ as `si` / `tsi` / `tshi` / `ji`. The display-side TL → TPS corrections (syllabic m/ng, ㄧㄥ, ㆪ collapse, ㄛ→ㆦ before stops) live in `phonetics::tps::to_zhuyin` — see [`../engine/tps.md` § TL → TPS Post-Processing](../engine/tps.md#tl--tps-post-processing-phoneticstpsto_zhuyin).
 
 ---
 
@@ -268,29 +223,8 @@ These are manual alternatives accessible via long-press, providing access to rel
 | ㄫ | ㆭ, ㄥ | Syllabic ng / -ing variant |
 | ㆰ | ㆱ | om variant |
 | ㆤ | ㄝ | ee variant |
-| ㆪ | ㆳ | Vertical glyph variant |
+| ㆪ | ㆳ | Same symbol encoded twice (Unicode L2/18-052); every lookup folds ㆳ onto ㆪ |
 | ㆮ | ㆯ | aunn variant |
-
----
-
-## Cross-Reference Summary
-
-| Phonetic rule (from reference) | Auto-correct implementation | Status |
-|---|---|---|
-| Palatalization: ts/tsh/s/j + i → tɕ/tɕʰ/ɕ/dʑ | Rule 1: `palatalization_replacement()` | Implemented |
-| m position: initial vs final/syllabic | Rule 2: `adjust_initial_key()` | Implemented |
-| n position: initial vs final (ㄣ) | Rule 2: `adjust_initial_key()` | Implemented |
-| ng position: initial vs final (ㆭ) vs -ing (ㄥ) | Rule 2: `adjust_initial_key()` | Implemented |
-| p position: initial (ㄅ) vs coda (ㆴ) | Rule 2: `adjust_initial_key()` | Implemented |
-| t position: initial (ㄉ) vs coda (ㆵ) | Rule 2: `adjust_initial_key()` | Implemented |
-| k position: initial (ㄍ) vs coda (ㆻ) | Rule 2: `adjust_initial_key()` | Implemented |
-| h position: initial (ㄏ) vs coda (ㆷ) | Rule 2: `adjust_initial_key()` | Implemented |
-| Standalone syllabic m + tone → ㆬ | Rule 2b: `syllabic_nasal_replacement()` | Implemented |
-| Standalone syllabic ng + tone → ㆭ | Rule 2b: `syllabic_nasal_replacement()` | Implemented |
-| iainn invalid → iaunn | Rule 3: `adjust_nasalized_vowel_key()` | Implemented |
-| o → oo before -p/-t/-k (not -h) | Post-processing Step 7 (display only) | Display only |
-| ㄧ + ㆭ → ㄧㄥ (ing rhyme) | Post-processing Step 5b (display only) | Display only |
-| Palatalized + nn → nasalized ㆪ | Post-processing Step 6 (display only) | Display only |
 
 ---
 

@@ -6,7 +6,7 @@ Project `AGENTS.md` Core Principle #3 ("Phonetics = authoritative-source-only") 
 
 ## Word identity = (漢字, 羅馬字) pair (Core Principle #6)
 
-A Taiwanese word is identified by the **(Hanji, canonical-TL) combination**, never by either field alone — 一字多音 (`重/tîng` ≠ `重/tāng`) and homophones make both fields necessary. Any key / dedup / group / lookup / accent-or-variant substitution over Taiwanese entries MUST use the `(hanzi, tl)` pair (project-wide: `lexicon`, `ranking`, dictionary `merge`/`merge_csv`/`cleanup`, accent generation). POJ/TPS are alternate renderings of the same TL and add no new identity. Full statement + rationale: project `AGENTS.md` Core Principle #6.
+Defined in `AGENTS.md` Core Principle #6; every key / dedup / group / lookup / variant substitution keys on the `(hanzi, tl)` pair — `lexicon`, `ranking`, dictionary `merge` / `merge_csv` / `cleanup`, accent generation.
 
 ## Required reading (in order)
 

@@ -1,9 +1,10 @@
 # dictionary/
 
 TaigiKeyboard's dictionary data pipeline. Builds the runtime artefacts
-(`dictionary.bin` / `dictionary.fst` / `association.bin`) that both iOS
-and Android consume. Each binary is generated directly from the canonical
-`dictionary.csv` — no SQLite intermediates (removed in v3.5.6 part 2).
+(`dictionary.bin` / `dictionary.fst` / `syllables.fst` / `association.bin`)
+that every platform — iOS, Android, macOS, Windows, Linux — packages from
+the repo-root `assets/dictionaries/`. Each binary is generated directly from the canonical
+`dictionary.csv`.
 
 ## Layout
 
@@ -12,14 +13,16 @@ dictionary/
 ├── run.sh                     # Pipeline entry point — regenerate per-source CSVs
 ├── build.sh                   # Build entry point — produces output/ + deploys to the repo-root assets/dictionaries/
 ├── baseline.json              # Parity gate reference (compare_baseline.py verify)
+├── word-keys.tsv              # Committed (hanzi, tl) key set — build.sh step 7 rewrites it and diffs against the previous release tag's copy
 ├── requirements.txt           # Python deps
 │
 ├── pipeline/                  # Shared pipeline driver (discover_configs + run_dict)
 ├── common/                    # Stage implementations + shared helpers (source_bits, romanization, …)
 ├── build/                     # Build stage scripts (merge_csv, create_fst, create_*_bin, …)
-├── tools/                     # Dev utilities (compare_baseline, verify_csv, query_fst)
+├── tools/                     # Dev utilities (compare_baseline, verify_known_keys, verify_csv, query_fst, walker_gold, gen_dogfood)
+├── tests/                     # Pipeline unit tests (python3 -m pytest tests/)
 │
-├── sources/                   # Per-source dictionary inputs (see sources/README.md)
+├── sources/                   # Per-source dictionary inputs (see docs/SOURCES.md)
 │   ├── official/{kautian,taigitv,kungge,stti}/
 │   ├── community/{itaigi,sitbut,taihoa,taijit}/
 │   └── supplementary/khpoo/
@@ -34,10 +37,11 @@ dictionary/
 │   ├── khiin_frequency.csv    # Khiin frequency supplement
 │   ├── word_bigrams.tsv       # Corpus cross-word pair counts (build/corpus_bigrams.py)
 │   ├── word_unigrams.tsv      # Corpus word counts (same run)
+│   ├── romanized_readings.tsv # Reading → hanji for words Han-Lo sources write in romanization (corpus_bigrams)
 │   └── khiin_conversions.csv  # Khiin conversion table
 │
 ├── output/                    # Generated build artefacts
-└── docs/                      # Pipeline + sources docs
+└── docs/SOURCES.md            # Per-source provenance + licences
 ```
 
 ## Quick start
@@ -53,12 +57,55 @@ dictionary/
 python3 tools/compare_baseline.py verify
 ```
 
-`./run.sh` always runs the full 9-source pipeline. Single-source flags
-(`--dict`, `--category`, `--list`) were removed in the consolidation
-pass: the whole pipeline completes in seconds, none of the build steps
-accept partial inputs, and the simpler CLI keeps `pipeline/run.py`
-trivial. Use `python3 -m pipeline.run` directly from `dictionary/` if
-you need to invoke it from Python.
+`./run.sh` always runs the full 9-source pipeline (no per-source flags; no
+build step accepts partial inputs). `python3 -m pipeline.run` from
+`dictionary/` is the same entry point.
+
+## Pipeline
+
+`./run.sh` turns each source's raw input into a canonical
+`sources/<cat>/<key>/data/<key>.csv`. Each source's `config.yaml[stages]`
+lists its stages; `common/stages/__init__.py::STAGE_RUNNERS` is the authoritative
+stage set, and `pipeline/context.py::PipelineContext` carries state between
+stages (`_df`, or `_sheets` for kautian's multi-sheet ODS until `merge`).
+
+| Stage | What it does |
+|-------|--------------|
+| `extract` | Load `input_path` (.ods / .json / .csv / .csv_noheader) |
+| `select` | Kautian: rename columns, melt dialect tables, stash provenance maps |
+| `expand` | Split rows whose fields carry several readings / variants |
+| `cleanup` | Drop proverbs, roman-char hanzi, long entries, hanlo mismatches (`minimal: true` for khpoo) |
+| `merge` | Kautian: concat sheets in sorted order, dedupe on `(hanzi, tl)` |
+| `kautian_provenance` | Kautian: add `kautian_main` / `kautian_alt_reading` / `kautian_accent_mask` / `kautian_name` |
+| `frequency` | Join `shared/data/char_freq_merged.txt` + Khiin frequencies |
+| `kautian_accent_wordgen` | Kautian: generate word-level accent variants (inherit the base word's frequency) |
+| `poj` | Add `poj` via taigi-converter TL→POJ |
+| `numtone` / `notone` / `abbrev` | Add numeric-tone, toneless and first-letter columns for TL + POJ |
+| `source` | Add the per-source boolean column |
+| `variants` | Set `is_variant` from `supplementary/variants/data/variants.csv` |
+
+Per-source stage order:
+
+| Source | Stages |
+|--------|--------|
+| kautian | `extract select expand merge cleanup kautian_provenance frequency kautian_accent_wordgen poj numtone notone abbrev source variants` |
+| itaigi, sitbut, taihoa, taijit | `extract expand cleanup frequency poj numtone notone abbrev source variants` |
+| taigitv, kungge, stti, khpoo | `extract cleanup frequency poj numtone notone abbrev source variants` |
+
+`./build.sh` then runs 9 steps from `output/dictionary.csv`:
+`merge_csv` → `create_dictionary_bin` → `create_fst` → `create_syllables_fst`
+→ `create_association_bin` → `verify_poj_integrity` → `version_snapshot` →
+`tools/verify_known_keys` → `deploy.sh`. Every binary writer reads
+`dictionary.csv` through `build/dictionary_records.py`;
+`create_dictionary_bin` also reads `shared/data/word_unigrams.tsv` (walker cost,
+`build/walker_lm.py`), and `create_association_bin` reads
+`shared/data/word_bigrams.tsv` + `variants.csv`. The `shared/data/word_*.tsv`
+files are regenerated by hand with `build/corpus_bigrams.py`, never by `build.sh`.
+
+**Parity gate**: `tools/compare_baseline.py verify` checks SHA256 of
+`dictionary.bin` / `dictionary.fst` / `association.bin` (build_ts masked) and
+CSV-derived semantic counters against `baseline.json`. Any non-trivial pipeline
+or build change keeps it green.
 
 ## Sources (English key ↔ Chinese ↔ category)
 
@@ -90,16 +137,22 @@ original URLs.
 | `run.sh`                         | Thin wrapper → `python3 -m pipeline.run`                     |
 | `pipeline/run.py`                | Discover `sources/*/*/config.yaml`, run staged pipeline      |
 | `pipeline/context.py`            | `PipelineContext` threaded through every stage               |
-| `common/stages/*.py`             | Individual stage implementations (12 stages total)           |
-| `common/source_bits.py`          | Authoritative SOURCE_BITS / SOURCE_TIERS / column orders     |
+| `common/stages/*.py`             | Individual stage implementations (14 stages)                 |
+| `common/source_bits.py`          | Authoritative SOURCE_BITS / column orders                    |
 | `build/merge_csv.py`             | Merge 9 per-source CSVs + khiin/dev/lkk supplements          |
 | `build/dictionary_records.py`    | Shared loader — CSV → filtered records with rowids 1..N      |
 | `build/associations.py`          | Shared bigram + char-to-phrase generator from dictionary.csv |
 | `build/create_fst.py`            | fst prefix index from CSV (shells to engine/build-helpers/fst-builder) |
-| `build/create_{dictionary,association}_bin.py` | Binary mmap formats consumed by mobile apps |
+| `build/create_syllables_fst.py`  | `syllables.fst` — TL / POJ / TPS syllable inventory (same fst-builder) |
+| `build/walker_lm.py`             | Unigram walker cost per record, written into `dictionary.bin` |
+| `build/corpus_bigrams.py`        | Manual: corpus → `shared/data/word_bigrams.tsv` / `word_unigrams.tsv` |
+| `build/create_{dictionary,association}_bin.py` | Binary mmap formats the engine reads on every platform |
 | `build/verify_poj_integrity.py`  | Fatal POJ-integrity gate — halts build if `poj`/derived ≠ `convert_tl_to_poj(tl)` (+ KeSi report-only) |
-| `build/version_snapshot.py`      | Build-drop summary + `(hanzi, tl)` diff vs the previous release tag's `dictionary.csv` (read via `git show`; no snapshot file stored) |
+| `build/version_snapshot.py`      | Build-drop summary + `(hanzi, tl)` diff vs the previous release tag's `word-keys.tsv` (read via `git show`; writes the committed `word-keys.tsv`) |
 | `tools/compare_baseline.py`      | Parity gate — SHA256 + CSV-derived semantic diff vs baseline.json |
+| `tools/verify_known_keys.py`     | Build step 8 — known fst prefixes (`known_keys_fixture.yaml`) hit minimum counts |
+| `tools/walker_gold.py`           | Walker gold set: select / resolve / simulate against the corpus |
+| `tools/gen_dogfood.py`           | Random continuous-input dogfood table (TL / POJ / TPS / Hanji) |
 | `tools/verify_csv.py`            | CSV character-validity + duplicate sanity checker            |
 | `tools/query_fst.py`             | Query the compiled fst prefix index (dev debug)              |
 
@@ -107,14 +160,17 @@ original URLs.
 
 `build.sh` step 7 (`version_snapshot`) prints a build-drop summary (raw →
 dedup → supplements → final) plus a `(hanzi, tl)`-entry diff (added / removed)
-against the **previous release tag's** `dictionary/output/dictionary.csv`. That
-CSV is already git-tracked and committed at every release tag, so the previous
-release is read straight from git (`git show <tag>:…`) — no separate snapshot
-file is stored. Full added+removed lists land in `output/version_diff.txt`
-(ephemeral, gitignored).
+against the **previous release tag**. The diff basis is the committed
+`dictionary/word-keys.tsv` — the sorted `(hanzi, tl)` key set step 7 rewrites
+on every build (3.1 MB, where the full `dictionary.csv` is 35 MB) — and the
+previous release's copy is read straight from git
+(`git show <tag>:dictionary/word-keys.tsv`), so `output/` never has to be
+committed for the diff to work. Full added+removed lists land in
+`output/version_diff.txt` (ephemeral, gitignored).
 
-Diff-base resolution is semver-aware (**3-segment `vX.Y.Z` tags only**; a
-4-segment tag like `v3.4.8.1` is ignored):
+Diff-base resolution is semver-aware (**3-segment `vX.Y.Z` / `mobile-X.Y.Z`
+tags only**; a 4-segment tag like `v3.4.8.1` is ignored, and `desktop-*` tags
+never match — the desktop train ships no dictionary of its own):
 
 ```bash
 RELEASE_VERSION=v3.6.0 ./build.sh   # diff base = newest tag strictly < v3.6.0
@@ -131,14 +187,11 @@ To inspect a previous release's full dictionary directly:
 
 ## Notes
 
-- **`aiongtaigi-dictionary.csv` (removed Step 8)** — the legacy Aiong-Taigi
-  source dump was replaced by the ChhoeTaigi community sources. Its former
-  consumer `scripts/generate-syllable-test-data.mjs` (also removed) produced
-  `android/app/src/test/resources/syllable-test-data.csv`, removed 2026-09-05
-  once no test read it any more.
 - **Binary format reference**: `../docs/engine/binary-format.md` documents
   `dictionary.bin` / `association.bin` on-disk layout.
-- **Cross-platform invariant**: `SOURCE_BITS` + `SOURCE_TIERS` + tier
-  denominator in `common/source_bits.py` must mirror the iOS/Android
-  `DictionaryBinaryReader.{swift,kt}` and `CandidateProcessor.{swift,kt}`.
+- **Cross-platform invariant**: `SOURCE_BITS` in `common/source_bits.py`
+  must mirror the engine — `engine/lexicon/src/dictionary_filters.rs`
+  (`SOURCES` / `source_codes`, the bit → source-code decode every platform
+  reads). Source ranking lives only in the engine
+  (`engine/ranking/src/score.rs::source_tier_rank`).
   `docs/contributing/cross-platform-alignment.md` §3a governs drift.

@@ -15,7 +15,7 @@
 
 use crate::common::Fetch;
 use crate::common::{
-    build_dictionary_fst, build_syllables_fst, build_tkdb_v3, config, empty_association_bin,
+    build_dictionary_fst, build_syllables_fst, build_tkdb_v4, config, empty_association_bin,
     fetch_at_pos_response, install_lexicon, Row,
 };
 use test_support::{engine_install_lock, write_temp};
@@ -53,7 +53,7 @@ fn fixture_rows() -> Vec<Row> {
 
 fn install_fixture() {
     let rows = fixture_rows();
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst(&rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst(&["uan1", "uan5"]);

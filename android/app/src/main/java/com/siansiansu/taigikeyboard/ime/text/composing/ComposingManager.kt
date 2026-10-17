@@ -13,13 +13,13 @@ import com.siansiansu.taigikeyboard.engine.RustEngineBridge
 import com.siansiansu.taigikeyboard.engine.composingAppend
 import com.siansiansu.taigikeyboard.engine.composingAppendHyphen
 import com.siansiansu.taigikeyboard.engine.composingCommitContinuous
+import com.siansiansu.taigikeyboard.engine.composingCommitPrediction
 import com.siansiansu.taigikeyboard.engine.composingCommitPreeditThenInsertExternal
 import com.siansiansu.taigikeyboard.engine.composingCommitRaw
 import com.siansiansu.taigikeyboard.engine.composingDeleteBackward
 import com.siansiansu.taigikeyboard.engine.composingFetchAtPos
 import com.siansiansu.taigikeyboard.engine.composingReplaceLast
 import com.siansiansu.taigikeyboard.engine.composingReset
-import com.siansiansu.taigikeyboard.engine.composingSelectCandidate
 import com.siansiansu.taigikeyboard.engine.composingStart
 import com.siansiansu.taigikeyboard.engine.continuousAppConfig
 import com.siansiansu.taigikeyboard.ime.core.logging.LoggerBackend
@@ -132,6 +132,18 @@ class ComposingManager(
         sharedGeneration.incrementAndGet()
     }
 
+    /**
+     * Keyboard hidden: `InputMethodService.onFinishInputView` has already
+     * run `finishComposingText()`, so the host keeps the preedit as plain
+     * text (LatinIME `finishInput` convention). Drop the mirror so the
+     * host's follow-up `-1/-1` report cannot let [reconcileWithHost]
+     * re-mark that text, which the next show's region clear would delete
+     * (USER device report 2026-10-12, `tsit` lost on re-show).
+     */
+    fun onInputViewFinished() {
+        if (_isComposing.value) bumpGeneration()
+    }
+
     companion object {
         private const val TAG = "ComposingManager"
 
@@ -239,32 +251,11 @@ class ComposingManager(
         // current composition via CommitRaw — under Continuous the engine
         // commits `Σ nailed.display_text + derived(pending)` (the whole
         // composition) and fires the terminal NextWord, building the string
-        // from engine state so there is no prefix duplication. The old
-        // `SelectCandidate(getComposingText())` reroute double-counted the
-        // nailed prefix once the composing buffer became the whole
-        // composition (`select_candidate_under_continuous` prepends
-        // `nailed_prefix`). `selectCandidate(candidate)` still uses
-        // SelectCandidate (bare candidate → engine prepends correctly).
-        // An empty composition makes `CommitRaw` a no-op.
+        // from engine state so there is no prefix duplication. An empty
+        // composition makes `CommitRaw` a no-op.
         val settings = settingsProvider.current
         applyAsSelfCommit(
             RustEngineBridge.composingCommitRaw(
-                settings,
-                currentGeneration,
-            ),
-            ic,
-        )
-    }
-
-    fun selectCandidate(
-        suggestion: String,
-        ic: InputConnection,
-    ) {
-        logger.tdebug(TAG) { "[COMPOSE] fn=selectCandidate len=${suggestion.length}" }
-        val settings = settingsProvider.current
-        applyAsSelfCommit(
-            RustEngineBridge.composingSelectCandidate(
-                suggestion,
                 settings,
                 currentGeneration,
             ),
@@ -381,6 +372,20 @@ class ComposingManager(
             selfCommitInProgress = false
         }
         return result.outcome
+    }
+
+    /**
+     * Resolve one NextWord prediction tap (D1): the engine answers what the
+     * tap writes into the document and counts the usage itself; the
+     * composition is left as it is. `null` → write nothing.
+     */
+    fun commitPrediction(pick: RustEngineBridge.PredictionPick): RustEngineBridge.PredictionCommit? {
+        logger.tdebug(TAG) { "[COMPOSE] fn=commitPrediction script=${pick.script} romanLen=${pick.roman.length}" }
+        return RustEngineBridge.composingCommitPrediction(
+            pick = pick,
+            settings = settingsProvider.current,
+            generation = currentGeneration,
+        )
     }
 
     // endregion
@@ -516,7 +521,7 @@ class ComposingManager(
                     // NextWord-shaped composing effects flow through a sibling
                     // router, not the InputConnection-bound delegate. Engine
                     // emits these only on Continuous mid/final commits + resets;
-                    // the platform NextWord callback path on SelectCandidate
+                    // the platform NextWord callback path on a prediction tap
                     // (CandidateClickHandler.onNextWordPrediction) and this
                     // engine effect path do not double-fire.
                     nextWordRouter.route(effect)

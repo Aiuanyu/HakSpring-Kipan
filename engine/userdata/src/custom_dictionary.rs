@@ -72,8 +72,11 @@ pub struct CustomDictionaryIdentity {
     pub hanji: String,
 }
 
-/// A word the user added: the romanization exactly as typed (TL or POJ
-/// display form — nothing here folds it; the engine canonicalises per mode)
+/// A word the user added: the romanization as typed (TL or POJ display form —
+/// the spelling is never folded; the engine canonicalises per mode), stored
+/// in Unicode NFC so a decomposed import (`li` + U+0301) and a precomposed
+/// keyboard `lí` are one stored form, with each syllable's tone digit written
+/// as its mark (`tsui2-ong5-tshut` is stored `tsuí-ông-tshut`; `stored_roman`),
 /// and the Hanji it stands for, which may be empty. Timestamps are the stored
 /// `yyyy-MM-dd HH:mm:ss` UTC text. CROSS-PLATFORM INVARIANT — the stored
 /// shape is the engine's; iOS `CustomDictionaryEntry` / macOS
@@ -170,10 +173,40 @@ impl CustomDictionaryStore {
 
     // Keystroke path
 
-    /// The entries matching `query_key`, for the composition being typed.
-    /// Synchronous and best-effort: a store that is not open answers `[]`
-    /// rather than making the keystroke wait. `form IN (?, 'abbrev')` lets
-    /// an abbreviation row satisfy a query in the same family; `DISTINCT`
+    /// The entries the composition being typed may offer. Synchronous and
+    /// best-effort: a store that is not open answers `[]` rather than making
+    /// the keystroke wait. The query's own form matches as a prefix (the
+    /// engine then keeps only the words whose final syllable the typed
+    /// input reaches, `lexicon::continuous::custom_reach`); an abbreviation
+    /// row matches only when it IS the query, as a dictionary abbreviation
+    /// does on the keystroke path. Grouped per entry because one entry owns
+    /// several side rows, shortest matched key first so `limit` is spent on
+    /// the words nearest the typed input before the long extensions the
+    /// engine drops — that narrows the starvation, it cannot rule it out.
+    pub fn keystroke_rows(
+        &self,
+        query_key: &CustomSearchKey,
+        limit: usize,
+    ) -> Vec<CustomDictionaryRow> {
+        self.database
+            .read(|connection| {
+                let mut statement = connection.prepare_cached(&format!(
+                    "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\nFROM {TABLE_NAME} AS entry\nJOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\nWHERE search_key.family = ?1\n  AND ((search_key.form = ?2 AND search_key.key LIKE ?3 || '%')\n    OR (search_key.form = 'abbrev' AND search_key.key = ?3))\nGROUP BY entry.id\nORDER BY MIN(length(search_key.key)), entry.roman, entry.id\nLIMIT ?4;"
+                ))?;
+                let rows = statement.query_map(
+                    params![query_key.family, query_key.form, query_key.key, limit as i64],
+                    decode_row,
+                )?;
+                rows.collect()
+            })
+            .unwrap_or_default()
+    }
+
+    // Settings path
+
+    /// The entries matching `query_key` for the dictionary search page,
+    /// prefix-matched on both the query's form and the abbreviation — the
+    /// system dictionary search's own union (`lexicon::search`). `DISTINCT`
     /// because one entry owns several side rows.
     pub fn rows_matching(
         &self,
@@ -226,11 +259,11 @@ impl CustomDictionaryStore {
                 let rows = statement.query_map(params![limit as i64, offset as i64], decode_row)?;
                 return Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?);
             }
-            let pattern = format!("%{}%", escaped_for_like(&trimmed));
+            let (roman_pattern, hanji_pattern) = filter_patterns(&trimmed);
             let mut statement = connection.prepare(&format!(
                 "SELECT id, roman, hanzi, created_at, updated_at\nFROM {TABLE_NAME}\nWHERE roman LIKE ? ESCAPE '\\' OR hanzi LIKE ? ESCAPE '\\'\nORDER BY updated_at DESC\nLIMIT ? OFFSET ?;"
             ))?;
-            let rows = statement.query_map(params![pattern, pattern, limit as i64, offset as i64], decode_row)?;
+            let rows = statement.query_map(params![roman_pattern, hanji_pattern, limit as i64, offset as i64], decode_row)?;
             Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
         })
     }
@@ -264,11 +297,11 @@ impl CustomDictionaryStore {
         if trimmed.is_empty() {
             return self.count();
         }
-        let pattern = format!("%{}%", escaped_for_like(trimmed));
+        let (roman_pattern, hanji_pattern) = filter_patterns(trimmed);
         self.database.perform::<_, CustomDictionaryError>(move |connection| {
             let count: i64 = connection.query_row(
                 &format!("SELECT COUNT(*)\nFROM {TABLE_NAME}\nWHERE roman LIKE ? ESCAPE '\\' OR hanzi LIKE ? ESCAPE '\\';"),
-                params![pattern, pattern],
+                params![roman_pattern, hanji_pattern],
                 |row| row.get(0),
             )?;
             Ok(count as usize)
@@ -278,9 +311,9 @@ impl CustomDictionaryStore {
     /// Adds `row`, or replaces the one that already carries its id. The
     /// search keys are derived first, outside the transaction.
     pub fn upsert(&self, row: &CustomDictionaryRow) -> Result<(), CustomDictionaryError> {
+        let row = with_stored_roman(row);
         let search_keys = self.derived_keys(&row.roman)?;
         let limit = self.entry_limit;
-        let row = row.clone();
         self.database
             .perform::<_, CustomDictionaryError>(move |connection| {
                 immediate_transaction(connection, |connection| {
@@ -301,9 +334,9 @@ impl CustomDictionaryStore {
         &self,
         row: &CustomDictionaryRow,
     ) -> Result<(), CustomDictionaryError> {
+        let row = with_stored_roman(row);
         let search_keys = self.derived_keys(&row.roman)?;
         let limit = self.entry_limit;
-        let row = row.clone();
         self.database
             .perform::<_, CustomDictionaryError>(move |connection| {
                 immediate_transaction(connection, |connection| {
@@ -335,21 +368,19 @@ impl CustomDictionaryStore {
             })
     }
 
-    /// Empties the dictionary and reports how many entries went.
-    pub fn delete_all(&self) -> Result<usize, CustomDictionaryError> {
+    /// Empties the dictionary.
+    pub fn delete_all(&self) -> Result<(), CustomDictionaryError> {
         self.database
             .perform::<_, CustomDictionaryError>(|connection| {
-                let removed =
-                    immediate_transaction::<_, CustomDictionaryError>(connection, |connection| {
-                        let existing = entry_count(connection)?;
-                        connection.execute(&format!("DELETE FROM {TABLE_NAME};"), [])?;
-                        connection.execute(&format!("DELETE FROM {SEARCH_KEY_TABLE_NAME};"), [])?;
-                        Ok(existing)
-                    })?;
+                immediate_transaction::<_, CustomDictionaryError>(connection, |connection| {
+                    connection.execute(&format!("DELETE FROM {TABLE_NAME};"), [])?;
+                    connection.execute(&format!("DELETE FROM {SEARCH_KEY_TABLE_NAME};"), [])?;
+                    Ok(())
+                })?;
                 // Outside the transaction, best-effort: a file that stays large
                 // is not a failed clear.
                 connection.execute("VACUUM;", []).ok();
-                Ok(removed)
+                Ok(())
             })
     }
 
@@ -409,8 +440,8 @@ impl CustomDictionaryStore {
     }
 
     /// What every launch runs once the file is open: the takeover's key
-    /// re-derivation. Blocks (it goes through `perform`), so never on a UI
-    /// thread or a store worker. A failure is logged and the store stays
+    /// re-derivation, then the repair of stored romans to their stored form. Blocks (it goes
+    /// through `perform`), so never on a UI thread or a store worker. A failure is logged and the store stays
     /// usable.
     pub fn finish_takeover(&self) {
         // The re-derivation is part of the takeover: another process taking
@@ -419,7 +450,82 @@ impl CustomDictionaryStore {
         if let Err(error) = self.rederive_search_keys_if_needed() {
             log::error!("custom_dictionary.rederive_failed error={error}");
         }
+        if let Err(error) = self.normalize_stored_romans_if_needed() {
+            log::error!("custom_dictionary.normalize_failed error={error}");
+        }
         self.database.wait_long_for_locks(false);
+    }
+
+    /// Rewrites every stored roman that is not in the stored form
+    /// (`stored_roman`) into it — the rows written before the write boundary
+    /// normalised: a decomposed CSV import (NFD), a roman saved with tone
+    /// digits (`tsui2-ong5-tshut`). No marker: the stamps cannot carry one
+    /// (Android files keep 10 and iOS files 6 whatever this build writes,
+    /// and `application_id` is the takeover), so the scan is the gate — a
+    /// file an older build writes into again heals on the next launch, and a
+    /// file with nothing to fix costs one read that keeps no rows. The search
+    /// keys are derived again from the rewritten roman and replaced with it.
+    /// Ids, timestamps and Hanji are kept; two rows that become identical
+    /// both stay (a repair never deletes a word). Each rewrite is conditional
+    /// on the roman still being the one read, so an edit made in between —
+    /// or another process that already normalised — wins.
+    pub fn normalize_stored_romans_if_needed(&self) -> Result<(), CustomDictionaryError> {
+        let stale: Vec<(String, String, String)> = self
+            .database
+            .perform::<_, CustomDictionaryError>(|connection| {
+                let mut statement =
+                    connection.prepare(&format!("SELECT id, roman FROM {TABLE_NAME};"))?;
+                let rows = statement.query_map([], |row| {
+                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                })?;
+                let mut stale = Vec::new();
+                for row in rows {
+                    let (id, roman) = row?;
+                    let normalized = stored_roman(&roman);
+                    if normalized != roman {
+                        stale.push((id, roman, normalized));
+                    }
+                }
+                Ok(stale)
+            })?;
+        if stale.is_empty() {
+            return Ok(());
+        }
+        let mut rewrites = Vec::with_capacity(stale.len());
+        for (id, roman, normalized) in stale {
+            let search_keys = self.derived_keys(&normalized)?;
+            rewrites.push((id, roman, normalized, search_keys));
+        }
+        // One transaction per chunk, as an import: the write lock is never
+        // held for the whole repair (a rollback-journal file blocks the
+        // keystroke reader while it commits), and a process killed partway
+        // keeps the chunks it finished — each UPDATE is idempotent.
+        let mut rewritten = 0;
+        for chunk in rewrites.chunks(IMPORT_CHUNK_SIZE) {
+            let chunk = chunk.to_vec();
+            rewritten += self
+                .database
+                .perform::<_, CustomDictionaryError>(move |connection| {
+                    immediate_transaction(connection, |connection| {
+                        let mut rewritten = 0;
+                        for (id, roman, normalized, search_keys) in &chunk {
+                            let updated = connection.execute(
+                                &format!(
+                                    "UPDATE {TABLE_NAME} SET roman = ? WHERE id = ? AND roman = ?;"
+                                ),
+                                params![normalized, id, roman],
+                            )?;
+                            if updated > 0 {
+                                replace_search_keys(connection, id, search_keys)?;
+                            }
+                            rewritten += updated;
+                        }
+                        Ok(rewritten)
+                    })
+                })?;
+        }
+        log::info!("custom_dictionary.normalized_romans count={rewritten}");
+        Ok(())
     }
 
     /// Imports parsed rows, skipping the ones already stored and stopping at
@@ -453,8 +559,9 @@ impl CustomDictionaryStore {
             });
         }
         let mut seen_in_file = HashSet::new();
-        let candidates: Vec<&CustomDictionaryRow> = rows
+        let candidates: Vec<CustomDictionaryRow> = rows
             .iter()
+            .map(with_stored_roman)
             .filter(|row| seen_in_file.insert(row.identity()))
             .collect();
         let mut derived_by_roman: HashMap<&str, Vec<CustomSearchKey>> = HashMap::new();
@@ -469,7 +576,7 @@ impl CustomDictionaryStore {
             // borrow of the file has to be over.
             let chunk: Vec<(CustomDictionaryRow, Vec<CustomSearchKey>)> = chunk
                 .iter()
-                .map(|row| ((*row).clone(), derived_by_roman[row.roman.as_str()].clone()))
+                .map(|row| (row.clone(), derived_by_roman[row.roman.as_str()].clone()))
                 .collect();
             imported += self
                 .database
@@ -505,6 +612,32 @@ impl CustomDictionaryStore {
                 roman: roman.to_owned(),
             })
     }
+}
+
+/// The one stored form of a roman, whatever the source composed: Unicode NFC
+/// (`li` + U+0301 from an import and `lí` from a keyboard are one form) with
+/// each syllable's tone digit written as its mark (`tsui2-ong5-tshut` →
+/// `tsuí-ông-tshut`) — the candidate window shows the stored roman, so a
+/// digit kept here is a digit on screen. The letters stay as typed.
+fn stored_roman(roman: &str) -> String {
+    phonetics::api::tone_digits_to_marks(roman)
+}
+
+/// `row` with its roman in the stored form. Only the roman: NFC would fold a
+/// CJK compatibility ideograph in the Hanji onto its unified twin, changing
+/// the character the user chose.
+fn with_stored_roman(row: &CustomDictionaryRow) -> CustomDictionaryRow {
+    CustomDictionaryRow {
+        roman: stored_roman(&row.roman),
+        ..row.clone()
+    }
+}
+
+/// The settings-list filter as two `LIKE` patterns: the stored form for the
+/// roman column (`tsui2` finds the stored `tsuí`), as typed for the Hanji one.
+fn filter_patterns(filter: &str) -> (String, String) {
+    let pattern = |text: &str| format!("%{}%", escaped_for_like(text));
+    (pattern(&stored_roman(filter)), pattern(filter))
 }
 
 /// `%` / `_` / `\` in user text, made literal for a `LIKE … ESCAPE '\'`.

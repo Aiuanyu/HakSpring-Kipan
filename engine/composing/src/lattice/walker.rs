@@ -61,21 +61,23 @@ pub(crate) struct EdgeChoice {
     /// custom edge stays `true`; reverting it to `false` would
     /// re-enable the all-OOV carve-out on a custom-only path.
     pub dict_hit: bool,
-    /// v3.5.8 S6 (Codex pre-impl S6 Q4) — `true` iff this edge resolved
-    /// to a `custom_dictionary.db` entry (the S6 custom-precedence
-    /// branch in `continuous::fetch_walker_slot0_inner`). Provenance only:
-    /// propagated to the synthesized slot-0 `RawCandidate.is_custom`
-    /// when ANY winning edge is custom; the walker cost objective does
-    /// NOT read this (a custom edge competes via [`Self::frequency`] =
-    /// `CUSTOM_EFFECTIVE_FREQ`, Codex S6 Q1 — NOT a cost special-case).
+    /// v3.5.8 S6 (Codex pre-impl S6 Q4) — `true` iff the edge pick
+    /// (`lexicon::best_candidate_for_key_with_barriers`) chose a
+    /// `custom_dictionary.db` entry. Provenance only: propagated to the
+    /// synthesized slot-0 `RawCandidate.is_custom` when ANY winning edge is
+    /// custom; the walker cost objective does NOT read this (a custom edge
+    /// competes via [`Self::walker_cost`], Codex S6 Q1 — NOT a cost
+    /// special-case).
     pub is_custom: bool,
-    /// Frequency the edge is scored with on the **dict** branch of
-    /// [`super::cost::edge_cost`]: the key's max raw frequency across
-    /// its homophones (`lexicon::EdgeBest::span_frequency` — segmentation
-    /// evidence, not the chosen word's own), or
-    /// `super::cost::CUSTOM_EFFECTIVE_FREQ` for a custom edge (S6 proxy). `0` and **unused** for a synthesized OOV
-    /// edge (RC0: OOV cost is char-keyed, never frequency-based).
-    pub frequency: u32,
+    /// Corpus cost (milli-nats) the edge is scored with on the **dict**
+    /// branch of [`super::cost::edge_cost`]: the key's lowest
+    /// `walker_cost` across its homophones
+    /// (`lexicon::EdgeBest::span_walker_cost` — segmentation evidence,
+    /// not the chosen word's own; capped at `CUSTOM_EDGE_COST` when a
+    /// custom or learned row sits under the key).
+    /// **Unused** for a synthesized OOV edge (RC0: OOV
+    /// cost is char-keyed, never corpus-priced).
+    pub walker_cost: u16,
     /// Syllable count of the chosen candidate (`>= 1`). Dict/custom:
     /// the record's / greedy-longest span syllable count, drives the
     /// khiin `n_syls^0.2` bias. OOV: the real min-syllable-hop count of
@@ -179,7 +181,7 @@ pub(crate) fn walk_best(
         };
         let cand_cost = start_cost
             + edge_cost(
-                choice.frequency,
+                choice.walker_cost,
                 choice.syllable_count,
                 choice.toneless_len,
                 choice.user_weight_delta,
@@ -235,18 +237,27 @@ pub(crate) fn walk_best(
 mod tests {
     use super::*;
 
-    fn dict(roman: &str, hanji: &str, freq: u32, syll: u8, len: usize) -> EdgeChoice {
-        dict_u(roman, hanji, freq, syll, len, 0.0)
+    /// A dictionary edge priced at `walker_cost` milli-nats. Test values
+    /// are production `dictionary.bin` costs (E1 P2b, 2026-10-08).
+    fn dict(roman: &str, hanji: &str, walker_cost: u16, syll: u8, len: usize) -> EdgeChoice {
+        dict_u(roman, hanji, walker_cost, syll, len, 0.0)
     }
     /// `dict` with an explicit S3 decayed user-weight delta.
-    fn dict_u(roman: &str, hanji: &str, freq: u32, syll: u8, len: usize, delta: f64) -> EdgeChoice {
+    fn dict_u(
+        roman: &str,
+        hanji: &str,
+        walker_cost: u16,
+        syll: u8,
+        len: usize,
+        delta: f64,
+    ) -> EdgeChoice {
         EdgeChoice {
             roman: roman.to_owned(),
             hanji: Some(hanji.to_owned()),
             canonical_tl: roman.to_owned(),
             dict_hit: true,
             is_custom: false,
-            frequency: freq,
+            walker_cost,
             syllable_count: syll,
             toneless_len: len,
             user_weight_delta: delta,
@@ -268,7 +279,7 @@ mod tests {
             canonical_tl: String::new(),
             dict_hit: false,
             is_custom: false,
-            frequency: 0,
+            walker_cost: 0,
             syllable_count: syll,
             toneless_len: r.chars().count(),
             user_weight_delta: 0.0,
@@ -276,15 +287,15 @@ mod tests {
     }
     /// v3.5.8 S6 — a `custom_dictionary.db` edge as the dispatch
     /// provider builds it: `dict_hit:true` (lexicon-backed),
-    /// `is_custom:true`, scored at the `CUSTOM_EFFECTIVE_FREQ` proxy.
-    fn custom(roman: &str, hanji: &str, freq: u32, syll: u8, len: usize) -> EdgeChoice {
+    /// `is_custom:true`, priced at most at `CUSTOM_EDGE_COST`.
+    fn custom(roman: &str, hanji: &str, walker_cost: u16, syll: u8, len: usize) -> EdgeChoice {
         EdgeChoice {
             roman: roman.to_owned(),
             hanji: Some(hanji.to_owned()),
             canonical_tl: roman.to_owned(),
             dict_hit: true,
             is_custom: true,
-            frequency: freq,
+            walker_cost,
             syllable_count: syll,
             toneless_len: len,
             user_weight_delta: 0.0,
@@ -301,18 +312,17 @@ mod tests {
 
     #[test]
     fn picks_real_phrase_path_over_high_frequency_single_chars() {
-        // The motivating bug with real dictionary frequencies.
-        // `taiuan` shadow len 6. Phrase path (0,6) 台灣 (freq 1379,
-        // 2 syll) vs the all-atomic single-char path 乾(2145) 伊(63255)
-        // 有(53685) 俺(10635) — the path the broken S2/S3 max-Σ
-        // objective produced. Min-cost must pick the phrase.
+        // The motivating bug with real dictionary costs.
+        // `taiuan` shadow len 6. Phrase path (0,6) 台灣 (2 syll) vs the
+        // all-atomic single-char path 乾 伊 有 俺 — the path the broken
+        // S2/S3 max-Σ objective produced. Min-cost must pick the phrase.
         let lat = lattice(vec![(0, 2), (0, 6), (2, 3), (3, 4), (4, 6)]);
         let path = walk_best(&lat, 6, |s, e| match (s, e) {
-            (0, 6) => Some(dict("tâi-uân", "台灣", 1379, 2, 6)),
-            (0, 2) => Some(dict("ta", "乾", 2145, 1, 2)),
-            (2, 3) => Some(dict("i", "伊", 63255, 1, 1)),
-            (3, 4) => Some(dict("ū", "有", 53685, 1, 1)),
-            (4, 6) => Some(dict("án", "俺", 10635, 1, 2)),
+            (0, 6) => Some(dict("tâi-uân", "台灣", 7_166, 2, 6)),
+            (0, 2) => Some(dict("ta", "乾", 10_647, 1, 2)),
+            (2, 3) => Some(dict("i", "伊", 4_400, 1, 1)),
+            (3, 4) => Some(dict("ū", "有", 4_496, 1, 1)),
+            (4, 6) => Some(dict("án", "俺", 11_166, 1, 2)),
             _ => None,
         })
         .expect("full path");
@@ -335,12 +345,12 @@ mod tests {
             (0, 11),
         ]);
         let path = walk_best(&lat, 11, |s, e| match (s, e) {
-            (0, 6) => Some(dict("tâi-uân", "台灣", 1379, 2, 6)),
-            (6, 11) => Some(dict("tâi-gí", "台語", 300, 2, 5)),
-            (0, 3) => Some(dict("tâi", "台", 2145, 1, 3)),
-            (3, 6) => Some(dict("uân", "灣", 200, 1, 3)),
-            (6, 9) => Some(dict("tâi", "台", 2145, 1, 3)),
-            (9, 11) => Some(dict("gí", "語", 4000, 1, 2)),
+            (0, 6) => Some(dict("tâi-uân", "台灣", 7_166, 2, 6)),
+            (6, 11) => Some(dict("tâi-gí", "台語", 8_800, 2, 5)),
+            (0, 3) => Some(dict("tâi", "台", 8_561, 1, 3)),
+            (3, 6) => Some(dict("uân", "灣", 11_795, 1, 3)),
+            (6, 9) => Some(dict("tâi", "台", 8_561, 1, 3)),
+            (9, 11) => Some(dict("gí", "語", 10_571, 1, 2)),
             (0, 11) => None,
             _ => None,
         })
@@ -388,16 +398,16 @@ mod tests {
     fn oov_blob_loses_to_dict_covering_path() {
         // RC0 at the walker level. `taiuanta` (shadow len 8): a
         // whole-buffer OOV blob edge (0,8) competes with the
-        // dict-covering path 台灣(0,6, freq 1379, 2 syll) +
-        // 焦(6,8, freq 2145, 1 syll). Under RC0 the blob costs
+        // dict-covering path 台灣(0,6, 2 syll) + 焦(6,8, 1 syll).
+        // Under RC0 the blob costs
         // `8 * OOV_PER_CHAR_PENALTY ≈ 8e10`, dwarfing the `ln`-scale
         // dict path, so the walker picks the dict path → `any dict_hit`
         // true → `continuous::fetch_walker_slot0_inner` renders hanji, never
         // bare `"tai uan ta"`.
         let lat = lattice(vec![(0, 6), (0, 8), (6, 8)]);
         let path = walk_best(&lat, 8, |s, e| match (s, e) {
-            (0, 6) => Some(dict("tâi-uân", "台灣", 1379, 2, 6)),
-            (6, 8) => Some(dict("ta", "焦", 2145, 1, 2)),
+            (0, 6) => Some(dict("tâi-uân", "台灣", 7_166, 2, 6)),
+            (6, 8) => Some(dict("ta", "焦", 10_453, 1, 2)),
             (0, 8) => Some(roman_n("taiuanta", 3)),
             _ => None,
         })
@@ -422,7 +432,7 @@ mod tests {
         // dict-covering path vs a single whole-buffer OOV blob edge.
         // Pre-RC0 the smooth OOV pricing made the 1-edge blob cheaper
         // than the 7-edge dict path (each dict edge paid a per-edge
-        // `ln(CORPUS/freq)` toll, the blob paid one discounted toll) →
+        // `−ln p` toll, the blob paid one discounted toll) →
         // bare roman. RC0: the blob costs `21 * OOV_PER_CHAR_PENALTY`,
         // so the dict path wins regardless of how many edges it needs.
         let lat = lattice(vec![
@@ -436,13 +446,13 @@ mod tests {
             (0, 21),
         ]);
         let path = walk_best(&lat, 21, |s, e| match (s, e) {
-            (0, 3) => Some(dict("gín", "囡", 8068, 1, 3)),
-            (3, 6) => Some(dict("á", "仔", 1148, 1, 3)),
-            (6, 9) => Some(dict("lâng", "人", 52526, 1, 3)),
-            (9, 12) => Some(dict("tsia̍h", "食", 15378, 1, 3)),
-            (12, 15) => Some(dict("pn̄g", "飯", 9000, 1, 3)),
-            (15, 18) => Some(dict("bē", "袂", 8000, 1, 3)),
-            (18, 21) => Some(dict("sái", "使", 7000, 1, 3)),
+            (0, 3) => Some(dict("gín", "囡", 12_306, 1, 3)),
+            (3, 6) => Some(dict("á", "仔", 7_643, 1, 3)),
+            (6, 9) => Some(dict("lâng", "人", 4_557, 1, 3)),
+            (9, 12) => Some(dict("tsia̍h", "食", 6_503, 1, 3)),
+            (12, 15) => Some(dict("pn̄g", "飯", 9_333, 1, 3)),
+            (15, 18) => Some(dict("bē", "袂", 6_845, 1, 3)),
+            (18, 21) => Some(dict("sái", "使", 9_995, 1, 3)),
             (0, 21) => Some(roman_n("ginalangtsiahpngbesai", 7)),
             _ => None,
         })
@@ -464,20 +474,22 @@ mod tests {
     fn user_preference_flips_the_chosen_segmentation_path() {
         // v3.5.8 S3/S5 — Gap B → G2. Same buffer (shadow len 6), two
         // covering segmentations:
-        //   A: one 2-syllable phrase edge (0,6), LOW dict freq.
-        //   B: two hot 1-syllable edges (0,3)+(3,6), HIGH dict freq.
+        //   A: one 2-syllable phrase edge (0,6), unseen in the corpus.
+        //   B: two hot 1-syllable edges (0,3)+(3,6), cheap.
         // Without user history the hot single chars (B) are cheaper.
         // After the user repeatedly selects the phrase (fresh max
-        // decayed delta) the phrase edge gets a log-space discount and
-        // path A wins; the hot single chars get NO discount
-        // (single-syllable damping, SCALE = 0.0).
+        // decayed delta) the phrase edge is capped at the user-entry
+        // tier and discounted, and path A wins; the hot single chars get
+        // NO discount (single-syllable damping, SCALE = 0.0).
+        // trace: cold 13.181 / 6^0.2 × 2^0.2 = 10.581 > (4.5 + 4.5) / 3^0.2 = 7.225;
+        //        warm 7.878 / 6^0.2 × 2^0.2 − ln 5 = 6.324 − 1.609 = 4.715
         let lat = lattice(vec![(0, 3), (0, 6), (3, 6)]);
         let edges = |s, e, phrase_delta: f64| match (s, e) {
-            (0, 6) => Some(dict_u("tâi-gí", "臺語", 100, 2, 6, phrase_delta)),
+            (0, 6) => Some(dict_u("tâi-gí", "臺語", 13_181, 2, 6, phrase_delta)),
             // Hot single chars carry a huge delta too — it must be
             // ignored in the path objective (Q4c BLOCK guard).
-            (0, 3) => Some(dict_u("tâi", "台", 60_000, 1, 3, 4.0)),
-            (3, 6) => Some(dict_u("gí", "語", 60_000, 1, 3, 4.0)),
+            (0, 3) => Some(dict_u("tâi", "台", 4_500, 1, 3, 4.0)),
+            (3, 6) => Some(dict_u("gí", "語", 4_500, 1, 3, 4.0)),
             _ => None,
         };
 
@@ -500,17 +512,16 @@ mod tests {
     #[test]
     fn custom_edge_wins_path_and_carries_is_custom() {
         // v3.5.8 S6 — `taigi` (shadow len 5). A custom_dictionary.db
-        // entry covering (0,5) scored at CUSTOM_EFFECTIVE_FREQ (2-syll)
-        // must beat the high-frequency single-char split
-        // 台(31281)+語(21976) — same arithmetic as
-        // `cost::tests::custom_two_syllable_beats_top_single_char_split`.
+        // entry covering (0,5) priced at CUSTOM_EDGE_COST (2-syll)
+        // must beat the single-char split 台 + 語 — same arithmetic as
+        // `cost::tests::custom_two_syllable_beats_the_cheapest_single_char_split`.
         // The winning slot-0 path's choice must carry `is_custom`.
-        let cef = super::super::cost::CUSTOM_EFFECTIVE_FREQ;
+        let custom_cost = super::super::cost::CUSTOM_EDGE_COST;
         let lat = lattice(vec![(0, 3), (0, 5), (3, 5)]);
         let path = walk_best(&lat, 5, |s, e| match (s, e) {
-            (0, 5) => Some(custom("tâi-gí", "台語", cef, 2, 5)),
-            (0, 3) => Some(dict("tâi", "台", 31_281, 1, 3)),
-            (3, 5) => Some(dict("gí", "語", 21_976, 1, 2)),
+            (0, 5) => Some(custom("tâi-gí", "台語", custom_cost, 2, 5)),
+            (0, 3) => Some(dict("tâi", "台", 8_561, 1, 3)),
+            (3, 5) => Some(dict("gí", "語", 10_571, 1, 2)),
             _ => None,
         })
         .expect("full path");

@@ -7,7 +7,7 @@ record: `docs/architecture/linux-roadmap.md`.
 ## Host gates prove compilation
 
 - Linux behaviour is observed only in the dogfood VMs and the `/e2e` run, never on the macOS host. Every PR passes
-  `make linux-check` on the macOS host: `cargo test` in `desktop/` (native), `cargo clippy
+  `make linux-check` on the macOS host: `cargo test --workspace` in `linux/` (native), `cargo clippy
   --workspace --all-targets -- -D warnings` in `linux/` (native: `zbus` + gtk4-rs + libadwaita
   from Homebrew), a real cross build of the engine for `x86_64-unknown-linux-gnu` via `cargo zigbuild`
   (`brew install zig cargo-zigbuild`; plain `cargo check` stops at the bundled SQLite's C build),
@@ -15,8 +15,8 @@ record: `docs/architecture/linux-roadmap.md`.
   Linux build, the daemon smoke and the `.deb` (`make deb`). These gates prove compilation and the wire's
   first contract, not behaviour — behaviour is the dogfood run-book's job. Never claim "works
   on Linux".
-- Put logic in `taigi-desktop-core` (`unsafe_code = forbid`, host-testable, shared with
-  Windows and macOS) whenever it needs no D-Bus / GTK handle. `taigikeyboard-ibus` and
+- Put logic in `taigi-desktop-core` (host-testable; the oracle rule is `windows-guidelines.md`
+  § desktop-core is the behaviour oracle) whenever it needs no D-Bus / GTK handle. `taigikeyboard-ibus` and
   `taigikeyboard-settings` are thin shells; `taigi-linux-platform` holds the few
   Linux-specific pure pieces (XDG paths, keysym translation, launcher).
 - A change to `desktop/` is a change to all three desktops: `python3 tools/test_select.py --run`
@@ -43,12 +43,14 @@ record: `docs/architecture/linux-roadmap.md`.
   touches the candidate window only after the edit session returned.
 - Every D-Bus method body runs under `catch_unwind`; a panic answers `false` / `()` and logs.
   The daemon respawns a dead engine and the user loses the composition.
-- No `libibus`, no GObject, no C dependency in the Rust crates of `linux/`: they must build on the
-  macOS host and cross-build for `x86_64-unknown-linux-gnu`. The ONE crate allowed `unsafe` is
+- No `libibus`, no GObject in the Rust crates of `linux/`. The settings window
+  (`taigikeyboard-settings`, GTK 4 + libadwaita) is the one crate that links a system C library;
+  `taigikeyboard-ibus` and `taigi-linux-ffi` must build on the macOS host and cross-build for
+  `x86_64-unknown-linux-gnu` (`linux/Makefile` `check-target`). The ONE crate allowed `unsafe` is
   `taigi-linux-ffi` (the C ABI the Fcitx5 addon calls), one `// SAFETY:` line per call,
   `catch_unwind` at every exported function. The Fcitx5 addon itself (`linux/fcitx5/`, C++) is
   built only in the VM and on the Ubuntu CI job; it composes nothing — every effect comes back
-  from the FFI as the same `Emit` list the IBus shell replays (roadmap L1, 2026-09-23).
+  from the FFI as the same `Emit` list the IBus shell replays.
 - Two shells, one contract: a behaviour that differs between the Fcitx5 and IBus shells is a shell
   bug. Fix it in `taigi-linux-core`, never in one shell.
 
@@ -70,5 +72,5 @@ record: `docs/architecture/linux-roadmap.md`.
 - `settings.json` = `$XDG_CONFIG_HOME/taigikeyboard/`; databases = `$XDG_DATA_HOME/taigikeyboard/`;
   dictionaries = `${prefix}/share/taigikeyboard/dictionaries` (`TAIGIKEYBOARD_PREFIX` at build,
   `TAIGIKEYBOARD_DATA_DIR` at runtime for a dev tree). Never the working directory.
-- No update check on Linux, manual or automatic, and no build flag for one — the distribution's package manager updates an input method (maintainer 2026-09-25, roadmap L10). Never link `taigi-desktop-update`; the `update*` keys stay unwritten. Do not re-propose.
+- No update check on Linux, manual or automatic, and no build flag for one — the distribution's package manager updates an input method (`linux-release.md` § No in-app update). Never link `taigi-desktop-update`; the `update*` keys stay unwritten. Do not re-propose.
 - Release / package / tag actions are the maintainer's call.

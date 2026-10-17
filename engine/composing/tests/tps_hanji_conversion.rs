@@ -21,7 +21,7 @@ use protos::engine::{
 use test_support::{engine_install_lock, write_temp};
 
 use crate::common::{
-    build_dictionary_fst_tps, build_syllables_fst_tps, build_tkdb_v3, commit_text, config,
+    build_dictionary_fst_tps, build_syllables_fst_tps, build_tkdb_v4, commit_text, config,
     config_converting, converted_words, empty_association_bin, install_lexicon, req, Fetch, Row,
 };
 
@@ -80,7 +80,7 @@ pub(crate) fn install_fixture_with(extra: &[(&'static str, &'static str, u32)]) 
     let rows = with_extra();
     let mut syllable_rows = with_extra();
     syllable_rows.push(row("喇", "lá", 1, 1));
-    let dict_path = write_temp("dictionary-hanji-conversion.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary-hanji-conversion.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst_tps(&rows);
     let association_path = write_temp("association-hanji-conversion.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst_tps(&syllable_rows);

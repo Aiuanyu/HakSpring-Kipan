@@ -27,7 +27,7 @@ use userdata::{
 const _: () = assert!(crate::CUSTOM_CSV_MAX_FILE_BYTES == CustomDictionaryCSV::MAX_FILE_SIZE_BYTES);
 
 /// Answers one user-data request — the `UserData` arm of `crate::run`.
-pub(crate) fn respond(id: u32, generation: u64, request: &UserDataRequest) -> Response {
+pub(crate) fn respond(id: u32, request: &UserDataRequest) -> Response {
     let (error, payload) = match UserDataHandle::instance().handle(request) {
         Ok(answer) => (ErrorCode::Ok, Some(response::Payload::UserData(answer))),
         Err(RequestError::Invalid(reason)) => {
@@ -42,7 +42,6 @@ pub(crate) fn respond(id: u32, generation: u64, request: &UserDataRequest) -> Re
     Response {
         id,
         error: error as i32,
-        generation,
         payload,
     }
 }
@@ -175,7 +174,7 @@ fn buffer_rows(
     } else {
         stores
             .custom_dictionary
-            .rows_matching(&key, CustomDictionaryStore::KEYSTROKE_LIMIT)
+            .keystroke_rows(&key, CustomDictionaryStore::KEYSTROKE_LIMIT)
             .into_iter()
             .map(custom_entry)
             .collect()
@@ -364,5 +363,30 @@ mod tests {
             5,
             "learning data is not the dictionary"
         );
+    }
+
+    #[test]
+    fn buffer_rows_hand_over_an_abbreviation_only_when_typed_whole() {
+        // trace: 陳建中 `Tân Kiàn-tiong` keys tl notone `tankiantiong`, tl
+        // abbrev `tkt`. The store pre-filter only; the reach rule itself is
+        // the lexicon's (`custom_reach`).
+        let directory = tempfile::tempdir().unwrap();
+        let stores = UserDataStores::at(
+            userdata::UserDataPaths::in_directory(directory.path()),
+            JournalMode::Delete,
+        );
+        stores.open_blocking();
+        stores
+            .custom_dictionary
+            .upsert(&CustomDictionaryRow::new("Tân Kiàn-tiong", "陳建中"))
+            .unwrap();
+        let config = AppConfig {
+            input_mode: "tl".into(),
+            ..AppConfig::default()
+        };
+        let custom_count = |raw: &str| buffer_rows(&stores, raw, &config, false).custom.len();
+        assert_eq!(custom_count("tkt"), 1);
+        assert_eq!(custom_count("tk"), 0);
+        assert_eq!(custom_count("tankiant"), 1);
     }
 }

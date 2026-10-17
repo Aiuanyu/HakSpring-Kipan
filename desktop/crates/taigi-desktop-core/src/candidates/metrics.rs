@@ -4,6 +4,7 @@
 //! [`TextMeasurer`] the renderer supplies (DirectWrite in PR6, a stub in tests).
 
 use super::index_label::CandidateIndexLabel;
+#[cfg(test)]
 use crate::composing::CandidateCellContent;
 use crate::settings::{CandidateFontChoice, CandidateFontSelection, CandidateSizeChoice};
 
@@ -299,7 +300,8 @@ impl CandidateMetrics {
     }
 
     /// Concentric with the window: the outer radius less the padding between.
-    pub fn tahoe_highlight_corner_radius(&self) -> f32 {
+    #[cfg(test)]
+    pub(crate) fn tahoe_highlight_corner_radius(&self) -> f32 {
         self.tahoe_container_corner_radius() - self.tahoe_highlight_inset()
     }
 
@@ -329,14 +331,19 @@ impl CandidateMetrics {
     }
 
     /// The width a cell wants for `cell`.
-    pub fn measure_width(&self, cell: &CandidateCellContent, measurer: &dyn TextMeasurer) -> f32 {
+    #[cfg(test)]
+    pub(crate) fn measure_width(
+        &self,
+        cell: &CandidateCellContent,
+        measurer: &dyn TextMeasurer,
+    ) -> f32 {
         self.cell_width(
             self.measure_primary_width(&cell.text, measurer),
             self.measure_annotation(cell.annotation.as_deref(), measurer),
         )
     }
 
-    /// `measure_width` for a cell whose two texts are already measured:
+    /// The width a cell wants, from its two texts already measured:
     /// `primary_width` at the candidate font, `annotation_width` at the
     /// annotation font, or `None` for an absent or empty annotation. The
     /// window measures every cell's texts once per list

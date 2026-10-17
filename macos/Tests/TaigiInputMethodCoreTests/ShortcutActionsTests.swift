@@ -34,6 +34,21 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(Set(names).count, names.count, "two actions share a storage name: \(names)")
     }
 
+    /// The pane draws the roster through `groups`, so a case missing there has no row.
+    func testGroups_holdEveryActionOnceInRosterOrder() {
+        let grouped = ShortcutAction.groups.flatMap(\.actions)
+
+        XCTAssertEqual(grouped.count, ShortcutAction.allCases.count)
+        XCTAssertEqual(Set(grouped), Set(ShortcutAction.allCases))
+        for group in ShortcutAction.groups {
+            XCTAssertEqual(ShortcutAction.allCases.filter(group.actions.contains), group.actions)
+        }
+        XCTAssertEqual(
+            ShortcutAction.groups.map(\.title),
+            [.settingsOutputScriptRoman, .settingsTpsMode, .commonOther],
+        )
+    }
+
     func testEveryAction_hasItsOwnLabel() {
         let rows = labels()
 
@@ -46,8 +61,8 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(
             labels(),
             [
-                "切換台羅/白話字", "切換方音符號", "切換漢字/羅馬字", "切換候選詞顯示", "拍開符號選單", "拍開 Telex 說明",
-                "拍開方音符號齒盤", "拍開設定選單",
+                "切換台羅/白話字", "切換方音符號", "切換漢字/羅馬字", "切換羅馬字顯示", "拍開符號選單", "拍開 Telex 說明",
+                "顯示方音符號小齒盤", "拍開設定選單",
             ],
         )
         XCTAssertEqual(
@@ -59,7 +74,7 @@ final class ShortcutActionsTests: XCTestCase {
                 "候補の表示を切り替え",
                 "記号メニューを開く",
                 "Telex の説明を開く",
-                "方音符号キーボードを開く",
+                "方音符号ミニキーボードを表示",
                 "設定メニューを開く",
             ],
         )
@@ -202,15 +217,6 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.allCases.filter(\.firesFromTheKeyPath), [.showSymbolPicker])
     }
 
-    /// No global chord opens a NAMED pane any more; the menu bar does that
-    /// (`TaigiInputControllerMenuTests`). The one doorway reopens wherever the
-    /// user left off, which is what makes it a single key rather than five.
-    func testExactlyOneAction_opensSettings() {
-        XCTAssertEqual(
-            ShortcutAction.allCases.filter(\.opensSettings), [.openLastSettingsPane],
-        )
-    }
-
     /// A slot key is how a user picks the third candidate on screen, and the
     /// classifier reads that tier before it reads any binding — under either
     /// scheme's set. The core's gate refuses every slot key of both sets as
@@ -291,8 +297,7 @@ final class ShortcutActionsTests: XCTestCase {
     /// lose the user's chord each time the app started.
     func testNoLiveAction_reusesARetiredName() {
         let retired = Set([
-            "toggleBothScripts", "toggleLiteralRomanCandidate", "openSettings",
-            "openGeneralPane", "openAppearancePane", "openShortcutPane",
+            "openSettings", "openGeneralPane", "openAppearancePane", "openShortcutPane",
             "openCustomDictionaryPane", "openDictionarySourcesPane",
         ])
 

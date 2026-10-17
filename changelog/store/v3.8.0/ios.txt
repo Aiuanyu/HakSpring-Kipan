@@ -1,0 +1,6 @@
+New: Custom Layouts: swap keys, add spare letters, finals or symbols, remove keys, and save up to five layouts.
+Improved: In Send or Search fields, Return first confirms the typed word.
+Improved: Double-tap Space types a period in Taigi and English.
+Improved: Email and web fields get an @ or / key; Return shows the field's action.
+Updated: Contracted readings added: lueh gives 落去.
+Changed: The typing guide is rewritten with new pictures.

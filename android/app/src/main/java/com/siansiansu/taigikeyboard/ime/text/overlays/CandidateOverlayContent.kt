@@ -61,6 +61,7 @@ import com.siansiansu.taigikeyboard.i18n.stringRes
 import com.siansiansu.taigikeyboard.ime.dictionary.TaigiWord
 import com.siansiansu.taigikeyboard.ime.settings.CandidateDisplayMode
 import com.siansiansu.taigikeyboard.ime.text.candidates.CandidateRowLayout
+import com.siansiansu.taigikeyboard.ime.text.candidates.candidateCellBackground
 import com.siansiansu.taigikeyboard.ime.text.candidates.candidateCellText
 import com.siansiansu.taigikeyboard.ime.text.smartbar.KeyboardChromeColors
 import com.siansiansu.taigikeyboard.ime.text.smartbar.iconRes
@@ -342,18 +343,18 @@ private fun CandidateCell(
 ) {
     val word = item.word
     // First candidate (engine ranker top, index 0) gets the filled keycap-color hint — mirrors
-    // the strip + iOS overlay. Keyed on the packer's originalIndex, not the dead isComposingText
-    // metadata (no producer since the v3.5.8 continuous redesign).
+    // the strip + iOS overlay. Keyed on the packer's originalIndex.
     val isFirstCandidate = item.originalIndex == 0
     val interaction = remember { MutableInteractionSource() }
     val isPressed by interaction.collectIsPressedAsState()
 
     val backgroundColor =
-        when {
-            isPressed -> colors.pressed
-            isFirstCandidate -> colors.firstCandidateBackground
-            else -> Color.Transparent
-        }
+        candidateCellBackground(
+            isPressed = isPressed,
+            isFirstCandidate = isFirstCandidate,
+            firstCandidateColor = colors.firstCandidateBackground,
+            pressedColor = colors.pressed,
+        )
 
     Box(
         modifier =

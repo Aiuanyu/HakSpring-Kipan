@@ -1,7 +1,6 @@
 {
   "namespace": "dictionary",
   "keys": {
-    "clear": { "hakha": "清除" },
     "customDictionary": { "hakha": "自訂詞庫" },
     "customDictEnabled": { "hakha": "啟用自訂詞庫" },
     "customDictEnabledInfo": { "hakha": "打開了後，自訂詞會出現在候選詞內底。" },
@@ -16,7 +15,6 @@
     "hanziLabel": { "hakha": "尋" },
     "hanziPlaceholder": { "hakha": "見本：𠢕早" },
     "deleteAll": { "hakha": "刪除全部自訂詞" },
-    "deleteAllMessage": { "hakha": "確定愛刪除所有自訂詞？" },
     "customDictPrivacyWarning": { "hakha": "自訂詞庫毋通放身分證字號、密碼、信用卡號碼抑是其他敏感資料。" },
     "importCSV": { "hakha": "匯入自訂詞" },
     "exportCSV": { "hakha": "匯出自訂詞" },
@@ -75,8 +73,6 @@
     "sttiTag": { "hakha": "學科術語" },
     "lkkTag": { "hakha": "漢羅合用" },
     "clearLearningRecords": { "hakha": "刪除學習紀錄" },
-    "clearLearningRecordsMessage": { "hakha": "確定愛刪除所有學習紀錄？毋會影響自訂詞。" },
-    "clearLearningRecordsDone": { "hakha": "學習紀錄已經刪掉" },
     "clearLearningRecordsFailed": { "hakha": "學習紀錄刪失敗" },
     "learningRecords": { "hakha": "學習紀錄" },
     "learningRecordsFrequency": { "hakha": "詞頻紀錄" },
@@ -93,6 +89,7 @@
     "learningRecordsReadFailed": { "hakha": "學習紀錄讀失敗" },
     "learningRecordsWriteFailed": { "hakha": "學習紀錄改失敗" },
     "learningRecordsAddToCustomDictionary": { "hakha": "加入自訂詞庫" },
-    "learningRecordsAddedToCustomDictionary": { "hakha": "已經加入自訂詞庫" }
+    "learningRecordsAddedToCustomDictionary": { "hakha": "已經加入自訂詞庫" },
+    "kautianAltReading": { "hakha": "又讀" }
   }
 }

@@ -29,11 +29,26 @@ DESTDIR ?=
 # `rpm` / `arch` pass their LAYOUT; the default is the FHS / Debian one, which
 # the `.deb` and a source install share.
 LAYOUT ?= debian
+# Whether to install the bundled typefaces. 0 skips them, their OFL text and
+# the `copyright` header's sentence about them — for a downstream package
+# that leaves fonts to the system; deb / rpm / arch always carry them.
+INSTALL_FONTS ?= 1
+# The header's `@FONTS@` lines are that sentence: kept unprefixed, or dropped.
+ifeq ($(INSTALL_FONTS),1)
+  FONT_LICENSE := ../assets/fonts/OFL-1.1.txt
+  FONT_HEADER_SED := s/^@FONTS@//
+else ifeq ($(INSTALL_FONTS),0)
+  FONT_LICENSE :=
+  FONT_HEADER_SED := /^@FONTS@/d
+else
+  $(error INSTALL_FONTS must be 0 or 1, not '$(INSTALL_FONTS)')
+endif
 # The notices every layout carries: attribution, the third-party inventory,
-# the typefaces' OFL and the dictionary's per-source terms. Debian folds them
-# into its one `copyright` file; Fedora also ships the Apache text, which Arch
-# (its `licenses` package) and Debian (common-licenses) already hold.
-LICENSE_TEXTS := ../NOTICE ../THIRD_PARTY_LICENSES.md ../assets/fonts/OFL-1.1.txt ../dictionary/LICENSE
+# the typefaces' OFL and the dictionary's per-source terms, in the order the
+# Debian `copyright` header names them. Debian folds them into its one
+# `copyright` file; Fedora also ships the Apache text, which Arch (its
+# `licenses` package) and Debian (common-licenses) already hold.
+LICENSE_TEXTS := ../NOTICE ../THIRD_PARTY_LICENSES.md $(FONT_LICENSE) ../dictionary/LICENSE
 ifeq ($(LAYOUT),debian)
   LIBEXECDIR := $(PREFIX)/libexec
   FONTDIR_TTF := $(PREFIX)/share/fonts/truetype/taigikeyboard
@@ -61,31 +76,37 @@ VERSION := $(shell grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
 # build into its own throwaway container.
 E2E ?=
 E2E_TRACE_GUARD := ../engine/scripts/lib/e2e-trace-guard.sh
-define refuse_e2e
+# INSTALL_FONTS=0 is refused too: the package metadata (control.in, the spec's
+# %files, PKGBUILD's license=) names the typefaces.
+define refuse_unpackageable
 	@if [ "$(E2E)" = 1 ]; then echo "error: E2E=1 binaries are never packaged" >&2; exit 1; fi
+	@if [ "$(INSTALL_FONTS)" = 0 ]; then echo "error: deb / rpm / arch always carry the bundled typefaces; INSTALL_FONTS=0 is for make install" >&2; exit 1; fi
 endef
 
-.PHONY: help i18n-check test lint check-target check check-cpp fmt build build-fcitx5 install install-fcitx5 uninstall component deb rpm arch run-engine run-settings clean
+.PHONY: help i18n-check test lint check-target check check-cpp fmt build build-fcitx5 install install-common install-ibus install-fcitx5 uninstall component deb rpm arch run-engine run-settings clean
 
 help:
 	@echo "Linux input method — dev loop"
 	@echo ""
-	@echo "  make check         - The gate: i18n check + native tests + clippy + cross build + fmt --check"
-	@echo "  make test          - Native tests for the workspace"
-	@echo "  make lint          - clippy -D warnings, all targets, native"
-	@echo "  make check-target  - Build the engine for $(LINUX_TARGET) (cargo zigbuild on macOS)"
-	@echo "  make check-cpp     - Syntax-check the Fcitx5 addon against ../references/fcitx5 headers (macOS host; skipped when the clone is absent)"
-	@echo "  make i18n-check    - Fail if the generated i18n Rust is stale"
-	@echo "  make fmt           - cargo fmt"
-	@echo "  make build         - (Linux) cargo build --release (IBus engine + the FFI static library); E2E=1 = test-mode trace build"
-	@echo "  make build-fcitx5  - (Linux) the Fcitx5 addon: cmake over the FFI static library (needs fcitx5-modules-dev, extra-cmake-modules)"
-	@echo "  make install       - (Linux) install both shells + dictionaries into PREFIX=$(PREFIX) (DESTDIR honoured)"
-	@echo "  make uninstall     - (Linux) remove what install put there; user data stays"
-	@echo "  make deb           - (Linux) build target/taigikeyboard_<version>_amd64.deb from the install layout (dpkg-deb)"
-	@echo "  make rpm           - (Fedora) build target/taigikeyboard-<version>-1.x86_64.rpm from the install layout (rpmbuild)"
-	@echo "  make arch          - (Arch, non-root) build target/taigikeyboard-<version>-1-x86_64.pkg.tar.zst from the install layout (makepkg)"
-	@echo "  make run-engine    - (Linux) run the IBus engine from this tree against a running ibus-daemon (RUST_LOG=debug, repo dictionaries)"
-	@echo "  make run-settings  - Open the settings window from this tree (macOS host too: GTK + libadwaita from Homebrew); PANE=about picks a pane"
+	@echo "  make check           - The gate: i18n check + native tests + clippy + cross build + fmt --check"
+	@echo "  make test            - Native tests for the workspace"
+	@echo "  make lint            - clippy -D warnings, all targets, native"
+	@echo "  make check-target    - Build the engine for $(LINUX_TARGET) (cargo zigbuild on macOS)"
+	@echo "  make check-cpp       - Syntax-check the Fcitx5 addon against ../references/fcitx5 headers (macOS host; skipped when the clone is absent)"
+	@echo "  make i18n-check      - Fail if the generated i18n Rust is stale"
+	@echo "  make fmt             - cargo fmt"
+	@echo "  make build           - (Linux) cargo build --release (IBus engine + the FFI static library); E2E=1 = test-mode trace build"
+	@echo "  make build-fcitx5    - (Linux) the Fcitx5 addon: cmake over the FFI static library (needs fcitx5-modules-dev, extra-cmake-modules)"
+	@echo "  make install         - (Linux) install both shells + dictionaries into PREFIX=$(PREFIX) (DESTDIR honoured); INSTALL_FONTS=0 = skip fonts and their license files"
+	@echo "  make install-fcitx5  - (Linux) like install but just for the fcitx5 frontend"
+	@echo "  make install-ibus    - (Linux) like install but just for the ibus frontend"
+	@echo "  make install-common  - (Linux) like install but just for files common to both frontends; INSTALL_FONTS=0 = skip fonts and their license files"
+	@echo "  make uninstall       - (Linux) remove what install put there; user data stays"
+	@echo "  make deb             - (Linux) build target/taigikeyboard_<version>_amd64.deb from the install layout (dpkg-deb)"
+	@echo "  make rpm             - (Fedora) build target/taigikeyboard-<version>-1.x86_64.rpm from the install layout (rpmbuild)"
+	@echo "  make arch            - (Arch, non-root) build target/taigikeyboard-<version>-1-x86_64.pkg.tar.zst from the install layout (makepkg)"
+	@echo "  make run-engine      - (Linux) run the IBus engine from this tree against a running ibus-daemon (RUST_LOG=debug, repo dictionaries)"
+	@echo "  make run-settings    - Open the settings window from this tree (macOS host too: GTK + libadwaita from Homebrew); PANE=about picks a pane"
 
 # The generated strings live in the desktop-shared crate; a stale copy would
 # compile strings that no longer match their source. Same gate the macOS,
@@ -153,16 +174,23 @@ build-fcitx5: build
 component: data/taigikeyboard.xml.in
 	sed -e 's#@PREFIX@#$(PREFIX)#g' -e 's#@LIBEXECDIR@#$(LIBEXECDIR)#g' -e 's#@VERSION@#$(VERSION)#g' $< > target/taigikeyboard.xml
 
-# The install layout the engine resolves at runtime
-# (`taigi-linux-platform::paths::InstallLayout`); the PREFIX must match the
-# one the binaries were built with (`TAIGIKEYBOARD_PREFIX`, default /usr).
-install: build component install-fcitx5
-	install -Dm755 target/release/ibus-engine-taigikeyboard $(DESTDIR)$(LIBEXECDIR)/ibus-engine-taigikeyboard
+# Install everything. The layout is that which the engine resolves at runtime
+# (`taigi-linux-platform::paths::InstallLayout`); the PREFIX must match the one
+# the binaries were built with (`TAIGIKEYBOARD_PREFIX`, default /usr).
+# Targets are split to allow for split packages to be more easily made, but the
+# packaging from this file still packs everything in one binary package.
+install: install-common install-ibus install-fcitx5
+	@echo "installed under $(DESTDIR)$(PREFIX); restart fcitx5 (fcitx5 -r) and/or ibus (ibus restart)"
+
+# Things shared by both frontends: settings, dictionaries, icons, fonts, licences.
+install-common: build
+	# Settings app:
 	install -Dm755 target/release/taigikeyboard-settings $(DESTDIR)$(PREFIX)/bin/taigikeyboard-settings
-	install -Dm644 target/taigikeyboard.xml $(DESTDIR)$(PREFIX)/share/ibus/component/taigikeyboard.xml
+	install -Dm644 data/tw.taigikeyboard.Settings.desktop $(DESTDIR)$(PREFIX)/share/applications/tw.taigikeyboard.Settings.desktop
+	# Dictionaries data:
 	install -d $(DESTDIR)$(PREFIX)/share/taigikeyboard/dictionaries
 	install -m644 ../assets/dictionaries/dictionary.fst ../assets/dictionaries/dictionary.bin ../assets/dictionaries/association.bin ../assets/dictionaries/syllables.fst $(DESTDIR)$(PREFIX)/share/taigikeyboard/dictionaries/
-	install -Dm644 data/tw.taigikeyboard.Settings.desktop $(DESTDIR)$(PREFIX)/share/applications/tw.taigikeyboard.Settings.desktop
+	# Icons:
 	for size in 16 22 24 32 48 64 128 256; do \
 	  install -Dm644 data/icons/hicolor/$${size}x$${size}/apps/taigikeyboard.png $(DESTDIR)$(PREFIX)/share/icons/hicolor/$${size}x$${size}/apps/taigikeyboard.png || exit 1; \
 	done
@@ -171,16 +199,22 @@ install: build component install-fcitx5
 	for icon in data/icons/hicolor/*/apps/taigikeyboard-*.png; do \
 	  install -Dm644 "$$icon" "$(DESTDIR)$(PREFIX)/share/$${icon#data/}" || exit 1; \
 	done
+ifeq ($(INSTALL_FONTS),1)
 	# The bundled typefaces (the ones macOS and Windows ship), as fontconfig
 	# fallbacks for the Han characters the desktop's fonts lack (roadmap L4);
 	# users pick them in Fcitx5 / IBus (L7).
 	install -Dm644 -t $(DESTDIR)$(FONTDIR_TTF) ../assets/fonts/font/*.ttf
 	install -Dm644 -t $(DESTDIR)$(FONTDIR_OTF) ../assets/fonts/font/*.otf
+	# A package gets its cache rebuilt by fontconfig's dpkg trigger; a direct
+	# install into the live system rebuilds it here. Never for a staging root.
+	$(if $(DESTDIR),,-fc-cache $(PREFIX)/share/fonts)
+endif
+	# License:
 ifeq ($(LAYOUT),debian)
 	# Debian Policy §12.5: one `copyright` file, every non-common licence
 	# verbatim; Apache-2.0 is named in the header (common-licenses).
 	install -d $(DESTDIR)$(LICENSEDIR)
-	{ cat packaging/copyright-header; for f in $(LICENSE_TEXTS); do \
+	{ sed -e '$(FONT_HEADER_SED)' packaging/copyright-header; for f in $(LICENSE_TEXTS); do \
 	    name="$${f#../}"; name="$${name#assets/}"; \
 	    printf '\n%s\n%s\n\n' '========================================================================' "$$name"; cat "$$f"; \
 	  done; } > $(DESTDIR)$(LICENSEDIR)/copyright
@@ -192,10 +226,10 @@ else
 	  name="$${f#../}"; name="$${name#assets/}"; install -Dm644 "$$f" "$(DESTDIR)$(LICENSEDIR)/$${name//\//-}" || exit 1; \
 	done
 endif
-	# A package gets its cache rebuilt by fontconfig's dpkg trigger; a direct
-	# install into the live system rebuilds it here. Never for a staging root.
-	$(if $(DESTDIR),,-fc-cache $(PREFIX)/share/fonts)
-	@echo "installed under $(DESTDIR)$(PREFIX); restart fcitx5 (fcitx5 -r) and/or ibus (ibus restart)"
+
+install-ibus: build component
+	install -Dm755 target/release/ibus-engine-taigikeyboard $(DESTDIR)$(LIBEXECDIR)/ibus-engine-taigikeyboard
+	install -Dm644 target/taigikeyboard.xml $(DESTDIR)$(PREFIX)/share/ibus/component/taigikeyboard.xml
 
 # The addon's .so + its two .conf files, through CMake's own install rules.
 install-fcitx5: build-fcitx5
@@ -228,7 +262,7 @@ uninstall:
 DEB_ROOT := target/deb/root
 DEB_FILE := target/taigikeyboard_$(VERSION)_amd64.deb
 deb:
-	$(refuse_e2e)
+	$(refuse_unpackageable)
 	rm -rf target/deb
 	$(MAKE) install PREFIX=/usr LAYOUT=debian DESTDIR=$(CURDIR)/$(DEB_ROOT)
 	install -d $(DEB_ROOT)/DEBIAN target/deb/debian
@@ -260,7 +294,7 @@ endef
 RPM_DIR := target/rpm
 RPM_FILE := target/taigikeyboard-$(VERSION)-1.x86_64.rpm
 rpm:
-	$(refuse_e2e)
+	$(refuse_unpackageable)
 	$(call stage_and_render,$(RPM_DIR),packaging/taigikeyboard.spec.in,$(RPM_DIR)/taigikeyboard.spec,fedora)
 	rpmbuild -bb --define "_topdir $(CURDIR)/$(RPM_DIR)" $(RPM_DIR)/taigikeyboard.spec
 	cp $(RPM_DIR)/RPMS/x86_64/taigikeyboard-$(VERSION)-1.x86_64.rpm $(RPM_FILE)
@@ -272,7 +306,7 @@ rpm:
 ARCH_DIR := target/arch
 ARCH_FILE := target/taigikeyboard-$(VERSION)-1-x86_64.pkg.tar.zst
 arch:
-	$(refuse_e2e)
+	$(refuse_unpackageable)
 	$(call stage_and_render,$(ARCH_DIR),packaging/PKGBUILD.in,$(ARCH_DIR)/PKGBUILD,arch)
 	cd $(ARCH_DIR) && PKGDEST=$(CURDIR)/target PKGEXT=.pkg.tar.zst makepkg --force --nodeps
 	test -f $(ARCH_FILE)
@@ -282,7 +316,9 @@ arch:
 # The dev loop on a Linux box with ibus-daemon up: the engine from this tree,
 # reading the repo's dictionaries, logging every key. `ibus engine
 # taigikeyboard` from another terminal selects it (the component XML must
-# already be installed once so the daemon knows the name).
+# already be installed once so the daemon knows the name; it exits 1 because
+# the engine's layout is `default`, which setxkbmap is never given — `ibus
+# engine` with no argument confirms the switch).
 run-engine:
 	TAIGIKEYBOARD_DATA_DIR=$(CURDIR)/../assets RUST_LOG=debug cargo run -p taigikeyboard-ibus -- --ibus
 

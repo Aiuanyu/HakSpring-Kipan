@@ -12,16 +12,18 @@
 //! 2. **What the edge costs.** The walker priced an edge on the chosen
 //!    word's own frequency; swapping in the rarer 更新 made the whole-buffer
 //!    edge costlier than the 經+身 single-syllable split, so 更新 lost slot 0
-//!    to a wrong segmentation instead. `EdgeBest::span_frequency` (the
-//!    key's max frequency) now prices the edge — "is this span a word" is
-//!    decoupled from "which word".
+//!    to a wrong segmentation instead. The key's cheapest homophone
+//!    (`EdgeBest::span_walker_cost` since E1 P3, the key's max frequency
+//!    before) now prices the edge — "is this span a word" is decoupled from
+//!    "which word".
 //!
-//! Fixture mirrors production frequencies: 敬神/kìng-sîn 25, 更新/king-sin
-//! 1, and the single syllables 經/king 9218 + 身/sin 10865 whose split
-//! undercuts a freq-1 two-syllable edge under the khiin cost model.
+//! Fixture mirrors the pre-E1 production frequencies (walker costs derived
+//! from them, `test_support::walker_cost_from_fixture_frequency`): 敬神/kìng-sîn
+//! 25, 更新/king-sin 1, and the single syllables 經/king 9218 + 身/sin 10865
+//! whose split undercuts a freq-1 two-syllable edge under the khiin cost model.
 
 use crate::common::{
-    build_dictionary_fst_tl_toned, build_syllables_fst_tl, build_tkdb_v3, empty_association_bin,
+    build_dictionary_fst_tl_toned, build_syllables_fst_tl, build_tkdb_v4, empty_association_bin,
     fetch_hanji, install_lexicon, selected, Fetch, Row, Selected, NOW_MS,
 };
 use test_support::{engine_install_lock, write_temp};
@@ -63,7 +65,7 @@ fn fixture_rows() -> Vec<Row> {
 
 fn install_fixture() {
     let rows = fixture_rows();
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst_tl_toned(&rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst_tl(&["king1", "king3", "sin1", "sin5"]);
@@ -122,15 +124,15 @@ fn one_selection_moves_rare_homophone_to_slot0_even_hours_later() {
 #[test]
 fn selected_rare_phrase_alone_under_its_key_beats_the_single_syllable_split() {
     // Device repro 2026-09-14 (敬神/警訊 sources toggled off): 更新 is the
-    // ONLY word under `kingsin`, so the span's max frequency is its own 1
+    // ONLY word under `kingsin`, so the span's cost is its own (freq 1)
     // and cold start segments as 經+身 (synth 經身). One selection must
-    // still lift 更新 to slot 0 — user-dict floor in `edge_cost`.
+    // still lift 更新 to slot 0 — user-entry cost cap in `edge_cost`.
     let _lock = engine_install_lock();
     let rows: Vec<Row> = fixture_rows()
         .into_iter()
         .filter(|r| r.hanji != "敬神")
         .collect();
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst_tl_toned(&rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst_tl(&["king1", "king3", "sin1", "sin5"]);

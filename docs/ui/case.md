@@ -1,16 +1,15 @@
 # Case Handling (Uppercase/Lowercase)
 
 > **Type**: Feature
-> **Keywords**: `Case`, `Shift`, `CapsLock`, `CaseTransformer`
+> **Keywords**: `Case`, `Shift`, `CapsLock`, `transformInputCase`
 > **Related**: ../engine/composing.md
 
 ---
 
 ## Summary
 
-- Case state managed by KeyboardKit
-- This project controls behavior through settings synchronization
-- Supports proper tone letter conversion (`á` → `Á`)
+- Shift / caps-lock state: KeyboardKit on iOS, `CapsStateManager` on Android
+- All case-letter math lives in the engine, so tone letters convert correctly (`á` → `Á`)
 
 ---
 
@@ -19,35 +18,29 @@
 ```
 User action (Shift / sentence start)
     ↓
-KeyboardKit manages keyboardCase internally
+Shift state (iOS: KeyboardKit keyboardCase; Android: CapsStateManager)
     ↓
-CaseTransformer.transformForInput()
+transformInputCase (platform bridge → engine case_transform)
     ↓
 Output character
 ```
+
+iOS calls `RustEngineBridge.transformInputCase` from `ActionHandler+KeyActions.swift`; Android calls the `RustEngineBridge.transformInputCase` extension in `engine/CaseTransformBridge.kt`.
 
 ---
 
 ## Auto-Capitalization Setting
 
-### isAutoCapitalizationEnabled
-
 | Setting | Keyboard display | Sentence start output | Manual Shift | Caps Lock |
 |---------|-----------------|----------------------|--------------|-----------|
-| `true` | Uppercase at sentence start | Uppercase | Uppercase | Uppercase |
-| `false` | Always lowercase | Lowercase | Uppercase | Uppercase |
+| on | Uppercase at sentence start | Uppercase | Uppercase | Uppercase |
+| off | Always lowercase | Lowercase | Uppercase | Uppercase |
 
----
-
-## KeyboardKit Settings Sync
-
-Auto-capitalization syncs through KeyboardKit's own `KeyboardSettings` — `SharedSettings.swift` sets `isAutocapitalizationEnabled` on the KeyboardKit context. There is no custom `syncToKeyboardContext` helper.
+iOS stores the setting in KeyboardKit's own `KeyboardSettings` (`isAutocapitalizationEnabled`). When it is off, `KeyboardViewController+Setup.swift` sets `autocapitalizationTypeOverride = .none` and forces `keyboardCase` back to `.lowercased` unless caps lock is on. Android applies it in `CapsStateManager.updateCapsState()`.
 
 ---
 
 ## Core Components
-
-All case-mapping math lives in Rust `engine/phonetics::case_transform` (since case-transform slice / PR #205). Platform side calls via `RustEngineBridge`.
 
 | Component | Location | Description |
 |-----------|----------|-------------|
@@ -57,28 +50,4 @@ All case-mapping math lives in Rust `engine/phonetics::case_transform` (since ca
 | iOS shift / capslock state | KeyboardKit (managed) | Drives `LetterCase` value passed into bridge |
 | Android shift / capslock state | `ime/text/CapsStateManager.kt` | Same role, calls bridge per keystroke |
 
----
-
-## KeyboardKit 10 Known Issues
-
-### Issue 1: keyboardCase overwritten when switching keyboards
-
-- **Symptom**: Switching back from symbol keyboard may result in uppercase
-- **Workaround**: Monitor keyboardCase changes, restore to lowercase
-
-### Issue 2: Candidate case doesn't follow
-
-- **Symptom**: Mixed case input shows incorrect candidate display
-- **Solution**: the engine cases each candidate from the user's own raw input (`composing::continuous::recase_roman`), so the strip shows what was typed
-
----
-
-## Platform Differences
-
-| Item | iOS | Android |
-|------|-----|---------|
-| Framework | KeyboardKit | Self-managed |
-| State tracking | KeyboardKit managed | `CapsStateManager.kt` (extracted from TextInputManager in v3.4.6) |
-| Control method | Settings sync | `updateCapsState()` |
-| Real-time update | NotificationCenter | DataStore Flow |
-| Suggestion case | engine (`FetchAtPos` candidates arrive cased) | engine (same) |
+Candidate case: the engine cases each candidate from the user's own raw input (`composing::continuous::recase_roman`), so the strip shows what was typed — candidates arrive cased on both platforms.

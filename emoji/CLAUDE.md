@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidelines for Claude Code in this repo (Python emoji-data pipeline for TaigiKeyboard).
+Guidelines for the `emoji/` subtree (Python emoji-data pipeline for TaigiKeyboard).
 
 Project rules live in `.claude/rules/`; repository-wide rules in the parent `AGENTS.md`.
 
@@ -11,12 +11,7 @@ A Python generator
 merges pinned Unicode + CLDR data with a hand overlay of 台語/華語 search keywords and emits one
 `dist/emoji.json` both platforms consume directly from this repository.
 
-## Structure
-
-- `src/overrides.tsv` — the only hand-edited file (add/curate emoji + Taigi keywords)
-- `scripts/generate.py` — generator (stdlib-only); `tests/` — golden specs + drift guard
-- `data/` — pinned upstream snapshots (+ `SOURCES.md`)
-- `dist/emoji.json` — the generated artifact both apps read directly (committed)
+Layout, curation workflow and version bumps: [`README.md`](README.md).
 
 ## Core Principles
 
@@ -38,28 +33,15 @@ merges pinned Unicode + CLDR data with a hand overlay of 台語/華語 search ke
 | editing `scripts/generate.py` or tests | `.claude/rules/generator.md` |
 | changing the json schema / platform consumption | `.claude/rules/output-contract.md` (always-on) |
 
+
 ## Build & Test
 
-| Task | Command |
-|---|---|
-| Regenerate `dist/emoji.json` | `make -C emoji build` |
-| Run tests | `make -C emoji test` |
-| Lint + format check | `make -C emoji lint` |
-| Re-pull upstream (version bump only) | `make -C emoji fetch` |
+`make -C emoji build` (regenerate `dist/emoji.json`) · `test` · `lint` (lint + format check) · `fetch` (re-pull upstream, version bump only).
 
-## App integration (in the parent repository)
+## App integration
 
-This subtree ships **data only** — `dist/emoji.json`. Each app reads it directly and decodes into its
-own native model; there are no shared Swift/Kotlin modules. Schema: `.claude/rules/output-contract.md`.
-
-- **iOS**: bundles `dist/emoji.json` as a keyboard-extension resource; a slim `Codable` decodes it
-  and feeds the vendored ISEmojiView via `customEmojis`.
-- **Android**: `assets.srcDir` mounts `dist/`; Moshi decodes `emoji.json` into the existing
-  `EmojiKeyData`/`EmojiSet`/`EmojiCategory`.
-- **Both**: an app-side glyph filter drops emoji the OS font can't render — test the whole grapheme
-  cluster (iOS CoreText, Android `PaintCompat.hasGlyph`), not per-scalar.
+How each app consumes `dist/emoji.json`: [`docs/ui/emoji.md`](../docs/ui/emoji.md) § Data; schema: `.claude/rules/output-contract.md`.
 
 ## Communication
 
-- Reply in 台灣華語; docs + code comments in English (CJK OK for verbatim quotes + 台語/漢字/TL/POJ terms).
-- Concise, bullet-point, key points only.
+Docs and code comments follow the root `AGENTS.md` § Conventions.

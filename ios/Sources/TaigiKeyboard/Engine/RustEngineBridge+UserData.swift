@@ -37,16 +37,6 @@ extension RustEngineBridge {
         return true
     }
 
-    /// One NextWord prediction pick, as the engine counts it (a Continuous
-    /// pick the engine counts itself, R5). Best-effort: the engine queues the
-    /// write, and a failed round-trip is logged, never surfaced.
-    static func userDataRecordUsage(displayText: String, canonicalTl: String) {
-        var usage = Taigi_Engine_RecordUsage()
-        usage.displayText = displayText
-        usage.canonicalTl = canonicalTl
-        _ = userDataResult(.recordUsage(usage), op: "userDataRecordUsage")
-    }
-
     /// Empties the selected stores in place; `nil` when the engine could not.
     static func userDataReset(_ reset: Taigi_Engine_ResetUserData) -> Taigi_Engine_UserDataReset? {
         guard case let .reset(removed)? = userDataResult(.reset(reset), op: "userDataReset") else {
@@ -219,7 +209,7 @@ extension RustEngineBridge {
 
     /// `nil` for a failed round-trip, a refusal (a request before the open),
     /// or an answer of the wrong kind — the caller's `case let` rejects the
-    /// last; every one is recorded in the diagnostics.
+    /// last; every one is logged through `recordFailure`.
     private static func userDataResult(
         _ method: Taigi_Engine_UserDataRequest.OneOf_Method,
         op: String,
@@ -231,7 +221,7 @@ extension RustEngineBridge {
         request.payload = .userData(userData)
         guard let response = send(request, op: op) else { return nil }
         guard response.error == .ok else {
-            recordFailure(op: op, message: "engine returned \(response.error)", code: Int32(response.error.rawValue))
+            recordFailure(op: op, message: "engine returned \(response.error)")
             return nil
         }
         guard case let .userData(answer) = response.payload, let result = answer.result else {

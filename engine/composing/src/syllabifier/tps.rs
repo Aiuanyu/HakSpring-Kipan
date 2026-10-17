@@ -25,7 +25,6 @@
 use std::collections::{BTreeSet, VecDeque};
 
 use lexicon::SyllableInventory;
-use phonetics::InputMode;
 
 /// Upper bound on a single TPS syllable's byte length. Bopomofo
 /// (U+3100..U+312F) + Bopomofo Extended (U+31A0..U+31BF) chars are 3
@@ -47,11 +46,9 @@ const MAX_SYLLABLE_BYTES_TPS: usize = 24;
 /// - Returns ascending, deduplicated byte offsets.
 /// - Returns empty `Vec` when `pos >= lowered.len()`, `max_syllables
 ///   == 0`, or `pos` is not on a UTF-8 char boundary.
-/// - `_mode` is taken for signature parity with the TL syllabifier so
-///   the [`crate::syllabifier::valid_span_endings_lowered`] dispatcher
-///   can forward to either by `InputMode`; this function always probes
-///   the `tps:` family regardless of `_mode` (the dispatcher routes
-///   only TPS callers here).
+/// - Probes the `tps:` family only; the
+///   [`crate::syllabifier::valid_span_endings_lowered`] dispatcher routes
+///   only `InputMode::Tps` callers here.
 /// - `is_false_toneless_boundary_tps` suppresses a toneless ending
 ///   that sits immediately before a TPS tone mark, mirroring TL's
 ///   `is_false_toneless_boundary` so the longer numeric-tone form
@@ -74,7 +71,6 @@ pub(crate) fn valid_span_endings_lowered(
     lowered: &str,
     pos: usize,
     inv: &SyllableInventory,
-    _mode: InputMode,
     max_syllables: usize,
     barriers: &[usize],
 ) -> Vec<usize> {
@@ -171,7 +167,6 @@ fn is_false_toneless_boundary_tps(lowered: &str, end: usize) -> bool {
 #[cfg(test)]
 mod tests {
     use lexicon::SyllableInventory;
-    use phonetics::InputMode;
 
     use super::valid_span_endings_lowered;
 
@@ -208,8 +203,7 @@ mod tests {
         let inv = build_tps_inventory(&[("\u{3109}\u{311e}", None), ("\u{3128}\u{3122}", None)]);
         let dai_len = "\u{3109}\u{311e}".len();
         let input = "\u{3109}\u{311e}\u{3128}\u{3122}";
-        let endings =
-            valid_span_endings_lowered(input, 0, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered(input, 0, &inv, MAX_SYLLABLES, &[]);
         assert_eq!(endings, vec![dai_len, input.len()]);
     }
 
@@ -226,8 +220,7 @@ mod tests {
         let uan = "\u{3128}\u{3122}";
         let gi = "\u{31a3}\u{3127}";
         let input = format!("{dai}{uan}{dai}{gi}");
-        let endings =
-            valid_span_endings_lowered(&input, 0, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered(&input, 0, &inv, MAX_SYLLABLES, &[]);
         let e1 = dai.len();
         let e2 = dai.len() + uan.len();
         let e3 = dai.len() + uan.len() + dai.len();
@@ -243,8 +236,7 @@ mod tests {
         // never leave a dangling tone mark.
         let inv = build_tps_inventory(&[("\u{3109}\u{311e}", Some("\u{3109}\u{311e}\u{02ca}"))]);
         let input = "\u{3109}\u{311e}\u{02ca}";
-        let endings =
-            valid_span_endings_lowered(input, 0, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered(input, 0, &inv, MAX_SYLLABLES, &[]);
         assert_eq!(endings, vec![input.len()]);
     }
 
@@ -259,8 +251,7 @@ mod tests {
             Some("\u{310e}\u{311a}\u{31b4}\u{0307}"),
         )]);
         let input = "\u{310e}\u{311a}\u{31b4}\u{0307}";
-        let endings =
-            valid_span_endings_lowered(input, 0, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered(input, 0, &inv, MAX_SYLLABLES, &[]);
         assert_eq!(endings, vec![input.len()]);
     }
 
@@ -282,8 +273,7 @@ mod tests {
             Some("\u{310e}\u{311a}\u{31b4}\u{0307}"),
         )]);
         let input = "\u{310e}\u{311a}\u{31b4}\u{02d9}";
-        let endings =
-            valid_span_endings_lowered(input, 0, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered(input, 0, &inv, MAX_SYLLABLES, &[]);
         assert_eq!(endings, vec![input.len()]);
     }
 
@@ -293,8 +283,7 @@ mod tests {
         // guard MUST NOT suppress this — there is no tone mark after.
         let inv = build_tps_inventory(&[("\u{310e}\u{311a}\u{31b4}", None)]);
         let input = "\u{310e}\u{311a}\u{31b4}";
-        let endings =
-            valid_span_endings_lowered(input, 0, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered(input, 0, &inv, MAX_SYLLABLES, &[]);
         assert_eq!(endings, vec![input.len()]);
     }
 
@@ -308,7 +297,7 @@ mod tests {
             ("\u{31a3}\u{3127}", None), // ㆣㄧ
         ]);
         let input = "\u{3109}\u{311e}\u{3128}\u{3122}\u{31a3}\u{3127}";
-        let endings = valid_span_endings_lowered(input, 0, &inv, InputMode::Tps, 2, &[]);
+        let endings = valid_span_endings_lowered(input, 0, &inv, 2, &[]);
         let e1 = "\u{3109}\u{311e}".len();
         let e2 = "\u{3109}\u{311e}\u{3128}\u{3122}".len();
         assert_eq!(endings, vec![e1, e2]);
@@ -322,15 +311,14 @@ mod tests {
         // structural garbage-rejection filter needed.
         let inv = build_tps_inventory(&[("\u{3109}\u{311e}", None)]);
         let input = "\u{3109}\u{311e}XY";
-        let endings =
-            valid_span_endings_lowered(input, 0, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered(input, 0, &inv, MAX_SYLLABLES, &[]);
         assert_eq!(endings, vec!["\u{3109}\u{311e}".len()]);
     }
 
     #[test]
     fn empty_input_returns_empty() {
         let inv = build_tps_inventory(&[("\u{3109}\u{311e}", None)]);
-        let endings = valid_span_endings_lowered("", 0, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered("", 0, &inv, MAX_SYLLABLES, &[]);
         assert!(endings.is_empty());
     }
 
@@ -338,14 +326,7 @@ mod tests {
     fn pos_at_input_end_returns_empty() {
         let inv = build_tps_inventory(&[("\u{3109}\u{311e}", None)]);
         let input = "\u{3109}\u{311e}";
-        let endings = valid_span_endings_lowered(
-            input,
-            input.len(),
-            &inv,
-            InputMode::Tps,
-            MAX_SYLLABLES,
-            &[],
-        );
+        let endings = valid_span_endings_lowered(input, input.len(), &inv, MAX_SYLLABLES, &[]);
         assert!(endings.is_empty());
     }
 
@@ -354,8 +335,7 @@ mod tests {
         // ㄉ is 3 bytes; pos=1 is mid-codepoint. Must not panic.
         let inv = build_tps_inventory(&[("\u{3109}\u{311e}", None)]);
         let input = "\u{3109}\u{311e}";
-        let endings =
-            valid_span_endings_lowered(input, 1, &inv, InputMode::Tps, MAX_SYLLABLES, &[]);
+        let endings = valid_span_endings_lowered(input, 1, &inv, MAX_SYLLABLES, &[]);
         assert!(endings.is_empty());
     }
 
@@ -363,7 +343,7 @@ mod tests {
     fn max_syllables_zero_returns_empty() {
         let inv = build_tps_inventory(&[("\u{3109}\u{311e}", None)]);
         let input = "\u{3109}\u{311e}";
-        let endings = valid_span_endings_lowered(input, 0, &inv, InputMode::Tps, 0, &[]);
+        let endings = valid_span_endings_lowered(input, 0, &inv, 0, &[]);
         assert!(endings.is_empty());
     }
 }

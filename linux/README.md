@@ -11,17 +11,17 @@ table: `docs/architecture/linux-roadmap.md`.
 |---|---|---|
 | `crates/taigi-linux-platform` | lib, pure, host-testable | XDG paths + install prefix, IBus key event → `KeyEventSnapshot`, settings launcher, session locale. |
 | `crates/taigi-linux-core` | lib, pure | The framework-independent half: runtime (settings, stores, lexicon, coordinator), the key path over the shared `ComposingManager`, the `Emit` effect list both shells replay, the candidate page model. |
-| `crates/taigi-linux-ffi` | staticlib (the one `unsafe` crate) | The C ABI (`include/taigikeyboard.h`) the Fcitx5 addon calls: opaque runtime / engine handles, a key in, a reply of effects out. |
+| `crates/taigi-linux-ffi` | staticlib (the one crate overriding the workspace's `unsafe_code = "forbid"`) | The C ABI (`include/taigikeyboard.h`) the Fcitx5 addon calls: opaque runtime / engine handles, a key in, a reply of effects out. |
 | `fcitx5/` | C++ addon `libtaigikeyboard.so` (CMake) | The Fcitx5 shell: `InputMethodEngineV3` over the C ABI — client preedit, commit, candidate list, status area. Built only on Linux (`make build-fcitx5`) and in CI. |
 | `crates/taigikeyboard-ibus` | bin `ibus-engine-taigikeyboard` | The IBus shell: bus discovery, `org.freedesktop.IBus.Factory` + `Engine` objects (zbus), hand-serialised IBus wire types, replaying `taigi-linux-core`. |
-| `crates/taigikeyboard-settings` | lib + bin `taigikeyboard-settings` | The settings window (GTK 4 + libadwaita): 一般 / 外觀 / 快速齒 / 詞庫來源 / 自訂詞庫 / 關於 (+ unlisted 辭典搜尋); `tests/panes.rs` mounts the whole window. |
+| `crates/taigikeyboard-settings` | lib + bin `taigikeyboard-settings` | The settings window (GTK 4 + libadwaita): General / Appearance / Shortcuts / Dictionary Sources / Custom Dictionary / Learning Records (+ unlisted Dictionary Search and About); `tests/panes.rs` mounts the whole window. |
 | `data/taigikeyboard.xml.in` | component XML | What ibus-daemon reads to know the engine exists (`make component` renders the prefix). |
 | `data/tw.taigikeyboard.Settings.desktop`, `data/icons/` | launcher entry + hicolor icons | The settings window in the app grid; the icons are generated with the other desktops' by `tools/desktop/make-app-icon.swift`. |
-| `packaging/control.in` | Debian control | `make deb` packs the install layout with dpkg-deb (`docs/architecture/linux-release.md`). |
+| `packaging/control.in`, `packaging/taigikeyboard.spec.in`, `packaging/PKGBUILD.in` (+ `shlibdeps-control`, `copyright-header`) | Debian control, RPM spec, Arch PKGBUILD templates | `make deb` / `make rpm` / `make arch` pack the same install layout (`docs/architecture/linux-release.md`). |
 
-Behaviour oracle is `taigi-desktop-core` and its tests (`../desktop`), shared
-with macOS and Windows; the Windows port (`../windows`) is the shell-code
-precedent. Deltas are named in the roadmap's divergence table.
+Behaviour oracle: [`../docs/contributing/windows-guidelines.md`](../docs/contributing/windows-guidelines.md)
+§ desktop-core is the behaviour oracle; the Windows port (`../windows`) is the
+shell-code precedent.
 
 ## Working without a Linux machine
 
@@ -42,8 +42,8 @@ and an `ibus-daemon` smoke; the dogfood run-book in the roadmap owns the rest.
 ## System packages
 
 Build dependencies, as the CI jobs in `.github/workflows/linux-build.yml`
-install them (plus Rust from rustup and protoc 36.0 — `mise install` at the
-repository root):
+install them (plus Rust from rustup and protoc 36.2, the `mise.toml` pin — `mise install` at the
+repository root; CI installs 36.1 for the prost builds, which accept either):
 
 ```sh
 # Ubuntu / Debian
@@ -72,10 +72,11 @@ make deb                         # or: the .deb, from the same install layout (t
 ```
 
 Then add 台語齒盤 (language `nan`) in `fcitx5-configtool` (Fcitx5) or the desktop's input-source settings (IBus).
+Packaged installs, per-distribution paths and where user data lives:
+[`../docs/INSTALL.md`](../docs/INSTALL.md) § Linux and
+[`../docs/architecture/linux-release.md`](../docs/architecture/linux-release.md).
+
 For a development tree, `TAIGIKEYBOARD_DATA_DIR=<repo root>/assets` points the
 engine at the repository's own `assets/dictionaries/` without installing them;
 `RUST_LOG=debug` on the engine process logs every key's intent.
-
-User data: `~/.config/taigikeyboard/settings.json`,
-`~/.local/share/taigikeyboard/{user_frequency,user_association,custom_dictionary,learned_phrases}.db`.
-`make uninstall` leaves both directories alone.
+`make uninstall` leaves the user's config and data directories alone.

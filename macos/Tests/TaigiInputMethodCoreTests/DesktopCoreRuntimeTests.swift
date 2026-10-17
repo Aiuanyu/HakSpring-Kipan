@@ -144,7 +144,7 @@ final class DesktopCoreRuntimeTests: XCTestCase {
             Keys.isKautianAccentTainanEnabled, Keys.isKautianAccentKaohsiungEnabled,
             Keys.isKautianAccentKinmenEnabled, Keys.isKautianAccentMakungEnabled,
             Keys.isKautianAccentSintikEnabled, Keys.isKautianAccentTaichungEnabled,
-            Keys.isKautianNameAppendixEnabled,
+            Keys.isKautianNameAppendixEnabled, Keys.isKautianAltReadingEnabled,
         ]
         var expected: [String: Taigi_DesktopShell_SettingValue.OneOf_Value?] = [
             Keys.inputMode.name: .text(Keys.inputMode.defaultValue.rawValue),
@@ -155,13 +155,17 @@ final class DesktopCoreRuntimeTests: XCTestCase {
         for key in booleans {
             expected[key.name] = .boolean(key.defaultValue)
         }
-        // A chord row has no stored default: absent is the action's own chord.
+        // A chord field has no stored default: absent is what it ships with.
         // Spelled out: renaming one would drop every chord stored under it.
         for action in [
             "nextCandidate", "previousCandidate", "pageForward", "pageBackward",
             "confirmHighlighted", "commitLiteral", "commitAlternateScript",
         ] {
             expected["composingShortcut.\(action)"] = .some(nil)
+        }
+        // The three commit actions have a second field (USER 2026-10-16).
+        for action in ["confirmHighlighted", "commitLiteral", "commitAlternateScript"] {
+            expected["composingShortcut.\(action).second"] = .some(nil)
         }
 
         let described = try descriptors()

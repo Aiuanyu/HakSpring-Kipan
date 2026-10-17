@@ -4,14 +4,14 @@ Mandatory rules before any platform impl → Rust engine swap, new Rust slice, `
 
 ## 1. Four design goals per slice
 
-Every Rust slice must satisfy ALL four:
+Every Rust slice meets these four goals:
 
-1. **High cohesion, low coupling.** Each crate owns ONE engine concern; dependencies flow one-way down the layer graph (`rust-best-practices.md` §1a) — a domain crate may depend on lower domain/leaf crates (`composing→lexicon/ranking/phonetics`, `lexicon→mmap-host/ranking/phonetics`) plus `protos` for the RPC façade, but **never** upward on `dispatch`/FFI. Cross-module deps minimal and explicit.
+1. **High cohesion, low coupling.** Each crate owns one engine concern; dependencies flow one-way down the layer graph (`rust-best-practices.md` §1a) — a domain crate may depend on lower domain/leaf crates (`composing→lexicon/ranking/phonetics`, `lexicon→mmap-host/ranking/phonetics`) plus `protos` for the RPC façade, but **never** upward on `dispatch`/FFI. Cross-module deps minimal and explicit.
 2. **Rust idioms.** Typed `thiserror` errors, `prost` proto, sync-only, no `panic!`/`unwrap()`/`expect()` on unvalidated input (use `Result` for recoverable paths). `unsafe_code = "forbid"` on domain crates — `unsafe` is confined to the FFI crates plus the documented `mmap-host` carve-out. Canonical detail: `rust-best-practices.md` §2 (errors) / §3 (crate+type choices) / §8 (non-goals, incl. mutable process state only in `handle.rs` singletons; immutable `Lazy` tables OK) + `rust-ffi-safety.md` §1.3 (`Mutex<Engine>` guard) / §3 (`unsafe`).
 3. **Single responsibility naming.** File name = role (`trie.rs` not `util.rs`); function name = action verb (`lookup_prefix` not `process`); variable name = content (`row_ids` not `result`). One file / function / variable = one thing.
 4. **Idiomatic file organization.** Defer to Rust convention: tests live inline via `#[cfg(test)] mod tests { }`. Files split by sub-concern (cohesion-driven), NOT by line count. **No hard LOC cap**. Use length as a smell signal — "does this file actually own one concern?" — not a blocker. A 650-LOC file with one concern + cohesive tests reads better than 2 files with `#[path]` indirection.
 
-Examples already aligned: `engine/nextword/{lib,api,requests,handle,decide,filter,scorer}.rs` — 7 files for 1 crate, each owning one concern. `engine/composing/{lib,api,requests,handle,transition,derived,continuous,shadow,commit_text,telex}.rs` + `lattice/` / `syllabifier/` — same pattern. Platform-side bridge files split by slice too (`RustEngineBridge+<Slice>.swift`).
+Examples already aligned: `engine/nextword/{lib,api,requests,handle,decide,filter,scorer}.rs` — 7 files for 1 crate, each owning one concern. `engine/composing/{lib,api,requests,handle,transition,derived,continuous,conversion,shadow,commit_text,telex}.rs` + `lattice/` / `syllabifier/` — same pattern. Platform-side bridge files split by slice too (`RustEngineBridge+<Slice>.swift`).
 
 ## 2. No slice toggles
 
@@ -27,7 +27,7 @@ Each slice ships as a **direct swap** with no fallback code path. Old Swift/Kotl
 
 When swapping `OldHelper.x(...)` → `RustEngineBridge.x(...)`, the bridge op is rarely a 1:1 replacement. The original call site often has:
 
-- Adjacent preprocessing (e.g. `TaigiUnicode.nfdPreprocessed` before `stripTone`).
+- Adjacent preprocessing (e.g. NFD normalization before a tone strip).
 - Mode/flag mapping that must forward ALL enum cases (e.g. ENGLISH must NOT collapse to TL).
 - Joiners / separators (iOS `joined(separator: " ")`, Android `joinToString(" ")` — NOT `""`).
 - Per-token decision branches (e.g. `or_maps_to_er` is a per-vowel-token override inside `to_zhuyin`, NOT a whole-string `.replace("er","or")`).
@@ -39,7 +39,7 @@ Procedure for each swap:
 1. Diff BEFORE vs AFTER with 5-10 lines of context, not just the call line.
 2. Check NFD / case / mode / joiner / special-case logic preservation.
 3. Cross-check iOS vs Android side-by-side — divergence is a strong tell that one swap dropped something.
-4. Add regression-prone modules (`stripTone+NFD`, exhaustive mode `when`/`switch`, per-token vowel overrides, multi-syllable joiner) to the pre-implementation review explicitly.
+4. Add regression-prone modules (NFD-before-tone-strip, exhaustive mode `when`/`switch`, per-token vowel overrides, multi-syllable joiner) to the pre-implementation review explicitly.
 
 A symbol grep does not catch this: dropped preprocessing is not a symbol reference.
 
@@ -49,11 +49,11 @@ When adding a new `.proto` file under `engine/protos/proto/`, update ALL THREE:
 
 1. `engine/protos/build.rs` (Rust side via `prost`).
 2. `engine/scripts/gen-platform-protos.sh` — both `--swift_out` and `--java_out=lite` blocks.
-3. Run `make build` and commit the regenerated `.pb.swift` (iOS + macOS) + `.java` (Android) files in the same commit or the immediate next commit. Platform bindings are **checked into git, NOT build-time generated**.
+3. Run `make protos` (`make build` runs it first) and commit the regenerated `.pb.swift` (iOS + macOS) + `.java` (Android) files in the same commit or the immediate next commit. Platform bindings are **checked into git, NOT build-time generated**.
 
-`engine/scripts/gen-macos-protos.sh` globs `proto/*.proto` and runs as part of `make build`, so the macOS tree needs neither an edit nor a separate command — only the commit of its regenerated output.
+`engine/scripts/gen-macos-protos.sh` globs `proto/*.proto` and runs as part of `make protos`, so the macOS tree needs neither an edit nor a separate command — only the commit of its regenerated output.
 
-**`protoc` upgrades are a coupled change.** The javalite pin in `android/app/build.gradle.kts` (`com.google.protobuf:protobuf-javalite:4.X.Y` ⇔ `libprotoc X.Y`) must match the `Protobuf Java Version:` header of the committed gencode. `engine/scripts/gen-platform-protos.sh` checks this and **skips** platform proto regeneration (Swift + Java) with a loud warning on a local-`protoc` mismatch (`make build` still completes — xcframework / jniLibs do not involve protoc). So a changed `.proto` on a drifted machine leaves the bindings **silently stale**: install the `protoc` pinned in `mise.toml` (`mise install`), or set `TAIGI_ALLOW_PROTOC_DRIFT=1` and bump the javalite pin + commit the full regeneration in the same PR, then re-run the Android debug / unit-test / release-R8 gates.
+**`protoc` upgrades are a coupled change.** The pinned protoc and the skip-on-drift behaviour: `docs/BUILDING.md` §2 — a changed `.proto` on a drifted machine leaves the bindings **silently stale**. To move the pin, set `TAIGI_ALLOW_PROTOC_DRIFT=1`, bump the javalite pin in `android/app/build.gradle.kts` + `mise.toml` and commit the full regeneration in the same PR, then re-run the Android debug / unit-test / release-R8 gates.
 
 Without this, bridge code references generated types that don't exist; the build silently breaks until next ad-hoc regen.
 
@@ -70,9 +70,9 @@ Procedure when slice swaps `PlatformHelper.x()` → `RustEngineBridge.x()`:
 1. Delete `PlatformHelper.{swift,kt}` whole file (or migrated functions if the file has out-of-slice helpers).
 2. Delete the corresponding `*Test.kt` JVM tests entirely. Verify parity tests in `engine/<crate>/tests/*.rs` cover the deleted JVM cases before deletion.
 3. Fold non-migrated platform callers (cold-start fallbacks, URL builders) into the Rust round-trip too.
-4. If a B-class JVM test has been silently build-broken since a prior slice deleted referenced symbols, **delete it** as artifact cleanup. Check `git grep` for refs to deleted symbols inside `src/test/`.
+4. Delete any JVM test that no longer compiles because it references symbols an earlier slice removed — `git grep` the deleted symbols inside `src/test/`.
 
-Out of scope (still platform-owned): UI layer / KeyboardKit / FlorisBoard adapter, IME lifecycle, settings storage backends, logging sinks, URL semantics in URL builders.
+Out of scope (still platform-owned): UI layer (KeyboardKit / Jetpack Compose), IME lifecycle, settings storage backends, logging sinks, URL semantics in URL builders.
 
 ## 6. User-data SQLite is engine-owned
 

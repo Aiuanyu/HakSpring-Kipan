@@ -34,7 +34,8 @@ use crate::api::{
 use crate::commit_text::{commit_resolution, resolve_commit_text};
 use crate::conversion::{next_raw_span, PreviousTail};
 use crate::derived::{
-    buffer_input_mode, derived_display, display_caret_utf16, strip_tps_separator_markers,
+    buffer_input_mode, derived_display, display_caret_utf16, learning_text,
+    strip_tps_separator_markers,
 };
 use lexicon::LearnedEntry;
 use protos::engine::composing_response::Preedit;
@@ -103,12 +104,6 @@ pub(crate) fn apply(
         Intent::ReplaceLast { replacement } => replace_last(state, replacement, config, frequency),
         Intent::DeleteBackward => delete_backward(state, config, frequency),
         Intent::CommitRaw => commit_raw(state, config),
-        Intent::SelectCandidate { text } => match &state.phase {
-            Phase::Continuous { nailed, .. } => {
-                select_candidate_under_continuous(state, nailed.clone(), text, config)
-            }
-            Phase::Idle => noop(state, config),
-        },
         Intent::CommitPreeditThenInsertExternal { text } => match &state.phase {
             Phase::Continuous { .. } => {
                 commit_preedit_then_insert_external_under_continuous(state, text, config)
@@ -141,6 +136,12 @@ pub(crate) fn apply(
             };
             return commit_continuous(state, pick, script, &roman, config, frequency);
         }
+        Intent::CommitPrediction {
+            script,
+            roman,
+            hanji,
+            canonical_tl,
+        } => return commit_prediction(state, script, &roman, hanji, canonical_tl, config),
         Intent::TelexKey { key } => telex_key(state, &key, config, frequency),
         Intent::TpsKey { key } => tps_key(state, &key, config, frequency),
         Intent::MoveCaret { direction } => move_caret(state, direction, config, frequency),
@@ -407,7 +408,8 @@ fn phase_preedit(phase: &Phase, config: &AppConfig) -> Preedit {
     };
     let (display, tail_start) = join_nailed_prefix_and_tail(nailed, &tail, config);
     let (prefix, tail) = display.split_at(tail_start);
-    let caret_in_tail = converted_caret.unwrap_or_else(|| display_caret_utf16(raw, tail, *caret));
+    let caret_in_tail =
+        converted_caret.unwrap_or_else(|| display_caret_utf16(raw, tail, *caret, config));
     let caret_utf16 = prefix.encode_utf16().count() + caret_in_tail;
     Preedit {
         raw_input: raw.clone(),
@@ -778,8 +780,9 @@ fn commit_raw_continuous(
     // nailed segment before it rides along as `preceding` — the only place
     // NextWord learns a nailed segment (behavioral-invariants §40).
     let terminal_nextword = if !raw.is_empty() {
-        // §41 — both fields drop the separator marker. `text` goes through
-        // `derived_display`; `roman` is the raw tail, which for TPS still
+        // §41 — both fields drop the separator marker. `text` is the tail's
+        // learning text (§34: the literal candidate's key, not its permissive
+        // rendering); `roman` is the raw tail, which for TPS still
         // carries the marker, and that string becomes the association's
         // romanization key on both platforms. Learning `ㄍㄠ␣ㄉㄞ` where the
         // committed word is `ㄍㄠㄉㄞ` would key the row on a form no later
@@ -787,12 +790,12 @@ fn commit_raw_continuous(
         // NextWord learns `roman` as sent, so the tail is put in canonical
         // TL form here: POJ folds to TL, TL keeps its `eng` / `ek` finals,
         // TPS and English pass through.
-        let tail_display = derived_display(&raw, config);
+        let tail_text = learning_text(&raw, config);
         let tail_roman = phonetics::api::canonical_tl_form(
             &strip_tps_separator_markers(&raw),
             buffer_input_mode(&raw, config),
         );
-        next_word_terminal(tail_display, tail_roman, &nailed)
+        next_word_terminal(tail_text, tail_roman, &nailed)
     } else {
         // raw empty → all input is nailed; the last nailed segment is the
         // final word. `nailed` is non-empty here (combined non-empty with
@@ -879,32 +882,6 @@ fn start_under_continuous(
         effect: effects,
         ..resp
     }
-}
-
-/// `Intent::SelectCandidate { text }` arriving while in `Phase::Continuous`.
-/// Codex post-impl finding #3: silently dropping `text` would lose user
-/// selection. **Model B**: the nailed prefix is in the marked region (not
-/// the document), so committing `text` alone would lose it. Commit the
-/// whole composition with the pending tail replaced by `text` —
-/// `Σ nailed[i].display_text + text` — in one `CommitTextReplacingPreedit`,
-/// preserving the net-document parity the pre-Model-B behavior had
-/// (nailed-in-doc + text). Then exit Continuous.
-fn select_candidate_under_continuous(
-    state: &mut EngineState,
-    nailed: Vec<NailedSegment>,
-    text: String,
-    config: &AppConfig,
-) -> ComposingResponse {
-    if text.is_empty() {
-        // Empty suggestion: drop continuous state without inserting. Mirrors
-        // SelectCandidate-on-Idle being a no-op.
-        return reset(state, config);
-    }
-    let mut combined = nailed_prefix(&nailed, config);
-    combined.push_str(&text);
-    let mut effects = finalize_effects(combined);
-    effects.push(next_word_clear_for_new_composing());
-    exit_to_idle(state, effects)
 }
 
 /// `Intent::CommitPreeditThenInsertExternal { text }` under Continuous.
@@ -1261,6 +1238,41 @@ fn commit_continuous(
     applied
 }
 
+/// `Intent::CommitPrediction` (D1): the document text a NextWord prediction
+/// tap writes, resolved by the Continuous pick's resolver
+/// ([`resolve_commit_text`]), and its usage. The composition is left as it is
+/// (the snapshot answers it unchanged). No Hanji, no script, a script the
+/// prediction lacks, or an empty document text is ignored: no usage. The
+/// usage carries no `hanji`, so counting it touches no learned phrase — as
+/// the platforms' `RecordUsage`.
+fn commit_prediction(
+    state: &EngineState,
+    script: Option<CommitScript>,
+    roman: &str,
+    hanji: String,
+    canonical_tl: String,
+    config: &AppConfig,
+) -> Applied {
+    let resolved = script
+        .filter(|_| !hanji.is_empty())
+        .and_then(|script| resolve_commit_text(script, roman, Some(&hanji), config))
+        // A Hanji-only prediction led by its (absent) romanization — the swap
+        // turned off between the strip and the tap — writes nothing.
+        .filter(|resolved| !resolved.text.is_empty());
+    let usage = resolved.is_some().then_some(Usage {
+        display_text: hanji,
+        canonical_tl,
+        hanji: None,
+    });
+    let mut response = snapshot(state, config);
+    response.commit = Some(commit_resolution(CommitOutcome::Finalized, resolved));
+    Applied {
+        response,
+        learned: None,
+        usage,
+    }
+}
+
 /// `Append { ch }` under `Phase::Continuous`. Appends to the pending tail;
 /// nailed segments are untouched. The preedit re-renders the **whole
 /// composition** (Model B). Empty `ch` collapses to noop.
@@ -1442,9 +1454,8 @@ fn next_word_word_selected(
 /// separator the user typed wins — by kind only ([`canonical_separators`];
 /// the dictionary cannot cover every phrase and the user manages the
 /// separator, USER 2026-09-22). The cap counts
-/// the joined TL, not the segments' echoed `syllable_count`: a
-/// custom-dictionary pick reports `1` whatever its length
-/// (`lexicon::custom_entry_to_candidate`).
+/// the joined TL, not the segments' echoed `syllable_count` — that is
+/// platform input, and the TL is what the phrase stores.
 fn learned_phrase(nailed: &[NailedSegment]) -> Option<LearnedEntry> {
     if nailed.len() < 2 {
         return None;

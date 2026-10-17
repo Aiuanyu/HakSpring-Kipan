@@ -20,23 +20,24 @@
 //!    span ≥ 4 — proves the function trusts caller-supplied endings.
 //!
 //! Hermetic: builds a tiny `PrefixIndex` (3-row fst with `tl:` keys
-//! pointing to a tiny `dictionary.bin` v2) per test so we never touch
+//! pointing to a tiny `dictionary.bin` v4) per test so we never touch
 //! the real packaged dictionary. FST builder pattern mirrors
-//! `tests/syllables_fst.rs:186-207`; dict.bin v2 builder is shared
-//! `tests/common/mod.rs::build_tkdb_v3`.
+//! `tests/syllables_fst.rs:186-207`; dict.bin rows come from
+//! `test_support::build_tkdb` (`build_fixture_costed`).
 
 use lexicon::dictionary_reader::DictionaryReader;
 use lexicon::prefix_index::PrefixIndex;
 use lexicon::{
     best_candidate_for_key_with_barriers, fetch_candidates_for_keys_with_barriers,
-    fetch_partial_prefix_candidates, fetch_partial_prefix_candidates_unbounded,
-    CandidateScriptKind, ConsumedSpan, ContinuousFetchCtx, CustomEntry, RawCandidate, TonePin,
-    COVERAGE_KIND_FULL, COVERAGE_KIND_PARTIAL_PREFIX, FORM_NOTONE, PARTIAL_PREFIX_HYDRATE_CAP,
-    PARTIAL_PREFIX_OUTPUT_CAP,
+    fetch_partial_prefix_candidates, fetch_partial_prefix_candidates_unbounded, ConsumedSpan,
+    ContinuousFetchCtx, CustomEntry, RawCandidate, TonePin, COVERAGE_KIND_FULL,
+    COVERAGE_KIND_PARTIAL_PREFIX, PARTIAL_PREFIX_HYDRATE_CAP, PARTIAL_PREFIX_OUTPUT_CAP,
 };
 use phonetics::InputMode;
 use ranking::FrequencyMap;
-use test_support::{fst_entry, write_fst_set, write_temp};
+use test_support::{
+    build_tkdb, fst_entry, walker_cost_from_fixture_frequency, write_fst_set, write_temp, TkdbRow,
+};
 
 /// v3.5.9 D7 — build the shared `ContinuousFetchCtx` at a test site
 /// with explicit `freq_map` / `now_ms` / `custom`. Pins
@@ -68,6 +69,22 @@ fn ctx<'a>(
         mode: phonetics::InputMode::Tl,
         context: ranking::ContextRanks::empty(),
         tone_pin: lexicon::TonePin::None,
+        whole_buffer_key: None,
+    }
+}
+
+/// [`ctx`] with `typed_key` as the whole-buffer key — what an exact-path
+/// custom entry is measured against.
+fn ctx_typed<'a>(
+    custom: &'a [CustomEntry],
+    typed_key: &str,
+    prefix_index: &'a PrefixIndex,
+    dict: &'a DictionaryReader,
+    freq_map: &'a FrequencyMap,
+) -> ContinuousFetchCtx<'a> {
+    ContinuousFetchCtx {
+        whole_buffer_key: Some(typed_key.to_owned()),
+        ..ctx(freq_map, 0, custom, prefix_index, dict)
     }
 }
 
@@ -82,7 +99,7 @@ fn ctx_neutral<'a>(
     ctx(freq_map, 0, &[], prefix_index, dict)
 }
 
-use crate::common::{build_tkdb_v3, fetch_candidates_for_endings, frequency_map, FrequencyFixture};
+use crate::common::{fetch_candidates_for_endings, frequency_map, FrequencyFixture};
 
 /// Single dictionary fixture row: `(toneless_tl_key, hanji, tl, syllable_count, frequency)`.
 /// `bitmask` is fixed to `1 << 11` (the `lkk` source per
@@ -115,21 +132,54 @@ fn build_fixture(name: &str, rows: &[Row<'_>]) -> (PrefixIndex, DictionaryReader
 /// [`build_fixture`] with an explicit per-row source bitmask, for tests
 /// that exercise the `source_rank` dimension.
 fn build_fixture_sourced(name: &str, rows: &[(u16, &Row<'_>)]) -> (PrefixIndex, DictionaryReader) {
-    // 1. dict.bin v2.
-    let dict_rows: Vec<(u16, u32, u8, &str, &str)> = rows
+    let costed: Vec<(u16, u16, &Row<'_>)> = rows
         .iter()
-        .map(|(bitmask, r)| (*bitmask, r.freq, r.syll, r.hanji, r.tl))
+        .map(|(bitmask, r)| (*bitmask, walker_cost_from_fixture_frequency(r.freq), *r))
         .collect();
-    let dict_bytes = build_tkdb_v3(b"TKDB", &dict_rows);
+    build_fixture_costed(name, &costed)
+}
+
+/// [`build_fixture_sourced`] with an explicit `walker_cost` per row:
+/// `(bitmask, walker_cost, row)`. For the E1 D3 tests, where the corpus
+/// cost and the dictionary frequency disagree on purpose.
+fn build_fixture_costed(
+    name: &str,
+    rows: &[(u16, u16, &Row<'_>)],
+) -> (PrefixIndex, DictionaryReader) {
+    build_fixture_costed_in_family(name, b"tl:", rows)
+}
+
+/// [`build_fixture_costed`] under another FST key family (`b"tps:"`), the
+/// row's `toneless_key` being that family's key body.
+fn build_fixture_costed_in_family(
+    name: &str,
+    family: &[u8],
+    rows: &[(u16, u16, &Row<'_>)],
+) -> (PrefixIndex, DictionaryReader) {
+    // 1. dict.bin v4.
+    let dict_rows: Vec<TkdbRow<'_>> = rows
+        .iter()
+        .map(|(bitmask, walker_cost, r)| TkdbRow {
+            bitmask: *bitmask,
+            frequency: r.freq,
+            syllable_count: Some(r.syll),
+            kautian_subtag: Some(0),
+            walker_cost: Some(*walker_cost),
+            hanji: r.hanji,
+            tl: r.tl,
+        })
+        .collect();
+    let dict_bytes = build_tkdb(b"TKDB", 4, &dict_rows);
     let dict_path = write_temp(&format!("phase5-{name}.dict.bin"), &dict_bytes);
     let dict = DictionaryReader::open(&dict_path).expect("dict.bin opens");
 
-    // 2. dictionary.fst — `tl:<key> + 0xFF + rowid` entries (`write_fst_set`
-    // sorts them into the ascending byte order the builder needs).
+    // 2. dictionary.fst — `<family><key> + 0xFF + rowid` entries
+    // (`write_fst_set` sorts them into the ascending byte order the builder
+    // needs).
     let mut fst_keys: Vec<Vec<u8>> = Vec::new();
-    for (idx, (_, r)) in rows.iter().enumerate() {
+    for (idx, (_, _, r)) in rows.iter().enumerate() {
         let rowid = (idx + 1) as u32;
-        fst_keys.push(fst_entry(b"tl:", r.toneless_key, rowid));
+        fst_keys.push(fst_entry(family, r.toneless_key, rowid));
     }
     let fst_path = write_fst_set(&format!("{name}.fst"), fst_keys);
     let prefix_index = PrefixIndex::open(&fst_path).expect("dictionary.fst opens");
@@ -139,7 +189,7 @@ fn build_fixture_sourced(name: &str, rows: &[(u16, &Row<'_>)]) -> (PrefixIndex, 
 
 /// Locate a candidate by `(display_text, consumed_span, syllable_count)`.
 /// Asserts presence; returns the matched candidate so the caller can
-/// inspect remaining fields (score, form).
+/// inspect remaining fields (score).
 fn find<'a>(
     out: &'a [RawCandidate],
     display: &str,
@@ -209,30 +259,6 @@ fn tsua_surfaces_zhi_zhuah_zhu_across_two_spans() {
     let zhi = find(&out, "紙", (0, 4), 1);
     let zhuah = find(&out, "珠仔", (0, 4), 2);
     let zhu = find(&out, "珠", (0, 3), 1);
-
-    // form is hard-coded to FORM_NOTONE for every Phase 5 candidate.
-    assert_eq!(zhi.form, FORM_NOTONE);
-    assert_eq!(zhuah.form, FORM_NOTONE);
-    assert_eq!(zhu.form, FORM_NOTONE);
-
-    // v3.5.8 Phase 9.2: pure-CJK hanji entries derive to CandidateScriptKind::Hant
-    // end-to-end through `record_to_candidate`. Pins integration plumbing
-    // (per Codex post-impl finding #5, P3, 2026-05-11).
-    assert_eq!(
-        zhi.script_kind,
-        CandidateScriptKind::Hant,
-        "紙 must derive HANT"
-    );
-    assert_eq!(
-        zhuah.script_kind,
-        CandidateScriptKind::Hant,
-        "珠仔 must derive HANT"
-    );
-    assert_eq!(
-        zhu.script_kind,
-        CandidateScriptKind::Hant,
-        "珠 must derive HANT"
-    );
 
     // Score sanity (`freq × syll_bias × user_freq_boost`, Phase 5 formula):
     //   紙   = 100 × 1.0 × 1.0 = 100.0  span=(0,4) → Tier 0 (full buffer "tsua")
@@ -859,90 +885,6 @@ fn raw_candidate_carries_dictionary_record_bitmask_for_sort_key() {
     assert_eq!(out[0].frequency, 100, "raw freq must round-trip too");
 }
 
-// ---------------------------------------------------------------------------
-// v3.5.8 Phase 9.2 — `CandidateScriptKind` derive plumbing through fetch
-// ---------------------------------------------------------------------------
-
-#[test]
-fn mode_carrier_propagates_through_fetch_for_hant_tailo_mixed() {
-    // Integration regression for Codex post-impl finding #5 (P3, 2026-
-    // 05-11): the in-crate `derive_script_kind` unit tests pin classification,
-    // but they do not exercise the `DictionaryReader` → `RawCandidate`
-    // plumbing. This test wires three fixture rows that hit all three
-    // production-emittable `CandidateScriptKind` arms and asserts the byte
-    // identity through `record_to_candidate`.
-    //
-    // Empty `hanji` ("") drives the v2 dict.bin header's `hanzi_len = 0`,
-    // which `DictionaryReader::record` decodes as `hanji: None` → TAILO.
-    let (prefix_index, dict) = build_fixture(
-        "mode-plumb",
-        &[
-            Row {
-                toneless_key: "tai",
-                hanji: "台",
-                tl: "tâi",
-                syll: 1,
-                freq: 100,
-            },
-            Row {
-                toneless_key: "li",
-                hanji: "",
-                tl: "lí",
-                syll: 1,
-                freq: 50,
-            },
-            Row {
-                toneless_key: "iausi",
-                hanji: "iáu是",
-                tl: "iáu-sī",
-                syll: 2,
-                freq: 30,
-            },
-        ],
-    );
-
-    let hant = fetch_candidates_for_endings(
-        "tai",
-        0,
-        &[3],
-        InputMode::Tl,
-        &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
-    );
-    assert_eq!(hant.len(), 1);
-    assert_eq!(hant[0].script_kind, CandidateScriptKind::Hant);
-    assert_eq!(hant[0].display_text, "台");
-
-    let tailo = fetch_candidates_for_endings(
-        "li",
-        0,
-        &[2],
-        InputMode::Tl,
-        &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
-    );
-    assert_eq!(tailo.len(), 1);
-    assert_eq!(
-        tailo[0].script_kind,
-        CandidateScriptKind::Tailo,
-        "empty hanji (None) must derive TAILO; display_text falls back to TL"
-    );
-    assert_eq!(tailo[0].display_text, "lí");
-
-    let mixed = fetch_candidates_for_endings(
-        "iausi",
-        0,
-        &[5],
-        InputMode::Tl,
-        &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
-    );
-    assert_eq!(mixed.len(), 1);
-    assert_eq!(
-        mixed[0].script_kind,
-        CandidateScriptKind::Mixed,
-        "hanji containing Latin letter (NFKD-normalized) must derive MIXED"
-    );
-    assert_eq!(mixed[0].display_text, "iáu是");
-}
-
 #[test]
 fn roman_and_hanji_propagate_through_fetch_for_hant_tailo_mixed() {
     // v3.5.8 Phase 9 Item 5 — `roman` + `hanji` integration plumb.
@@ -1105,9 +1047,9 @@ fn partial_prefix_engine_path_surfaces_lookup_prefix_hits() {
         assert_eq!(c.consumed_span, (0, 1));
     }
 
-    // Within the partial bucket, the existing 9-dim CandidateSortKey policy
-    // still applies — higher dict-freq wins on the `-neg_freq` dim
-    // even after coverage_kind tied to 1.
+    // Within the partial bucket the CandidateSortKey policy still applies —
+    // the fixture costs derive from frequency, so the higher-freq row is the
+    // cheaper one and wins even after coverage_kind tied to 1.
     assert_eq!(out[0].display_text, "我", "higher-freq partial wins");
 }
 
@@ -1620,7 +1562,13 @@ fn item12_custom_only_entry_surfaces_full_buffer() {
         &[],
         &[],
         6,
-        &ctx(&FrequencyMap::new(), 0, &custom, &prefix_index, &dict),
+        &ctx_typed(
+            &custom,
+            "tl:taigi",
+            &prefix_index,
+            &dict,
+            &FrequencyMap::new(),
+        ),
     );
     assert_eq!(out.len(), 1, "custom entry must surface, got {out:#?}");
     assert_eq!(out[0].display_text, "台語");
@@ -1655,7 +1603,13 @@ fn item12_custom_dedupes_and_wins_dict_collision() {
         &[],
         &[],
         6,
-        &ctx(&FrequencyMap::new(), 0, &custom, &prefix_index, &dict),
+        &ctx_typed(
+            &custom,
+            "tl:taigi",
+            &prefix_index,
+            &dict,
+            &FrequencyMap::new(),
+        ),
     );
     assert_eq!(
         out.len(),
@@ -1670,9 +1624,10 @@ fn item12_custom_dedupes_and_wins_dict_collision() {
 }
 
 #[test]
-fn item12_custom_roman_variant_not_deduped() {
-    // Same hanji, different roman → distinct `(roman, hanji)` keys.
-    // Both the dict entry and the custom entry survive (D1 dual-key).
+fn item12_custom_numeric_tone_spelling_is_the_same_word() {
+    // Same hanji, same reading spelled with digit tones → one word identity
+    // `(canonical_tl, hanji)` (Core Principle #6), so the pair collapses and
+    // custom (rank 0) wins. Pre-2026-10-07 the raw-roman key kept both.
     let (prefix_index, dict) = build_fixture(
         "item12-roman-variant",
         &[Row {
@@ -1693,13 +1648,21 @@ fn item12_custom_roman_variant_not_deduped() {
         &[],
         &[],
         6,
-        &ctx(&FrequencyMap::new(), 0, &custom, &prefix_index, &dict),
+        &ctx_typed(
+            &custom,
+            "tl:taigi",
+            &prefix_index,
+            &dict,
+            &FrequencyMap::new(),
+        ),
     );
     assert_eq!(
         out.len(),
-        2,
-        "roman variants must both survive, got {out:#?}"
+        1,
+        "spellings of one reading collapse, got {out:#?}"
     );
+    assert!(out[0].is_custom, "custom wins the collision");
+    assert_eq!(out[0].canonical_tl, "tâi-gí");
 }
 
 #[test]
@@ -1798,10 +1761,13 @@ fn best_candidate_for_key_returns_highest_score_on_collision() {
         &TonePin::None,
         (0, 6),
         &[],
+        &[],
         &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
     )
     .expect("key has dict hits");
-    assert_eq!(best.span_frequency, 5000, "key's max frequency");
+    // trace: freq 5000 → round(ln(13,056,588 / 5,001) × 1000) = 7,867;
+    // freq 100 → 11,770. The key's cheapest row prices the edge.
+    assert_eq!(best.span_walker_cost, 7_867, "key's min walker cost");
     let best = best.candidate;
     assert_eq!(best.display_text, "臺灣", "highest-score row must win");
     assert_eq!(best.hanji.as_deref(), Some("臺灣"));
@@ -1820,9 +1786,11 @@ fn best_candidate_for_key_breaks_score_tie_by_source_rank_like_the_list() {
     // `source_rank` before FST rowid — production `kap` 洽/甲 (both 4927):
     // the old strict-`>` score compare kept the first rowid 洽, the list
     // led with kautian 甲, and the user saw slot 0 disagree with the list.
-    // Now both say 甲. (Fixture uses the taigitv bit: the kautian bit is
+    // Both said 甲 then; since E1 P5a the corpus cost decides production
+    // `kap` (佮), and this equal-cost fixture pins the tie only. (Fixture
+    // uses the taigitv bit: the kautian bit is
     // dropped from the effective bitmask when a row has no kautian
-    // subtag, which `build_tkdb_v3` never sets.)
+    // subtag, which `build_fixture_costed` never sets.)
     const TAIGITV_BIT: u16 = 1 << 1;
     let first_unknown = Row {
         toneless_key: "kap",
@@ -1848,6 +1816,7 @@ fn best_candidate_for_key_breaks_score_tie_by_source_rank_like_the_list() {
         &TonePin::None,
         (0, 3),
         &[],
+        &[],
         &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
     )
     .expect("key has dict hits");
@@ -1858,11 +1827,11 @@ fn best_candidate_for_key_breaks_score_tie_by_source_rank_like_the_list() {
 }
 
 #[test]
-fn best_candidate_for_key_prefers_selected_row_but_keeps_span_frequency_of_key() {
+fn best_candidate_for_key_prefers_selected_row_but_keeps_span_walker_cost_of_key() {
     // 2026-09-14 更新/敬神 bug: the walker's edge word follows the user's
     // selection ahead of dictionary frequency (one pick of the 50×
-    // rarer 台灣 beats never-selected 臺灣), while `span_frequency`
-    // stays the key's max so the edge's segmentation cost is unchanged.
+    // rarer 台灣 beats never-selected 臺灣), while `span_walker_cost`
+    // stays the key's min so the edge's segmentation cost is unchanged.
     let (prefix_index, dict) = build_fixture(
         "s2-best-selected",
         &[
@@ -1895,6 +1864,7 @@ fn best_candidate_for_key_prefers_selected_row_but_keeps_span_frequency_of_key()
         &TonePin::None,
         (0, 6),
         &[],
+        &[],
         &ctx(&map, now_ms, &[], &prefix_index, &dict),
     )
     .expect("key has dict hits");
@@ -1902,10 +1872,429 @@ fn best_candidate_for_key_prefers_selected_row_but_keeps_span_frequency_of_key()
         best.candidate.display_text, "台灣",
         "selected row wins the edge"
     );
+    // trace: 臺灣 freq 5000 → 7,867 (see the collision test above).
     assert_eq!(
-        best.span_frequency, 5000,
-        "segmentation evidence is the key's max"
+        best.span_walker_cost, 7_867,
+        "segmentation evidence is the key's min"
     );
+}
+
+/// `tl:taiuan` with 臺灣 (cost 9,000, frequency 5,000), 台灣 (cost 6,000,
+/// frequency 100) and `extra` `(hanji, frequency, walker_cost)` rows — the
+/// corpus cost and the frequency disagree on purpose.
+fn taiuan_homophones(
+    name: &str,
+    extra: &[(&'static str, u32, u16)],
+) -> (PrefixIndex, DictionaryReader) {
+    let rows: Vec<(u16, Row<'_>)> = [("臺灣", 5000, 9_000), ("台灣", 100, 6_000)]
+        .iter()
+        .chain(extra)
+        .map(|&(hanji, freq, walker_cost)| {
+            let row = Row {
+                toneless_key: "taiuan",
+                hanji,
+                tl: "tâi-uân",
+                syll: 2,
+                freq,
+            };
+            (walker_cost, row)
+        })
+        .collect();
+    let costed: Vec<(u16, u16, &Row<'_>)> = rows
+        .iter()
+        .map(|(walker_cost, row)| (1u16 << 11, *walker_cost, row))
+        .collect();
+    build_fixture_costed(name, &costed)
+}
+
+fn taiuan_list(ctx: &ContinuousFetchCtx<'_>) -> Vec<(String, bool)> {
+    let keys: Vec<(ConsumedSpan, String)> = vec![((0, 6), "tl:taiuan".to_owned())];
+    fetch_candidates_for_keys_with_barriers(&keys, &[], &[], 6, ctx)
+        .into_iter()
+        .map(|c| (c.display_text, c.is_custom))
+        .collect()
+}
+
+#[test]
+fn best_candidate_for_key_picks_the_corpus_cheapest_word_over_the_frequent_one() {
+    // E1 P5a: the edge's word is the cheapest corpus price under the key
+    // (台灣), not the higher dictionary frequency (臺灣), and the edge is
+    // priced on that same min (D3).
+    let (prefix_index, dict) = taiuan_homophones("e1-d3-min-cost", &[]);
+    let best = best_candidate_for_key_with_barriers(
+        "tl:taiuan",
+        &[],
+        &TonePin::None,
+        (0, 6),
+        &[],
+        &[],
+        &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
+    )
+    .expect("key has dict hits");
+    assert_eq!(best.candidate.display_text, "台灣");
+    assert_eq!(best.span_walker_cost, 6_000);
+}
+
+#[test]
+fn list_orders_by_corpus_cost_and_leads_with_the_edge_pick() {
+    // E1 P5b: the list sorts on the edge pick's scale — corpus cost first,
+    // frequency only breaking an equal cost — so, with no custom word, its
+    // head is the walker's word.
+    // trace: 台灣 6000 < 臺灣 9000 (freq 5000) = 台員 9000 (freq 4000).
+    let (prefix_index, dict) = taiuan_homophones("e1-p5b-list-cost", &[("台員", 4000, 9_000)]);
+    let user_frequency = FrequencyMap::new();
+    let ctx = ctx(&user_frequency, 0, &[], &prefix_index, &dict);
+    let list: Vec<String> = taiuan_list(&ctx)
+        .into_iter()
+        .map(|(word, _)| word)
+        .collect();
+    assert_eq!(list, ["台灣", "臺灣", "台員"]);
+    let best = best_candidate_for_key_with_barriers(
+        "tl:taiuan",
+        &[],
+        &TonePin::None,
+        (0, 6),
+        &[],
+        &[],
+        &ctx,
+    )
+    .expect("key has dict hits");
+    assert_eq!(best.candidate.display_text, list[0]);
+}
+
+#[test]
+fn list_custom_word_leads_the_priced_homophones() {
+    // USER 2026-10-12 (`preference_class`): the user's never-selected word
+    // leads the never-selected rest of its tier although it carries no
+    // corpus cost; the priced rows keep their order after it. The walker's
+    // edge pick puts the same word at slot 0 in composing.
+    let (prefix_index, dict) = taiuan_homophones("custom-lead", &[("台員", 4000, 9_000)]);
+    let custom = vec![CustomEntry {
+        roman: "tâi-uân".to_owned(),
+        hanji: Some("大灣".to_owned()),
+    }];
+    let user_frequency = FrequencyMap::new();
+    let ctx = ctx_typed(&custom, "tl:taiuan", &prefix_index, &dict, &user_frequency);
+    assert_eq!(
+        taiuan_list(&ctx),
+        [
+            ("大灣".to_owned(), true),
+            ("台灣".to_owned(), false),
+            ("臺灣".to_owned(), false),
+            ("台員".to_owned(), false)
+        ]
+    );
+}
+
+#[test]
+fn list_selected_word_leads_a_never_selected_custom_word() {
+    // USER 2026-10-16 (`li2` → 你 before a bulk-filed custom 屢): the word
+    // the user picks leads the custom word the user never picked, which
+    // still leads the never-picked dictionary rows.
+    let (prefix_index, dict) = taiuan_homophones("custom-below-selection", &[]);
+    let custom = vec![CustomEntry {
+        roman: "tâi-uân".to_owned(),
+        hanji: Some("大灣".to_owned()),
+    }];
+    let now_ms = 1_700_000_000_000_i64;
+    let user_frequency = frequency_map(&[FrequencyFixture {
+        display_text_key: "臺灣".into(),
+        count: 1,
+        last_used_ms: now_ms - 1_000,
+        canonical_tl: "tâi-uân".into(),
+    }]);
+    let ctx = ContinuousFetchCtx {
+        whole_buffer_key: Some("tl:taiuan".to_owned()),
+        ..ctx(&user_frequency, now_ms, &custom, &prefix_index, &dict)
+    };
+    assert_eq!(
+        taiuan_list(&ctx),
+        [
+            ("臺灣".to_owned(), false),
+            ("大灣".to_owned(), true),
+            ("台灣".to_owned(), false)
+        ]
+    );
+}
+
+#[test]
+fn edge_pick_orders_custom_rows_like_the_list() {
+    // USER 2026-10-16: the walker no longer takes the FIRST custom row under
+    // the key — custom rows join the edge pick, so the one the user picks
+    // wins (李 picked 7× over a never-picked 屢 filed before it), and a
+    // selected dictionary word beats a never-selected custom one.
+    let (prefix_index, dict) = taiuan_homophones("edge-custom-pick", &[]);
+    let filed_first = CustomEntry {
+        roman: "tâi-uân".to_owned(),
+        hanji: Some("大灣".to_owned()),
+    };
+    let picked = CustomEntry {
+        roman: "tâi-uân".to_owned(),
+        hanji: Some("台員".to_owned()),
+    };
+    let now_ms = 1_700_000_000_000_i64;
+    let pick = |selected: &str, custom: &[&CustomEntry]| {
+        let user_frequency = frequency_map(&[FrequencyFixture {
+            display_text_key: selected.into(),
+            count: 7,
+            last_used_ms: now_ms - 1_000,
+            canonical_tl: "tâi-uân".into(),
+        }]);
+        let best = best_candidate_for_key_with_barriers(
+            "tl:taiuan",
+            &[],
+            &TonePin::None,
+            (0, 6),
+            custom,
+            &[],
+            &ctx(&user_frequency, now_ms, &[], &prefix_index, &dict),
+        )
+        .expect("key has dict hits");
+        (best.candidate.display_text, best.candidate.is_custom)
+    };
+    assert_eq!(
+        pick("台員", &[&filed_first, &picked]),
+        ("台員".to_owned(), true)
+    );
+    assert_eq!(
+        pick("臺灣", &[&filed_first, &picked]),
+        ("臺灣".to_owned(), false)
+    );
+    // Never-selected custom leads the never-selected dictionary rows.
+    assert_eq!(pick("無", &[&filed_first]), ("大灣".to_owned(), true));
+}
+
+#[test]
+fn edge_pick_custom_only_key_returns_the_custom_row_at_the_edge_span() {
+    // No dictionary row under the key: the custom row is the edge, at the
+    // edge's own span (not the whole buffer).
+    let (prefix_index, dict) = taiuan_homophones("edge-custom-only", &[]);
+    let custom = CustomEntry {
+        roman: "tsiò-lâng".to_owned(),
+        hanji: Some("照人".to_owned()),
+    };
+    let best = best_candidate_for_key_with_barriers(
+        "tl:tsiolang",
+        &[],
+        &TonePin::None,
+        (3, 11),
+        &[&custom],
+        &[],
+        &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
+    )
+    .expect("custom row is the edge");
+    assert_eq!(best.candidate.display_text, "照人");
+    assert_eq!(best.candidate.consumed_span, (3, 11));
+    assert_eq!(best.candidate.syllable_count, 2);
+    assert_eq!(best.span_walker_cost, ranking::WALKER_COST_UNPRICED);
+}
+
+#[test]
+fn list_custom_twin_of_the_cheapest_word_keeps_the_lead() {
+    // A custom entry that collides with 台灣 replaces the dictionary row
+    // (custom wins the dedupe) and, as the user's own word, leads the list.
+    let (prefix_index, dict) = taiuan_homophones("e1-p5b-custom-twin", &[]);
+    let custom = vec![CustomEntry {
+        roman: "tâi-uân".to_owned(),
+        hanji: Some("台灣".to_owned()),
+    }];
+    let user_frequency = FrequencyMap::new();
+    let ctx = ctx_typed(&custom, "tl:taiuan", &prefix_index, &dict, &user_frequency);
+    assert_eq!(
+        taiuan_list(&ctx),
+        [("台灣".to_owned(), true), ("臺灣".to_owned(), false)]
+    );
+}
+
+#[test]
+fn list_context_hit_leads_the_corpus_order() {
+    // E1 P5b / §56: the previous word's continuation sits above the corpus
+    // cost — 臺灣 (cost 9,000) as a bundled continuation leads 台灣 (6,000).
+    let (prefix_index, dict) = taiuan_homophones("e1-p5b-context", &[]);
+    let mut context = ranking::ContextRanks::new();
+    context.insert(
+        "臺灣".to_owned(),
+        "tâi-uân".to_owned(),
+        ranking::CONTEXT_RANK_BUNDLED,
+    );
+    let user_frequency = FrequencyMap::new();
+    let ctx = ContinuousFetchCtx {
+        context: &context,
+        ..ctx_neutral(&user_frequency, &prefix_index, &dict)
+    };
+    assert_eq!(
+        taiuan_list(&ctx),
+        [("臺灣".to_owned(), false), ("台灣".to_owned(), false)]
+    );
+    assert_eq!(
+        taiuan_list(&ctx_neutral(&user_frequency, &prefix_index, &dict)),
+        [("台灣".to_owned(), false), ("臺灣".to_owned(), false)]
+    );
+}
+
+#[test]
+fn list_partial_spans_of_mixed_length_follow_the_corpus_cost() {
+    // E1 P5b: inside the partial tier spans of different lengths compare on
+    // the corpus cost alone, coverage only breaking an equal cost — the
+    // cheaper two-syllable 台灣 leads the one-syllable 台 whose frequency is
+    // higher, and the cheaper 台 leads the rarer 台灣 under the other costs.
+    let rows = |taiuan_cost, tai_cost| {
+        let tai = Row {
+            toneless_key: "tai",
+            hanji: "台",
+            tl: "tâi",
+            syll: 1,
+            freq: 31_281,
+        };
+        let taiuan = Row {
+            toneless_key: "taiuan",
+            hanji: "台灣",
+            tl: "tâi-uân",
+            syll: 2,
+            freq: 1_379,
+        };
+        build_fixture_costed(
+            &format!("e1-p5b-mixed-{taiuan_cost}"),
+            &[
+                (1u16 << 11, tai_cost, &tai),
+                (1u16 << 11, taiuan_cost, &taiuan),
+            ],
+        )
+    };
+    let keys: Vec<(ConsumedSpan, String)> = vec![
+        ((0, 3), "tl:tai".to_owned()),
+        ((0, 6), "tl:taiuan".to_owned()),
+    ];
+    let user_frequency = FrequencyMap::new();
+    for (taiuan_cost, tai_cost, expected) in [
+        (6_900, 8_000, ["台灣", "台"]),
+        (9_000, 8_000, ["台", "台灣"]),
+    ] {
+        let (prefix_index, dict) = rows(taiuan_cost, tai_cost);
+        let ctx = ctx_neutral(&user_frequency, &prefix_index, &dict);
+        // raw_len 10 (`taiuanlang`): both spans are tier 1.
+        let list: Vec<String> = fetch_candidates_for_keys_with_barriers(&keys, &[], &[], 10, &ctx)
+            .into_iter()
+            .map(|c| c.display_text)
+            .collect();
+        assert_eq!(list, expected, "台灣 {taiuan_cost} vs 台 {tai_cost}");
+    }
+}
+
+#[test]
+fn best_candidate_for_key_min_cost_skips_rows_the_filters_drop() {
+    // E1 D3 / P5a: the min and the pick run over the rows that pass the
+    // source and tone-pin filters only — a dropped row lends the edge
+    // neither its cost nor its word.
+    const TAIGITV_BIT: u16 = 1 << 1;
+    const RANK_NEUTRAL_BIT: u16 = 1 << 11;
+    let si_cheap = Row {
+        toneless_key: "si",
+        hanji: "是",
+        tl: "sī",
+        syll: 1,
+        freq: 100,
+    };
+    let si_costly = Row {
+        toneless_key: "si",
+        hanji: "死",
+        tl: "sí",
+        syll: 1,
+        freq: 100,
+    };
+    let (prefix_index, dict) = build_fixture_costed(
+        "e1-d3-filtered-min",
+        &[
+            (TAIGITV_BIT, 4_000, &si_cheap),
+            (RANK_NEUTRAL_BIT, 9_000, &si_costly),
+        ],
+    );
+    let freq_map = FrequencyMap::new();
+    let edge = |ctx: &ContinuousFetchCtx<'_>, tone_pin: &TonePin| {
+        let best =
+            best_candidate_for_key_with_barriers("tl:si", &[], tone_pin, (0, 2), &[], &[], ctx)
+                .expect("key has dict hits");
+        (best.span_walker_cost, best.candidate.display_text)
+    };
+    let all_sources = ctx_neutral(&freq_map, &prefix_index, &dict);
+    assert_eq!(
+        edge(&all_sources, &TonePin::None),
+        (4_000, "是".to_owned()),
+        "toneless key takes the cheapest tone's word"
+    );
+    let without_taigitv = ContinuousFetchCtx {
+        enabled_sources_bitmask: u32::from(RANK_NEUTRAL_BIT),
+        ..ctx_neutral(&freq_map, &prefix_index, &dict)
+    };
+    assert_eq!(
+        edge(&without_taigitv, &TonePin::None),
+        (9_000, "死".to_owned()),
+        "source toggled off"
+    );
+    let si2 = TonePin::TypedTones {
+        mode: InputMode::Tl,
+        typed: "si2".to_owned(),
+        boundaries: Vec::new(),
+        one_syllable_stretches: Vec::new(),
+    };
+    assert_eq!(
+        edge(&all_sources, &si2),
+        (9_000, "死".to_owned()),
+        "typed tone stops the borrowing"
+    );
+}
+
+#[test]
+fn best_candidate_for_key_tps_picks_the_cheapest_admitted_reading() {
+    // E1 P5a over the §35 TPS readings: `ㄎㆦㆻㄫ` admits the literal-closer
+    // khok|ng reading (1 substitution) and khoo|kng (2). The corpus cost
+    // picks khoo|kng though the other row has the higher frequency and sits
+    // first in reading order; a typed separator after ㆻ (Final-only slot)
+    // drops khoo|kng, which then lends the edge neither word nor cost.
+    // Hanji are fixture labels.
+    let khok_ng = Row {
+        toneless_key: "ㄎㆦㆻㆭ",
+        hanji: "殼黃",
+        tl: "khok-n̂g",
+        syll: 2,
+        freq: 100,
+    };
+    let khoo_kng = Row {
+        toneless_key: "ㄎㆦㄍㆭ",
+        hanji: "箍卷",
+        tl: "khoo-kǹg",
+        syll: 2,
+        freq: 1,
+    };
+    let (prefix_index, dict) = build_fixture_costed_in_family(
+        "e1-p5a-tps-readings",
+        b"tps:",
+        &[
+            (1u16 << 11, 9_000, &khok_ng),
+            (1u16 << 11, 6_000, &khoo_kng),
+        ],
+    );
+    let freq_map = FrequencyMap::new();
+    let tps_ctx = ContinuousFetchCtx {
+        mode: InputMode::Tps,
+        ..ctx_neutral(&freq_map, &prefix_index, &dict)
+    };
+    let edge = |final_only: &[usize]| {
+        let best = best_candidate_for_key_with_barriers(
+            "tps:ㄎㆦㆻㄫ",
+            final_only,
+            &TonePin::None,
+            (0, 12),
+            &[],
+            &[],
+            &tps_ctx,
+        )
+        .expect("key has dict hits");
+        (best.candidate.display_text, best.span_walker_cost)
+    };
+    assert_eq!(edge(&[]), ("箍卷".to_owned(), 6_000));
+    let final_only_khok = "tps:ㄎㆦㆻㄫ".find('ㆻ').expect("ㆻ in the key");
+    assert_eq!(edge(&[final_only_khok]), ("殼黃".to_owned(), 9_000));
 }
 
 #[test]
@@ -1929,6 +2318,7 @@ fn best_candidate_for_key_none_when_key_absent() {
             &[],
             &TonePin::None,
             (0, 3),
+            &[],
             &[],
             &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
         )
@@ -1996,6 +2386,7 @@ fn continuous_drops_tl_abbrev_collision_keeps_genuine_toneless() {
         &[],
         &TonePin::None,
         (0, 2),
+        &[],
         &[],
         &ctx_neutral(&FrequencyMap::new(), &prefix_index, &dict),
     )

@@ -13,7 +13,6 @@ struct CustomDictionaryView: View {
     @State private var editingEntry: CustomDictionaryEntry?
     @State private var romanInput = ""
     @State private var hanjiInput = ""
-    @State private var showDeleteAllAlert = false
 
     // Case-insensitive substring match on roman/hanji; with no query, cap at 100 rows so the list stays smooth.
     private var filteredEntries: [CustomDictionaryEntry] {
@@ -86,10 +85,10 @@ struct CustomDictionaryView: View {
                         .font(AppStyle.sectionHeaderFont)
                 }
 
-                // Delete all
+                // Delete all — runs on the tap, no confirmation (USER 2026-10-16)
                 Section {
                     Button(role: .destructive) {
-                        showDeleteAllAlert = true
+                        Task { await viewModel.deleteAll() }
                     } label: {
                         Text(lang.string(.dictionaryDeleteAll))
                     }
@@ -184,16 +183,9 @@ struct CustomDictionaryView: View {
             exportFilename: { ImportExportHandler.exportFilename(prefix: "taigi_custom_dictionary") },
             okText: lang.string(.commonOk),
             exportSuccessText: lang.string(.dictionaryExportSuccess),
+            exportFailedText: lang.string(.commonExportFailed),
             onFileImport: { handleImport($0) },
         )
-        .alert(lang.string(.dictionaryDeleteAll), isPresented: $showDeleteAllAlert) {
-            Button(lang.string(.commonCancel), role: .cancel) {}
-            Button(lang.string(.dictionaryClear), role: .destructive) {
-                Task { await viewModel.deleteAll() }
-            }
-        } message: {
-            Text(lang.string(.dictionaryDeleteAllMessage))
-        }
         .task {
             await viewModel.load()
         }
@@ -229,20 +221,16 @@ struct CustomDictionaryView: View {
     // `Lexicon/` service unaware of `StringKey` (presentation layer). Mirrors Android's
     // `CustomDictionaryScreen` error → `StringKey` resolution.
     private func localizedImportMessage(_ error: Error) -> String {
-        guard let key = (error as? CustomDictionaryError)?.messageKey else {
-            return error.localizedDescription
-        }
-        return lang.string(key)
+        lang.string((error as? CustomDictionaryError)?.messageKey ?? .commonImportFailed)
     }
 }
 
 private extension CustomDictionaryError {
-    var messageKey: StringKey? {
+    var messageKey: StringKey {
         switch self {
-        case .invalidCSVFormat: .dictionaryInvalidCSVFormat
+        case .invalidCSVFormat, .invalidCSVData: .dictionaryInvalidCSVFormat
         case .fileTooLarge: .dictionaryFileTooLarge
         case .tooManyEntries: .dictionaryTooManyEntries
-        case .invalidCSVData: nil
         }
     }
 }

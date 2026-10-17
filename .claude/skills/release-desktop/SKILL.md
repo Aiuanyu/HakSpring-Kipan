@@ -1,6 +1,7 @@
 ---
 name: release-desktop
 description: Prepare a DESKTOP release (macOS + Windows + Linux, one shared version) of the version already in the tree - changelog, rebuild, commit, and stage the installers on an unpublished draft; stops before publishing. Optional args: a patch platform (`macos` / `windows` / `linux`) or a release base. Mobile train (iOS + Android) is `release-mobile`.
+disable-model-invocation: true
 ---
 
 # Release Desktop
@@ -20,10 +21,8 @@ Optional arguments, in any order:
 - `<base-ref>` — overrides the derived release base.
   Example: `/release-desktop desktop-3.6.7`
 
-**Full release vs patch** (USER 2026-09-24): a full release bumps the minor
-number and ships every platform (3.7.0, 3.8.0); a patch bumps the third number
-and ships only the platform it fixes (3.7.1 macOS, 3.7.2 Windows — one shared
-counter, one version per patch). Rationale and the announce side:
+**Full release vs patch**: a full release (`x.y.0`) ships every platform; a
+patch (`x.y.z`, z > 0) ships only the platform it fixes. Policy:
 `docs/architecture/desktop-release.md` § Version numbers.
 
 This skill takes a release as far as it can go without a person: it rebuilds,
@@ -73,10 +72,8 @@ Then, before any edit:
   <base>..HEAD, N commits` — and wait for the user to confirm.** Nothing is
   derived silently, because nothing was passed in.
 
-**The desktop train only moves upward.** `CFBundleVersion` derives as
-`MAJOR*10000 + MINOR*100 + PATCH` and is what the macOS Installer compares
-between packages; `set-versions` refuses a downgrade. Never pass
-`--allow-downgrade`.
+**The desktop train only moves upward** — `set-versions` refuses a downgrade
+(`docs/architecture/manual-release-notes.md` § Set the version).
 
 `check-versions --train mobile` is not this skill's gate — an iOS/Android
 version differing from `<target>` is expected, not a finding.
@@ -142,12 +139,9 @@ Two desktop-specific upgrade checks on top of it:
 **The skill runs these itself** — the artifact shipped must be built from the
 commit being released.
 
-**Always**, not only when the range touched them. The engine binaries a platform
-links are generated and gitignored (`macos/RustEngine/RustTaigi.xcframework/`,
-`android/app/src/main/jniLibs/**`), so nothing in the tree says which commit the
-local copy was built from — a clean tree proves nothing about them, and a
-machine that last built on another branch would ship that. Rebuilding costs
-seconds against a warm target directory.
+**Always**, not only when the range touched them — a clean tree proves nothing
+about the gitignored engine binaries (`docs/architecture/build-artifacts.md`
+§ A release rebuilds first).
 
 ```bash
 make i18n
@@ -160,7 +154,7 @@ sources. Its outputs are committed, and rebuilding them produces byte-different
 would put noise in the release commit.
 
 ```bash
-RELEASE_VERSION=<target> make dict   # only if dictionary/ sources moved
+RELEASE_VERSION=v<target> make dict   # only if dictionary/ sources moved; takes vX.Y.Z
 ```
 
 Commit whatever the rebuild changed before staging: staging refuses a dirty
@@ -201,9 +195,9 @@ Rules:
 - A patch's file has the lead paragraph and ONLY its platform's `###` section;
   the release page shows what this version ships, and the other platforms ship
   nothing in it.
-- The file must be **committed** before either platform publishes: the release
-  body is read out of the tagged commit, not the working tree, and a version
-  with no changelog in that commit fails the publish outright.
+- The file must be **committed** before staging: the release body is read out
+  of the staged commit (the one the tag will name), not the working tree, and a
+  commit with no changelog fails staging outright.
 - English only: UI labels by their i18n `en` value (look up `"hanji": "<label>"` in `i18n/*.json`), quotes translated; CJK / TL / POJ / TPS only for Taigi example words and readings.
 - This is the GitHub release body users read: concrete user-visible behavior,
   with the PR number in `(#NNN)`. No refactors, tests, tooling, or dependency
@@ -228,8 +222,6 @@ Then read every section back against the release range: every PR in the range
 that changed user-visible desktop behavior appears in at least one section, and
 every claim in a section is traceable to a commit in the range.
 
-Deterministic validation does not replace the user's factual review.
-
 ## 6. Commit
 
 ```bash
@@ -248,22 +240,12 @@ cannot tell whether a sentence describes the behavior that shipped.
 make desktop-release
 ```
 
-`tools/release/stage-desktop.sh` runs `make macos-release` here — build, sign,
-notarize, package, put the `.pkg` and its `.sha256` on the **draft**
-`desktop-<target>` — then dispatches `.github/workflows/windows-build.yml` and
-`.github/workflows/linux-build.yml` (with the staged commit as `source_sha`)
-together and waits for both: GitHub-hosted runners build the Windows installer and the Linux
-`.deb` / `.rpm` / Arch packages from the same commit and attach them, each with its `.sha256`, to the same draft.
-The maintainer's Windows box is not in the release path.
-
-A draft has no tag and no public asset URL: nothing here reaches a user, and
-nothing is announced. The tag appears when the draft is published.
-
-A full release is all three or none — no half of one is ever staged. An existing draft for
-this version is deleted first, so a re-run is a fresh build of every half from
-one commit — which is what the tag on the published release will describe. If a
-half fails, or `main` moved while a half was waited on, fix that and run the
-whole thing again.
+It builds the macOS `.pkg` here and dispatches the hosted Windows and Linux
+builds from the same commit onto the **draft** `desktop-<target>` (what each
+step does and checks: `docs/architecture/desktop-release.md` § The flow,
+§ What staging checks). A full release is all three or none; an existing draft
+for this version is deleted first, so if a half fails or `main` moved while it
+was waited on, fix that and run the whole thing again.
 
 For a **patch**, stage only its platform:
 
@@ -272,10 +254,7 @@ make desktop-patch PLATFORM=<platform>
 ```
 
 Same script, same clean draft from one commit, with one platform's installers
-(Linux: the `.deb`, `.rpm` and Arch package together). Without macOS the script
-creates the empty draft itself before dispatching, since the hosted attach
-steps only join one. Publishing announces only that platform; the others keep
-offering the version they have.
+(Linux: `.deb`, `.rpm` and Arch together).
 
 Report the draft URL.
 
@@ -293,31 +272,17 @@ this release touches, then publish.
 `gh release download desktop-<target> --repo taigikeyboard/taigikeyboard --dir ~/Downloads`
 and `gh release edit desktop-<target> --repo taigikeyboard/taigikeyboard --draft=false`.)
 
-Publishing creates the tag and fires three workflows:
-`.github/workflows/announce-release.yml`, which proves every download is
-anonymously reachable, writes every `_data/*_release.json` to the website in one
-commit and waits for the live macOS and Windows appcasts (Linux has none);
-`.github/workflows/windows-build.yml`, a GitHub-hosted rebuild for SignPath
-provenance; and `.github/workflows/linux-build.yml`, the same rebuild for the
-Linux packages. The two rebuilds publish nothing.
+Publishing creates the tag and runs the announcement
+(`docs/architecture/desktop-release.md` § The flow, § What announcing checks).
 
 The website's Linux button stays hidden until `enable_linux_download` is `true`
-in the website's `_config.yml` — that switch is the maintainer's, like the
-publish. It hides the button, not the `.deb`, which is public once published.
+in the website's `_config.yml` — the maintainer's switch, like the publish. It
+hides the button, not the packages, which are public once published.
 
-**After a release carrying a macOS `.pkg` is published**, the Homebrew cask
-still names the previous one — remind the maintainer to bump it (or do it when
-asked). In `taigikeyboard/homebrew-tap`, `Casks/taigikeyboard.rb` takes the
-published `version` and the `sha256` from the release's
-`TaigiKeyboard-<target>.pkg.sha256`; check with
-`brew audit --cask --strict --online taigikeyboard/tap/taigikeyboard` and
-`brew style taigikeyboard/tap`, then push. Never point it at a draft or the
-in-tree version; a Windows- or Linux-only patch leaves it alone.
-(`docs/architecture/desktop-release.md` § The flow.)
-
-`make desktop-announce` runs the same announcement by hand — for a re-run after
-a failed job, or when its token has expired. Full procedure and rationale:
-`docs/architecture/desktop-release.md`.
+**After a release carrying a macOS `.pkg` is published**, remind the maintainer
+to bump the Homebrew cask (or do it when asked) — steps in
+`docs/architecture/desktop-release.md` § The flow; also run
+`brew style taigikeyboard/tap` before pushing.
 
 ## Guardrails
 

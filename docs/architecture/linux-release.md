@@ -6,8 +6,9 @@
 
 How the Linux half of a desktop version ships. The shared flow — one draft
 release `desktop-<version>` for all three desktops, tested and published by a
-person — is `desktop-release.md`; this file is only what the Linux artifact
-is and how it is built.
+person — is `desktop-release.md`; installing one as a user is
+[`docs/INSTALL.md` § Linux](../INSTALL.md#linux). This file is only what the
+Linux artifact is and how it is built.
 
 ## The artifacts
 
@@ -31,7 +32,12 @@ maintain them.
 All three are packed from the SAME `make install PREFIX=/usr` recipe into a
 staging root — no second build inside rpmbuild or makepkg. One package holds
 both shells (Debian and Fedora pick the framework through `fcitx5 | ibus`;
-pacman has no alternatives, so Arch requires `fcitx5`). Shared paths:
+pacman has no alternatives, so Arch requires `fcitx5`). For downstream split
+packages, `make install` is the sum of `install-common` (settings window,
+dictionaries, icons, typefaces, licence texts), `install-ibus` and
+`install-fcitx5`; `INSTALL_FONTS=0` leaves out the typefaces, their OFL text
+and the `copyright` header's sentence about them. `deb` / `rpm` / `arch`
+refuse `INSTALL_FONTS=0` — their metadata names the typefaces. Shared paths:
 
 | Path | What |
 |---|---|
@@ -54,7 +60,7 @@ default and what a source install uses):
 | Guideline | Policy §12.5 (`copyright`), FHS 3.0 (`/usr/libexec`), Fonts/PackagingPolicy | Packaging Guidelines (`%license`), Fonts Policy | Arch package guidelines ("Avoid `/usr/libexec`"), font package guidelines |
 
 Fedora's Fonts Policy also discourages typefaces bundled inside an
-application package; they stay bundled (USER 2026-09-25), so `𧉟` never
+application package; they stay bundled, so `𧉟` never
 renders as tofu, with only the path following the guideline. Moving the
 engine is a file move within one package: an upgrade replaces the file and
 the component XML together; IBus reads the new `<exec>` at its next start
@@ -65,7 +71,7 @@ the component XML together; IBus reads the new `<exec>` at its next start
 4.14, libadwaita 1.5, GLib 2.80 on Ubuntu 24.04, the runner that builds it.
 Built and checked in CI on Ubuntu 24.04 (compile, `ibus-daemon` smoke, the
 package's contents and the addon file name); installing and typing with it on
-a real desktop is S74, not yet done. A `.deb` installed by hand adds no apt
+a real desktop is dogfood item S74. A `.deb` installed by hand adds no apt
 source: a newer version is another download.
 
 User data is never in the package: `~/.config/taigikeyboard/settings.json` and
@@ -120,17 +126,21 @@ That is packaging proof only; typing on a real desktop is S74.
 `.github/workflows/linux-build.yml` is the Linux half of a desktop release,
 the way `windows-build.yml` is the Windows half:
 
-- On every pull request touching `linux/**` / `desktop/**` / `engine/**` it
-  builds the package and keeps it as a workflow artifact (`linux-deb`), checks
-  the expected paths are inside it, that the addon file is the one the
-  `.conf` names, and the desktop entry (`desktop-file-validate`). Nothing
-  reaches a draft; the build job can only read.
+- It runs on a `desktop-<version>` publish, on a nightly `schedule` and on
+  `workflow_dispatch` — never per pull request: the pre-PR gate for a Linux
+  change is `make linux-check` locally (or a manual dispatch). Every run
+  builds the three packages and keeps them as workflow artifacts (`linux-deb`,
+  `linux-rpm`, `linux-arch`), checks the expected paths are inside the `.deb`,
+  that the addon file is the one the `.conf` names, and the desktop entry
+  (`desktop-file-validate`). Nothing reaches a draft; the build job can only
+  read.
 - `tools/release/stage-desktop.sh` (`make desktop-release`) dispatches it on `main`
   beside the Windows run, with the staged commit as `source_sha`, and waits;
   the `attach` job (the only one that can write) runs only with a
   `source_sha`, refuses any commit but that one, refuses a published release
-  or a draft targeting another commit, and uploads the `.deb` and its
-  `.sha256` to the `desktop-<version>` draft the macOS half created — never
+  or a draft targeting another commit, and uploads the `.deb`, the `.rpm`
+  and the Arch `.pkg.tar.zst`, each with its `.sha256`, to the
+  `desktop-<version>` draft the macOS half created — never
   over an asset already there. A dispatch from any other ref, or without
   `source_sha`, only builds. The build job also checks the package's control
   `Version` / `Architecture` and that the build rewrote nothing tracked
@@ -141,7 +151,7 @@ the way `windows-build.yml` is the Windows half:
 
 Publishing stays a person's (`desktop-release.md`). No signing: a `.deb`
 downloaded from the project page is verified by its `.sha256`, as the unsigned
-Windows channel is; an apt repository with its own key is outside this slice.
+Windows channel is; there is no apt repository with its own key.
 
 ## No in-app update
 
@@ -161,17 +171,3 @@ splits the Linux button into three only when all three name the same tag. The
 website shows that button only while its `enable_linux_download` is `true`;
 that switch hides the entry point, not the asset, which is public the moment
 the release is published.
-
-## Installing by hand
-
-```sh
-sudo apt install ./taigikeyboard_<version>_amd64.deb             # Ubuntu / Debian
-sudo dnf install ./taigikeyboard-<version>-1.x86_64.rpm          # Fedora
-sudo pacman -U ./taigikeyboard-<version>-1-x86_64.pkg.tar.zst    # Arch
-fcitx5 -r            # or: ibus restart
-```
-
-Then add TaigiKeyboard in `fcitx5-configtool` (Fcitx5) or the desktop's input-source
-settings (IBus). First-machine acceptance is the dogfood run-book in
-`linux-roadmap.md` and `dogfood-checklist.md` S74. Uninstall: `sudo apt remove taigikeyboard`
-(`sudo dnf remove taigikeyboard`, `sudo pacman -R taigikeyboard`).

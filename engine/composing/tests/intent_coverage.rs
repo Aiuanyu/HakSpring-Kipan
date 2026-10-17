@@ -5,9 +5,9 @@ use composing::CommitScript;
 use composing::{requests, Engine, Intent};
 use protos::engine::composing_request::Method;
 use protos::engine::{
-    Append, AppendHyphen, CommitContinuous, CommitPreeditThenInsertExternal, CommitRaw,
-    CommitScript as WireCommitScript, ComposingRequest, DeleteBackward, ReplaceLast, Reset,
-    SelectCandidate, Start,
+    Append, AppendHyphen, CommitContinuous, CommitPrediction, CommitPreeditThenInsertExternal,
+    CommitRaw, CommitScript as WireCommitScript, ComposingRequest, DeleteBackward, ReplaceLast,
+    Reset, Start,
 };
 
 use crate::common;
@@ -90,10 +90,6 @@ fn every_method_decodes_to_its_intent() {
         ),
         (Method::CommitRaw(CommitRaw {}), Intent::CommitRaw),
         (
-            Method::SelectCandidate(SelectCandidate { text: "好".into() }),
-            Intent::SelectCandidate { text: "好".into() },
-        ),
-        (
             Method::CommitPreeditThenInsertExternal(CommitPreeditThenInsertExternal {
                 text: "🎉".into(),
             }),
@@ -120,6 +116,20 @@ fn every_method_decodes_to_its_intent() {
                 syllable_count: 1,
                 script: Some(CommitScript::Hanji),
                 roman: "tsu".into(),
+            },
+        ),
+        (
+            Method::CommitPrediction(CommitPrediction {
+                script: WireCommitScript::Roman as i32,
+                roman: "tsu".into(),
+                hanji: "珠".into(),
+                canonical_tl: "tsu".into(),
+            }),
+            Intent::CommitPrediction {
+                script: Some(CommitScript::Roman),
+                roman: "tsu".into(),
+                hanji: "珠".into(),
+                canonical_tl: "tsu".into(),
             },
         ),
     ];

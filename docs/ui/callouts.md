@@ -53,7 +53,7 @@
 - **No engine-side caching** — the engine is stateless. Each platform fetches once at first access and caches platform-side (proto comment: "Caller caches once at engine init").
 - **Proto**: request `GetToneVariations {}` (empty); response `map<string, ToneVariationList>` for `poj_variations` + `tl_variations`.
 
-On iOS the platform-side `buildToneMap` helpers were deleted in D9.4; `TaigiToneMaps.poj` / `.tl` now proxy `RustEngineBridge.toneVariations` (a thread-safe `static let` loaded once via FFI).
+On iOS there is no platform-side tone-map builder: `TaigiToneMaps.poj` / `.tl` proxy `RustEngineBridge.toneVariations` (a thread-safe `static let` loaded once via FFI).
 
 ---
 

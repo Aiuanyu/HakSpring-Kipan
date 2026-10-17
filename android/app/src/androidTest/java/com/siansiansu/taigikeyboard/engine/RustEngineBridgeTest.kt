@@ -33,7 +33,6 @@ class RustEngineBridgeTest {
     fun setUp() {
         RustEngineBridge.install(recordingBackend)
         recordingBackend.clear()
-        RustEngineBridge.resetDiagnosticsForTesting()
     }
 
     // region Phonetics core
@@ -81,15 +80,6 @@ class RustEngineBridgeTest {
         val outcome = RustEngineBridge.tpsInputAdjust("ㄧ", "ㄗ")
         assertEquals("ㄧ", outcome.adjusted)
         assertEquals("ㄐ", outcome.replaceLast)
-    }
-
-    // endregion
-    // region Diagnostics
-
-    @Test fun diagnostics_initialState_isEmpty() {
-        val snapshot = RustEngineBridge.diagnostics()
-        assertEquals(0, snapshot.failureCount)
-        assertTrue(snapshot.recentErrors.isEmpty())
     }
 
     // endregion

@@ -12,7 +12,7 @@
 //! parametric `syllable_count` so the caller's longest-match loop can
 //! ask "is `hanji` an n-syllable compound?" for any `n >= 2`.
 
-use crate::common::{build_tkdb_v3, write_synthetic_fst};
+use crate::common::{build_tkdb_v4, write_synthetic_fst};
 use lexicon::compound_hanji_exists;
 use lexicon::dictionary_reader::DictionaryReader;
 use lexicon::prefix_index::PrefixIndex;
@@ -41,7 +41,7 @@ fn compound_hanji_exists_contract_matrix() {
             ("hanzi:壞", 5),
         ],
     );
-    let dict_bytes = build_tkdb_v3(
+    let dict_bytes = build_tkdb_v4(
         b"TKDB",
         &[
             (0x0001u16, 500u32, 2u8, "查某", "tsa-bóo"),

@@ -4,7 +4,8 @@
 Compares `output/dictionary.{csv,fst,bin}` + `output/association.bin`
 against a baseline JSON captured before any refactor step. build_ts bytes
 in `.bin` files are masked to zero so the comparison ignores the header
-slot (a CRC-32 of dictionary.csv, not a timestamp, since 2026-09-25).
+slot (a CRC-32 of dictionary.csv, not a timestamp, since 2026-09-25;
+chained over word_unigrams.tsv and the walker α since 2026-10-08).
 
 Post-v3.5.6 part-2 (SQLite intermediate-layer removal): semantic counters
 are derived directly from `dictionary.csv` + the in-memory association

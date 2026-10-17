@@ -39,6 +39,9 @@
     "taiwanJapanCopyright": { "hakha": "© 小川尚義" },
     "kunggeCopyright": { "hakha": "© 國立臺灣工藝研究發展中心" },
     "accentDictCredit": { "hakha": "實齋整理、提供" },
-    "devSupplementCredit": { "hakha": "建中整理、提供" }
+    "devSupplementCredit": { "hakha": "建中整理、提供" },
+    "setupPrivacyNote": { "hakha": "客源翠企盤毋會摎你打个字送去網路。" },
+    "setupGuideCompletedSwitch": { "hakha": "打字个時節，摎企盤切換做客源翠企盤。" },
+    "setupGuideStep2TurnOn": { "hakha": "開啟客源翠企盤" }
   }
 }

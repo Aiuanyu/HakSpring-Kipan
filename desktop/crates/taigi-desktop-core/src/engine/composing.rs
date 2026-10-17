@@ -3,8 +3,7 @@
 //!
 //! This is a subset of the engine's intents, on purpose: `AppendHyphen` is an alias for `Append("-")`,
 //! `ReplaceLast` is TPS-only, `Start` is unnecessary (`Append` begins the
-//! composition from Idle), `SelectCandidate` double-counts the nailed
-//! prefix under `Phase::Continuous` so the literal commit is `CommitRaw`.
+//! composition from Idle), and the literal commit is `CommitRaw`.
 //! Candidate navigation is a permanent platform-side concern
 //! (`cross-platform-alignment.md` §4.1).
 //!
@@ -28,7 +27,6 @@ use super::lexicon::dictionary_toggles;
 use super::transition::{
     ComposingTransition, ContinuousCandidate, ContinuousCommitResult, ContinuousFetchResult,
 };
-use crate::platform::DesktopPlatform;
 use crate::settings::EngineSettings;
 
 /// Appends one typed character to the raw buffer.
@@ -41,7 +39,6 @@ use crate::settings::EngineSettings;
 pub fn append(
     character: &str,
     settings: &EngineSettings,
-    platform: DesktopPlatform,
     generation: u64,
 ) -> Option<ComposingTransition> {
     dispatch(
@@ -50,7 +47,7 @@ pub fn append(
         }),
         "composingAppend",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
@@ -62,7 +59,6 @@ pub fn append(
 pub fn telex_key(
     key: &str,
     settings: &EngineSettings,
-    platform: DesktopPlatform,
     generation: u64,
 ) -> Option<ComposingTransition> {
     dispatch(
@@ -71,7 +67,7 @@ pub fn telex_key(
         }),
         "composingTelexKey",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
@@ -83,7 +79,6 @@ pub fn telex_key(
 pub fn tps_key(
     key: &str,
     settings: &EngineSettings,
-    platform: DesktopPlatform,
     generation: u64,
 ) -> Option<ComposingTransition> {
     dispatch(
@@ -92,21 +87,17 @@ pub fn tps_key(
         }),
         "composingTpsKey",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
 /// Drops the character before the caret. Same config as `append`.
-pub fn delete_backward(
-    settings: &EngineSettings,
-    platform: DesktopPlatform,
-    generation: u64,
-) -> Option<ComposingTransition> {
+pub fn delete_backward(settings: &EngineSettings, generation: u64) -> Option<ComposingTransition> {
     dispatch(
         composing_request::Method::DeleteBackward(DeleteBackward {}),
         "composingDeleteBackward",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
@@ -122,7 +113,6 @@ pub fn delete_backward(
 pub fn move_caret(
     direction: CaretDirection,
     settings: &EngineSettings,
-    platform: DesktopPlatform,
     generation: u64,
 ) -> Option<ComposingTransition> {
     let wire = match direction {
@@ -137,7 +127,7 @@ pub fn move_caret(
         }),
         "composingMoveCaret",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
@@ -145,16 +135,12 @@ pub fn move_caret(
 /// derived(pending)` under the continuous phase — the preedit as rendered
 /// under TL and POJ. This is their literal-commit key; a TPS composition is
 /// committed with `commit_as_shown` / `commit_as_typed` instead.
-pub fn commit_raw(
-    settings: &EngineSettings,
-    platform: DesktopPlatform,
-    generation: u64,
-) -> Option<ComposingTransition> {
+pub fn commit_raw(settings: &EngineSettings, generation: u64) -> Option<ComposingTransition> {
     dispatch(
         composing_request::Method::CommitRaw(CommitRaw {}),
         "composingCommitRaw",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
@@ -163,31 +149,23 @@ pub fn commit_raw(
 /// conversion the config asks for (`composing.proto` `CommitAsShown`). Teaches
 /// next word only when the user picked every segment; otherwise the answer
 /// carries `NextWordClearForNewComposing` alone.
-pub fn commit_as_shown(
-    settings: &EngineSettings,
-    platform: DesktopPlatform,
-    generation: u64,
-) -> Option<ComposingTransition> {
+pub fn commit_as_shown(settings: &EngineSettings, generation: u64) -> Option<ComposingTransition> {
     dispatch(
         composing_request::Method::CommitAsShown(CommitAsShown {}),
         "composingCommitAsShown",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
 /// Commits the glyphs of a whole TPS composition as typed, nailed segments
 /// included (`composing.proto` `CommitAsTyped`). Teaches nothing.
-pub fn commit_as_typed(
-    settings: &EngineSettings,
-    platform: DesktopPlatform,
-    generation: u64,
-) -> Option<ComposingTransition> {
+pub fn commit_as_typed(settings: &EngineSettings, generation: u64) -> Option<ComposingTransition> {
     dispatch(
         composing_request::Method::CommitAsTyped(CommitAsTyped {}),
         "composingCommitAsTyped",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
@@ -196,7 +174,6 @@ pub fn commit_as_typed(
 pub fn commit_preedit_then_insert_external(
     text: &str,
     settings: &EngineSettings,
-    platform: DesktopPlatform,
     generation: u64,
 ) -> Option<ComposingTransition> {
     dispatch(
@@ -207,7 +184,7 @@ pub fn commit_preedit_then_insert_external(
         ),
         "composingCommitPreeditThenInsertExternal",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )
 }
 
@@ -232,7 +209,6 @@ pub fn reset(generation: u64) -> Option<ComposingTransition> {
 /// one call (user-data-engine-roadmap P3b / P5).
 pub fn fetch_at_pos(
     settings: &EngineSettings,
-    platform: DesktopPlatform,
     generation: u64,
     now_ms: i64,
 ) -> Option<ContinuousFetchResult> {
@@ -253,7 +229,7 @@ pub fn fetch_at_pos(
         composing_request::Method::FetchAtPos(fetch),
         "composingFetchAtPos",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )?;
     let candidates = response.continuous.as_ref().map(|continuous| {
         continuous
@@ -297,7 +273,6 @@ pub struct CommitContinuousArgs<'a> {
 pub fn commit_continuous(
     args: &CommitContinuousArgs<'_>,
     settings: &EngineSettings,
-    platform: DesktopPlatform,
     generation: u64,
 ) -> Option<ContinuousCommitResult> {
     let response = composing_response(
@@ -312,7 +287,7 @@ pub fn commit_continuous(
         }),
         "composingCommitContinuous",
         generation,
-        Some(app_config(settings, platform)),
+        Some(app_config(settings)),
     )?;
     Some(ContinuousCommitResult {
         transition: ComposingTransition::decode(&response),

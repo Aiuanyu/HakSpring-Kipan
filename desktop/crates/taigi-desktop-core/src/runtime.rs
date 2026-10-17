@@ -83,11 +83,6 @@ impl DesktopRuntime {
         }
     }
 
-    /// Whether key-path writes have a settings file to go to.
-    pub fn has_settings_store(&self) -> bool {
-        self.settings_store.is_some()
-    }
-
     /// Whether the engine keeps the user's data in this process.
     pub fn is_learning(&self) -> bool {
         self.data_directory.is_some()
@@ -145,10 +140,7 @@ impl DesktopRuntime {
     pub fn coordinator(&self) -> &Mutex<ComposingSessionCoordinator> {
         self.coordinator.get_or_init(|| {
             let settings: Arc<dyn SettingsProvider> = Arc::clone(&self.settings) as _;
-            Mutex::new(ComposingSessionCoordinator::for_desktop(
-                settings,
-                self.platform,
-            ))
+            Mutex::new(ComposingSessionCoordinator::for_desktop(settings))
         })
     }
 

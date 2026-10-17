@@ -285,7 +285,7 @@ fn shape_prediction(m: MergedRow, config: &AppConfig) -> Option<EnginePrediction
 #[cfg(test)]
 mod tests {
     use super::*;
-    use protos::engine::{CandidateDisplayMode, Platform, SyllableSeparator};
+    use protos::engine::{CandidateDisplayMode, SyllableSeparator};
 
     fn config_tl_mode_hanji_first(swapped: bool) -> AppConfig {
         AppConfig {
@@ -293,7 +293,6 @@ mod tests {
             oo_doubletap_enabled: false,
             nn_doubletap_enabled: false,
             is_hanji_first: swapped,
-            platform_id: Platform::Ios as i32,
             output_both_scripts: false,
             candidate_display_mode: 0,
             syllable_separator: 0,
@@ -309,7 +308,6 @@ mod tests {
             oo_doubletap_enabled: false,
             nn_doubletap_enabled: false,
             is_hanji_first: false,
-            platform_id: Platform::Ios as i32,
             output_both_scripts: false,
             candidate_display_mode: 0,
             syllable_separator: 0,
@@ -1102,8 +1100,8 @@ mod tests {
         assert_eq!(shaped.predictions[0].tl, "tâi-uân");
     }
 
-    /// R6: the TPS layout as `"tps"` with the stored flags shapes exactly what
-    /// the pre-R6 wire (`"tl"`, the separator folded to Hyphen, the stored swap) shaped:
+    /// The TPS layout as `"tps"` with the stored flags shapes exactly what
+    /// `"tl"` with the separator folded to Hyphen and the stored swap shapes:
     /// TL text, hyphens kept, and the empty-roman drop still reading the
     /// stored swap.
     #[test]

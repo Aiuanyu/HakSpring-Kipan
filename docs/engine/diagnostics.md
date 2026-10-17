@@ -2,7 +2,7 @@
 
 > **Type**: Feature
 > **Keywords**: `Diagnostics`, `DeviceInfo`, `BugReport`
-> **Related**: app-ui.md
+> **Related**: ../ui/app-ui.md
 
 ---
 
@@ -18,15 +18,15 @@
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `appVersion` | String | App version (e.g., "3.4.5") |
-| `buildNumber` | Int | Build number |
+| `appVersion` | String | App version |
+| `buildNumber` | String (iOS) / Int (Android) | Build number |
 | `osVersion` | String | OS version |
 | `deviceModel` | String | Hardware model identifier |
 
-**Formatted output**:
+**Formatted output** (`DiagnosticInfo.formatted()`):
 ```
-App: v3.4.5 (42)
-OS: iOS 17.3.1
+App: v<version> (<build>)
+OS: iOS 17.3.1                      (Android: "OS: Android <release> (API <SDK_INT>)")
 Device: iPhone14,5
 ```
 
@@ -36,9 +36,9 @@ Device: iPhone14,5
 
 | Field | iOS | Android |
 |-------|-----|---------|
-| appVersion | `CFBundleShortVersionString` | `PackageManager.versionName` |
+| appVersion | `CFBundleShortVersionString` | `PackageManager` `versionName` |
 | buildNumber | `CFBundleVersion` | `BuildConfig.VERSION_CODE` |
-| osVersion | `UIDevice.current.systemVersion` | `Build.VERSION.RELEASE` + `SDK_INT` |
+| osVersion | `UIDevice.current.systemVersion` | `Build.VERSION.RELEASE` (+ `SDK_INT` in the formatted text) |
 | deviceModel | `utsname()` syscall | `Build.MANUFACTURER` + `Build.MODEL` |
 
 ---
@@ -48,7 +48,7 @@ Device: iPhone14,5
 ```
 User taps button (Copy/Share/Email)
   → DiagnosticService.gather()
-  → DiagnosticInfo struct created
+  → DiagnosticInfo
   → .formatted() → plain text
   → Platform sharing mechanism
     ├─ Copy: UIPasteboard / ClipboardManager
@@ -81,9 +81,8 @@ Located in the **Settings** tab, "Device Info" section.
 
 ## Platform Correspondence
 
-| Function | iOS | Android |
+| Function | iOS (`App/Tabs/Settings/`) | Android (`ui/tabs/settings/`) |
 |----------|-----|---------|
-| Service | `DiagnosticService.swift` | `DiagnosticService.kt` |
-| UI | `SettingsTab.swift` (lines 92-130) | `InputSettingsScreen.kt` (lines 204-257) |
-| Strings | `StringKey.settings*` (i18n resolver) | `L10n` (generated — settings namespace migrated to i18n codegen) |
-| Pattern | Enum with static methods | Singleton object |
+| Service | `DiagnosticService.swift` (enum, static `gather()`) | `DiagnosticService.kt` (object) |
+| UI | `SettingsTab.swift`, the Device Info `Section` | `InputSettingsScreen.kt` `DiagnosticSection`, fed by `DiagnosticViewModel.kt` |
+| Strings | `i18n/settings.json` `diagnostic*` keys | same |

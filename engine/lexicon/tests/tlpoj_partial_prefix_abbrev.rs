@@ -16,7 +16,7 @@ use lexicon::fetch_partial_prefix_candidates;
 use phonetics::InputMode;
 use ranking::FrequencyMap;
 
-use crate::common::{build_tkdb_v3, build_wire_index, hanji_of, neutral_ctx};
+use crate::common::{build_tkdb_v4, build_wire_index, hanji_of, neutral_ctx};
 use test_support::write_temp;
 
 /// Shortest-first ordering: the short exact key comes before its longer
@@ -60,7 +60,7 @@ fn tlpoj_partial_prefix_surfaces_single_chars_past_acronym_flood() {
 
         let dict_path = write_temp(
             "tlpoj-abbrev-flood.dict.bin",
-            &build_tkdb_v3(b"TKDB", &dict_rows),
+            &build_tkdb_v4(b"TKDB", &dict_rows),
         );
         let dict = DictionaryReader::open(&dict_path).expect("dict.bin opens");
 

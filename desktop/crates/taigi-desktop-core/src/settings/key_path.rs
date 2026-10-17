@@ -15,8 +15,8 @@ use crate::keys::ComposingAction;
 pub enum KeyPathSetting {
     Switch(SettingsKey<bool>),
     /// A string: a choice, stored as its persisted spelling, or a composing
-    /// chord, which has no stored default — absent is the action's own
-    /// chord, `""` a cleared row.
+    /// chord field, which has no stored default — absent is what the field
+    /// ships with, `""` a cleared field.
     Text {
         name: String,
         default: Option<&'static str>,
@@ -40,8 +40,8 @@ impl KeyPathSetting {
 }
 
 /// Every key-path setting: the four choices, the switches (the General
-/// pane's, the custom dictionary's, every dictionary source), one chord row
-/// per composing action.
+/// pane's, the custom dictionary's, every dictionary source), one chord
+/// per field of every composing action.
 pub fn key_path_settings() -> Vec<KeyPathSetting> {
     let switches = [
         keys::IS_HANJI_FIRST,
@@ -62,8 +62,8 @@ pub fn key_path_settings() -> Vec<KeyPathSetting> {
             .map(|(key, _)| *key),
     )
     .map(KeyPathSetting::Switch);
-    let chords = ComposingAction::ALL.map(|action| KeyPathSetting::Text {
-        name: action.settings_key_name(),
+    let chords = ComposingAction::all_fields().map(|(action, field)| KeyPathSetting::Text {
+        name: action.settings_key_name(field),
         default: None,
     });
     [
@@ -85,7 +85,9 @@ mod tests {
     /// The General pane's keys, the dictionary sources, the display mode,
     /// the custom dictionary switch, one row per composing action — each
     /// once. Not the romanization TPS returns to: only a mode switch reads
-    /// it, never a key. Nor the TPS key panel, which no key reads.
+    /// it, never a key. Nor the TPS key panel, which no key reads. Nor the
+    /// keyboard layout: the Windows key translation reads it before a key
+    /// reaches the shared path, and macOS sets it on IMK, not in a snapshot.
     #[test]
     fn the_key_path_settings_are_the_ones_the_key_path_reads() {
         let mut expected: Vec<String> = keys::GENERAL_KEYS
@@ -93,6 +95,7 @@ mod tests {
             .filter(|name| {
                 **name != keys::LAST_ROMANIZATION_MODE.name
                     && **name != keys::TPS_KEYBOARD_SHOWN.name
+                    && **name != keys::KEYBOARD_LAYOUT.name
             })
             .chain(&keys::DICTIONARY_SOURCE_KEYS)
             .chain(&[
@@ -100,7 +103,10 @@ mod tests {
                 keys::IS_CUSTOM_DICT_ENABLED.name,
             ])
             .map(|name| (*name).to_owned())
-            .chain(ComposingAction::ALL.map(ComposingAction::settings_key_name))
+            .chain(
+                ComposingAction::all_fields()
+                    .map(|(action, field)| action.settings_key_name(field)),
+            )
             .collect();
         let mut names: Vec<String> = key_path_settings()
             .iter()

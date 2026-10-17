@@ -1,5 +1,5 @@
 //! Telex tone keys: the desktop "Telex" scheme edits the pending tail with
-//! letters no TL / POJ syllable spells (`docs/roadmap.md` § Desktop Telex).
+//! letters no TL / POJ syllable spells (`docs/reports/desktop-3.6.x-design-notes.md` § Desktop Telex).
 //!
 //! The buffer stays numeric-tone (`tai5`): a tone letter writes the digit the
 //! standard scheme would have typed, so the syllabifier, the literal-roman

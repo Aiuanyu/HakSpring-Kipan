@@ -13,7 +13,7 @@ use protos::engine::AppConfig;
 use crate::common;
 use crate::common::Fetch;
 use crate::common::{
-    build_dictionary_fst, build_syllables_fst, build_tkdb_v3, cell_with_hanji, config,
+    build_dictionary_fst, build_syllables_fst, build_tkdb_v4, cell_with_hanji, config,
     empty_association_bin, fetch_cells, install_lexicon, Cell, Row,
 };
 use lexicon::CustomEntry;
@@ -47,7 +47,7 @@ fn fixture_rows() -> Vec<Row> {
 
 fn install_fixture() {
     let rows = fixture_rows();
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst(&rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst(&["siann1", "im1"]);

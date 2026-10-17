@@ -1,5 +1,5 @@
-// Pure data deserialized from layout JSON. getComputedLayoutDataArrangement() copies it
-// into a mutable arrangement for LayoutManager's popup injection.
+// Pure data deserialized from layout JSON; LayoutManager copies it into a
+// mutable ComputedLayoutData for popup injection.
 
 package com.siansiansu.taigikeyboard.ime.text.layout
 
@@ -12,19 +12,7 @@ data class LayoutData(
     val name: String,
     val direction: String,
     val arrangement: LayoutDataArrangement = listOf(),
-) {
-    private fun getComputedLayoutDataArrangement(): ComputedLayoutDataArrangement {
-        val ret = mutableListOf<MutableList<KeyData>>()
-        for (row in arrangement) {
-            val retRow = mutableListOf<KeyData>()
-            for (keyData in row) {
-                retRow.add(keyData)
-            }
-            ret.add(retRow)
-        }
-        return ret
-    }
-}
+)
 
 typealias ComputedLayoutDataArrangement = MutableList<MutableList<KeyData>>
 

@@ -26,7 +26,7 @@ use crate::api::{
 use crate::derivation::{derive_abbrev, derive_notone};
 use crate::key_family::KeyFamily;
 use crate::tps::{
-    from_zhuyin, is_tps_tone_mark, normalize_tps_tone8_scalar, tps_abbrev_from_tl,
+    from_zhuyin, is_tps_tone_mark, normalize_tps_lookup_scalar, tps_abbrev_from_tl,
     tps_notone_from_tl, tps_notone_or_variant, tps_num_from_tl,
 };
 use std::collections::HashSet;
@@ -51,15 +51,7 @@ pub fn derive_custom_search_keys(roman: &str) -> Vec<CustomSearchKey> {
     if roman.trim().is_empty() {
         return Vec::new();
     }
-    // Canonical TL display form (mode-independent identity surface). A Bopomofo
-    // dirty-row (the DB schema does not forbid one) folds via `from_zhuyin`; a
-    // POJ / TL latin display folds via `poj_display_to_tl_display` (identity
-    // for TL input — it only rewrites ch→ts / oa→ua etc.).
-    let tl = if contains_tps(roman) {
-        from_zhuyin(roman)
-    } else {
-        poj_display_to_tl_display(roman)
-    };
+    let tl = custom_search_reading(roman);
     let poj = tl_display_to_poj_display(&tl);
 
     let mut keys = Vec::new();
@@ -67,6 +59,21 @@ pub fn derive_custom_search_keys(roman: &str) -> Vec<CustomSearchKey> {
     push_latin_family(&mut keys, KeyFamily::Poj, &poj);
     push_tps_family(&mut keys, &tl);
     dedup_nonempty(keys)
+}
+
+/// The TL reading every search key of a stored custom-dictionary roman is
+/// derived from — the mode-independent surface the engine also measures a
+/// custom entry's syllables on, so a row the store matched is judged on the
+/// same reading. A Bopomofo dirty-row (the DB schema does not forbid one)
+/// folds via `from_zhuyin`; a POJ / TL latin display folds via
+/// `poj_display_to_tl_display` (identity for TL input — it only rewrites
+/// ch→ts / oa→ua etc.).
+pub fn custom_search_reading(roman: &str) -> String {
+    if contains_tps(roman) {
+        from_zhuyin(roman)
+    } else {
+        poj_display_to_tl_display(roman)
+    }
 }
 
 /// READ side — single family-native key for the current input + mode. `None`
@@ -78,8 +85,8 @@ pub fn derive_custom_query_key(input: &str, input_mode: &str) -> Option<CustomSe
     // Effective family mirrors the composing dispatch TPS upgrade
     // (`composing::requests::handle_fetch_at_pos`): raw input carrying TPS
     // Bopomofo is TPS regardless of the settings mode. The keyboard's TPS
-    // layout may arrive as `"tps"` or, on the pre-R6 wire, as `"tl"`; either
-    // way a Bopomofo-free query takes the TL family.
+    // layout arrives as `input_mode = "tps"` (the only TPS wire — the engine
+    // ships inside each app); a Bopomofo-free query takes the TL family.
     let family = if contains_tps(input) {
         KeyFamily::Tps
     } else {
@@ -197,7 +204,8 @@ fn fuse_latin_numeric(numeric: &str) -> String {
 /// dot `U+02D9`, but the stored `tps:num` key uses the combining form `U+0307`
 /// (`tps_num_from_tl` → `to_zhuyin(encode_safe=false)`). Canonicalize `U+02D9 →
 /// U+0307` BEFORE classification so the kept (`num`) form matches the stored key
-/// and the dropped (`notone`) form still strips it — mirrors
+/// and the dropped (`notone`) form still strips it; the same scalar folds the
+/// ㆳ glyph alias onto ㆪ ([`crate::fold_tps_glyph_alias`]) — mirrors
 /// [`crate::key_family::tps_key_body`].
 fn strip_tps_input(input: &str, keep_tone_marks: bool) -> String {
     let mut out = String::with_capacity(input.len());
@@ -205,7 +213,7 @@ fn strip_tps_input(input: &str, keep_tone_marks: bool) -> String {
         if ch == '-' || ch.is_whitespace() {
             continue;
         }
-        let normalized = normalize_tps_tone8_scalar(ch);
+        let normalized = normalize_tps_lookup_scalar(ch);
         if !keep_tone_marks && is_tps_tone_mark(normalized) {
             continue;
         }
@@ -331,6 +339,20 @@ mod tests {
         assert_eq!(q.form, FORM_NUM, "tone mark present → num form");
         assert_eq!(q.key, stored_num.key, "U+02D9 normalized back to U+0307");
         assert!(query_hits_stored(&stored, &q));
+    }
+
+    // ㆳ is ㆪ encoded twice: a query typed with either glyph is one key.
+    #[test]
+    fn tps_query_folds_the_innn_glyph_onto_inn() {
+        for (innn, inn) in [("ㄒㆳ", "ㄒㆪ"), ("ㄒㆳˋ", "ㄒㆪˋ")] {
+            let q = derive_custom_query_key(innn, "tl").unwrap();
+            let expected = derive_custom_query_key(inn, "tl").unwrap();
+            assert_eq!(
+                (q.family, q.form, q.key),
+                (expected.family, expected.form, expected.key),
+                "{innn}"
+            );
+        }
     }
 
     // 2026-08-28 user report (backlog B1): custom entry `băng-só͘-khó͘` (絆創膏).

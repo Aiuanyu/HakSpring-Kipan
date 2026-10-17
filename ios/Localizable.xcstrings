@@ -109,6 +109,24 @@
         }
       }
     },
+    "i18n_common_exportFailed": {
+      "comment": "Error message shown when exporting user dictionary data fails.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export failed"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポートに失敗しました"
+          }
+        }
+      }
+    },
     "i18n_common_fontGenYoGothic": {
       "comment": "Keyboard font option: GenYoGothic (源樣烏體) sans-serif typeface.",
       "extractionState": "manual",
@@ -308,7 +326,7 @@
       }
     },
     "i18n_common_other": {
-      "comment": "Generic Other: home section header above the FAQ / other list (mobile), Shortcuts pane third block's header — the switches and the windows a key raises (desktop). Merged 2026-09-20 from home.faq / desktop.shortcutSectionOther.",
+      "comment": "Generic Other: home section header above the FAQ / other list (mobile), Shortcuts pane last block's header — the symbol picker, the Telex guide and the settings window (desktop). Merged 2026-09-20 from home.faq / desktop.shortcutSectionOther.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -595,26 +613,8 @@
         }
       }
     },
-    "i18n_dictionary_clear": {
-      "comment": "Generic clear button label (e.g. confirm clearing a custom dictionary).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Clear"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "クリア"
-          }
-        }
-      }
-    },
     "i18n_dictionary_clearLearningRecords": {
-      "comment": "Destructive row at the bottom of the Learning Records page (desktop) / subpage (mobile): deletes every learning record (word frequency, next-word association, learned phrases) in one go; custom words are kept. Every platform confirms first, with this as the dialog title.",
+      "comment": "Destructive row at the bottom of the Learning Records page (desktop) / subpage (mobile): deletes every learning record (word frequency, next-word association, learned phrases) in one go; custom words are kept. Runs on the press, no confirmation.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -627,24 +627,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "学習記録を削除"
-          }
-        }
-      }
-    },
-    "i18n_dictionary_clearLearningRecordsDone": {
-      "comment": "Alert title after the Delete Learning Records row finishes.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Learning Records Cleared"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "学習記録を消去しました"
           }
         }
       }
@@ -663,24 +645,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "学習記録を消去できませんでした"
-          }
-        }
-      }
-    },
-    "i18n_dictionary_clearLearningRecordsMessage": {
-      "comment": "Confirmation dialog body for Delete Learning Records: every learning record goes, the custom words stay.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete all learning records? Custom words are unaffected."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "すべての学習記録を削除しますか？カスタム単語には影響しません。"
           }
         }
       }
@@ -807,24 +771,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "すべてのカスタム単語を削除"
-          }
-        }
-      }
-    },
-    "i18n_dictionary_deleteAllMessage": {
-      "comment": "Confirmation dialog body for deleting all custom-dictionary entries.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete all custom words?"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "すべてのカスタム単語を削除しますか？"
           }
         }
       }
@@ -1329,6 +1275,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "台北（泉州寄り）"
+          }
+        }
+      }
+    },
+    "i18n_dictionary_kautianAltReading": {
+      "comment": "MOE dictionary sub-source: the alternative readings (又唸作) of a headword.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternative Readings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "別の読み方"
           }
         }
       }
@@ -2954,7 +2918,7 @@
       }
     },
     "i18n_keyboard_oneHandedMode": {
-      "comment": "Name of the one-handed mode callout opened by long-pressing the toolbar keyboard button; also its a11y long-press action name. TL/POJ from the bundled dictionary (單手 tuann-tshiú) + 輸入模式 spelling.",
+      "comment": "Name of the one-handed mode callout opened by long-pressing the toolbar keyboard button; also its a11y long-press action name. 孤手 koo-tshiú (maintainer: Taigi says 孤手, not 單手; 孤 koo per Kautian) + 輸入模式 spelling.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3115,8 +3079,80 @@
         }
       }
     },
+    "i18n_layout_commonLayoutsSection": {
+      "comment": "Section header on the Layout tab for layouts whose keys are the same in Tâi-lô and Pe̍h-ōe-jī.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Universal"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共通"
+          }
+        }
+      }
+    },
+    "i18n_layout_createNewLayout": {
+      "comment": "Label + content description for the create-new-layout card on the custom-layout shelf.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Layout…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい配列…"
+          }
+        }
+      }
+    },
+    "i18n_layout_customLayoutsSection": {
+      "comment": "Section header above the custom-layout shelf on the Layout tab and in the in-keyboard layout picker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom Layouts"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カスタム配列"
+          }
+        }
+      }
+    },
+    "i18n_layout_editorTitleNew": {
+      "comment": "Layout editor top-bar title in create mode; also the name-field placeholder and the name a layout saved with a blank name gets. Edit mode shows the layout's own name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Layout"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい配列"
+          }
+        }
+      }
+    },
     "i18n_layout_moe1Layout": {
-      "comment": "Layout name: MOE Taiwanese phonetic-symbol key arrangement, variant 1.",
+      "comment": "Layout name: MOE Taiwanese romanization key arrangement, variant 1.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3134,7 +3170,7 @@
       }
     },
     "i18n_layout_moe2Layout": {
-      "comment": "Layout name: MOE Taiwanese phonetic-symbol key arrangement, variant 2.",
+      "comment": "Layout name: MOE Taiwanese romanization key arrangement, variant 2.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3147,6 +3183,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "教育部配列 2"
+          }
+        }
+      }
+    },
+    "i18n_layout_nameHeader": {
+      "comment": "Layout name alert header, shown on Save in the layout editor.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout Name"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配列名"
           }
         }
       }
@@ -3674,7 +3728,7 @@
       }
     },
     "i18n_settings_literalRomanCandidate": {
-      "comment": "Toggle label: show what is being typed as the first candidate in the strip (§34 literal-roman candidate). All four platforms.",
+      "comment": "Toggle label: show what is being typed as the first candidate in the strip (§34 literal-roman candidate). All five platforms.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3818,7 +3872,7 @@
       }
     },
     "i18n_settings_reset": {
-      "comment": "Generic restore-to-default action label / a11y description (恢復 = restore). Used by the reset-settings dialog AND reused for the color-picker / slider reset-icon contentDescription on the theme + layout editors.",
+      "comment": "Generic restore-to-default action label / a11y description (恢復 = restore). Used for the color-picker / slider reset-icon contentDescription on the theme + layout editors.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3836,37 +3890,19 @@
       }
     },
     "i18n_settings_resetSettings": {
-      "comment": "Destructive action row + dialog title: reset all settings to their defaults. Settings only — learning records and custom words are untouched.",
+      "comment": "Destructive action row: reset all settings to their defaults. Settings only — learning records and custom words are untouched. Same wording as theme.editorResetAll, the desktop panes' reset row.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reset Settings"
+            "value": "Reset to Defaults"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "設定をリセット"
-          }
-        }
-      }
-    },
-    "i18n_settings_resetSettingsMessage": {
-      "comment": "Confirmation-dialog body for resetting settings; explicitly states that learning records and custom words are kept.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This resets all settings. Learning records and custom words are kept. Continue?"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "すべての設定をリセットします。学習記録とカスタム単語は保持されます。続けますか？"
+            "value": "既定値に戻す"
           }
         }
       }
@@ -4016,7 +4052,7 @@
       }
     },
     "i18n_settings_tpsMode": {
-      "comment": "Input-mode option: Taiwanese Phonetic Symbols (TPS). Also the iOS smartbar input-mode button a11y label (extension surface). Also the TPS settings section header and the layout page's TPS section header (tpsSettingsSectionTitle / layout.taigiPhonetic merged 2026-09-20).",
+      "comment": "Input-mode option: Taiwanese Phonetic Symbols (TPS). Also the iOS smartbar input-mode button a11y label (extension surface). Also the desktop Shortcuts pane header above the TPS switch and key panel (USER 2026-10-16). Also the TPS settings section header and the layout page's TPS section header (tpsSettingsSectionTitle / layout.taigiPhonetic merged 2026-09-20).",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -4520,7 +4556,7 @@
       }
     },
     "i18n_theme_editorResetAll": {
-      "comment": "Reset-to-defaults button. Theme editor on Android and iOS; the macOS shortcuts pane reuses it for the same action.",
+      "comment": "Reset-to-defaults button. Theme editor on Android and iOS; every desktop settings pane (macOS, Windows, Linux) reuses it for its own reset row. Mobile settings.resetSettings carries the same wording.",
       "extractionState": "manual",
       "localizations": {
         "en": {

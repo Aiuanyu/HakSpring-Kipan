@@ -43,12 +43,13 @@ pub struct TpsKeyboardRow {
 
 /// Each row as `(base, shifted)` characters on a US layout, with its indent:
 /// the ANSI stagger (Tab 1.5, Caps Lock 1.75, Shift 2.25 key widths) less the
-/// backtick key the number row starts with, which types no glyph. Every key
-/// here types a TPS glyph bare (`every_bare_letter_digit_and_layout_punctuation_key_types_a_glyph`).
+/// backtick key the number row starts with, which types no glyph, and less
+/// the `'` key ending the home row, which types none either. Every key here
+/// types a TPS glyph bare (`every_bare_letter_digit_and_layout_punctuation_key_types_a_glyph`).
 const ROWS: [(f32, &str, &str); 4] = [
     (0.0, "1234567890-=", "!@#$%^&*()_+"),
     (0.5, "qwertyuiop", "QWERTYUIOP"),
-    (0.75, "asdfghjkl;'", "ASDFGHJKL:\""),
+    (0.75, "asdfghjkl;", "ASDFGHJKL:"),
     (1.25, "zxcvbnm,./", "ZXCVBNM<>?"),
 ];
 
@@ -72,6 +73,34 @@ pub fn tps_keyboard_rows() -> Vec<TpsKeyboardRow> {
         .collect()
 }
 
+/// Where a cap sits on the panel, both counted from 0: its row (top to
+/// bottom) and its place in the row (left to right), as
+/// [`tps_keyboard_rows`] lists them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TpsKeyCapIndex {
+    pub row: usize,
+    pub cap: usize,
+}
+
+/// The cap that types `glyph`, bare or with Shift — what the panels flash
+/// when a key typed it. `None` for anything no cap types, the separator
+/// Space included. Glyphs are unique across the layout
+/// (`tps_layout::no_key_and_no_glyph_is_assigned_twice`), so one cap answers.
+pub fn tps_keyboard_cap_of(glyph: &str) -> Option<TpsKeyCapIndex> {
+    tps_keyboard_rows()
+        .iter()
+        .enumerate()
+        .find_map(|(row_index, row)| {
+            row.caps
+                .iter()
+                .position(|cap| cap.glyph == glyph || cap.shift_glyph == Some(glyph))
+                .map(|cap_index| TpsKeyCapIndex {
+                    row: row_index,
+                    cap: cap_index,
+                })
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,13 +116,13 @@ mod tests {
 
     #[test]
     fn every_key_of_the_four_rows_is_a_cap() {
-        // trace: ROWS — 12 + 10 + 11 + 10 keys, each typing a glyph bare
+        // trace: ROWS — 12 + 10 + 10 + 10 keys, each typing a glyph bare
         // (roadmap D2), so none is filtered out.
         let lengths: Vec<usize> = tps_keyboard_rows()
             .iter()
             .map(|row| row.caps.len())
             .collect();
-        assert_eq!(lengths, [12, 10, 11, 10]);
+        assert_eq!(lengths, [12, 10, 10, 10]);
     }
 
     #[test]
@@ -119,23 +148,23 @@ mod tests {
 
     #[test]
     fn the_shift_layers_with_no_glyph_are_the_ones_the_layout_leaves_out() {
-        // trace: KEYS, row by row — no `@ # $ % & ) _ +` (digits 2 3 4 5 7 0
-        // and `-` `=`), no capital for Q W T P / A S F G H / Z X C V B N M,
-        // no `"` (on `'`) and no `?` (on `/`); `!` `^` `*` `(` `:` `<` `>`
-        // and the other capitals type glyphs.
+        // trace: KEYS, row by row — no `@ $ % & _ +` (digits 2 4 5 7 and
+        // `-` `=`), no capital for Q W T I / S F G H K / Z X C V B N, no `<`
+        // `>` `?` (on `,` `.` `/`); `!` `#` `^` `*` `(` `)` `:` and the other
+        // capitals type glyphs.
         let bare: String = tps_keyboard_rows()
             .iter()
             .flat_map(|row| row.caps.iter())
             .filter(|cap| cap.shift_glyph.is_none())
             .map(|cap| cap.label)
             .collect();
-        assert_eq!(bare, "234570-=QWTPASFGH'ZXCVBNM/");
+        assert_eq!(bare, "2457-=QWTISFGHKZXCVBN,./");
     }
 
     #[test]
     fn a_cap_carries_its_label_and_both_layers() {
         // trace: KEYS — `e` ㄍ / `E` ㆣ; `1` ㄅ / `!` ㆠ; `6` ˊ / `^` ˆ;
-        // `q` ㄆ with no Shift glyph; `'` types the hyphen, `"` nothing.
+        // `q` ㄆ with no Shift glyph; `-` types the hyphen, `_` nothing.
         assert_eq!(
             cap('E'),
             TpsKeyCap {
@@ -148,8 +177,8 @@ mod tests {
         assert_eq!(cap('6').glyph, "\u{02ca}");
         assert_eq!(cap('6').shift_glyph, Some("\u{02c6}"));
         assert_eq!(cap('Q').shift_glyph, None);
-        assert_eq!(cap('\'').glyph, "-");
-        assert_eq!(cap('\'').shift_glyph, None);
+        assert_eq!(cap('-').glyph, "-");
+        assert_eq!(cap('-').shift_glyph, None);
     }
 
     #[test]
@@ -158,6 +187,26 @@ mod tests {
         assert_eq!(cap('E').pressed_glyph(false), "ㄍ");
         assert_eq!(cap('E').pressed_glyph(true), "ㆣ");
         assert_eq!(cap('Q').pressed_glyph(true), "ㄆ");
+    }
+
+    #[test]
+    fn a_glyph_names_its_cap_on_either_layer() {
+        // trace: ROWS — `1` is row 0 cap 0 (ㄅ bare, ㆠ on `!`); `e` is row 1
+        // cap 2 (q w e; ㄍ bare, ㆣ on `E`); `-` is row 0 cap 10 (1 2 3 4 5 6
+        // 7 8 9 0 -), typing the hyphen.
+        let index = |row, cap| Some(TpsKeyCapIndex { row, cap });
+        assert_eq!(tps_keyboard_cap_of("ㄅ"), index(0, 0));
+        assert_eq!(tps_keyboard_cap_of("ㆠ"), index(0, 0));
+        assert_eq!(tps_keyboard_cap_of("ㄍ"), index(1, 2));
+        assert_eq!(tps_keyboard_cap_of("ㆣ"), index(1, 2));
+        assert_eq!(tps_keyboard_cap_of("-"), index(0, 10));
+    }
+
+    #[test]
+    fn the_separator_and_text_no_cap_types_name_no_cap() {
+        for text in [" ", "e", "ㄅㄚ", ""] {
+            assert_eq!(tps_keyboard_cap_of(text), None, "{text:?}");
+        }
     }
 
     #[test]

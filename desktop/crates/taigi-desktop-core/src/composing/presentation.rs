@@ -186,7 +186,6 @@ mod tests {
     use super::*;
     use crate::composing::{EngineNextWord, SystemClock};
     use crate::engine::test_support::candidate;
-    use crate::platform::test_support::TEST_PLATFORM;
     use crate::settings::{keys, SettingChoice, SettingsDocument, StaticSettingsProvider};
     use std::sync::Arc;
 
@@ -314,11 +313,8 @@ mod tests {
         document.set_choice(&keys::CANDIDATE_DISPLAY_MODE, mode);
         ComposingManager::new(
             Arc::new(StaticSettingsProvider::new(document)),
-            Box::new(EngineNextWord {
-                platform: TEST_PLATFORM,
-            }),
+            Box::new(EngineNextWord),
             Box::new(SystemClock),
-            TEST_PLATFORM,
             1,
         )
     }
@@ -329,11 +325,8 @@ mod tests {
         document.set_bool(&keys::IS_LITERAL_ROMAN_CANDIDATE_ENABLED, enabled);
         ComposingManager::new(
             Arc::new(StaticSettingsProvider::new(document)),
-            Box::new(EngineNextWord {
-                platform: TEST_PLATFORM,
-            }),
+            Box::new(EngineNextWord),
             Box::new(SystemClock),
-            TEST_PLATFORM,
             1,
         )
     }
@@ -398,8 +391,8 @@ mod tests {
     #[test]
     fn source_resolves_cell_indices_to_candidate_and_script_with_the_flip() {
         // trace: Combined → cells [台語, tâi-gí, guá]; Enter on cell 1 = (台語,
-        // Alternate) = roman; Space on cell 0 = flip → Alternate = roman;
-        // Space on cell 1 = flip → Primary = hanji; cell 3 past the list.
+        // Alternate) = roman; the other script on cell 0 = flip → Alternate =
+        // roman; the other script on cell 1 = flip → Primary = hanji; cell 3 past the list.
         let manager = manager(CandidateDisplayMode::Combined);
         let list = vec![
             candidate("tâi-gí", Some("台語"), 5),

@@ -257,7 +257,7 @@ private fun LabelContent(
         if (w <= 0f || h <= 0f) return@Canvas
 
         val baseTextSize = h * 0.58f * fontSizeScale
-        val perKeyTextSize = scaleTextSizeForKey(data, mode, label, baseTextSize, keyboardLayoutType)
+        val perKeyTextSize = scaleTextSizeForKey(data, label, baseTextSize)
 
         labelPaint.textSize = perKeyTextSize
         labelPaint.typeface = typeface
@@ -342,24 +342,29 @@ private fun LabelContent(
     }
 }
 
+/** Keys that switch between the letter and symbol keyboards ("123", "ABC", "#+="). */
+private val KEYBOARD_SWITCH_CODES = setOf(KeyCode.VIEW_SYMBOLS, KeyCode.VIEW_CHARACTERS, KeyCode.VIEW_SYMBOLS2)
+
 /**
  * Per-key text-size scaling rule — direct port of `KeyView.onDraw` switch.
  * Separated so the Canvas body stays focused on draw ordering.
  */
 private fun scaleTextSizeForKey(
     data: KeyData,
-    mode: KeyboardMode,
     label: String,
     baseTextSize: Float,
-    keyboardLayoutType: String,
 ): Float =
     when {
-        data.code == KeyCode.VIEW_SYMBOLS -> baseTextSize * 0.80f
+        // One approximation of iOS KeyboardKit's "123" 16pt / "ABC" 15pt / "#+=" 14pt: ≈16dp on
+        // the default 38dp portrait key; scales with key height like every other label.
+        data.code in KEYBOARD_SWITCH_CODES -> baseTextSize * 0.72f
         data.code == KeyCode.ENTER && label.isNotEmpty() -> baseTextSize * 0.85f
         data.code == KeyCode.VIEW_NUMERIC_ADVANCED ->
             if (label == "、") baseTextSize else baseTextSize * 0.55f
         data.code == KeyCode.VIEW_NUMERIC || data.code == KeyCode.SPACE -> baseTextSize * 0.55f
-        data.type == KeyType.CHARACTER && keyboardLayoutType == "moe2" && label.length >= 3 ->
+        // 3-char keys (MOE2 tsh / chh, wherever a custom layout puts them) shrink to fit; no other
+        // built-in key has three characters.
+        data.type == KeyType.CHARACTER && label.length >= 3 ->
             baseTextSize * 0.75f
         else -> baseTextSize
     }

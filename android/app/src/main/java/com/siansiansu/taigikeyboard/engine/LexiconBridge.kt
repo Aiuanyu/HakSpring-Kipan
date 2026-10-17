@@ -26,7 +26,7 @@ import com.siansiansu.taigikeyboard.engine.proto.TaigiWord as ProtoTaigiWord
 /**
  * Install (or atomically reinstall) the lexicon engine state. Called
  * from `AppInitializer` after `copyAssetsIfNeeded` finishes; idempotent.
- * Returns `null` on failure (logged via `RustEngineBridge.diagnostics()`).
+ * Returns `null` on failure (logged via `RustEngineBridge.recordFailure`).
  *
  * @param syllableInventoryPath Absolute path to v3.5.8 Phase 2
  *   `syllables.fst` (TL syllable inventory FST). Empty string =
@@ -173,6 +173,7 @@ internal fun dictionaryTogglesProto(toggles: RustEngineBridge.DictionaryToggles)
                 .setAccentSintik(toggles.kautianSubcoll.sintik)
                 .setAccentTaichung(toggles.kautianSubcoll.taichung)
                 .setNameAppendix(toggles.kautianSubcoll.nameAppendix)
+                .setAltReading(toggles.kautianSubcoll.altReading)
                 .build(),
         ).build()
 
@@ -250,6 +251,5 @@ private fun taigiWordToRow(proto: ProtoTaigiWord): RustEngineBridge.LexiconRow =
         id = proto.id,
         roman = proto.roman,
         hanji = if (proto.hasHanji()) proto.hanji else null,
-        lengthScore = if (proto.hasLengthScore()) proto.lengthScore else null,
         sources = proto.sourcesList.mapNotNull(::platformDictionarySource),
     )

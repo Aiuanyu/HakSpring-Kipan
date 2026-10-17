@@ -33,13 +33,9 @@ class TaigiAutocompleteServiceTest {
         syllableCount: Int = 1,
     ): RustEngineBridge.ContinuousCandidate =
         RustEngineBridge.ContinuousCandidate(
-            consumedSpanStart = 0,
             consumedSpanEnd = consumedSpanEnd,
             syllableCount = syllableCount,
             displayText = displayText,
-            score = 1.0f,
-            form = 1,
-            scriptKind = RustEngineBridge.CandidateScriptKind.HANT,
             roman = displayText,
             hanji = null,
             canonicalTl = displayText,
@@ -69,10 +65,6 @@ class TaigiAutocompleteServiceTest {
             val result = service.autocomplete(rawInput = "gua", displayText = "gua")
             assertEquals("engine candidates pass through 1:1", 1, result.size)
             assertEquals("true", result[0].additionalInfo[MetadataKeys.IS_CONTINUOUS])
-            assertNull(
-                "no slot-0 composing-text cell on the single-source path",
-                result[0].additionalInfo[MetadataKeys.IS_COMPOSING_TEXT],
-            )
         }
 
     /**

@@ -39,7 +39,7 @@ struct CandidateTheme: Equatable {
     /// Expanded candidate grid divider lines and the strip's expand-chevron separator. A theme's `candidateTextColor` paints them at
     /// full opacity (white text → white grid); nil for an adaptive theme — the grid keeps
     /// the system separator.
-    // CROSS-PLATFORM INVARIANT — mirrors android .../smartbar/CandidateOverlayContent.kt CandidateOverlayColors.divider.
+    // CROSS-PLATFORM INVARIANT — mirrors android .../overlays/CandidateOverlayContent.kt CandidateOverlayColors.divider.
     let gridLineColor: Color?
 
     /// Emoji keyboard chrome colors of a fixed-palette theme; nil (adaptive) keeps ISEmojiView's

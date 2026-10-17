@@ -1,5 +1,9 @@
 import Foundation
 
+// MARK: - Shared-Core Candidate
+
+// Pure logic, Foundation-only. Eligible for cross-platform extraction.
+
 /// Search result with source information for dictionary search (Manage Dictionaries page).
 struct DictionarySearchResult {
     /// Sentinel id for results synthesised from the user's custom dictionary.
@@ -9,7 +13,6 @@ struct DictionarySearchResult {
     let roman: String // Display form (POJ or TL based on user setting)
     let tl: String // Raw TL from database (for external lookup URLs)
     let hanji: String?
-    let frequency: Int
     let sources: [DictionarySource]
 
     /// Chhoe Taigi dictionary lookup URL for this result's TL form.

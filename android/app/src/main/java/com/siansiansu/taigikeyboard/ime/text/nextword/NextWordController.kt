@@ -146,8 +146,8 @@ class NextWordController(
     }
 
     /**
-     * Handle a word selection from the candidate strip / overlay under
-     * `Phase::Composing`. Every platform-side tap predicts, so
+     * Handle a NextWord prediction tapped on the candidate strip / overlay
+     * (engine `Phase::Idle`). Every platform-side tap predicts, so
      * `triggerPrediction` is fixed at `true`.
      *
      * The engine alone decides what the selection teaches and whether it
@@ -522,7 +522,6 @@ private fun predictionWord(
         id = id,
         roman = if (prediction.subtitle != null) prediction.text else "",
         hanji = prediction.hanji,
-        lengthScore = prediction.score.toInt(),
         additionalInfo =
             if (cellScript == null) mapOf(identity) else mapOf(identity, TaigiWord.MetadataKeys.CELL_SCRIPT to cellScript),
     )

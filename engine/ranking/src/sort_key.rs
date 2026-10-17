@@ -1,16 +1,40 @@
-//! Continuous candidate ordering: the 9-dimensional [`CandidateSortKey`],
-//! the [`CandidateRankFacts`] it reads, and its NaN-safe score wrapper.
+//! Continuous candidate ordering: the twelve-field [`CandidateSortKey`] the
+//! candidate list and the walker's edge pick share, the [`CandidateRankFacts`]
+//! it reads, and its NaN-safe score wrapper.
 
 use std::cmp::Reverse;
 
 use crate::{source_tier_rank, CONTEXT_RANK_NONE};
+
+/// [`CandidateRankFacts::coverage_kind`] of a full-syllable hit: the typed
+/// span is the record's whole toneless reading.
+pub const COVERAGE_KIND_FULL: u8 = 0;
+
+/// [`CandidateRankFacts::coverage_kind`] of a partial-prefix hit: the typed
+/// span is a strict prefix of the record's reading. Ranks below
+/// [`COVERAGE_KIND_FULL`] within a tier; a whole-input extension still leads
+/// a front-segment full syllable (`docs/engine/continuous-input-ranking.md`).
+pub const COVERAGE_KIND_PARTIAL_PREFIX: u8 = 1;
+
+/// [`CandidateRankFacts::coverage_kind`] of a whole-buffer abbreviation hit:
+/// the typed buffer (`ss`, `tk`, `thng`, `ㄙㄒ`) equals the record's
+/// per-syllable-initial face. Ranks below every other match kind of its tier,
+/// custom words included (`abbreviation` sits above `preference_class`): an acronym-shaped buffer that
+/// is also a valid syllable or onset (`thng`, `ts`, `kh`) is a reading at
+/// least as often as it is an abbreviation, so the single-syllable hits the
+/// user was reaching for keep their positions and the abbreviated words trail
+/// them — `thng` lists 湯 / 糖 before a custom 退伍 `thui-ńg` reached
+/// through its initials (USER 2026-10-16). librime likewise penalises a user
+/// phrase reached through an abbreviation
+/// (`references/librime/src/rime/dict/user_dictionary.cc:239`).
+pub const COVERAGE_KIND_ABBREV: u8 = 2;
 
 /// The candidate fields the continuous sort reads — everything
 /// [`CandidateSortKey::new`] needs besides the buffer length and the
 /// insertion index. Built by `lexicon::RawCandidate::rank_facts`.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CandidateRankFacts {
-    /// `lexicon::COVERAGE_KIND_*`: full syllable `0` < partial prefix `1`
+    /// `COVERAGE_KIND_*`: full syllable `0` < partial prefix `1`
     /// < abbreviation `2`.
     pub coverage_kind: u8,
     /// Raw-buffer byte span `(start, end)` the candidate consumes.
@@ -19,6 +43,9 @@ pub struct CandidateRankFacts {
     pub user_weight: f64,
     /// `CONTEXT_RANK_*` — previous-word continuation layer.
     pub context_rank: u8,
+    /// `dict.bin` corpus cost (`−ln p`, milli-nats); [`WALKER_COST_UNPRICED`]
+    /// for a candidate the corpus does not price (custom, learned, synthesized).
+    pub walker_cost: u16,
     /// [`crate::calculate_continuous_score`].
     pub score: f32,
     /// Raw dictionary frequency.
@@ -29,7 +56,13 @@ pub struct CandidateRankFacts {
     pub is_custom: bool,
 }
 
-/// The nine-dimension [`CandidateSortKey`] sort every continuous fetch
+/// [`CandidateRankFacts::walker_cost`] of a candidate the corpus does not price
+/// (custom, learned, synthesized): it sorts after every priced candidate of
+/// its tier unless user weight or the context lifts it (E1 P5b) — a
+/// never-selected custom word is led by `preference_class` first.
+pub const WALKER_COST_UNPRICED: u16 = u16::MAX;
+
+/// The [`CandidateSortKey`] sort every continuous fetch
 /// ends with. `stable_idx` is the pre-sort element position, stamped via
 /// `enumerate()` BEFORE the sort rather than inside the key extractor so
 /// it stays the caller's insertion order.
@@ -52,18 +85,48 @@ pub fn sort_by_candidate_key<T>(
     indexed.into_iter().map(|(_, item)| item).collect()
 }
 
+/// The leading `(tier, abbreviation)` of [`CandidateSortKey`]: whole input
+/// before front segment, then readings before abbreviations. Shared with
+/// any list that orders on these but not on the rest of the key (the TPS
+/// word list, `composing::continuous`, which puts longer words next).
+pub fn candidate_lead(facts: &CandidateRankFacts, raw_len: u32) -> (u8, u8) {
+    let tier = u8::from(facts.consumed_span.1 != raw_len);
+    let abbreviation = u8::from(facts.coverage_kind == COVERAGE_KIND_ABBREV);
+    (tier, abbreviation)
+}
+
+/// `0` = selected (`user_weight > 0`, any source), `1` = a never-selected
+/// custom-dictionary word, `2` = every other word. The user's picks lead
+/// the words they filed, which lead the rest (USER 2026-10-16: a bulk-filed
+/// custom 屢 `lí` must not bury 你 the user keeps picking). Within a match
+/// kind, selected words then order by `user_weight` — a custom word gets no
+/// extra lift once picked.
+fn preference_class(facts: &CandidateRankFacts) -> u8 {
+    if facts.user_weight > 0.0 {
+        0
+    } else if facts.is_custom {
+        1
+    } else {
+        2
+    }
+}
+
 // v3.5.8 Phase 9.1 — CandidateSortKey
 //
-// Encodes the nine-dimension lexicographic sort policy pinned in
+// Encodes the lexicographic sort policy pinned in
 // `docs/releases/v3.5.8/plan.md` § Phase 9 (+ whole-sentence lattice + walker S8). Field
 // order in this struct matches `#[derive(Ord)]`'s lexicographic
 // comparison; `Reverse<T>` flips individual dimensions whose policy
 // is descending. NaN-safe because floats are wrapped in `NonNanF64`
 // which coerces NaN to `f64::MIN` at construction.
 //
-// Order: coverage_kind, tier, -user_weight, context_rank, -score, -freq,
-// -coverage, source_rank, stable_idx. Bigram P5 (§56) added `context_rank`
-// between `-user_weight` and `-score`. S8 moved `-coverage` from
+// Order: tier, abbreviation, preference_class, coverage_kind, -user_weight,
+// context_rank, walker_cost, -score, -freq, -coverage, source_rank,
+// stable_idx — the first two are [`candidate_lead`], shared with the TPS
+// word list. Bigram P5 (§56) added
+// `context_rank` between `-user_weight` and `-score`; E1 P5a added
+// `walker_cost` below it for the walker's edge pick, and P5b made the
+// candidate list read it too, so the list and slot 0 share one scale. S8 moved `-coverage` from
 // dim 3 (above score) down to dim 6 (a weak tiebreak below
 // score/freq): the slot-0 whole-sentence walker now owns phrase
 // priority, so longest-coverage-first inside a tier only buried the
@@ -71,26 +134,31 @@ pub fn sort_by_candidate_key<T>(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CandidateSortKey {
-    /// v3.5.8 Phase 9 Item 10 — leading dim. `0` for full-syllable
-    /// (the pre-Item-10 `fetch_candidates_for_keys_with_barriers` path) and `1`
-    /// for partial-prefix (`lexicon::fetch_partial_prefix_candidates`).
-    /// Sits ahead of [`tier`](Self::tier) because partial-prefix
-    /// candidates have `consumed_span_end == raw_len`
-    /// (Q15.4 → `tier = 0`); without this dim a partial-prefix
-    /// tier-0 candidate would outrank a future full-syllable
-    /// tier-1 candidate, violating §15.5 "rank below regardless of
-    /// frequency". See `docs/engine/continuous-candidate-display.md`
-    /// §15.5.
-    coverage_kind: u8,
-    /// `0` = Tier 0 (full-buffer coverage), `1` = Tier 1 (partial).
-    /// Roadmap and spec both use the "Tier 0 = full buffer" labelling
-    /// (`docs/releases/v3.5.8/plan.md` § Phase 9 / `docs/engine/continuous-input-
-    /// ranking.md` §1.1).
+    /// Leading dim: `0` = Tier 0 (the candidate consumes the whole input),
+    /// `1` = Tier 1 (only its front). A word covering everything typed —
+    /// an exact word, a strict-prefix extension whose final syllable the
+    /// input reaches (§43), a whole abbreviation — leads every word
+    /// covering only a front segment (`taiuanl` → 台灣人 before 台灣;
+    /// `docs/engine/continuous-input-ranking.md`).
     tier: u8,
-    /// Descending: [`CandidateRankFacts::user_weight`] — a selected word
-    /// (`> 0.0`) precedes every never-selected one (`0.0`) whatever
-    /// their dictionary frequency. `f64` so two selections seconds
-    /// apart do not collapse into a tie.
+    /// `1` for an abbreviation hit ([`COVERAGE_KIND_ABBREV`], which says why),
+    /// `0` for a reading: every reading of the tier leads, custom or not.
+    abbreviation: u8,
+    /// [`preference_class`]: selected words, then never-selected custom
+    /// words, then the rest — whatever their full/partial match kind or
+    /// corpus cost ("the word I put in shows up", but below the words the
+    /// user actually picks). The list synthesizes custom words whole-input,
+    /// so there class `1` only appears in Tier 0; the walker's edge pick
+    /// meets them at the edge's span.
+    preference_class: u8,
+    /// Within a tier: full syllable `0` < partial prefix `1` < abbreviation
+    /// `2` ([`COVERAGE_KIND_FULL`] / [`COVERAGE_KIND_PARTIAL_PREFIX`] /
+    /// [`COVERAGE_KIND_ABBREV`]).
+    coverage_kind: u8,
+    /// Descending: [`CandidateRankFacts::user_weight`] — orders the
+    /// selected words (`preference_class` already put every one of them
+    /// before the never-selected). `f64` so two selections seconds apart do
+    /// not collapse into a tie.
     neg_user_weight: Reverse<NonNanF64>,
     /// Ascending: [`CandidateRankFacts::context_rank`] — a continuation of the
     /// previous word (user-learned first, then bundled) precedes the rest
@@ -98,6 +166,15 @@ pub struct CandidateSortKey {
     /// never-selected one; above `score` so the context is more than a
     /// tie-break. All-`CONTEXT_RANK_NONE` (no context) changes nothing.
     context_rank: u8,
+    /// Ascending: [`CandidateRankFacts::walker_cost`] — the word the corpus
+    /// writes most first, in the list and in the walker's edge pick alike
+    /// (E1 P5a / P5b, `docs/architecture/unified-word-frequency-roadmap.md`).
+    /// Equal costs (corpus-unseen words share one smoothed cost; nearby counts
+    /// round to one milli-nat) fall to `score` and the dimensions below. An
+    /// unpriced candidate (a learned phrase) sorts after every priced one
+    /// unless a dimension above decides (`preference_class` decides for a
+    /// custom word).
+    walker_cost: u16,
     /// Descending: higher `freq × syll_bias × boost` wins.
     neg_score: Reverse<NonNanF64>,
     /// Descending: raw freq as a secondary tie-break independent of
@@ -128,16 +205,19 @@ impl CandidateSortKey {
     pub fn new(facts: &CandidateRankFacts, raw_len: u32, stable_idx: u32) -> Self {
         let (start, end) = facts.consumed_span;
         let coverage_bytes = end.saturating_sub(start);
-        let tier: u8 = if end == raw_len { 0 } else { 1 };
         // v3.5.8 Phase 9 Item 12 — `is_custom` is carried on the
         // candidate (`record_to_candidate` → false, dict.bin source
         // bits; `custom_entry_to_candidate` → true, forces rank 0).
         let source_rank = source_tier_rank(facts.bitmask, facts.is_custom);
+        let (tier, abbreviation) = candidate_lead(facts, raw_len);
         Self {
-            coverage_kind: facts.coverage_kind,
             tier,
+            abbreviation,
+            preference_class: preference_class(facts),
+            coverage_kind: facts.coverage_kind,
             neg_user_weight: Reverse(NonNanF64::new(facts.user_weight)),
             context_rank: facts.context_rank,
+            walker_cost: facts.walker_cost,
             neg_score: Reverse(NonNanF64::new(f64::from(facts.score))),
             neg_freq: Reverse(facts.frequency),
             neg_coverage: Reverse(coverage_bytes),
@@ -199,17 +279,18 @@ mod tests {
     use super::*;
     use crate::{CONTEXT_RANK_BUNDLED, CONTEXT_RANK_USER};
 
-    /// `lexicon::COVERAGE_KIND_FULL` / `COVERAGE_KIND_PARTIAL_PREFIX`.
-    const COVERAGE_KIND_FULL: u8 = 0;
-    const COVERAGE_KIND_PARTIAL_PREFIX: u8 = 1;
-
     /// Kautian source bit (1 << 0) — source rank 1.
     const KAUTIAN_BIT: u16 = 1 << 0;
+
+    /// The cost every corpus-unseen word shares at α 10 — one value for
+    /// every fixture, so tests of the other dimensions see a cost tie.
+    const UNSEEN_WALKER_COST: u16 = 13_181;
 
     /// Convenience builder so each test only specifies the dimensions
     /// it exercises. Fields not exercised default to neutral values:
     /// `bitmask = 0` (→ source rank = default = 5), `user_weight = 0.0`
-    /// (never selected = the cold-start default), no context.
+    /// (never selected = the cold-start default), no context, the shared
+    /// unseen corpus cost.
     fn cand(
         span_start: u32,
         span_end: u32,
@@ -233,6 +314,7 @@ mod tests {
             consumed_span: (span_start, span_end),
             user_weight,
             context_rank: CONTEXT_RANK_NONE,
+            walker_cost: UNSEEN_WALKER_COST,
             score,
             frequency,
             bitmask,
@@ -252,6 +334,20 @@ mod tests {
     ) -> CandidateRankFacts {
         CandidateRankFacts {
             coverage_kind: COVERAGE_KIND_PARTIAL_PREFIX,
+            ..cand(span_start, span_end, score, frequency, bitmask)
+        }
+    }
+
+    /// Abbreviation variant for the `abbreviation` dim, never selected.
+    fn cand_abbreviation(
+        span_start: u32,
+        span_end: u32,
+        score: f32,
+        frequency: u32,
+        bitmask: u16,
+    ) -> CandidateRankFacts {
+        CandidateRankFacts {
+            coverage_kind: COVERAGE_KIND_ABBREV,
             ..cand(span_start, span_end, score, frequency, bitmask)
         }
     }
@@ -411,6 +507,135 @@ mod tests {
         );
     }
 
+    fn cand_with_cost(score: f32, walker_cost: u16) -> CandidateRankFacts {
+        CandidateRankFacts {
+            walker_cost,
+            ..cand(0, 3, score, score as u32, 0)
+        }
+    }
+
+    // E1 P5a / P5b: the corpus dimension beats the dictionary score and sits
+    // below user weight and context.
+    #[test]
+    fn walker_cost_beats_score_below_user_weight_and_context() {
+        let raw_len: u32 = 3;
+        let frequent = cand_with_cost(1000.0, 9_000);
+        let corpus_common = cand_with_cost(10.0, 5_000);
+        assert!(key(&corpus_common, raw_len, 1) < key(&frequent, raw_len, 0));
+        let selected = CandidateRankFacts {
+            user_weight: 0.1,
+            ..cand_with_cost(1.0, 13_000)
+        };
+        assert!(key(&selected, raw_len, 2) < key(&corpus_common, raw_len, 1));
+        let context_hit = CandidateRankFacts {
+            context_rank: CONTEXT_RANK_BUNDLED,
+            ..cand_with_cost(1.0, 13_000)
+        };
+        assert!(key(&context_hit, raw_len, 3) < key(&corpus_common, raw_len, 1));
+        // Equal cost → the score decides.
+        let corpus_equal = cand_with_cost(10.0, 9_000);
+        assert!(key(&frequent, raw_len, 0) < key(&corpus_equal, raw_len, 1));
+    }
+
+    // E1 P5b: an unpriced candidate (a learned phrase) follows every priced
+    // one in its tier unless the user selected it or the context names it.
+    #[test]
+    fn unpriced_candidate_follows_priced_unless_selected_or_in_context() {
+        let raw_len: u32 = 3;
+        let unseen = cand_with_cost(1.0, UNSEEN_WALKER_COST);
+        let learned = cand_with_cost(0.0, WALKER_COST_UNPRICED);
+        assert!(key(&unseen, raw_len, 1) < key(&learned, raw_len, 0));
+        let selected_learned = CandidateRankFacts {
+            user_weight: 0.1,
+            ..learned
+        };
+        assert!(key(&selected_learned, raw_len, 0) < key(&unseen, raw_len, 1));
+        let context_learned = CandidateRankFacts {
+            context_rank: CONTEXT_RANK_USER,
+            ..learned
+        };
+        assert!(key(&context_learned, raw_len, 0) < key(&unseen, raw_len, 1));
+    }
+
+    // USER 2026-10-12: the user's own word leads its tier — over a priced,
+    // in-context full-syllable dictionary word — but never crosses into the
+    // tier above it. USER 2026-10-16: a selected word leads it.
+    #[test]
+    fn custom_word_leads_its_tier_and_only_its_tier() {
+        let raw_len: u32 = 3;
+        let custom_partial = CandidateRankFacts {
+            is_custom: true,
+            ..cand_partial(0, 3, 0.0, 0, 0)
+        };
+        let dictionary_best = CandidateRankFacts {
+            context_rank: CONTEXT_RANK_USER,
+            ..cand_with_cost(1000.0, 1_000)
+        };
+        assert!(key(&custom_partial, raw_len, 1) < key(&dictionary_best, raw_len, 0));
+        // A Tier-0 dictionary word still leads a custom word that would
+        // cover only the front (custom words are whole-input, so this is
+        // the comparator's own contract, not a production shape).
+        let custom_front = CandidateRankFacts {
+            is_custom: true,
+            ..cand(0, 2, 0.0, 0, 0)
+        };
+        assert!(key(&cand(0, 3, 1.0, 1, 0), raw_len, 1) < key(&custom_front, raw_len, 0));
+    }
+
+    // USER 2026-10-16: the words the user picks lead the words the user
+    // filed — `li2` → 你 (picked) before a never-picked custom 屢 `lí` —
+    // and a picked custom word gets no lift over a heavier-picked
+    // dictionary word (李 picked 7× before a custom picked 2×).
+    #[test]
+    fn selected_word_leads_never_selected_custom_word() {
+        let raw_len: u32 = 3;
+        let custom = CandidateRankFacts {
+            is_custom: true,
+            ..cand_with_cost(0.0, WALKER_COST_UNPRICED)
+        };
+        let dictionary_selected = cand_with_user_weight(0, 3, 1.0, 1, 0, 0.1);
+        assert!(key(&dictionary_selected, raw_len, 1) < key(&custom, raw_len, 0));
+        let custom_selected_light = CandidateRankFacts {
+            user_weight: 0.5,
+            ..custom
+        };
+        let dictionary_selected_heavy = cand_with_user_weight(0, 3, 1.0, 1, 0, 2.0);
+        assert!(
+            key(&dictionary_selected_heavy, raw_len, 1) < key(&custom_selected_light, raw_len, 0)
+        );
+        // A selected partial-prefix word leads a never-selected custom word
+        // and a never-selected full-syllable word alike (accepted by USER).
+        let dictionary_partial_selected = CandidateRankFacts {
+            user_weight: 0.1,
+            ..cand_partial(0, 3, 1.0, 1, 0)
+        };
+        assert!(key(&dictionary_partial_selected, raw_len, 1) < key(&custom, raw_len, 0));
+        assert!(
+            key(&dictionary_partial_selected, raw_len, 1) < key(&cand(0, 3, 1.0, 1, 0), raw_len, 0)
+        );
+    }
+
+    // USER 2026-10-16: a reading leads every abbreviation of its tier, a
+    // custom one included (`thng` → 湯 before a custom 退伍 `thui-ńg`);
+    // among the never-selected abbreviations the custom word still leads.
+    #[test]
+    fn custom_abbreviation_trails_readings_but_leads_abbreviations() {
+        let raw_len: u32 = 4;
+        let custom_abbreviation = CandidateRankFacts {
+            is_custom: true,
+            ..cand_abbreviation(0, 4, 0.0, 0, 0)
+        };
+        let dictionary_full_weak = cand(0, 4, 0.001, 1, 0);
+        let dictionary_partial_weak = cand_partial(0, 4, 0.001, 1, 0);
+        let dictionary_abbreviation = CandidateRankFacts {
+            context_rank: CONTEXT_RANK_USER,
+            ..cand_abbreviation(0, 4, 0.0, 0, 0)
+        };
+        assert!(key(&dictionary_full_weak, raw_len, 1) < key(&custom_abbreviation, raw_len, 0));
+        assert!(key(&dictionary_partial_weak, raw_len, 1) < key(&custom_abbreviation, raw_len, 0));
+        assert!(key(&custom_abbreviation, raw_len, 1) < key(&dictionary_abbreviation, raw_len, 0));
+    }
+
     #[test]
     fn stable_idx_breaks_ties_when_all_else_equal() {
         // Identical facts, only the synthetic insertion index varies —
@@ -490,24 +715,36 @@ mod tests {
     // ----- v3.5.8 Phase 9 Item 10 — `coverage_kind` dim -----
 
     #[test]
-    fn coverage_kind_full_beats_partial_regardless_of_other_dims() {
-        // Item 10 headline invariant: a partial-prefix candidate with
-        // MAX freq + MAX score + a heavy user weight + best source rank
-        // must STILL lose to a full-syllable candidate with min freq,
-        // min score, never selected, and worst source rank — the
-        // leading `coverage_kind` dim is load-bearing.
-        // Both candidates have `end == raw_len` so their `tier`
-        // dimension is identical (0) — the regression this guards
-        // against is a tier-0 partial beating a tier-1 full when
-        // `coverage_kind` is mis-ordered.
+    fn coverage_kind_full_beats_partial_within_a_tier() {
+        // Item 10: within one tier (both `end == raw_len`) and one
+        // preference class, a partial-prefix candidate with MAX freq + MAX
+        // score + the heavier user weight + best source rank still loses to
+        // a full-syllable candidate with min freq, min score and worst
+        // source rank — `coverage_kind` sits above every dimension except
+        // `tier`, `abbreviation` and `preference_class`.
         let raw_len: u32 = 3;
-        let full_weak = cand_with_user_weight(0, 3, 0.001, 1, 0, 0.0);
+        let full_weak = cand_with_user_weight(0, 3, 0.001, 1, 0, 0.1);
         let mut partial_strong = cand_partial(0, 3, f32::MAX, u32::MAX, KAUTIAN_BIT);
         partial_strong.user_weight = 4.0;
         assert!(
             key(&full_weak, raw_len, 0) < key(&partial_strong, raw_len, 1),
-            "Item 10: full-syllable must precede partial-prefix regardless of other dims"
+            "Item 10: within a tier, full-syllable precedes partial-prefix"
         );
+        let never_full = cand(0, 3, 0.001, 1, 0);
+        let never_partial = cand_partial(0, 3, f32::MAX, u32::MAX, KAUTIAN_BIT);
+        assert!(key(&never_full, raw_len, 0) < key(&never_partial, raw_len, 1));
+    }
+
+    // USER 2026-10-12: whole-input coverage leads the match kind — a
+    // partial-prefix extension the input reaches into (`taiuanl` →
+    // 台灣人) precedes a full-syllable word covering only the front
+    // (台灣 `taiuan`), whatever their scores.
+    #[test]
+    fn whole_input_extension_beats_front_segment_full_word() {
+        let raw_len: u32 = 7;
+        let extension_weak = cand_partial(0, 7, 0.001, 1, 0);
+        let front_strong = cand_with_user_weight(0, 6, f32::MAX, u32::MAX, KAUTIAN_BIT, 4.0);
+        assert!(key(&extension_weak, raw_len, 1) < key(&front_strong, raw_len, 0));
     }
 
     #[test]

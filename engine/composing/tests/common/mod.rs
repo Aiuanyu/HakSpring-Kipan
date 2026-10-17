@@ -26,9 +26,14 @@ use lexicon::{
 use phonetics::{canonicalize_poj_syllable, canonicalize_syllable};
 use protos::engine::composing_request::Method;
 use protos::engine::effect::Kind;
-use protos::engine::{AppConfig, ComposingRequest, ComposingResponse, Effect, FetchAtPos, Start};
+use protos::engine::{
+    AppConfig, CommitOutcome, CommitResolution, ComposingRequest, ComposingResponse,
+    DictionarySourceToggles, Effect, FetchAtPos, Start,
+};
 use ranking::FrequencyData;
-use test_support::{build_tkdb, build_tkwa, fst_entry, write_fst_set, TkdbRow};
+use test_support::{
+    build_tkdb, build_tkwa, fst_entry, walker_cost_from_fixture_frequency, write_fst_set, TkdbRow,
+};
 
 const RANK_NEUTRAL_BITMASK: u16 = 1u16 << 11;
 
@@ -45,9 +50,16 @@ pub struct Row {
     pub freq: u32,
 }
 
-/// TKDB v3 `dictionary.bin`: every row rank-neutral with no kautian
-/// provenance (subtag 0).
-pub fn build_tkdb_v3(rows: &[Row]) -> Vec<u8> {
+/// TKDB v4 `dictionary.bin`: every row rank-neutral with no kautian
+/// provenance (subtag 0) and the walker cost its frequency had before E1
+/// ([`walker_cost_from_fixture_frequency`]).
+pub fn build_tkdb_v4(rows: &[Row]) -> Vec<u8> {
+    build_tkdb_v4_costed(rows, |row| walker_cost_from_fixture_frequency(row.freq))
+}
+
+/// [`build_tkdb_v4`] with each row's walker cost from `walker_cost`, for
+/// fixtures where the corpus cost and the frequency disagree on purpose.
+pub fn build_tkdb_v4_costed(rows: &[Row], walker_cost: impl Fn(&Row) -> u16) -> Vec<u8> {
     let tkdb_rows: Vec<TkdbRow<'_>> = rows
         .iter()
         .map(|row| TkdbRow {
@@ -55,11 +67,12 @@ pub fn build_tkdb_v3(rows: &[Row]) -> Vec<u8> {
             frequency: row.freq,
             syllable_count: Some(row.syll),
             kautian_subtag: Some(0),
+            walker_cost: Some(walker_cost(row)),
             hanji: row.hanji,
             tl: row.tl,
         })
         .collect();
-    build_tkdb(b"TKDB", 3, &tkdb_rows)
+    build_tkdb(b"TKDB", 4, &tkdb_rows)
 }
 
 /// `dictionary.fst` with the toneless `tl:` family, the `poj:` family
@@ -424,6 +437,21 @@ impl Default for Fetch {
     }
 }
 
+/// The sources a fresh install enables on every platform (desktop
+/// `DictionarySourceToggles::DEFAULT`; iOS / Android defaults agree).
+pub fn default_sources_bitmask() -> u32 {
+    lexicon::api::dictionary_filter_bitmask(&DictionarySourceToggles {
+        kautian: true,
+        taigitv: true,
+        kungge: true,
+        stti: true,
+        khpoo: true,
+        lkk: true,
+        dev: true,
+        ..Default::default()
+    })
+}
+
 /// `rows` as the frequency map a ranking reads.
 pub fn frequency_map(rows: impl IntoIterator<Item = Selected>) -> ranking::FrequencyMap {
     rows.into_iter()
@@ -456,6 +484,29 @@ impl Fetch {
 
 pub fn config_tl() -> AppConfig {
     config("tl")
+}
+
+/// The `ComposingResponse.commit` a pick answers with.
+pub fn resolution(
+    outcome: CommitOutcome,
+    text: &str,
+    roman: bool,
+    space: bool,
+) -> CommitResolution {
+    CommitResolution {
+        outcome: outcome as i32,
+        document_text: text.into(),
+        wrote_romanization: roman,
+        earns_auto_space: space,
+    }
+}
+
+/// The `ComposingResponse.commit` of a pick that changed nothing.
+pub fn ignored() -> CommitResolution {
+    CommitResolution {
+        outcome: CommitOutcome::Ignored as i32,
+        ..CommitResolution::default()
+    }
 }
 
 /// The document text a response commits (`CommitTextReplacingPreedit`).

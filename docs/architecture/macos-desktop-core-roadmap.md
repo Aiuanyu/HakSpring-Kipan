@@ -1,34 +1,23 @@
 # macOS over desktop-core — Roadmap
 
-> **Type**: Planning (multi-PR refactor)
+> **Type**: Design record (multi-PR refactor, complete)
 > **Keywords**: `macOS`, `desktop-core`, `refactor`, `FFI`, `behaviour oracle`, `parity`
-> **Status**: complete 2026-10-03 — scope and design decisions taken 2026-10-02 (§ Decisions); P1 merged #342, P2 merged #343, P3 merged #344, P4 merged #345, P5 merged #346, P6 merged #347, P7 merged #349, P8 merged #350, P9 merged #351, P10 merged #353, P11 merged #354–#359, P12 merged #360, P13 merged #361, P13b merged #362, P14 merged #364 (E8 parity #363 first), P15 merged #365
-> **Source**: `docs/reports/2026-09-30-audit-all.md` §2 ("macOS re-implements what `desktop/crates` already has") and §5.2; measured inventory `docs/reports/2026-10-02-macos-desktop-core-inventory.md` (frozen on `e330cd30`)
-> **Session memory**: project memory `project_macos_desktop_core.md` (Claude auto-memory)
+> **Status**: Complete. `AppConfig.platform_id` has since left the wire, so `DesktopPlatform` no longer selects an engine `platform_id` (C1 below is history).
+> **Source**: measured inventory `docs/reports/2026-10-02-macos-desktop-core-inventory.md` (frozen on `e330cd30`)
 
 ---
 
 ## Mandate
 
-USER 2026-10-02: the macOS input method stops re-implementing desktop behaviour in Swift and links the shared Rust `taigi-desktop-core`, so a desktop feature is written once for macOS, Windows and Linux and their parity stops being a manual chore.
+The macOS input method links the shared Rust `taigi-desktop-core` instead of re-implementing desktop behaviour in Swift, so a desktop feature is written once for macOS, Windows and Linux.
 
-Carried over from the maintainability mandate (`maintainability-roadmap.md` § Mandate): a stored **setting** may change; user **data** — the engine `userdata` stores, copied-in fonts — survives every phase. Release, version and tag decisions are the USER's and no phase is assigned to a release.
+Carried over from the maintainability mandate (`maintainability-roadmap-2026-10.md` § Mandate): a stored **setting** may change; user **data** — the engine `userdata` stores, copied-in fonts — survives every phase.
 
 ## Summary
 
-- **Measured, not estimated**: macOS has 20,389 hand-written Swift lines; about 8,070 of them have a counterpart in `desktop/crates`. The audit's "~4,000" is replaced by the table below (inventory report §1).
-- **This plan moves the key path** — key classification, bindings and chords, the composing manager, the intent executor, auto space, full-width punctuation, next-word, the candidate list model, the engine-settings snapshot and the engine bring-up: about **4,300 Swift lines deleted**, plus the generated `*.pb.swift` files nothing references afterwards. The intent switch in `TaigiInputController` is already a one-to-one port of `intent_executor.rs`, which is what makes this the low-risk half.
-- **It leaves in Swift** what is IMKit / AppKit / SwiftUI, and four duplicate areas where the boundary would cost more than it saves or would change behaviour: candidate-window geometry, the settings storage backend, the global-shortcut tier, the update flow (§ Outside this plan).
-- **desktop-core becomes the behaviour oracle** for the three desktops, replacing "macOS is the behaviour oracle" (`docs/contributing/windows-guidelines.md` § desktop-core is the behaviour oracle — swapped in P12). A platform difference becomes a named `DesktopPlatform` value with a test per platform.
-
-## Today (grounded in code)
-
-- **Engine link**: macOS links `engine/swift-ffi` as the static library `librust_taigi.a` with `user-data` on (`engine/swift-ffi/Cargo.toml:19-33`), built universal by `engine/scripts/build-macos-xcframework.sh:38,59-87` and consumed as the SwiftPM binary target `RustTaigi` (`macos/Package.swift:27-42`). Swift talks to the engine through one function, `process_request_bytes`, with protobuf envelopes (`engine/swift-ffi/src/lib.rs:41-70`; `macos/Sources/TaigiInputMethodCore/Engine/RustEngineBridge*.swift`).
-- **Duplicate logic**: everything between the key event and that function is Swift on macOS and Rust on Windows / Linux — `Keys/`, `Composing/`, `Policies/`, `NextWord/`, the controller's intent switch (`Controller/TaigiInputController.swift:787-923` ↔ `desktop/crates/taigi-desktop-core/src/composing/intent_executor.rs:60-172`).
-- **What desktop-core asks of a shell**: a `KeyEventSnapshot` in; `perform_intent` out through the `IntentSurface` trait (`intent_executor.rs:18-59`); a `SettingsProvider` and the directories through `RuntimeParts` (`runtime.rs:24-40`). One coordinator, one manager and one current `ContextToken` per process (`runtime.rs:55`, `composing/coordinator.rs:49-66,82-117`).
-- **What desktop-core does not own**: the per-key preamble, the bodies of the global actions, the symbol picker — each Rust shell has its own copy (`linux/crates/taigi-linux-core/src/session.rs:148-337`, `chrome.rs:134-401`; inventory report §6). A macOS link does not reach them.
-- **Why a 1:1 link fails today**: desktop-core hard-codes Windows / Linux choices — the caret chord and the width flip are both `CONTROL` (`keys/intent.rs:33,40`; macOS uses ⌥ and ⌃), stored chords spell modifiers `w/c/a/s` (`keys/chord.rs:240-247`; macOS writes `d/c/o/s`), every request reports the platform as Windows unless the target is Linux (`engine/bridge.rs:87-91`), and the user data opens write-ahead logged (`engine/user_data.rs:35`; macOS opens `DELETE`).
-- **The engine is process-wide statics** (`engine/composing/src/handle.rs:59`, `engine/lexicon/src/handle.rs:46`, `engine/userdata/src/handle.rs:31,43`).
+- **Moved to the core**: the key path — key classification, bindings and chords, the composing manager, the intent executor, auto space, full-width punctuation, next-word, the candidate list model, the engine-settings snapshot and the engine bring-up (about 4,300 Swift lines deleted).
+- **Left in Swift**: what is IMKit / AppKit / SwiftUI, plus candidate-window geometry, the settings storage backend, the global-shortcut tier and the update flow (§ Outside this plan).
+- **desktop-core is the behaviour oracle** for the three desktops (D8; `docs/contributing/windows-guidelines.md`). A platform difference is a named `DesktopPlatform` value with a test per platform.
 
 ## Inventory and scope
 
@@ -46,7 +35,7 @@ Per-file rows with `file:line` on both sides, every divergence and the tests wit
 | Settings storage, page models, user-data client, strings, symbols, font library, bootstrap | ~5,800 | ~1,700 | no | Persisted-format change, or stateful UI models over the boundary |
 | Update check / verify / install | 1,731 | ~132 | no | Three blockers; trust decisions stay in Swift |
 
-In plan: about 4,300 hand-written lines out. The `composing` / `nextword` / `lexicon` / `phonetics` / `case` `*.pb.swift` files (7,757 generated lines) stop being generated for macOS **one by one, as each loses its last reference** — the retained user-data UI keeps `envelope` and `user_data`. Every phase re-measures with `wc -l` and records the number in the PR table.
+In plan: about 4,300 hand-written lines out. The `composing` / `nextword` / `lexicon` / `phonetics` / `case` `*.pb.swift` files (7,757 generated lines) stop being generated for macOS **one by one, as each loses its last reference** — the retained user-data UI keeps `envelope` and `user_data`.
 
 ## Design
 
@@ -56,11 +45,11 @@ The engine and desktop-core reach the app in **one** archive: two Rust static li
 
 A new crate `macos/crates/taigi-macos-ffi` (own workspace `macos/Cargo.toml`, the `linux/` and `windows/` shape) depends on `taigi-desktop-core`, on `dispatch` with `user-data`, and on `swift-ffi` — which gains `rlib` beside `staticlib`, the `taigi-linux-ffi` precedent (`linux/crates/taigi-linux-ffi/Cargo.toml:11-13`). `build-macos-xcframework.sh` builds this crate instead of `swift-ffi`; the xcframework and its module keep the name `RustTaigi`, so `Package.swift` does not change (it finds the library through the xcframework, whatever the archive is called). iOS keeps building `engine/swift-ffi` alone and its staging is verified unchanged.
 
-Spiked in P2 (`known-pitfalls.md` § Spike a platform capability; result in § Decisions). **P2 opened with a ≤20-line spike** that proved, for both slices under the new workspace's release profile: the `swift-ffi` bridge exports are in the dependent archive (the generator emits plain `#[export_name]` C exports, so they should be), a Swift target links against them, and two bridge modules stage with `SwiftBridgeCore.swift` once. Had it failed: `taigi-macos-ffi` declares all five engine entry points and the logger callback in its own bridge over helpers moved to a non-bridge module, and does **not** depend on the exporting `swift-ffi` — redeclaring the same export names beside it would collide.
+A P2 spike proved it for both slices: the archive exports all five engine bridge functions plus `desktop_request_bytes` with no duplicate global symbol, both bridges' `SwiftBridgeCore.{h,swift}` are byte-identical (staged once), and Swift links and calls both seams. The crate's library is `taigi_macos_ffi`; the xcframework carries `libtaigi_macos_ffi.a`.
 
 ### D2. Boundary mechanism — a second bytes seam
 
-Chosen (USER 2026-10-02, § Decisions): the mechanism macOS already uses for the engine. One more bridged function, `desktop_request_bytes(&[u8]) -> Vec<u8>`, carrying protobuf messages defined in `macos/crates/taigi-macos-ffi/proto/desktop_shell.proto` (prost in Rust; `gen-macos-protos.sh` emits the Swift).
+The mechanism macOS already uses for the engine. One more bridged function, `desktop_request_bytes(&[u8]) -> Vec<u8>`, carrying protobuf messages defined in `macos/crates/taigi-macos-ffi/proto/desktop_shell.proto` (prost in Rust; `gen-macos-protos.sh` emits the Swift).
 
 - No handle crosses the boundary: the runtime is a process singleton inside the crate, a session is addressed by a token — the engine adapters' shape (`docs/contributing/rust-ffi-safety.md` §1.1).
 - **No new `unsafe`**: `&[u8]` in, `Vec<u8>` out is what `process_request_bytes` does today.
@@ -159,7 +148,7 @@ No single check proves it; the package is:
 
 **Preserved on every platform, no decision needed** — the core gains the macOS value as a `DesktopPlatform` rule, and Windows and Linux keep theirs: modifier roles (K1), chord letters (K2), key codes (K3), `platform_id` (C1), journal (S8), engine bring-up at launch (C6), dictionary stamp (S24), labels (K9), **reserved chord keys (K4)** and **case fold of a chord key (K6)**. The last two were candidates for one shared rule, but the Windows recorder manufactures private-use scalars for F1–F24, Insert, Home and End (`windows/crates/taigi-windows-platform/src/key_translation.rs:232-252,263-268`), so narrowing the reserved range would change what it accepts.
 
-**Rare inputs where macOS and the core differ in the classifier itself** — USER 2026-10-02: macOS takes the core's rule.
+**Rare inputs where macOS and the core differ in the classifier itself** — macOS takes the core's rule.
 
 | # | Input | macOS today | desktop-core today | Status |
 |---|---|---|---|---|
@@ -175,53 +164,25 @@ Each change lands in its own `parity:` PR with both sides described and a test p
 
 ## Phases
 
-One phase = one PR. Size counts added and changed lines; a deletion-only diff may be larger.
+One line per phase (labels cited from code); all merged, complete.
 
-| Phase | Type | Content | Est. | Status |
-|---|---|---|---|---|
-| P0 | docs | This roadmap, the inventory report, memory | — | this commit |
-| P1 | refactor (macOS) | Delete the dead Dictionary Search code and what only it kept alive (report S21), with their tests. Independent of the migration; first because it shrinks the bridge the later phases touch | −874 / +7 src measured (6 files deleted, 4 trimmed), tests −4 files +1 (est. −790) | Merged #342 `766e4921` |
-| P2 | build | Spike (D1); `macos/Cargo.toml` + `taigi-macos-ffi` with a version request; one archive; staging helper; feature forwarding; release profile; toolchain file (from P3: the archive build runs in `macos/` and needs its targets); iOS staging verified; Swift smoke test; `rust-ffi-safety.md` §1.1 names the seam | ~400 | Merged #343 `338e59b2` |
-| P3 | build | Tooling (D7): test selection, `macos.yml` native job, security workflow, lint, version script, `AGENTS.md` stale-artifact row | ~250 | Merged #344 `9c8004d5` |
-| P4 | refactor (desktop-core) | `DesktopPlatform` (D6) through the pure rules, `RuntimeParts`, `app_config`, the journal, the chord codec and the labels; Windows, Linux and both settings apps pass theirs | ~450 | Merged #345 `9859405a` |
-| P5 | test (desktop-core) | Port the macOS tests with no Rust equivalent for the key path, under `MacOS`; characterise E4, E5, E6, E7, E2b | ~450 (+559 / −15 measured, tests only) | Merged #346 `824104c6` |
-| P6 | refactor (macOS) | Runtime over the boundary: `Configure` / `Settings` / `Prepare`; launch bring-up moves from `AppDelegate` + bridge to the core. Tests: journal, stamp, defaults, `platform_id`, once-only | ~400 (+1,327 / −302 measured incl. tests; Swift src +235 / −177) | Merged #347 `1fbbb408` |
-| P7 | refactor (macOS, Swift only) | `ComposingBackend` seam — the complete protocol, with the existing key path as its legacy implementation | ~400 moved (controller 1,582 → 1,280; +711 in two new files) | Merged #349 `7249ff42` |
-| P8 | refactor (Rust, additive — not wired) | Session I: `Activate` / `Key` / `CommitComposition` / `Cancel` / `Release`, the recording surface, list-visibility reconciliation, the non-owner rule, key translation, envelope errors and size cap; the settings snapshot rides on each request (D5, USER 2026-10-02) instead of its own `Settings` push; native tests | ~500 (src ~+700 incl. proto, tests ~+900; native 20 → 61) | Merged #350 `ec3b1d6f` |
-| P9 | refactor (Rust, additive — not wired) | Session II: `CommitForSymbolPicker` (chosen by the panel's highlight, as legacy — the Linux shell asks its list), `InsertSymbol` (an empty symbol is refused — legacy would write `""`), `Represent`, stale-token rejection = the ownership rule (D3 Tokens); native tests | ~350 (src ~+150, tests ~+650; native 58 → 73) | Merged #351 `efd0a92d` |
-| P10 | refactor (macOS) | Core back end in Swift (`CoreComposingBackend`); controller suites per back end in separate processes; the integration tests of D9.4; a cross-check that the Shortcuts pane's Swift chord rules and the core's agree on every action and a table of chords. Cases that hit an open E-item are listed, not silently skipped. Asks `canSwapPrecedingSpace` only where a swap can happen (armed, Auto-Space on, an attaching character — the legacy order), not on every key. Replay takes a `CandidatesClosed` with no list up and an `Activate` that drops another session's composition without a `ClearMarkedText`, as the Swift key path does (P8 cloud review). From P9: `ComposingSessionToken` becomes a `u64` from a counter; `Represent`'s effects map to `CandidateListRepresentation` (`ignored` first, then none → unchanged, `CandidatesChanged` → `updateCells`, `CandidatesClosed` → dismiss); `InsertSymbol` asks `canSwapPrecedingSpace` only for an attaching symbol with Auto-Space on (legacy `LegacyComposingBackend.swift:492-495`); characterise C4 (a refetch with the window off closes in the core) and the note's Unicode predicate (Swift `Character` vs Rust scalar, open item E5 / C2) on picked symbols. Built: the cross-check is a hand-written table both sides read (`macos/crates/taigi-macos-ffi/fixtures/chord_rules.tsv`; `chord_rules.rs`, `ChordRulesCrossCheckTests`); the open items are pinned per back end in `ComposingBackendParityTests` (E2, E4, C4 at the back end — the controller takes the list down first —, E5 on the shipped symbol table: no symbol differs) and the table (E6, E7 — both settled, P11b and P11a); E2b does not reach the Mac key path (the picker stays Swift). The replay guard (D3 stale replies) applies to the legacy back end too — USER accepted 2026-10-02 | ~450 (src +~560, tests ~+950 measured) | Merged #353 `af2c2602` |
-| P11 | parity | E2 / E2b, E6, E7, and E4 / E5 where P5 found a real difference — one PR each as needed | small | Merged (complete — every E-item settled) — P11a E7 #354 `1c8c92f7`; P11b E6 #355 `59152278`; P11c E2 / E2b #356 `ed422ec1`; P11d E4 #358 `764aa2d6`; P11e E5 #359 `cac80e32` |
-| P12 | cut-over | Default back end → core; the oracle rule (D8); macOS device pass | small | Merged #360 `8c05b5ed` (USER 「ok,merge」 2026-10-03, after trying the core build on device; S88) |
-| P13 | refactor (macOS) | Delete the legacy key path, the bridge extensions and settings snapshot it used, their unit tests; drop each generated `*.pb.swift` that lost its last reference (two PRs if the diff is unreadable). Built as one PR: the legacy back end, `ComposingManager`, the Swift classifier (`ComposingKeyIntent` keeps only the key predicates the controller, the picker and the pane read — renamed with P14), the Swift presentation, `AutoSpacePolicy`, `RustEngineBridge+Composing` / `+NextWord` / `+Lexicon`, the `ComposingBackend` protocol and the back-end selection; `ClientEffectExecutor` → `ClientWriter`. No `*.pb.swift` dropped: `envelope.proto` imports every engine proto, the user-data bridge still sends the envelope, and `checks.yml` `protos` keeps the macOS copy identical to iOS. Swift tests only a legacy type had are deleted; the behaviours no core test pinned yet are ported to desktop-core (the E2 table, the digit slot's first scalar, the shifted slot row, the display × script commit matrix, each dictionary toggle's wire field) | src +293 / −2,986, tests +335 / −3,173 (Swift 839 → 713, one run), desktop-core tests +285 | Merged #361 `7f9fa3f7` |
-| P13b | refactor (macOS) | The settings snapshot the deleted key path read: `SettingsStore.current` builds every engine setting and 24 dictionary toggles, and production reads one field of it in two places (`TaigiInputController` Hanji/romanization toggle guard, `FullWidthPunctuation`). Those two read the store directly; `current` and the toggle builder go; `EngineSettings.defaults` stays the default table. Swift tests of the effective-value rules move to desktop-core where it has none (USER 2026-10-03, option A of the P13 simplify review) | small, deletion | Merged #362 `c9f51192` |
-| P14 | refactor (macOS) | The Shortcuts pane reads chord grammar, validation, action defaults and slot keys from the core (durable requests — the pane stays Swift); delete the Swift chord / binding / action logic. The recorder's press translation maps a bare forward Delete (`F728`) to `\u{7F}`, so the core's `evaluate_press` blanks it as the Swift recorder does (`ShortcutKeyRecorder.swift:429`). Built as one PR after the E8 parity PR: four pure key-rule requests (D3), the pane, recorder, Carbon bridge, store and symbol picker over them, the Swift chord / binding / action / picker rules deleted; the window's slot labels stay a Swift table, held equal to the core's slot row; with it `ComposingBackend.activate` / `release` read the controller's store (USER 2026-10-03, option 1) and the P13 renames (`ComposingBackend`, `ComposingEffect`, the key predicates on `KeyEventSnapshot`) | src +602 / −1,104, tests +442 / −1,032 (Swift 709 → 663), macos-ffi +792 (≈ half tests), desktop-core tests +134 / −97 | Merged #364 `bdd1cb1a` |
-| P15 | comments + docs | The `*.swift` cites in Rust comments (D8): 377 in 116 files → 175, every one left a live Swift twin, a shell port of a live macOS view, an iOS counterpart, commit-pinned history, an upstream reference or a build output; `system-overview.md`, `AGENTS.md` structure lines, the contract docs naming deleted macOS files, iOS / Android comments citing deleted macOS symbols | comments / docs only, 120 files | Merged #365 `f73ea8a4` |
-
-Order constraints: P4 and P5 before anything reads a rule from the core; P6 after the typed settings adapter exists (it is part of P6); P7 before P10; P12 only when P10's suites are green on both back ends and P11 is settled; P13 only after the device pass. Between P12 and P14 the Shortcuts pane's Swift rules and the core's coexisted, held equal by P10's cross-check; since P14 the pane reads the core's, and the Swift half of the cross-check reads the `default` and `resolve` rows through the seam.
-
-### Behaviour-freeze contract (every phase from P6)
-
-Observable properties preserved from `HEAD~1`, except an accepted, labelled E-item:
-
-1. The `Bool` each `handle(_:client:)` returns.
-2. Every client call — `setMarkedText` (text, selection, underline), `insertText` (text, replacement range) — and their order.
-3. The candidate list: cells, annotations, scripts, order, selection, slot labels, shown or hidden.
-4. The engine request sequence and the `AppConfig` of each request (`platform_id = macos`).
-5. User data: directory, `DELETE` journal, what one pick records.
-6. Settings: keys, defaults, storage in `UserDefaults`; no key is rewritten.
-7. Shortcuts pane: accepted and refused chords, defaults, conflict resolution.
-8. Launch: lexicon installed and user data opened at launch; dictionary stamp `CFBundleVersion`.
-
-For P4 the same list applies to Windows and Linux, with their own values.
-
-Callers that must still work (from the report's caller counts): `TaigiInputController`; the Shortcuts pane (`ShortcutSettingsView`, `ShortcutKeyRecorder`, `ShortcutConflicts`, `ShortcutActions` — `ComposingKeyChord` alone has 41 call sites); `SettingsStore` chord accessors; `TelexGuidePanel`; `InputSourceMenuRenderer`; `AppDelegate` bring-up; `ComposingSessionCoordinator`'s shortcut-target registry. For P4: the call sites listed in D6.
-
-### Gates per PR
-
-- Refactor pre-gate: the freeze list above + every caller; `refactor-reviewer` on the diff.
-- Review sandwich on every PR that touches Rust on the boundary (`rust-ffi-safety.md` §5), even with no new `unsafe`.
-- Tests: `make -C macos test` per back end; the native tests of `macos/crates`; `make desktop-check`; `make windows-check` and `make linux-check` whenever `desktop/` changes; hosted CI for the Windows build.
-- Device: one macOS pass at P12, after the default flips and before P13 deletes anything (USER 2026-10-02) — IMK re-entrancy, caret geometry, focus changes, held keys, long lists. The other phases rest on the tests above.
+| Phase | Content |
+|---|---|
+| P1 | Dead Dictionary Search code deleted |
+| P2 | `taigi-macos-ffi` crate, one archive (D1) |
+| P3 | Tooling: test selection, `macos.yml` native job (D7) |
+| P4 | `DesktopPlatform` through the pure rules, runtime, journal, chord codec, labels (D6) |
+| P5 | macOS key-path tests ported to desktop-core under `MacOS` |
+| P6 | Runtime over the boundary: `Configure` / `Settings` / `Prepare`; launch bring-up in the core |
+| P7 | `ComposingBackend` seam with the legacy key path as one implementation |
+| P8 | Session I: `Activate` / `Key` / `CommitComposition` / `Cancel` / `Release`; settings snapshot per request (D5) |
+| P9 | Session II: `CommitForSymbolPicker`, `InsertSymbol`, `Represent` |
+| P10 | Core back end in Swift; controller suites per back end (D9) |
+| P11 | Parity items (§ Parity decisions): P11a E7, P11b E6, P11c E2 / E2b, P11d E4, P11e E5 |
+| P12 | Cut-over to the core back end; oracle rule (D8) |
+| P13 / P13b | Legacy key path and its settings snapshot deleted |
+| P14 | Shortcuts pane reads chord grammar, validation, defaults and slot keys from the core |
+| P15 | `*.swift` cites in Rust comments and docs updated (D8) |
 
 ## Best practices alignment
 
@@ -252,30 +213,3 @@ Rules per phase: P1, P7, P13, P14 — `cross-platform-alignment.md` §1 (behavio
 - **Global shortcuts as core chords** (~420 more lines): drops `KeyboardShortcuts` and the Carbon hotkeys; changes recording policy and needs a migration (report K5).
 - **Settings page models, strings, symbols, font library**: stateful UI models or OS-bound halves; the i18n key sets differ by design (report S19).
 - **Update flow** (~132 of 1,731): three blockers and a proxy regression (report §7).
-
-## Found while auditing — not part of this plan
-
-Each needs its own decision; none is scheduled here.
-
-- The candidate window's slot **labels** are still a Swift table (`CandidateSlotKeySet`, `Keys/ToneInputScheme.swift`), held equal to the core's slot row by `CandidateSlotKeyTests`; carrying the nine labels on `CandidatesChanged` would delete it (P14 pre-review, cloud Q2).
-- macOS asked for **no confirmation before a destructive Custom Dictionary command**; Windows and Linux confirm (report S11). Resolved by #386 (`c41d01a9`): macOS now confirms both commands too.
-- The font library's stored-name **path-component guard exists only on desktop** (report S16).
-- Candidate metrics differ between macOS and Windows at every size step (report W1–W3) — under the old oracle rule that is drift on Windows.
-
-## Decisions
-
-- 2026-10-02 — plan drafted from the five-pass inventory. A Codex analysis-only review of the draft answered GO-WITH-CHANGES; all eight required changes are in this text: the activation / release / stale-owner contract and list-visibility feedback (D3), the typed whitelisted settings snapshot (D5), `DesktopPlatform` as an argument to the pure rules and both settings apps in its phase (D6), K4 / K6 preserved per platform with E4 / E5 characterised before a decision, back ends tested in separate processes plus integration tests (D9), the build surface spelled out and split (D7, P2 / P3), parity corrections in their own PRs and the Shortcuts-pane rules moved after the cut-over (P11, P14), the two-engines claim restated as a risk with a collision-free fallback (D1). It agreed with the bytes seam for a Swift-only consumer.
-- 2026-10-02 — P2 spike passed (D1): `taigi-macos-ffi` with `extern crate rust_taigi` (swift-ffi as rlib) built one archive whose arm64 and x86_64 slices export all five engine bridge functions plus `desktop_request_bytes`, with no duplicate global symbol (Apple's `nm` cannot read the `compiler_builtins` bitcode members, in the old engine archive too); both bridges' `SwiftBridgeCore.{h,swift}` are byte-identical; Swift linked the archive and called both seams. The crate's library is `taigi_macos_ffi` (`rust_taigi` is swift-ffi's name), and the xcframework carries `libtaigi_macos_ffi.a` under it. The `taigi-desktop-core` edge is added in P6, with its first caller. Codex pre-review GO-WITH-CHANGES, all applied.
-- 2026-10-02 — P4 design (Codex pre-review GO-WITH-CHANGES, all applied): an explicit `DesktopPlatform` argument on every rule that differs, not a field of `ComposingKeyBindings` or `EngineSettings`; each shell's constant lives in its platform crate (`taigi_windows_platform::DESKTOP_PLATFORM`, `taigi_linux_platform::DESKTOP_PLATFORM`); `ComposingManager` and `EngineNextWord` hold the value, `engine::reset` sends no config and takes none; both rosters' default chords are platform-free literals pinned through the gate on all three desktops; the global tier takes the platform only because it calls the shared codec. E6 / E7 found while tracing the Swift codec.
-- 2026-10-02 — P6 design (Codex pre-review GO-WITH-CHANGES, all applied): the settings push is rebuilt before every request instead of KVO-tracked (D5); the whitelist is the core's, answered by `Configure`; the Swift side normalises a stored number to a boolean with `SettingsStore`'s own expression; `Configure` is once-only and publishes the runtime whole (a second one is refused before any side effect), so `RuntimeParts.system_locale` became a boxed closure (Windows / Linux wrap their function); each directory stays optional on its own, as at launch before. The lexicon install now goes through the core's `DictionaryArtifacts::locate` (also refuses a directory in a file's place) and logs in the core's words — a diagnostic difference only; a normal bundle sends the same `InstallRequest`. Swift `DictionaryArtifacts` / `lexiconInstall` / `userDataOpen` went with their last caller; the test fixture prepares through the core.
-- USER 2026-10-02, after P6 (each the recommended option): E7 takes the core rule on macOS (P11); from P8 the settings snapshot rides on each request (D5); `prepare_for_first_key` keeps its name (renaming touches the Windows / Linux callers; the core docs name the macOS timing); P6 gets no retrospective Codex review (refactor-reviewer PASS, CI green; P7's pre-review reads the same code); the Custom Dictionary confirmation is its own round. The stale-text line of § Found while auditing is closed: `macos/RustEngine/README.md` was already rewritten in P2, the `EngineSettings.swift` literal-roman default comment is fixed. E6 (asked again in plain terms): core rule on macOS too (P11).
-- USER 2026-10-02, four decisions, each the recommended option:
-  1. **Scope** — the key path only (about 4,300 Swift lines); candidate-window geometry, the settings backend, the global-shortcut tier and the update flow stay Swift.
-  2. **Boundary** — the protobuf bytes seam (D2), in place of the C ABI the brief named.
-  3. **Rare-input parity** — macOS takes the core's rule (E2, E2b; E4 and E5 once characterised), each in its own `parity:` PR.
-  4. **Device dogfood** — once, at the cut-over (P12), before the legacy code is deleted.
-- 2026-10-02 — P8 design (Codex pre-review GO-WITH-CHANGES and an independent cloud review GO-WITH-CHANGES, all applied): the snapshot is applied after the request's variant is checked and rolled back when the request is refused; one shell lock spans a request; an unset token (0), key event or panel is refused rather than read as zero; `Cancel` is the manager's cancel plus the list closing, not a classified key; the lifecycle list state follows the Swift key path exactly (`CommitComposition` only reconciles with the panel, `Release` leaves the list to the next `Activate`); the forward-Delete mapping moves to P14, where the recorder it serves is wired. The Rust `Key` classifies with the core's rules, so the accepted E-items (E2, E2b, E4, E5, E6, E7) differ from the Swift key path until P11; everything else matched the Swift key path arm by arm.
-- 2026-10-02 — P10 design (Codex pre-review: four findings, no verdict — it stopped early; an independent cloud review GO-WITH-CHANGES, thirteen required changes, all applied): the coordinator keeps only the owner and the shortcut-target registry and the Swift manager moves into the legacy back end (D3); the core back end's `owns` is the coordinator's; errors are classified by whether the engine may have run (D4); the runtime is resolved per request, so a back end built before `Configure` degrades to non-owner answers instead of stopping the process; the swap's client check is asked only for an idle session, an arm, an attaching character and Auto-Space on, with one width-flip reading shared by both back ends; the highlight travels whether or not a list is up; the replay stops on a tenure change (D3, stale replies — an accepted change for the legacy back end too); the chord cross-check is a hand-written table under `macos/crates`, so it gates the macOS Rust and Swift suites only.
-- 2026-10-02 — P9 design (Codex pre-review GO-WITH-CHANGES and an independent cloud review GO-WITH-CHANGES, all applied): the three requests share `SessionReply` — `Represent` answers as zero or one list effect; the picker commit is chosen by the panel's highlight, as the legacy back end chooses (the Linux shell asks its list — the two differ only for a panel that reports a list without a highlight or a highlight without a list); every new reply says `handled = false`. Both reviews refuted the brief's stale-token rule (refuse a released or superseded token's `Activate`): Swift releases on every `deactivateServer` and claims again with the same token, so it would mute a field after a focus switch. USER 2026-10-02 chose the ownership rule (D3 Tokens) over a terminal `retire` flag on `Release`.
-- 2026-10-03 — P14 design (Codex pre-review and an independent cloud review, both GO-WITH-CHANGES, all applied): one PR, implementation commits apart (Codex decides the split; the pane and the picker share the chord and binding types, so a feature split would leave two resolvers); a found rare-input difference — the picker's matcher read Swift's canonical equivalence — lands first as parity item E8, core rule; the key rules read the snapshot they carry and never install it, so a panic or a refusal cannot reach the key path, and the pane's and the picker's requests refuse without one; the Mac recorder keeps leaving on the Escape KEY (`kVK_Escape`) whatever it types, and refuses an ESC another key types as the reserved key it is — kept in `key_rules.rs`, a shell rule; `Ignored` blanks the field (Swift keeps the repeat guard); the global tier's policy reads the press's modifiers; the chord-rule table's `default` and `resolve` rows stay checked through the seam; every Swift test of a deleted rule is mapped to a core test under `MacOS`, the missing ones ported (chord gate, recorder decision, symbol picker, the Mac digit slot row). With the core unconfigured the pane draws no rows (Reset to Defaults then restores the global rows only), the launch pass skips its cross-registry comparison (the typing-key sweep, which needs only the gate, still runs) and a picker key closes and passes through — the class of the key path's own refusal (D4).
-- 2026-10-03 — P13 design (Codex pre-review GO-WITH-CHANGES, all applied): one PR, not two — a deletion after the cut-over, where a half-deleted state would keep the fixtures and the back-end selection alive; the `ComposingBackend` protocol goes with its second implementation (tests substitute the core back end's transport, never the back end); `ComposingKeyIntent` keeps its name until P14 settles what its remaining predicates are; no `*.pb.swift` dropped (`envelope.proto` imports every engine proto; `checks.yml` mirrors iOS); every behaviour a deleted Swift test pinned and no core test did is ported to desktop-core, and the Swift `AutoSpacePunctuation` roster keeps a Swift test because the core back end reads it.

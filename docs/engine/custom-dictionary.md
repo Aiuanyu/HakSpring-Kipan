@@ -20,11 +20,11 @@
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | String (UUID) | Unique identifier |
-| `roman` | String | Romanization in the user's native form (TL or POJ display, whichever the user typed when saving). The engine treats it raw on the lattice axis; the freq-key commit value is canonicalized to TL at synthesis time (`phonetics::api::canonical_tl_form`, v3.5.9 B-4). |
+| `roman` | String | Romanization in the user's native form (TL or POJ display, whichever the user typed when saving). The engine treats it raw on the lattice axis; the freq-key commit value is canonicalized to TL (`phonetics::api::canonical_tl_form`). |
 | `hanzi` | String | Chinese/Taiwanese characters |
 | search keys | `custom_search_key` rows | Derived per entry by the engine: TL / POJ / TPS families × tone-number / toneless / abbreviation forms (`engine/phonetics/src/custom_search.rs`) |
-| `createdAt` | Timestamp | Creation time (UTC) |
-| `updatedAt` | Timestamp | Last update time |
+| `created_at` | Timestamp | Creation time (UTC) — DB column only, not on the wire (`CustomDictionaryEntry` tag 4 reserved) |
+| `updated_at` | Timestamp | Last update time — DB column only, not on the wire (tag 5 reserved) |
 
 Example: `roman="gâu-tsá"` → toneless key `gautsa`, abbreviation key `gt`
 
@@ -54,7 +54,7 @@ CREATE INDEX idx_csk_lookup ON custom_search_key(family, form, key);
 CREATE INDEX idx_csk_entry ON custom_search_key(entry_id);
 ```
 
-The `custom_search_key` side table backs cross-input-mode (three-index TL / POJ / TPS) lookup. A file taken over from an iOS / Android release keeps its legacy `notone` / `abbrev` / `roman_num` columns (roadmap U7 / U8); the engine neither reads nor writes them.
+The `custom_search_key` side table backs cross-input-mode (three-index TL / POJ / TPS) lookup. A file from an older iOS / Android release may still carry `notone` / `abbrev` / `roman_num` columns; the engine neither reads nor writes them.
 
 ---
 
@@ -110,32 +110,31 @@ A `.taigi` file is a single plain-text **JSON** document carrying **three** user
 ### Format
 
 - Top-level: `version`, `exportedAt` (ISO-8601 UTC), `platform` (`ios`/`android`), `appVersion`, plus `customDictionary[]` (`roman`, `hanzi`), `userFrequency[]` (`word`, `tl`, `count`, `lastUsed`), `userAssociation[]` (`prevWord`, `prevTl`, `nextWord`, `nextTl`, `count`, `lastUsed`).
-- **Version**: export writes `2`; import accepts `version >= 1`.
-- **v1 → v2**: v2 adds the per-row `tl` (canonical-TL) field to `userFrequency`, supporting the `(Hanji, canonical-TL)` pair identity (Core Principle #7 / R5). `tl` is optional on decode — a pre-R5 v1 backup with no `tl` imports into the legacy `tl=""` bucket.
+- **Version**: export writes `3` (`BACKUP_VERSION`, `engine/userdata/src/backup.rs`); import accepts `version >= 1`. All versions share one shape; reading is lenient (missing fields default, unknown fields ignored).
+- `userFrequency[].tl` (canonical TL, the `(Hanji, canonical-TL)` pair identity) is optional on decode — a backup without it imports into the legacy `tl=""` bucket.
 - Custom-dict rows carry only `roman`+`hanzi`; internal id/timestamps/derived columns are regenerated on import.
 
 ### Import semantics — **merge, never replace**
 
 - Custom dictionary: adds non-duplicates only (dedup by `roman\thanzi`).
-- Frequency + association: **higher-count-wins** merge. Readings are normalized POJ→canonical-TL in the engine so cross-platform backups round-trip; capacity is enforced after the import.
+- Frequency + association: **higher-count-wins** merge; capacity is enforced after the import.
+- Bigram readings of a version 1 / 2 file (the phones could write POJ there) are folded POJ → TL; version 3 readings restore unchanged, since a fold would misread a TL `eng` / `ek` final as POJ.
 
-The format is **round-trip compatible across platforms** (same schema, same v2, both tolerate missing `tl`).
-
-> **Row cap (30000)**: a `.taigi` restore fills the space left and stops (`CustomDictionaryStore::import_until_full`, Android's former rule, now every platform); a CSV whose own row count exceeds the cap is refused before anything is written (`batch_import`). The earlier iOS backup-path abort (behavioral-invariants.md §27) went with the native store.
+> **Row cap (30000, `CustomDictionaryStore::MAX_ENTRIES`)**: a `.taigi` restore fills the space left and stops (`CustomDictionaryStore::import_until_full`); a CSV whose own row count exceeds the cap is refused before anything is written (`batch_import`).
 
 ---
 
 ## Autocomplete Integration
 
-Custom entries have **highest priority** — shown before system dictionary results.
+A custom entry is offered by the same rules as a system dictionary word (behavioral-invariants.md §43): only once the typed input reaches into its final syllable (陳建中 `Tân Kiàn-tiong` from `tankiant`, not `t`), or on its whole abbreviation (`tkt`). Once offered, a never-selected entry follows the words the user has selected and leads every other candidate covering the whole input (`preference_class`, `continuous-input-ranking.md`), except that an entry reached through its abbreviation follows every reading of that input (`thng` → 湯 / 糖, then a custom 退伍 `thui-ńg`; `abbreviation` field). Once selected it ranks by its selection weight like any word (USER 2026-10-16: a bulk import filing 屢 `lí` put it ahead of 你, which the user picks, on `li2`). It wins a collision with the same system word (source rank 0). The walker's edge pick weighs the entries under an edge's key together with the dictionary's homophones by the same order.
 
 **Flow** (every platform, inside one `FetchAtPos`):
-1. `engine/dispatch/src/user_data/with_stores.rs` (`buffer_rows`) derives the query key from the raw (unsegmented) pending buffer (`phonetics::api::derive_custom_query_key`) and reads the matching custom rows — skipped when `FetchAtPos.custom_dictionary_disabled` — plus the learned phrases
+1. `engine/dispatch/src/user_data/with_stores.rs` (`buffer_rows`) derives the query key from the raw (unsegmented) pending buffer (`phonetics::api::derive_custom_query_key`) and reads the matching custom rows (`CustomDictionaryStore::keystroke_rows`: the query's form by prefix, the abbreviation whole, shortest key first, 20 rows) — skipped when `FetchAtPos.custom_dictionary_disabled` — plus the learned phrases
 2. The rows reach composing as `composing::UserRows`
 3. System dictionary queried in the same fetch
-4. Merge: custom words first, then system words, deduplicated
+4. Merge (`lexicon::continuous`): each custom row is sorted by `custom_reach` into the full block (typed in full), the partial-prefix block (final syllable typed into) or dropped; the abbreviation block takes the whole-abbreviation rows; deduplicated against the system words
 
-**Search**: key prefix over `custom_search_key` in the query's family (tone-number or toneless form, plus the abbreviation form)
+**Search page**: key prefix over `custom_search_key` in the query's family (tone-number or toneless form, plus the abbreviation form by prefix — `rows_matching`, the system dictionary search's own union)
 
 ---
 
@@ -159,7 +158,7 @@ Example: `"gâu-tsá"` → `"gt"`
 
 ## Default Entries
 
-None. A fresh install starts with an empty custom dictionary on every platform. Entries an earlier version seeded (ids `default-gau-tsa`, `default-tsiah-pa-bue`) stay until the user deletes them — they are user data now.
+None. A fresh install starts with an empty custom dictionary on every platform.
 
 ---
 
@@ -167,10 +166,9 @@ None. A fresh install starts with an empty custom dictionary on every platform. 
 
 | Aspect | Custom | System |
 |--------|--------|--------|
-| Priority | Highest (shown first) | Normal |
-| ID marker | `-2` | `≥ 0` (row ID) |
+| Priority | Never selected: after the selected words, ahead of the rest of the candidates that cover the whole input (`preference_class`) — an abbreviation hit only among the abbreviations; selected: by selection weight; wins a collision with the same word (source rank 0); the walker's edge pick weighs it with the dictionary's homophones and caps the span at `CUSTOM_EDGE_COST` | Corpus cost |
 | Frequency tracking | `user_frequency.db`, like any pick — keyed by the `(display_text, canonical_tl)` pair, ranks custom rows among themselves (`lexicon::custom_entry_to_candidate` `user_weight`) | `user_frequency.db` (engine `UserFrequencyStore`) |
-| Search method | Prefix (roman/notone/abbrev) | Trie-based |
+| Search method | Keystroke: roman / notone prefix, abbreviation whole (`keystroke_rows`), then the §43 reach rule; search page: prefix on all three (`rows_matching`) | FST, same rules |
 | Segmentation | Raw input (unsegmented) | Segmented input |
 
 ---
@@ -180,12 +178,16 @@ None. A fresh install starts with an empty custom dictionary on every platform. 
 ### iOS (`CustomDictionaryView`)
 - List with swipe-to-delete, add/edit modal sheet
 - Import/Export buttons with help icon
-- Delete All with confirmation
+- Delete All, no confirmation (maintainer 2026-10-16)
 
 ### Android (`CustomDictionaryScreen` + `CustomDictionaryActivity`)
 - LazyColumn with inline delete, add/edit AlertDialog
 - Import/Export section with help dialog
-- Delete All with confirmation
+- Delete All, no confirmation (maintainer 2026-10-16)
+
+### Desktop
+- Windows / Linux: Custom Dictionary settings pane, model shared in `desktop/crates/taigi-desktop-core/src/settings/custom_dictionary.rs`
+- macOS: `CustomDictionaryPage.swift` (`TaigiInputMethodCore/Lexicon/`)
 
 ---
 

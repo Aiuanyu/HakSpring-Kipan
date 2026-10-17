@@ -1,34 +1,40 @@
 //! Continuous candidate construction: dictionary / custom / learned rows to
-//! [`RawCandidate`], plus the `(roman, hanji, span)` dedupe.
+//! [`RawCandidate`], plus the `(hanji, span)` + (`roman` or `canonical_tl`) dedupe.
 
 use ranking::{
     calculate_continuous_score, sort_by_candidate_key, source_tier_rank, ContextRanks, FrequencyMap,
 };
 
 use super::{
-    derive_script_kind, ConsumedSpan, ContinuousFetchCtx, CustomEntry, LearnedEntry, RawCandidate,
-    FORM_NOTONE,
+    custom_abbreviation_matches, custom_reach, fused_custom_typed_key, ConsumedSpan,
+    ContinuousFetchCtx, CustomEntry, CustomReach, LearnedEntry, RawCandidate, COVERAGE_KIND_ABBREV,
+    COVERAGE_KIND_PARTIAL_PREFIX,
 };
-use crate::dictionary_reader::DictionaryRecord;
+use crate::dictionary_reader::{DictionaryRecord, WALKER_COST_UNPRICED};
 
-/// Shared tail of every continuous fetch: merge `custom_dictionary.db`
-/// hits into the dictionary candidates `out`, collapse `(roman, hanji,
-/// span)` duplicates, then apply the nine-dimension [`CandidateSortKey`](ranking::CandidateSortKey) sort.
-/// `coverage_kind` is stamped on the custom synths — `COVERAGE_KIND_FULL`
-/// on the exact path, `COVERAGE_KIND_PARTIAL_PREFIX` on the partial-prefix
-/// path so §15.5's "partial-prefix ranks strictly below full-syllable" rule
-/// is preserved there (Codex pre-impl D6).
+/// Shared tail of every phonetic continuous fetch: merge `custom_dictionary.db`
+/// hits into the dictionary candidates `out`, collapse duplicates equal on
+/// `(hanji, span)` and on `roman` or `canonical_tl` (word identity), then apply the [`CandidateSortKey`](ranking::CandidateSortKey) sort.
+/// `coverage_kind` is the path's own — `COVERAGE_KIND_FULL` on the exact
+/// path, `COVERAGE_KIND_PARTIAL_PREFIX` on the partial-prefix path — and is
+/// stamped on the custom synths so they sort by match kind like any row
+/// (Codex pre-impl D6).
 ///
-/// **Custom merge** (v3.5.8 Phase 9 Item 12): each custom entry is
-/// synthesized as a full-buffer candidate (`consumed_span = (0, raw_len)`,
-/// `is_custom = true` → `source_tier_rank` rank 0) and appended AFTER the
-/// FST hits so a `(roman, hanji)` duplicate keeps the earlier-inserted
-/// `dict.bin` candidate only when source ranks tie (they never do — custom
-/// rank 0 < every `dict.bin` rank ≥ 1, so the custom entry always wins its
-/// collision). The legacy custom dict is prefix-visible, so the
-/// partial-prefix path merges too — Continuous must not hide the user's
-/// custom word while they are still typing toward the first syllable
-/// boundary. See `docs/engine/continuous-commit-and-display.md` §10.10.
+/// **Custom merge** (v3.5.8 Phase 9 Item 12): a custom entry is measured
+/// against `typed_key`, the whole-buffer key, by the dictionary's own rules
+/// ([`custom_reach`](super::custom_reach), product owner 2026-10-12): the exact
+/// path takes an [`Exact`](super::CustomReach::Exact) entry, the
+/// partial-prefix path an `Exact` or an
+/// [`Extension`](super::CustomReach::Extension) one — never a word whose final
+/// syllable was not typed into. `typed_key = None` admits none. The
+/// abbreviation block takes its own ([`merge_custom_abbreviations`]). Each
+/// admitted entry is synthesized as a full-buffer candidate
+/// (`consumed_span = (0, raw_len)`, `is_custom = true` → `source_tier_rank`
+/// rank 0) and appended AFTER the FST hits so a `(canonical_tl, hanji)`
+/// duplicate keeps the earlier-inserted `dict.bin` candidate only when source
+/// ranks tie (they never do — custom rank 0 < every `dict.bin` rank ≥ 1, so
+/// the custom entry always wins its collision). See
+/// `docs/engine/continuous-commit-and-display.md` §10.10.
 ///
 /// A custom entry is synthesized whole-buffer, so the buffer's
 /// [`TonePin`](super::TonePin) applies to it exactly as to a dictionary hit: with the
@@ -43,13 +49,13 @@ use crate::dictionary_reader::DictionaryRecord;
 /// **Dedupe** (Item 12): `dict.bin` is already collapsed by
 /// `dictionary/build/merge_csv.py:107`'s `groupby(["hanzi", "_tl_key"])`,
 /// so the only realistic duplicate is custom-vs-`dict.bin` sharing a
-/// `(roman, hanji)` pair. MUST run BEFORE the `CandidateSortKey` sort: the winner is
+/// hanji and a roman or `canonical_tl` identity. MUST run BEFORE the `CandidateSortKey` sort: the winner is
 /// the lowest `source_tier_rank` survivor (custom rank 0 beats any
-/// `dict.bin` tier), which is NOT what the full 9-dim sort would pick (it
-/// weighs `score`/`freq` ahead of `source_rank`, so a high-freq `dict.bin`
-/// duplicate could otherwise mask the user's custom entry). `(roman,
-/// hanji)` is the dual key (Codex pre-impl D1) so romanization variants of
-/// the same hanji are preserved; S2 extends it with `consumed_span` (Codex
+/// `dict.bin` tier), which is NOT what the full sort would pick (it
+/// weighs `walker_cost` / `score` / `freq` ahead of `source_rank`, so a `dict.bin`
+/// duplicate could otherwise mask the user's custom entry). `(reading,
+/// hanji)` is the dual key (Codex pre-impl D1) so reading variants of
+/// the same hanji are preserved (spellings of one reading collapse); S2 extends it with `consumed_span` (Codex
 /// pre-impl S2 Q1d) — both the custom synth and its `dict.bin` duplicate
 /// are emitted at the same `(0, raw_len)` span so the collapse still fires.
 ///
@@ -67,24 +73,25 @@ pub(super) fn merge_custom_dedupe_sort(
     mut out: Vec<RawCandidate>,
     ctx: &ContinuousFetchCtx<'_>,
     raw_len: u32,
+    typed_key: Option<&str>,
     coverage_kind: u8,
 ) -> Vec<RawCandidate> {
-    for entry in ctx.custom {
-        if !ctx.tone_pin.admits_custom(&entry.roman, ctx.mode) {
-            continue;
-        }
-        out.push(custom_entry_to_candidate(
-            entry,
+    if let Some(typed_key) = typed_key.filter(|_| !ctx.custom.is_empty()) {
+        let fused_key = fused_custom_typed_key(typed_key);
+        push_custom_entries(
+            &mut out,
+            ctx,
             raw_len,
-            ctx.freq_map,
-            ctx.now_ms,
-            ctx.context,
             coverage_kind,
-            ctx.mode,
-        ));
+            |roman| match custom_reach(&fused_key, roman) {
+                CustomReach::Exact => true,
+                CustomReach::Extension => coverage_kind == COVERAGE_KIND_PARTIAL_PREFIX,
+                CustomReach::Unreached => false,
+            },
+        );
     }
     // Learned phrases (§50) — same whole-buffer span as a custom row; the
-    // `(roman, hanji, span)` dedupe below keeps the `dict.bin` / custom
+    // `(canonical_tl, hanji, span)` dedupe below keeps the `dict.bin` / custom
     // duplicate over it (lowest `source_tier_rank` wins, a learned row has
     // the default rank), so a learned pair that the dictionary also carries
     // is listed once, from the dictionary.
@@ -105,6 +112,47 @@ pub(super) fn merge_custom_dedupe_sort(
     sort_by_candidate_key(out, raw_len, RawCandidate::rank_facts)
 }
 
+/// The custom entries whose abbreviation face is exactly `abbrev_key`'s body
+/// (`tl-abbrev:tkt` → 陳建中 `Tân Kiàn-tiong`), appended to the abbreviation
+/// block as [`COVERAGE_KIND_ABBREV`] synths — the exact-face rule a
+/// dictionary row answers to (`fetch_abbrev_candidates`). Learned phrases
+/// stay out: their store matches whole readings only.
+pub(super) fn merge_custom_abbreviations(
+    out: &mut Vec<RawCandidate>,
+    abbrev_key: &str,
+    raw_len: u32,
+    ctx: &ContinuousFetchCtx<'_>,
+) {
+    push_custom_entries(out, ctx, raw_len, COVERAGE_KIND_ABBREV, |roman| {
+        custom_abbreviation_matches(abbrev_key, roman)
+    });
+}
+
+/// Every custom entry `admits` and the buffer's tone pin let through, as a
+/// whole-buffer [`custom_entry_to_candidate`] synth stamped `coverage_kind`.
+fn push_custom_entries(
+    out: &mut Vec<RawCandidate>,
+    ctx: &ContinuousFetchCtx<'_>,
+    raw_len: u32,
+    coverage_kind: u8,
+    admits: impl Fn(&str) -> bool,
+) {
+    for entry in ctx.custom {
+        if !admits(&entry.roman) || !ctx.tone_pin.admits_custom(&entry.roman, ctx.mode) {
+            continue;
+        }
+        out.push(custom_entry_to_candidate(
+            entry,
+            (0, raw_len),
+            ctx.freq_map,
+            ctx.now_ms,
+            ctx.context,
+            coverage_kind,
+            ctx.mode,
+        ));
+    }
+}
+
 pub(super) fn record_to_candidate(
     record: DictionaryRecord,
     effective_bitmask: u16,
@@ -121,12 +169,12 @@ pub(super) fn record_to_candidate(
         hanji,
         tl,
         kautian_subtag: _,
+        walker_cost,
     } = record;
     // EFFECTIVE bitmask (kautian bit dropped when its subcollection is
     // disabled) drives `source_tier_rank` so a multi-source survivor ranks by
     // its other source's tier, not kautian's (DD6 ranking-weight drop).
     let bitmask = effective_bitmask;
-    let script_kind = derive_script_kind(hanji.as_deref());
     // Phase 9 Item 5: `roman` = `tl` alongside `display_text`. `hanji`
     // mirrors `DictionaryRecord.hanji` verbatim so the proto3 `optional`
     // field can preserve the absent-vs-empty distinction. R2 identity
@@ -158,10 +206,9 @@ pub(super) fn record_to_candidate(
         hanji,
         canonical_tl,
         score,
-        form: FORM_NOTONE,
         frequency,
+        walker_cost,
         bitmask,
-        script_kind,
         user_weight,
         context_rank,
         coverage_kind,
@@ -177,22 +224,26 @@ pub(super) fn record_to_candidate(
 ///
 /// Shape decisions (Codex pre-impl 2026-05-15, D3 / D4):
 ///
-/// - `consumed_span = (0, raw_len)` — custom entries are outside the
-///   FST/syllabifier span model, so they commit the whole buffer as
-///   one block (final-commit), mirroring the legacy lexicon path's
-///   treatment of custom dict and Item 10 partial-prefix Q15.4. With
-///   `consumed_span_end == raw_len` the downstream `CandidateSortKey.tier` is
-///   `0` (full-buffer) — NO forced Tier-1 promotion
-///   (`docs/releases/v3.5.8/plan.md` § Phase 9: "無強制 Tier 1 promotion").
-/// - `frequency = 0`, `syllable_count = 1` — `custom_dictionary.db`
-///   carries no `dict.bin`-comparable frequency. `is_custom = true`
+/// - `consumed_span = span` — the list paths pass `(0, raw_len)`: custom
+///   entries are outside the FST/syllabifier span model, so they commit
+///   the whole buffer as one block (final-commit), mirroring the legacy
+///   lexicon path's treatment of custom dict and Item 10 partial-prefix
+///   Q15.4. With `consumed_span_end == raw_len` the downstream
+///   `CandidateSortKey.tier` is `0` (full-buffer) — NO forced Tier-1
+///   promotion (`docs/releases/v3.5.8/plan.md` § Phase 9: "無強制 Tier 1
+///   promotion"). The walker's edge pick passes the edge's own span
+///   ([`best_candidate_for_key_with_barriers`](super::best_candidate_for_key_with_barriers)).
+/// - `frequency = 0` — `custom_dictionary.db` carries no
+///   `dict.bin`-comparable frequency. `syllable_count` is read off the
+///   canonical TL's separators, as for a learned phrase (陳建中
+///   `Tân Kiàn-tiong` → 3, a Latin `iPhone` → 1): a nailed custom pick echoes
+///   it back, and the commit's compound run (`composing::api::longest_compound_run`)
+///   must not take a multi-syllable word for a single syllable. `is_custom = true`
 ///   gives `source_tier_rank` rank `0`, which is what governs the
-///   `(roman, hanji)` dedupe winner and prior-axis ties; it does NOT
-///   globally float custom above `dict.bin` because `CandidateSortKey` weighs
-///   `score`/`freq` ahead of `source_rank`. This is intentional —
-///   Item 12's job is duplicate elimination + custom-wins-collision,
-///   not a global custom-priority tier
-///   (`docs/engine/continuous-commit-and-display.md` §10.10).
+///   `(canonical_tl, hanji)` dedupe winner. Its place in the list is
+///   `CandidateSortKey`'s `preference_class`: after the selected words,
+///   ahead of the rest of the whole-input tier (USER 2026-10-12 /
+///   2026-10-16, `docs/engine/continuous-input-ranking.md`).
 /// - `display_text = hanji.unwrap_or(canonical_tl_form(roman, mode))` —
 ///   v3.5.9 B-4 closes the bounded asymmetry the pre-B-4
 ///   `unwrap_or(roman)` contract documented at
@@ -202,12 +253,11 @@ pub(super) fn record_to_candidate(
 ///   `user_frequency.db` write key collides with the same word coming
 ///   from `dict.bin` (which writes `record.tl`, already canonical TL).
 ///   Identical wire contract to [`record_to_candidate`] across modes.
-/// - `script_kind = derive_script_kind(hanji)` — TAILO when `hanji` is `None`.
 /// - user-frequency boost / recency are applied identically to
 ///   `dict.bin` candidates (custom entries can also be user-selected).
 pub(super) fn custom_entry_to_candidate(
     entry: &CustomEntry,
-    raw_len: u32,
+    span: ConsumedSpan,
     freq_map: &FrequencyMap,
     now_ms: i64,
     context: &ContextRanks,
@@ -216,7 +266,6 @@ pub(super) fn custom_entry_to_candidate(
 ) -> RawCandidate {
     let roman = entry.roman.clone();
     let hanji = entry.hanji.clone();
-    let script_kind = derive_script_kind(hanji.as_deref());
     // v3.5.9 B-4 — `display_text` is the platform's
     // `user_frequency.db` commit key. When `hanji` is absent the
     // fallback is the roman, which may have been stored in the user's
@@ -247,24 +296,24 @@ pub(super) fn custom_entry_to_candidate(
         .get(&display_text, &canonical_tl)
         .user_weight(now_ms);
     let context_rank = context.rank(&display_text, &canonical_tl);
+    let syllable_count = tl_syllable_count(&canonical_tl);
     // `frequency = 0` (D4) → score 0; the candidate floats on
     // `user_weight` / `source_rank` / dedupe, not raw freq.
-    let score = calculate_continuous_score(0, 1);
+    let score = calculate_continuous_score(0, syllable_count);
     RawCandidate {
-        consumed_span: (0, raw_len),
-        syllable_count: 1,
+        consumed_span: span,
+        syllable_count,
         display_text,
         roman,
         hanji,
         canonical_tl,
         score,
-        form: FORM_NOTONE,
         frequency: 0,
+        walker_cost: WALKER_COST_UNPRICED,
         // No `dict.bin` source bits; rank is forced to 0 via
         // `is_custom = true` in `CandidateSortKey::new` /
         // `dedupe_by_roman_hanji_span` (`source_tier_rank` short-circuits).
         bitmask: 0,
-        script_kind,
         user_weight,
         context_rank,
         coverage_kind,
@@ -272,11 +321,20 @@ pub(super) fn custom_entry_to_candidate(
     }
 }
 
+/// A user row's syllables, read off its canonical TL's separators (custom and
+/// learned rows carry no `dict.bin` count); at least 1, so a Latin `iPhone`
+/// or an unseparated reading counts as one.
+fn tl_syllable_count(canonical_tl: &str) -> u8 {
+    phonetics::api::tl_syllables(canonical_tl)
+        .count()
+        .clamp(1, u8::MAX as usize) as u8
+}
+
 /// Learned phrases (§50) — one [`LearnedEntry`] as a candidate at `span`:
 /// a `dict.bin` record the dictionary does not carry, with no frequency and
 /// no source bits, so [`CandidateSortKey`](ranking::CandidateSortKey) gives it the default source rank (below
 /// every dictionary source and below a manual custom row) and the
-/// `(roman, hanji, span)` dedupe keeps a dictionary / custom duplicate over
+/// `(canonical_tl, hanji, span)` dedupe keeps a dictionary / custom duplicate over
 /// it. `syllable_count` is read off the TL's separators for the walker's
 /// `n_syls` bias.
 pub(super) fn learned_entry_to_candidate(
@@ -287,9 +345,7 @@ pub(super) fn learned_entry_to_candidate(
     context: &ContextRanks,
     coverage_kind: u8,
 ) -> RawCandidate {
-    let syllable_count = phonetics::api::tl_syllables(&entry.canonical_tl)
-        .count()
-        .clamp(1, u8::MAX as usize) as u8;
+    let syllable_count = tl_syllable_count(&entry.canonical_tl);
     record_to_candidate(
         DictionaryRecord {
             bitmask: 0,
@@ -298,6 +354,7 @@ pub(super) fn learned_entry_to_candidate(
             tl: entry.canonical_tl.clone(),
             syllable_count,
             kautian_subtag: 0,
+            walker_cost: WALKER_COST_UNPRICED,
         },
         0,
         span,
@@ -311,17 +368,27 @@ pub(super) fn learned_entry_to_candidate(
 /// v3.5.8 Phase 9 Item 12 — `(roman, hanji)` dedupe (Codex pre-impl
 /// D1 + D2, 2026-05-15). **v3.5.8 S2: key extended to
 /// `(roman, hanji, consumed_span)`** (Codex pre-impl S2 Q1d,
-/// 2026-05-16). Runs on the merged `dict.bin` + custom candidate
+/// 2026-05-16). **2026-10-07: + `canonical_tl`** (the word identity,
+/// a second pass after the raw `roman`). Runs on the merged `dict.bin` + custom candidate
 /// vector BEFORE the `CandidateSortKey` sort.
 ///
-/// - **Key**: the triple `(roman, hanji, consumed_span)`. The
-///   `(roman, hanji)` pair (D1) keeps romanization variants of the
-///   same hanji distinct; adding `consumed_span` keeps the **same
-///   word at different spans** distinct — once the whole-sentence
-///   walker / path-step candidates exist (S2) the same `(roman,
-///   hanji)` legitimately recurs at different spans and must NOT be
-///   collapsed (which the pre-S2 `(roman, hanji)`-only key would
-///   wrongly do). The Item-12 custom-vs-`dict.bin` collapse is
+/// - **Key**: two candidates are one when they share `(hanji,
+///   consumed_span)` and EITHER the raw `roman` OR the word identity
+///   `canonical_tl` (Core Principle #6) — two passes, roman first. A
+///   custom roman is kept in the user's stored form (POJ spelling, or NFD
+///   `li` + U+0301 from an import) while `dict.bin` TL is NFC;
+///   `canonical_tl` folds both onto one canonical NFC TL, so the raw bytes
+///   never split one word in two (2026-10-07: `li2` listed 李 `lí` twice).
+///   The roman pass is still needed: a `dict.bin` row's `canonical_tl` is
+///   its TL verbatim, while a custom row's is `canonical_tl_form(roman)`,
+///   which rewrites ~116 dictionary TLs (`hùi` → `huì`), so a custom row
+///   byte-equal to such a TL would otherwise list twice. The `(reading,
+///   hanji)` pair (D1) keeps reading variants of the same hanji distinct;
+///   adding `consumed_span` keeps the **same word at different spans**
+///   distinct — once the whole-sentence walker / path-step candidates
+///   exist (S2) the same word legitimately recurs at different spans and
+///   must NOT be collapsed (which the pre-S2 pair-only key would wrongly
+///   do). The Item-12 custom-vs-`dict.bin` collapse is
 ///   preserved: both the custom synth and its `dict.bin` duplicate
 ///   are emitted at the **same** full-buffer span `(0, raw_len)`
 ///   (see the `custom_entry_to_candidate` call sites above), so the
@@ -337,13 +404,25 @@ pub(super) fn learned_entry_to_candidate(
 /// - Survivor **insertion order is preserved** so the downstream
 ///   `CandidateSortKey.stable_idx` stays deterministic.
 pub(super) fn dedupe_by_roman_hanji_span(out: &mut Vec<RawCandidate>) {
+    dedupe_by_reading(out, |c| c.roman.as_str());
+    // Only a custom row's `canonical_tl` can differ from its roman here
+    // (dictionary and learned rows carry their TL as both), so without one
+    // the identity pass cannot drop anything.
+    if out.iter().any(|c| c.is_custom) {
+        dedupe_by_reading(out, |c| c.canonical_tl.as_str());
+    }
+}
+
+/// One pass of [`dedupe_by_roman_hanji_span`]: collapse candidates equal on
+/// `(reading(c), hanji, consumed_span)`, lowest source rank surviving.
+fn dedupe_by_reading(out: &mut Vec<RawCandidate>, reading: fn(&RawCandidate) -> &str) {
     use std::collections::{HashMap, HashSet};
     // key (borrowed from `out`) → (winning source rank, index of winner).
     let mut best: HashMap<(&str, Option<&str>, ConsumedSpan), (u8, usize)> =
         HashMap::with_capacity(out.len());
     for (i, c) in out.iter().enumerate() {
         let rank = source_tier_rank(c.bitmask, c.is_custom);
-        let key = (c.roman.as_str(), c.hanji.as_deref(), c.consumed_span);
+        let key = (reading(c), c.hanji.as_deref(), c.consumed_span);
         // Strictly lower rank replaces; equal rank keeps the earlier index
         // (no replace) → deterministic tie-break.
         let slot = best.entry(key).or_insert((rank, i));
@@ -368,10 +447,10 @@ mod record_to_candidate_carrier_tests {
     //! v3.5.8 Phase 9 Item 5 — `record_to_candidate` populates the
     //! `roman` + `hanji` sidechannels alongside `display_text` so the
     //! proto3 wire carries both for dual-line UI render. These tests
-    //! pin the field-population rule across the three `CandidateScriptKind`
-    //! axes (HANT / TAILO / MIXED).
+    //! pin the field-population rule for Hanji, roman-only and mixed-script
+    //! records.
     use super::*;
-    use crate::continuous::{CandidateScriptKind, COVERAGE_KIND_FULL};
+    use crate::continuous::COVERAGE_KIND_FULL;
 
     fn record(tl: &str, hanji: Option<&str>) -> DictionaryRecord {
         DictionaryRecord {
@@ -379,6 +458,7 @@ mod record_to_candidate_carrier_tests {
             frequency: 0,
             syllable_count: 1,
             kautian_subtag: 0,
+            walker_cost: 0,
             hanji: hanji.map(str::to_owned),
             tl: tl.to_owned(),
         }
@@ -402,7 +482,6 @@ mod record_to_candidate_carrier_tests {
         // is the hanji. This is what the platform round-trips into the
         // NextWord association as `next_tl`/`prev_tl`.
         assert_eq!(cand.canonical_tl, "tâi-uân");
-        assert_eq!(cand.script_kind, CandidateScriptKind::Hant);
     }
 
     #[test]
@@ -422,7 +501,6 @@ mod record_to_candidate_carrier_tests {
         assert_eq!(cand.roman, "tāi");
         assert_eq!(cand.hanji, None);
         assert_eq!(cand.display_text, "tāi");
-        assert_eq!(cand.script_kind, CandidateScriptKind::Tailo);
     }
 
     #[test]
@@ -442,23 +520,20 @@ mod record_to_candidate_carrier_tests {
         assert_eq!(cand.roman, "hip-siòng");
         assert_eq!(cand.hanji.as_deref(), Some("hip相"));
         assert_eq!(cand.display_text, "hip相");
-        assert_eq!(cand.script_kind, CandidateScriptKind::Mixed);
     }
 }
 
 #[cfg(test)]
 mod item12_custom_dedupe_tests {
     //! v3.5.8 Phase 9 Item 12 — `custom_dictionary.db` synthesis +
-    //! `(roman, hanji)` dedupe. Pins Codex pre-impl decisions D1
-    //! (dual `(roman, hanji)` key), D2 (lowest `source_tier_rank`
+    //! `(canonical_tl, hanji)` dedupe. Pins Codex pre-impl decisions D1
+    //! (dual `(canonical_tl, hanji)` key — the word identity since 2026-10-07), D2 (lowest `source_tier_rank`
     //! winner, rank-tie → earlier insertion), D3 (full-buffer span),
-    //! D4 (`frequency = 0`, `syllable_count = 1`, `is_custom` drives
+    //! D4 (`frequency = 0`, `syllable_count` from the TL, `is_custom` drives
     //! rank 0). Spec: `docs/engine/continuous-commit-and-display.md`
     //! §10.10.
     use super::*;
-    use crate::continuous::{
-        CandidateScriptKind, COVERAGE_KIND_FULL, COVERAGE_KIND_PARTIAL_PREFIX,
-    };
+    use crate::continuous::{COVERAGE_KIND_FULL, COVERAGE_KIND_PARTIAL_PREFIX};
     use ranking::{CandidateSortKey, CONTEXT_RANK_NONE};
 
     /// Minimal non-custom `dict.bin`-shaped candidate. `bitmask` picks
@@ -473,10 +548,9 @@ mod item12_custom_dedupe_tests {
             hanji: hanji.map(str::to_owned),
             canonical_tl: roman.to_owned(),
             score: 1.0,
-            form: FORM_NOTONE,
             frequency: 100,
+            walker_cost: WALKER_COST_UNPRICED,
             bitmask,
-            script_kind: derive_script_kind(hanji),
             user_weight: 0.0,
             context_rank: CONTEXT_RANK_NONE,
             coverage_kind: COVERAGE_KIND_FULL,
@@ -486,8 +560,8 @@ mod item12_custom_dedupe_tests {
 
     #[test]
     fn custom_entry_to_candidate_hant_shape() {
-        // D3 + D4: full-buffer span, freq 0, syll 1, is_custom true,
-        // coverage_kind passed through, display = hanji, script kind HANT.
+        // D3 + D4: full-buffer span, freq 0, syll from the TL, is_custom true,
+        // coverage_kind passed through, display = hanji.
         // `input_mode = Tl` for hanji-present cases — canonicalize
         // path doesn't execute (hanji is always preferred).
         let c = custom_entry_to_candidate(
@@ -495,7 +569,7 @@ mod item12_custom_dedupe_tests {
                 roman: "tâi-gí".to_owned(),
                 hanji: Some("台語".to_owned()),
             },
-            9,
+            (0, 9),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -505,7 +579,7 @@ mod item12_custom_dedupe_tests {
         assert!(c.is_custom);
         assert_eq!(c.consumed_span, (0, 9));
         assert_eq!(c.frequency, 0);
-        assert_eq!(c.syllable_count, 1);
+        assert_eq!(c.syllable_count, 2);
         assert_eq!(c.roman, "tâi-gí");
         assert_eq!(c.hanji.as_deref(), Some("台語"));
         assert_eq!(c.display_text, "台語");
@@ -513,7 +587,6 @@ mod item12_custom_dedupe_tests {
         // hanji-PRESENT custom entries too — `(hanji, canonical-TL)` is
         // the word identity, NOT gated on hanji absence.
         assert_eq!(c.canonical_tl, "tâi-gí");
-        assert_eq!(c.script_kind, CandidateScriptKind::Hant);
         assert_eq!(c.coverage_kind, COVERAGE_KIND_FULL);
     }
 
@@ -529,7 +602,7 @@ mod item12_custom_dedupe_tests {
                 roman: "gu\u{00e1}".to_owned(),
                 hanji: None,
             },
-            3,
+            (0, 3),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -538,7 +611,6 @@ mod item12_custom_dedupe_tests {
         );
         assert_eq!(c.display_text, "gu\u{00e1}");
         assert_eq!(c.hanji, None);
-        assert_eq!(c.script_kind, CandidateScriptKind::Tailo);
         assert_eq!(c.coverage_kind, COVERAGE_KIND_PARTIAL_PREFIX);
         assert!(c.is_custom);
     }
@@ -557,7 +629,7 @@ mod item12_custom_dedupe_tests {
                 roman: "g\u{00f3}a".to_owned(), // POJ display form
                 hanji: None,
             },
-            3,
+            (0, 3),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -590,7 +662,7 @@ mod item12_custom_dedupe_tests {
                 roman: "g\u{00f3}a".to_owned(), // POJ `góa` (TL would be `guá`)
                 hanji: None,
             },
-            3,
+            (0, 3),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -607,7 +679,7 @@ mod item12_custom_dedupe_tests {
 
     #[test]
     fn dedupe_custom_wins_over_dict_collision() {
-        // D2: same `(roman, hanji)` from a high-freq `dict.bin` entry
+        // D2: same `(canonical_tl, hanji)` from a high-freq `dict.bin` entry
         // (kautian, rank 1) and a custom entry (rank 0). The custom
         // survivor wins regardless of the dict entry's higher freq /
         // earlier insertion.
@@ -618,7 +690,7 @@ mod item12_custom_dedupe_tests {
                     roman: "tâi-gí".to_owned(),
                     hanji: Some("台語".to_owned()),
                 },
-                6,
+                (0, 6),
                 &FrequencyMap::new(),
                 0,
                 ContextRanks::empty(),
@@ -631,9 +703,51 @@ mod item12_custom_dedupe_tests {
         assert!(out[0].is_custom, "custom (rank 0) must win the collision");
     }
 
+    fn custom_cand(roman: &str, hanji: &str) -> RawCandidate {
+        custom_entry_to_candidate(
+            &CustomEntry {
+                roman: roman.to_owned(),
+                hanji: Some(hanji.to_owned()),
+            },
+            (0, 6),
+            &FrequencyMap::new(),
+            0,
+            ContextRanks::empty(),
+            COVERAGE_KIND_FULL,
+            phonetics::InputMode::Tl,
+        )
+    }
+
+    #[test]
+    fn dedupe_collapses_a_decomposed_custom_roman_by_identity() {
+        // 2026-10-07: an imported custom roman in NFD (`li` + U+0301) is
+        // the dictionary's NFC `lí`; only `canonical_tl` sees it.
+        let mut out = vec![
+            dict_cand("l\u{ed}", Some("李"), 1 << 0),
+            custom_cand("li\u{301}", "李"),
+        ];
+        dedupe_by_roman_hanji_span(&mut out);
+        assert_eq!(out.len(), 1);
+        assert!(out[0].is_custom);
+    }
+
+    #[test]
+    fn dedupe_collapses_a_byte_equal_custom_roman_whose_identity_is_rewritten() {
+        // `canonical_tl_form` moves the tone mark of a few dictionary TLs
+        // (`hùi` → `huì`) while a dict row keeps its TL verbatim as
+        // `canonical_tl`, so a custom row copied byte for byte from the
+        // dictionary meets it only on the raw roman.
+        let custom = custom_cand("hùi", "卉");
+        assert_ne!(custom.canonical_tl, "hùi", "fixture precondition");
+        let mut out = vec![dict_cand("hùi", Some("卉"), 1 << 0), custom];
+        dedupe_by_roman_hanji_span(&mut out);
+        assert_eq!(out.len(), 1);
+        assert!(out[0].is_custom);
+    }
+
     #[test]
     fn dedupe_dual_key_preserves_roman_variants() {
-        // D1: same hanji, different roman → distinct `(roman, hanji)`
+        // D1: same hanji, different reading → distinct `(canonical_tl, hanji)`
         // keys, both survive (single `display_text` key would wrongly
         // collapse them).
         let mut out = vec![
@@ -677,11 +791,11 @@ mod item12_custom_dedupe_tests {
 
     #[test]
     fn dedupe_span_aware_keeps_same_word_at_different_spans() {
-        // v3.5.8 S2 (Codex pre-impl Q1d): the same `(roman, hanji)` at
+        // v3.5.8 S2 (Codex pre-impl Q1d): the same `(canonical_tl, hanji)` at
         // DIFFERENT `consumed_span`s must both survive — once the
         // whole-sentence walker / path-step candidates exist the same
         // word legitimately recurs at different spans. The pre-S2
-        // `(roman, hanji)`-only key would have wrongly collapsed these.
+        // pair-only key would have wrongly collapsed these.
         let mut a = dict_cand("tâi", Some("台"), 1 << 0);
         a.consumed_span = (0, 3);
         let mut b = dict_cand("tâi", Some("台"), 1 << 0);
@@ -709,7 +823,7 @@ mod item12_custom_dedupe_tests {
                 roman: "tâi-gí".to_owned(),
                 hanji: Some("台語".to_owned()),
             },
-            6,
+            (0, 6),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),
@@ -733,7 +847,7 @@ mod item12_custom_dedupe_tests {
                 roman: "x".to_owned(),
                 hanji: Some("某".to_owned()),
             },
-            3,
+            (0, 3),
             &FrequencyMap::new(),
             0,
             ContextRanks::empty(),

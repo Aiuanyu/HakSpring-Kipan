@@ -14,7 +14,7 @@ use protos::engine::CandidateMessage;
 
 use crate::common::Fetch;
 use crate::common::{
-    build_dictionary_fst, build_syllables_fst, build_tkdb_v3, config, empty_association_bin,
+    build_dictionary_fst, build_syllables_fst, build_tkdb_v4, config, empty_association_bin,
     fetch_at_pos_response, fetch_hanji, fetch_hanji_with_custom, install_lexicon, Row,
 };
 use lexicon::CustomEntry;
@@ -122,7 +122,7 @@ fn fixture_rows() -> Vec<Row> {
 
 fn install_fixture() {
     let rows = fixture_rows();
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst(&rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     // `m7` makes `m` a lattice syllable (the span-local branch for `mk`).
@@ -156,7 +156,7 @@ fn ss_surfaces_abbreviated_words_after_the_literal() {
     assert_eq!(hanji("ss", "tl"), vec!["先生", "鎖匙"], "{cands:?}");
     let sosi = &cands[2];
     assert_eq!(sosi.roman, "só-sî");
-    assert_eq!((sosi.consumed_span_start, sosi.consumed_span_end), (0, 2));
+    assert_eq!(sosi.consumed_span_end, 2);
 }
 
 #[test]
@@ -177,13 +177,16 @@ fn span_local_branch_dedupes_partial_overlap_before_capping() {
     let _lock = engine_install_lock();
     install_fixture();
     // `mk`: `m` is a lattice syllable so the fetch takes the span-local
-    // branch (毋 first); the seven `m̄-k…` rows arrive as Step 4b partial
+    // branch (毋); the seven `m̄-k…` rows arrive as Step 4b partial
     // extensions AND as abbreviation hits and must show once; the
     // abbreviation block is then filled to the cap from the rows the
     // exclude did not touch (物件 + the 30 `mó-ka` rows → 30 survive).
+    // Every two-syllable row covers the whole input, so 毋 — covering only
+    // `m` — follows them all (tier first, USER 2026-10-12).
     let cands = fetch("mk", "tl");
     let hanji: Vec<&str> = cands.iter().filter_map(|c| c.hanji.as_deref()).collect();
-    assert_eq!(hanji[0], "毋", "{hanji:?}");
+    assert_eq!(hanji.last(), Some(&"毋"), "{hanji:?}");
+    assert_eq!(hanji[0], "毋甘", "partial extension first: {hanji:?}");
     let distinct: std::collections::HashSet<&str> = hanji.iter().copied().collect();
     assert_eq!(
         distinct.len(),
@@ -200,10 +203,7 @@ fn span_local_branch_dedupes_partial_overlap_before_capping() {
         .iter()
         .find(|c| c.hanji.as_deref() == Some("物件"))
         .expect("物件 via the span-local branch");
-    assert_eq!(
-        (mihkiann.consumed_span_start, mihkiann.consumed_span_end),
-        (0, 2)
-    );
+    assert_eq!(mihkiann.consumed_span_end, 2);
     assert_eq!(mihkiann.syllable_count, 2, "record's own syllable count");
 }
 
@@ -263,11 +263,7 @@ fn tps_initials_match_the_tps_abbreviation() {
         .iter()
         .find(|c| c.hanji.as_deref() == Some("鎖匙"))
         .unwrap_or_else(|| panic!("鎖匙 via tps:ㄙㄒ; got {cands:?}"));
-    assert_eq!(
-        (sosi.consumed_span_start, sosi.consumed_span_end),
-        (0, 6),
-        "TPS span is UTF-8 bytes"
-    );
+    assert_eq!(sosi.consumed_span_end, 6, "TPS span is UTF-8 bytes");
     // A tone mark on the tail disqualifies the buffer.
     assert!(!hanji("ㄙㄒˊ", "tps").iter().any(|h| h == "鎖匙"));
 }
@@ -276,11 +272,11 @@ fn tps_initials_match_the_tps_abbreviation() {
 fn custom_entry_sharing_the_abbreviated_word_shows_once() {
     let _lock = engine_install_lock();
     install_fixture();
-    // The platform pre-queries `custom_dictionary.db` with `form IN (?,
-    // 'abbrev')`, so a custom 鎖匙 `só-sî` already answers `ss` through the
-    // custom merge (whole-buffer synth, source rank 0). The dictionary's
-    // own 鎖匙 must collapse onto it — same `(roman, hanji, span)` — and
-    // the custom row stays ahead of the dictionary block.
+    // A custom 鎖匙 `só-sî` answers `ss` in the abbreviation block, by the
+    // exact-face rule a dictionary row answers to (whole-buffer synth,
+    // source rank 0). The dictionary's own 鎖匙 collapses onto it — same
+    // `(roman, hanji, span)` — and, as the user's own word, it leads the
+    // block (`custom_lead`, USER 2026-10-12).
     let hanji = fetch_hanji_with_custom(
         "ss",
         "tl",
@@ -292,6 +288,6 @@ fn custom_entry_sharing_the_abbreviated_word_shows_once() {
     assert_eq!(
         hanji,
         vec!["鎖匙", "先生"],
-        "custom first, dictionary 鎖匙 deduped"
+        "custom first, dictionary 鎖匙 deduped onto it"
     );
 }

@@ -2,16 +2,14 @@
 //!
 //! TPS inputs are already display-ready (return as-is). POJ/TL inputs go
 //! through the full `phonetics::api::normalize_tone` chain (POJ doubletap
-//! preprocessing → tone-mark application → nasal-marker case adjustment) per
-//! plan §3.2a.
+//! preprocessing → permissive tone-mark placement → nasal-marker case
+//! adjustment) per plan §3.2a.
 //!
 //! This is the rendering primitive behind [`crate::api::Phase::raw_input`] —
 //! see `docs/engine/continuous-commit-and-display.md` §10.2 / §10.3 clarification β
-//! for the `rawInput` contract. User-typed hyphens are preserved as conversion
-//! boundaries (the tone-mark chain splits on `-`); the engine does NOT validate
-//! whether each chunk is a real syllable, and does not insert hyphens on its
-//! own. Engine-side syllabifier-driven auto-hyphenation is out of scope for
-//! v3.5.8 Item 2 (see §10.2 amendment 2026-05-13).
+//! for the `rawInput` contract. Each tone digit closes a segment and marks it
+//! (`tai5gi2` → `tâigí`); user-typed hyphens and spaces are preserved, and the
+//! engine never inserts a separator of its own (behavioral-invariants §30).
 
 use protos::engine::AppConfig;
 
@@ -23,6 +21,17 @@ pub(crate) fn derived_display(raw: &str, config: &AppConfig) -> String {
         return strip_tps_separator_markers(raw);
     }
     phonetics::api::normalize_tone(raw, config)
+}
+
+/// The text a raw buffer is learned under — what [`derived_display`]
+/// returned before permissive rendering, so a hidden tone boundary
+/// (`tai5gi2` shows `tâigí`, `a1i1` shows `ai`) keeps its existing frequency
+/// and association key (behavioral-invariants §34).
+pub(crate) fn learning_text(raw: &str, config: &AppConfig) -> String {
+    if phonetics::api::contains_tps(raw) {
+        return strip_tps_separator_markers(raw);
+    }
+    phonetics::api::literal_learning_text(raw, config)
 }
 
 /// The mode `raw` composes under: TPS once the buffer carries a Bopomofo
@@ -70,8 +79,8 @@ pub(crate) fn tps_slice_display(tps_slice: &str) -> String {
 ///
 /// Deriving the display of `raw[..caret]` alone and taking its length is NOT
 /// this: `ng|5` renders `n̂g`, whose prefix `ng` is two code units but whose
-/// caret belongs after the `g` at three; `ka2|i` stays literal `ka2i`, whose
-/// prefix `ká` is two units while the caret sits after the `2` at three. So
+/// caret belongs after the `g` at three. Later tone digits can also change
+/// marks on letters before the caret, so use the full rendered buffer. Thus
 /// the raw and display strings are walked in lockstep, relying on what the
 /// derivation chain does to a character and nothing else:
 ///
@@ -82,6 +91,8 @@ pub(crate) fn tps_slice_display(tps_slice: &str) -> String {
 ///   marker have no display counterpart, so a raw character that does not
 ///   match the next display letter is one the chain dropped and maps right
 ///   after the display character before it;
+///   permissive tone digits use explicit renderer decisions because a later
+///   identical literal digit could otherwise match the hidden one;
 /// - it folds a POJ double tap, `oo` → `o\u{0358}` / `nn` → `ⁿ` (`ᴺ` after a
 ///   capital vowel). Both taps
 ///   are the same letter, so the second one cannot be told from a later
@@ -100,11 +111,21 @@ pub(crate) fn tps_slice_display(tps_slice: &str) -> String {
 ///
 /// The "never adds a base letter" premise is pinned where it can break, in
 /// `phonetics::api` (`normalize_tone_never_adds_a_base_letter`).
-pub(crate) fn display_caret_utf16(raw: &str, display: &str, caret: usize) -> usize {
+pub(crate) fn display_caret_utf16(
+    raw: &str,
+    display: &str,
+    caret: usize,
+    config: &AppConfig,
+) -> usize {
     if caret >= raw.len() {
         return display.encode_utf16().count();
     }
     let mut display_chars = display.chars().peekable();
+    let consumed_digits = if phonetics::api::contains_tps(raw) {
+        Vec::new()
+    } else {
+        phonetics::api::consumed_tone_digit_offsets(raw, config)
+    };
     let mut display_utf16 = 0;
     let mut raw_chars = raw.char_indices().peekable();
     while let Some((raw_offset, raw_char)) = raw_chars.next() {
@@ -112,6 +133,9 @@ pub(crate) fn display_caret_utf16(raw: &str, display: &str, caret: usize) -> usi
             break;
         }
         display_utf16 += absorb_marks(&mut display_chars).utf16_len;
+        if consumed_digits.binary_search(&raw_offset).is_ok() {
+            continue;
+        }
         let Some(&display_char) = display_chars.peek() else {
             continue;
         };
@@ -185,7 +209,6 @@ mod tests {
             oo_doubletap_enabled: false,
             nn_doubletap_enabled: false,
             is_hanji_first: false,
-            platform_id: 0,
             output_both_scripts: false,
             candidate_display_mode: 0,
             syllable_separator: 0,
@@ -217,7 +240,7 @@ mod tests {
             .char_indices()
             .map(|(offset, _)| offset)
             .chain(std::iter::once(raw.len()))
-            .map(|offset| display_caret_utf16(raw, &display, offset))
+            .map(|offset| display_caret_utf16(raw, &display, offset, config))
             .collect();
         (display, boundaries)
     }
@@ -243,12 +266,99 @@ mod tests {
 
     #[test]
     fn display_caret_literal_buffer_is_identity() {
-        // Codex counterexample `ka2|i`: a digit mid-buffer is not a syllable
-        // end, so the display stays literal `ka2i` and the caret after the
-        // `2` is 3 — prefix-derivation (`ká` → 2) would have put it before it.
-        let (display, boundaries) = caret_map("ka2i", &config_tl());
-        assert_eq!(display, "ka2i");
+        // Zero is not a tone digit, so it remains visible and consumes an
+        // ordinary display position.
+        let (display, boundaries) = caret_map("ka0i", &config_tl());
+        assert_eq!(display, "ka0i");
         assert_eq!(boundaries, vec![0, 1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn display_caret_permissive_tones_map_each_dropped_digit() {
+        let config = config_tl();
+        let (display, boundaries) = caret_map("tai5gi2", &config);
+        assert_eq!(display, "tâigí");
+        assert_eq!(boundaries, vec![0, 1, 2, 3, 3, 4, 5, 5]);
+        let (display, boundaries) = caret_map("ka2i", &config);
+        assert_eq!(display, "kái");
+        assert_eq!(boundaries, vec![0, 1, 2, 2, 3]);
+        // A hidden `2` and a visible `2`: the renderer's decision, not the
+        // digit's value, says which one has no display position.
+        let (display, boundaries) = caret_map("a2b2", &config);
+        assert_eq!(display, "áb2");
+        assert_eq!(boundaries, vec![0, 1, 1, 2, 3]);
+        let (display, boundaries) = caret_map("2a2", &config);
+        assert_eq!(display, "2á");
+        assert_eq!(boundaries, vec![0, 1, 2, 2]);
+        let poj = config_poj_doubletap();
+        let (display, boundaries) = caret_map("hoo2b2", &poj);
+        assert_eq!(display, "hó͘b2");
+        assert_eq!(boundaries, vec![0, 1, 3, 3, 3, 4, 5]);
+    }
+
+    #[test]
+    fn display_caret_digit_runs_are_one_to_one() {
+        // trace: a digit next to a digit is never a tone, so every digit of
+        // the run keeps its display position; `tai55gi2` still marks `gí`.
+        let config = config_tl();
+        for raw in ["a22", "a23", "a01b2", "a10b2"] {
+            let (display, boundaries) = caret_map(raw, &config);
+            assert_eq!(display, raw);
+            assert_eq!(boundaries, (0..=raw.len()).collect::<Vec<_>>(), "{raw}");
+        }
+        let (display, boundaries) = caret_map("tai55gi2", &config);
+        assert_eq!(display, "tai55gí");
+        assert_eq!(boundaries, vec![0, 1, 2, 3, 4, 5, 6, 7, 7]);
+        let (display, boundaries) = caret_map("hoo22", &config_poj_doubletap());
+        assert_eq!(display, "ho͘22");
+        assert_eq!(boundaries, vec![0, 1, 3, 3, 4, 5]);
+    }
+
+    #[test]
+    fn permissive_tones_keep_earlier_marks_while_typing_and_backspacing() {
+        use crate::api::{Engine, Intent};
+        let config = config_tl();
+        let mut engine = Engine::new();
+        engine.apply(
+            Intent::Start {
+                text: "tai5".into(),
+            },
+            &config,
+        );
+        for (ch, expected) in [("g", "tâig"), ("i", "tâigi"), ("2", "tâigí")] {
+            let response = engine.apply(Intent::Append { ch: ch.into() }, &config);
+            assert_eq!(response.preedit.unwrap().display_text, expected);
+        }
+        for expected in ["tâigi", "tâig", "tâi", "tai"] {
+            let response = engine.apply(Intent::DeleteBackward, &config);
+            assert_eq!(response.preedit.unwrap().display_text, expected);
+        }
+    }
+
+    #[test]
+    fn permissive_repeated_digit_caret_matches_insertion() {
+        use crate::api::{CaretDirection, Engine, Intent};
+        let config = config_tl();
+        let mut engine = Engine::new();
+        engine.apply(
+            Intent::Start {
+                text: "a2b2".into(),
+            },
+            &config,
+        );
+        let response = engine.apply(
+            Intent::MoveCaret {
+                direction: Some(CaretDirection::Left),
+            },
+            &config,
+        );
+        let preedit = response.preedit.unwrap();
+        assert_eq!(preedit.display_text, "áb2");
+        assert_eq!(preedit.caret_utf16, 2);
+        let response = engine.apply(Intent::Append { ch: "t".into() }, &config);
+        let preedit = response.preedit.unwrap();
+        assert_eq!(preedit.display_text, "ábt2");
+        assert_eq!(preedit.caret_utf16, 3);
     }
 
     #[test]
@@ -301,15 +411,15 @@ mod tests {
 
     #[test]
     fn display_caret_past_the_end_clamps_and_off_boundary_lands_after_the_char() {
-        assert_eq!(display_caret_utf16("tai5", "t\u{e2}i", 99), 3);
+        assert_eq!(display_caret_utf16("tai5", "t\u{e2}i", 99, &config_tl()), 3);
         // Byte 1 sits inside the 3-byte ㄉ: the walk consumes ㄉ (boundary 0
         // is below the caret) and stops at ㄞ (boundary 3 is not), so the
         // caret lands after ㄉ.
         assert_eq!(
-            display_caret_utf16("\u{3109}\u{311e}", "\u{3109}\u{311e}", 1),
+            display_caret_utf16("\u{3109}\u{311e}", "\u{3109}\u{311e}", 1, &config_tl()),
             1
         );
-        assert_eq!(display_caret_utf16("", "", 0), 0);
+        assert_eq!(display_caret_utf16("", "", 0, &config_tl()), 0);
     }
 
     #[test]
@@ -437,12 +547,11 @@ mod tests {
     }
 
     #[test]
-    fn raw_input_composing_tl_preserves_unhyphenated_input_verbatim() {
-        // §10.2 amendment 2026-05-13 — engine does NOT auto-insert syllable
-        // boundaries; if the user typed no hyphens, derived display has no
-        // boundary to convert and returns the raw single chunk.
+    fn raw_input_composing_tl_marks_unseparated_syllables_without_adding_hyphens() {
+        // Each tone closes its typed segment; no syllable separators are
+        // inferred or inserted.
         let phase = pending("goa2ai3li2");
-        assert_eq!(phase.raw_input(&config_tl()), "goa2ai3li2");
+        assert_eq!(phase.raw_input(&config_tl()), "goáàilí");
     }
 
     #[test]

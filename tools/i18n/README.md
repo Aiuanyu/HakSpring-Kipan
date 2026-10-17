@@ -10,17 +10,21 @@ tool generates the platform artifacts; **do not hand-edit the generated files.**
 | `make i18n` | Regenerate all artifacts from `i18n/*.json` (commit the result). |
 | `make i18n-test` | Run the codegen unit tests (`test_i18n.py`). |
 
-Staleness is guarded automatically, not by a manual make target:
+Staleness is guarded automatically by `tools/i18n/check.py` (fails when any committed artifact differs
+from what `i18n/*.json` generates):
 
-- **Android** — the Gradle `checkI18nGenerated` task runs `tools/i18n/check.py` on `preBuild`, so
+- **CI** — the `i18n` job of `.github/workflows/checks.yml` runs `test_i18n.py` + `check.py` on every
+  PR / push that touches `i18n/**`, `tools/i18n/**` or `ios/Localizable.xcstrings`. This is the only
+  gate for iOS, which has no build-time guard.
+- **Android** — the Gradle `checkI18nGenerated` task runs `check.py` on `preBuild`, so
   Android Studio / archive / `assemble` builds cannot link stale output.
 - **macOS** — `macos/Makefile`'s `i18n-check` is a prerequisite of `build` and `test`, and
   `macos/scripts/bundle-app.sh` runs the same check itself (it invokes its own `swift build`, so
   `make bundle` / `make install` / calling the script directly are all gated).
-- **iOS** — no equivalent preBuild guard, so `release-helper` runs `make i18n` at release time to
-  guarantee the committed xcstrings are fresh.
+- **Windows / Linux / desktop crates** — `windows/Makefile`, `linux/Makefile` and `desktop/Makefile`
+  each have an `i18n-check` target that `test` (and so `check`) depends on.
 
-## Generated artifacts (Android, R2a-1)
+## Generated artifacts (Android)
 
 - `android/app/src/main/res/values/strings_i18n.xml` — Hanji default (the native-resource path).
 - `android/app/src/main/java/com/siansiansu/taigikeyboard/i18n/generated/` — `StringKey`,
@@ -49,9 +53,9 @@ Staleness is guarded automatically, not by a manual make target:
 - A Swift platform scoped to zero keys is rejected by `make i18n` / `check.py`: `enum StringKey: String {}`
   is not legal Swift, so an empty scope would emit a package that cannot compile.
 
-## Generated artifacts (Windows)
+## Generated artifacts (Windows + Linux)
 
-- `desktop/crates/taigi-desktop-core/src/strings/generated.rs` — one Rust module: `StringKey` enum,
+- `desktop/crates/taigi-desktop-core/src/strings/generated.rs` — one Rust module covering every key scoped `windows` or `linux` (both desktops link this crate): `StringKey` enum,
   a per-language `fn hanji(key)` … `fn en(key)` table for **all five** production languages, and one
   typed `StringResolver` method per format key. The hand-written `strings/mod.rs` beside it owns
   `DisplayLanguage`, `StringResolver` and the `{N}` positional formatter the generated methods call.
@@ -62,7 +66,7 @@ Staleness is guarded automatically, not by a manual make target:
   conversion char to pick, and the message grammar cannot author a literal brace, so none needs escaping.
 - Rust accessors are snake_case (`desktop_update_available_message`); the validator rejects a Rust
   keyword and two keys whose camelCase names collapse to one snake_case name.
-- `windows/Makefile`'s `i18n-check` gates the generated file exactly like the macOS one.
+- `windows/Makefile`, `linux/Makefile` and `desktop/Makefile` `i18n-check` gate the generated file exactly like the macOS one.
 - `windows/installer/Messages.iss` — the Inno Setup `[CustomMessages]` fragment for the
   windows-scoped `desktop.installer*` keys, `#include`d by `windows/installer/TaigiKeyboard.iss`.
   Languages = the macOS bundle's system localizations (Hanji → `chinesetraditional`, `english`,
@@ -77,7 +81,7 @@ Staleness is guarded automatically, not by a manual make target:
   "keys": {
     "inputMode": {
       "comment": "translator context",
-      "scope": { "platforms": ["android", "ios", "macos", "windows"], "surfaces": ["host", "extension"] },
+      "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
       "placeholders": { "count": "int" },   // optional; named {count}, never %d
       "values": {
         "hanji": "輸入模式",                 // required base language
@@ -96,14 +100,14 @@ Rules enforced by the generator (the lint config disables `MissingTranslation`, 
 the generator's job):
 
 - Duplicate JSON keys are rejected (not silently last-wins).
-- `scope.platforms` ⊆ {ios, android, macos, windows}, `scope.surfaces` ⊆ {host, extension}, both non-empty.
+- `scope.platforms` ⊆ {ios, android, macos, windows, linux}, `scope.surfaces` ⊆ {host, extension}, both non-empty.
   A key reaches only the platforms it is scoped to; adding a platform to an existing key's scope is
   byte-neutral for the artifacts of the other platforms.
 - Every key must define the base language (`hanji`).
 - **Production completeness**: every key must author all user-selectable production languages
   (`hanji`, `en`, `ja`, `tailo`, `poj` — mirrors the platform `DisplayLanguage.productionLanguages`
-  roster), so a picker option never renders a silent Hanji fallback. `tailo`/`poj` joined the roster at
-  promotion (R5-2 / R6-2); because both are production languages, this one completeness gate also enforces
+  roster), so a picker option never renders a silent Hanji fallback. Because `tailo` and `poj` are both
+  production languages, this one completeness gate also enforces
   the `tailo`↔`poj` pair (a half-authored pair fails as a missing production language — no separate gate).
   Enforced by `make i18n` / `check.py` / Gradle `checkI18nGenerated` (not by the generic `build_outputs`,
   which tests drive with partial fixtures).

@@ -25,12 +25,10 @@
 //!    `consumed_span`; presentation `roman` only —`display_text` / `hanji`
 //!    untouched).
 //! 4. `fetch_walker_slot0_inner(..) → Some(slot0)`: span-aware
-//!    retain-dedupe on `(roman, hanji, consumed_span)` then `insert(0,
-//!    raw_to_proto_slot0(slot0))`. The walker returns a [`WalkerSlot0`] —
-//!    **D3 honest type** — and the seam converts to `RawCandidate` with
-//!    `score = -(slot0.cost as f32)` (the negated-cost bridge IS the wire
-//!    contract, `CandidateMessage.score` proto field 5;
-//!    `frequency`/`bitmask` are walker-N/A and stay `0`).
+//!    retain-dedupe on `(hanji, consumed_span)` + identity or recased roman, then
+//!    `insert(0, ..)`. The walker returns a [`WalkerSlot0`] and the seam
+//!    converts it to a `RawCandidate` (slot 0 is an explicit prepend, never
+//!    sort-compared, so `score` / `frequency` / `bitmask` stay `0`).
 //!
 //!    **Step 4b — whole-input prefix-extension scan (else-branch only).**
 //!    After the walker slot-0 prepend, run
@@ -46,10 +44,10 @@
 //!    exact++prefix merge); the empty-keys branch above already
 //!    covers this for inputs with no valid syllable, Step 4b extends
 //!    it to already-syllabified inputs. Cross-batch
-//!    `(roman, hanji, consumed_span)` dedupe drops extension hits
-//!    already present in the FULL block. `CandidateSortKey`'s leading
-//!    `coverage_kind` dim pins the result strictly below the FULL
-//!    block, so no global re-sort is needed.
+//!    `(canonical_tl | roman, hanji, consumed_span)` dedupe drops extension hits
+//!    already present in the FULL block. Step 4d then re-sorts the merged
+//!    blocks by `CandidateSortKey` (tier first, USER 2026-10-12), so an
+//!    extension covering the whole input leads front-segment rows.
 //! 5. POJ presentation pass: `mode == Poj` → [`recase_tl_as_poj_display`]
 //!    over every candidate's `roman` then [`dedupe_rendered_continuous`].
 //!    Skipped (not identity-called) for TL / English / TPS — the gate sits
@@ -80,29 +78,19 @@ use crate::shadow::{
     greedy_longest_syllabification, span_min_syllable_count, strip_tones_for_mode,
 };
 use lexicon::{
-    best_candidate_for_key_with_barriers, derive_script_kind,
-    fetch_candidates_for_keys_with_barriers, fetch_partial_prefix_candidates,
-    fetch_partial_prefix_candidates_unbounded, homophone_words_for_key, CandidateScriptKind,
-    ConsumedSpan, ContinuousFetchCtx, CustomEntry, EngineHandle as LexiconHandle, LearnedEntry,
-    RawCandidate, SyllableInventory, COVERAGE_KIND_FULL, FORM_NOTONE, PARTIAL_PREFIX_OUTPUT_CAP,
+    best_candidate_for_key_with_barriers, fetch_candidates_for_keys_with_barriers,
+    fetch_partial_prefix_candidates, fetch_partial_prefix_candidates_unbounded,
+    homophone_words_for_key, ConsumedSpan, ContinuousFetchCtx, CustomEntry,
+    EngineHandle as LexiconHandle, LearnedEntry, RawCandidate, SyllableInventory,
+    COVERAGE_KIND_FULL, PARTIAL_PREFIX_OUTPUT_CAP,
 };
-use ranking::FrequencyMap;
+use ranking::{candidate_lead, sort_by_candidate_key, FrequencyMap, WALKER_COST_UNPRICED};
 
-// ============================================================================
-// D3 honest type — walker result struct names `cost`
-// ============================================================================
-
-/// v3.5.9 A2 (D3 honest type) — the slot-0 walker's native result.
-///
-/// `cost` is the min-cost objective the walker optimizes (`lower-better`);
-/// the seam in [`assemble_candidates`] converts to the wire `RawCandidate`
-/// with `score = -(cost as f32)` (preserving the proto field 5 contract on
-/// `CandidateMessage`). `frequency` / `bitmask` are walker-N/A and stamped
-/// `0` at the seam — slot 0 is an explicit prepend, never sort-compared,
-/// so they are informational only. `form` is stamped `FORM_NOTONE` at the
-/// seam (walker always emits the toneless representation).
+/// The slot-0 walker's native result. The seam in [`assemble_candidates`]
+/// converts it to a `RawCandidate`; slot 0 is an explicit prepend, never
+/// sort-compared, so the rank facts a fetched row carries (`score`,
+/// `frequency`, `bitmask`) are stamped `0` there.
 pub(crate) struct WalkerSlot0 {
-    pub cost: f64,
     pub consumed_span: ConsumedSpan,
     pub syllable_count: u8,
     pub display_text: String,
@@ -112,7 +100,6 @@ pub(crate) struct WalkerSlot0 {
     /// computed ONCE here from the synth `roman` (the single point that
     /// knows the fold rule) so the seam reads it instead of re-folding.
     pub canonical_tl: String,
-    pub script_kind: CandidateScriptKind,
     pub user_weight: f64,
     pub coverage_kind: u8,
     pub is_custom: bool,
@@ -240,16 +227,17 @@ fn recase_tl_as_poj_display(roman: &str) -> String {
 }
 
 /// v3.5.8 — collapse continuous candidates that became identical only
-/// after the POJ render. The pre-render `(roman, hanji, consumed_span)`
-/// dedupe (`lexicon::dedupe_by_roman_hanji_span`) keys on the **raw**
-/// stored romanization without canonicalization, so a hanji-bearing
-/// custom entry stored in POJ display form (`roman = "gô͘"`,
-/// `hanji = Some("吳")`) and a `dict.bin` entry in TL (`roman = "gôo"`,
-/// `hanji = Some("吳")`) sharing one consumed span both survive it,
-/// then [`recase_tl_as_poj_display`] rewrites both `roman` fields to
-/// the POJ display form (`gô͘`) and produces a visible duplicate.
-/// `dedupe_rendered_continuous` collapses that visible duplicate; the
-/// `HashSet::retain` first-wins rule keeps whichever row sits earlier
+/// after a render pass (POJ render, Syllable Separator, typed separators).
+/// The pre-render dedupe (`lexicon::dedupe_by_roman_hanji_span`) collapses
+/// `(hanji, consumed_span)` + (`roman` or the word identity `canonical_tl`)
+/// (2026-10-07),
+/// so a hanji-bearing custom entry stored in POJ display form
+/// (`roman = "gô͘"`) and a `dict.bin` entry in TL (`roman = "gôo"`) for
+/// the same 吳 at one span already collapse there. Two DIFFERENT
+/// identities can still render to one visible string — e.g. two
+/// separator forms of one reading that a Syllable Separator setting
+/// draws identically — and this pass collapses that visible duplicate.
+/// The `HashSet::retain` first-wins rule keeps whichever row sits earlier
 /// in the **current candidate vector** at the moment this fn runs
 /// (post-sort, post whole-sentence prepend), so the prepended
 /// best-walk-path candidate at index 0 is never dropped. It is
@@ -259,26 +247,19 @@ fn recase_tl_as_poj_display(roman: &str) -> String {
 /// `dict.bin` candidate, so which row survives cannot change what
 /// commits.
 ///
-/// **v3.5.9 B-4 closed the romanization-only (hanji-absent) freq-key
-/// asymmetry but NOT this hanji-bearing visible-duplicate axis.**
-/// Pre-B-4 the hanji-absent custom-after-dict collision could leave the
-/// `display_text` as the dict-TL row's form while the custom row's raw
-/// `entry.roman` was still POJ — a frequency-key granularity nuance
-/// that `lexicon::custom_entry_to_candidate` now closes by folding the
-/// fallback through `phonetics::api::canonical_tl_form`. B-4
-/// deliberately leaves `entry.roman` raw (the walker / `custom_toneless_key`
-/// need it in the user's native form so POJ-family lattice keys match
-/// against POJ-form custom roman per `composing::shadow::custom_toneless_key`),
-/// which means the hanji-bearing custom-vs-dict-POJ-form collision
-/// still slips past pre-render dedupe and lands here. This dedupe is
-/// load-bearing in steady state, not transitional. Called in the POJ
-/// branch only — for TL/English the render is identity so the
-/// pre-render dedupe already settled every key. TPS has its own
-/// post-render visual collapse via [`dedupe_display_hanji_for_tps`]
-/// because the TPS UI hides romanization entirely (hanji-only display),
-/// so two `dict.bin` rows differing only on `roman` (e.g. `灣 / uan`
-/// vs `灣 / uân` at the same TPS-toneless key `ㄨㄢ`) survive the
-/// pre-render `(roman, hanji, span)` dedupe yet render identically.
+/// B-4 deliberately leaves `entry.roman` raw (the walker /
+/// `custom_toneless_key` need it in the user's native form so POJ-family
+/// lattice keys match against POJ-form custom roman per
+/// `composing::shadow::custom_toneless_key`); the identity sidechannel
+/// `canonical_tl` is what the pre-render dedupe compares instead. Called
+/// when a render pass can make two identities look alike: POJ mode, a
+/// Syllable Separator joiner, or rendered typed separators — for plain
+/// TL/English the render is identity so the pre-render dedupe already
+/// settled every key. TPS has its own post-render visual collapse via
+/// [`dedupe_display_hanji_for_tps`] because the TPS UI hides romanization
+/// entirely (hanji-only display), so two `dict.bin` rows differing only
+/// in tone (e.g. `灣 / uan` vs `灣 / uân` at the same TPS-toneless key
+/// `ㄨㄢ`) survive the pre-render dedupe yet render identically.
 fn dedupe_rendered_continuous(candidates: &mut Vec<RawCandidate>) {
     retain_first_by_key(candidates, |c| {
         Some((c.roman.clone(), c.hanji.clone(), c.consumed_span))
@@ -297,23 +278,37 @@ pub(crate) fn retain_first_by_key<K: std::hash::Hash + Eq>(
     candidates.retain(|c| key(c).is_none_or(|k| seen.insert(k)));
 }
 
-/// Cross-batch exclude: drop from `batch` every candidate whose
-/// `(roman, hanji, consumed_span)` triple is already in `existing`. The
-/// per-fetch `dedupe_by_roman_hanji_span` inside the lexicon does not span
-/// batches, so a dict row reachable through two fetches of the same buffer
-/// (Step 4b extension vs the FULL block, Step 4c abbreviation vs a partial
-/// hit) would otherwise show twice. Borrowed keys — `existing` is not
-/// mutated during the retain, so the set holds `&str` slices into it and
-/// costs no per-keystroke String allocs.
+/// Cross-batch exclude: drop from `batch` every candidate already in
+/// `existing` — the same word identity `(canonical_tl, hanji,
+/// consumed_span)` (Core Principle #6), or the same recased `(roman,
+/// hanji, consumed_span)`. The per-fetch `dedupe_by_roman_hanji_span`
+/// inside the lexicon does not span batches, so a dict row reachable
+/// through two fetches of the same buffer (Step 4b extension vs the FULL
+/// block, Step 4c abbreviation vs a partial hit) would otherwise show
+/// twice. Identity catches a custom row whose stored roman differs from
+/// the dict row's only in form (NFD import, POJ spelling); the recased
+/// roman still catches a walker slot 0, whose `canonical_tl` is folded
+/// from its recased roman while a dict row's is not. Borrowed keys —
+/// `existing` is not mutated during the retain, so the set holds `&str`
+/// slices into it and costs no per-keystroke String allocs.
 fn retain_absent_from(existing: &[RawCandidate], batch: &mut Vec<RawCandidate>) {
     if batch.is_empty() {
         return;
     }
+    // One set holds both spellings of every existing row: a canonical TL
+    // equal to another row's recased roman, at the same hanji and span, is
+    // the same word either way.
     let seen: std::collections::HashSet<(&str, Option<&str>, ConsumedSpan)> = existing
         .iter()
-        .map(|x| (x.roman.as_str(), x.hanji.as_deref(), x.consumed_span))
+        .flat_map(|x| {
+            [x.canonical_tl.as_str(), x.roman.as_str()]
+                .map(|reading| (reading, x.hanji.as_deref(), x.consumed_span))
+        })
         .collect();
-    batch.retain(|x| !seen.contains(&(x.roman.as_str(), x.hanji.as_deref(), x.consumed_span)));
+    batch.retain(|x| {
+        !seen.contains(&(x.canonical_tl.as_str(), x.hanji.as_deref(), x.consumed_span))
+            && !seen.contains(&(x.roman.as_str(), x.hanji.as_deref(), x.consumed_span))
+    });
 }
 
 /// Two romanizations are the **same reading** when they differ only in
@@ -350,8 +345,8 @@ pub(crate) fn roman_reading_eq(a: &str, b: &str) -> bool {
 /// Two `dict.bin` rows like `灣 / uan` (tone 1) and `灣 / uân` (tone 5)
 /// both index under `tps:ㄨㄢ`, so the build pipeline legitimately
 /// emits both rowids at the same FST key. The pre-sort
-/// `lexicon::dedupe_by_roman_hanji_span` keys on `(roman, hanji, span)`
-/// and preserves romanization variants; that is correct for TL/POJ
+/// `lexicon::dedupe_by_roman_hanji_span` keys on `(hanji, span)` + (`roman`
+/// or `canonical_tl`) and preserves tone variants; that is correct for TL/POJ
 /// (the UI shows distinct `uan / 灣` vs `uân / 灣` rows) but produces
 /// a visible duplicate in TPS mode where only `灣` is rendered.
 ///
@@ -364,8 +359,8 @@ pub(crate) fn roman_reading_eq(a: &str, b: &str) -> bool {
 /// `lexicon::dedupe_by_roman_hanji_span`. `hanji = None` or empty
 /// hanji passes through (roman-only rows are unique by roman); upstream
 /// `lexicon::dedupe_by_roman_hanji_span` already collapses exact
-/// `(roman, hanji, span)` duplicates so this branch never reaches a
-/// truly identical pair.
+/// `(hanji, span)` + (`roman` or `canonical_tl`) duplicates so this branch
+/// never reaches a truly identical pair.
 fn dedupe_display_hanji_for_tps(candidates: &mut Vec<RawCandidate>) {
     retain_first_by_key(candidates, |c| {
         c.hanji
@@ -461,22 +456,9 @@ fn fetch_via_lexicon_partial_inner_impl(
     out
 }
 
-/// A walker edge's time-decayed user-frequency weight for the
-/// `(display_text, canonical_tl)` pair the platform commits to
-/// `user_frequency.db` (Core Principle #7) — for the custom-edge and
-/// synth paths, which have no `RawCandidate` carrying `user_weight`.
-fn edge_user_weight_delta(
-    freq_map: &FrequencyMap,
-    now_ms: i64,
-    display_text: &str,
-    canonical_tl: &str,
-) -> f64 {
-    freq_map.get(display_text, canonical_tl).user_weight(now_ms)
-}
-
 /// v3.5.8 S6 — per-fetch map from a user row's walker edge key to the rows
-/// under it, in `rows` order (the edge pick is first-wins among the
-/// eligible, Codex Q6). `key_of` MUST run the same shadow pipeline the
+/// under it, in `rows` order (the edge pick's dedupe insertion order,
+/// Codex Q6). `key_of` MUST run the same shadow pipeline the
 /// lattice edge keys run for this fetch's `mode` so a hit is
 /// byte-identical to a `tl:` / `poj:` edge key. Registers the nasal-`oo`
 /// alias beside the canonical key: the dictionary build indexes the `o͘ⁿ`
@@ -484,6 +466,21 @@ fn edge_user_weight_delta(
 /// 好玄 as `ho͘nnhian` (edge key `tl:hoonnhian`) must still find a row
 /// stored canonically — safe on a fused body because an alias key is
 /// disjoint from every canonical key (`phonetics::nasal_oo_alias_spelling`).
+/// The rows `map` holds under an edge's `key` that `admits` lets through,
+/// in `map` order.
+fn rows_for_edge<'a, T>(
+    map: &std::collections::HashMap<String, Vec<&'a T>>,
+    key: &str,
+    admits: impl Fn(&T) -> bool,
+) -> Vec<&'a T> {
+    map.get(key)
+        .into_iter()
+        .flatten()
+        .copied()
+        .filter(|row| admits(row))
+        .collect()
+}
+
 fn edge_key_map<'a, T>(
     rows: &'a [T],
     key_of: impl Fn(&T) -> Option<String>,
@@ -528,7 +525,7 @@ pub(crate) enum ListShape {
     /// when it is one word — so a reading the dictionary has no word for
     /// keeps its row — and longer words first, each length in ranking order,
     /// a row covering its reading in full above the prefix extensions and
-    /// abbreviations (`lexicon::COVERAGE_KIND_*` ascend in that order).
+    /// abbreviations (`ranking::COVERAGE_KIND_*` ascend in that order).
     Word,
 }
 
@@ -555,6 +552,7 @@ fn edge_lookup(
         shadow_to_raw_end,
         barriers,
         hyphen_runs,
+        one_syllable_segments,
         ..
     } = continuous_keys;
     // Edges come from the syllabifier-built lattice so they are
@@ -587,7 +585,15 @@ fn edge_lookup(
     // wrong-tone word reappear at slot 0). The §35 Final-only
     // restriction and the §17 / §41 tone pin come from the same
     // [`crate::shadow::span_key`] derivation the span-local keys use.
-    let span_key = crate::shadow::span_key(shadow, start, end, mode, barriers, hyphen_runs)?;
+    let span_key = crate::shadow::span_key(
+        shadow,
+        start,
+        end,
+        mode,
+        barriers,
+        hyphen_runs,
+        one_syllable_segments,
+    )?;
     Some(EdgeLookup {
         toneless,
         raw_span,
@@ -647,8 +653,6 @@ pub(crate) fn walk_buffer(
         ..
     } = continuous_keys;
     let ContinuousFetchCtx {
-        freq_map,
-        now_ms,
         custom,
         learned,
         mode,
@@ -660,9 +664,9 @@ pub(crate) fn walk_buffer(
     // the edge keys use, so a hit here is byte-identical to a
     // lattice edge's `tl:{toneless}` (Q2 BLOCK: a plain
     // tone-digit-strip would not fold a POJ/diacritic custom roman
-    // like `tâi-uân`). Entries under one key keep `custom` order, so
-    // the edge provider's pick is **first-wins** among the eligible
-    // (Codex Q6: explicit, not `HashMap` overwrite/iteration).
+    // like `tâi-uân`). Entries under one key keep `custom` order — the
+    // dedupe's insertion order in the edge pick (Codex Q6: explicit, not
+    // `HashMap` overwrite/iteration).
     //
     // S6 byte-identity invariant: the SAME `mode` (`ctx.mode`) feeds the
     // caller's `build_shadow_lattice_with_barriers` and
@@ -672,13 +676,13 @@ pub(crate) fn walk_buffer(
     let custom_map = edge_key_map(custom, |entry| custom_toneless_key(&entry.roman, mode));
     // Learned phrases (§50) — keyed through [`learned_edge_key`] so the
     // canonical-TL row lands on the mode's own key family. Consumed by the
-    // edge pick below as a COMPETITOR of the dictionary rows, never as the
-    // override the custom map is (Codex 2026-09-20 F5).
+    // edge pick below as a COMPETITOR of the dictionary rows, as the custom
+    // map is (Codex 2026-09-20 F5).
     let learned_map = edge_key_map(learned, |entry| learned_edge_key(&entry.canonical_tl, mode));
 
     let path = crate::lattice::walk_best(lattice, shadow.len(), |start, end| {
-        // The tone pin is computed BEFORE the custom override below so
-        // both edge sources answer to the same pin: a custom entry
+        // The tone pin is computed BEFORE the custom rows are gathered so
+        // every edge source answers to the same pin: a custom entry
         // synthesized past the guard would land at slot 0, where no
         // downstream lexicon filter can reach it (Codex post-impl BLOCK,
         // 2026-08-20).
@@ -697,16 +701,16 @@ pub(crate) fn walk_buffer(
         // also feeds the key prefix here, so the lookup family is
         // consistent with the inventory family that produced the edge.
         let key_prefix = phonetics::KeyFamily::for_input_mode(mode).prefix();
-        // Custom override matching stays tone-INSENSITIVE: `custom_map` is
+        // Custom row matching stays tone-INSENSITIVE: `custom_map` is
         // keyed by `custom_toneless_key` (toneless), so it is queried with
         // the toneless key — a custom word is a specific user entry, matched
         // per the legacy toneless rule. What the tone pin adds is not a
         // different match key but an eligibility gate on the ENTRY's own
         // reading: with the edge typed with a digit (§17) or closed by the
         // keyboard's space (§41), an entry whose reading disagrees there is
-        // not the word the user asked for. The FIRST ELIGIBLE entry under
-        // the key wins — filtering after a first-wins pick would hide a
-        // later entry that does carry the typed tone.
+        // not the word the user asked for. Every eligible entry under the
+        // key enters the pick, so an entry that carries the typed tone is
+        // never hidden behind one that does not.
         //
         // **§41 branch unreachable in TPS today, kept for architectural
         // symmetry.** `custom_toneless_key` (`shadow.rs`) rejects a TPS
@@ -722,116 +726,46 @@ pub(crate) fn walk_buffer(
         // not survive verification. The §17 branch DOES fire: TL/POJ custom
         // entries are the common case.
         let custom_key = format!("{key_prefix}{toneless}");
-        // v3.5.8 S6 (Codex pre-impl S6 Q3, 2026-05-17) — a
-        // `custom_dictionary.db` entry whose normalized toneless
-        // roman equals this edge's key OVERRIDES the `dict.bin`
-        // best candidate for the edge (checked BEFORE
-        // `best_candidate_for_key_with_barriers`). Same source-rank-0 precedence
-        // custom has in the span-local `(roman,hanji,consumed_span)`
-        // dedupe — an unconditional edge-content override, NOT a
-        // cost competition (segmentation safety comes from the
-        // `CUSTOM_EFFECTIVE_FREQ` proxy + existing single-syllable
-        // user-delta damping, not from out-scoring dict here).
-        if let Some(entry) = custom_map.get(custom_key.as_str()).and_then(|entries| {
-            entries
-                .iter()
-                .copied()
-                .find(|entry| edge_tone_pin.admits_custom(&entry.roman, mode))
-        }) {
-            // `display_text` = the exact key the platform writes to
-            // `user_frequency.db` on commit, mirroring
-            // `lexicon::custom_entry_to_candidate` (hanji else
-            // `canonical_tl_form(roman, mode)`) so a user-selected
-            // custom entry's decayed weight folds into the path
-            // objective identically to a dict edge (S3 Q4d seam).
-            // v3.5.9 B-4 — the canonicalization keeps the commit key
-            // mode-invariant when the custom entry stored its roman
-            // in POJ display form (the user's native mode). Single-
-            // syllable custom is damped by
-            // `WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE` in
-            // `edge_cost`, same as dict.
-            // R5 pair-key (#7): fold the custom roman to canonical TL once,
-            // reuse for both the hanji-absent display_text fallback AND the
-            // `(display_text, canonical_tl)` freq pair key.
-            let canonical_tl = phonetics::api::canonical_tl_form(&entry.roman, mode);
-            let display_text = entry.hanji.clone().unwrap_or_else(|| canonical_tl.clone());
-            let user_weight_delta =
-                edge_user_weight_delta(freq_map, now_ms, &display_text, &canonical_tl);
-            // Syllable count = greedy-longest segment count of the
-            // edge's shadow span (the edge came from the
-            // syllabifier-built lattice so it segments cleanly;
-            // clamp ≥ 1 defends a leaked empty). `CustomEntry`
-            // carries no syllable model — this mirrors what the
-            // dict path reads off `DictionaryRecord.syllable_count`
-            // for the same span and feeds the khiin `n_syls` bias.
-            let syllable_count = greedy_longest_syllabification(
-                &shadow[start..end],
-                inv,
-                mode,
-                &crate::shadow::oov_reading_barriers(barriers, start, end, mode),
-            )
-            .map(|segs| segs.len())
-            .unwrap_or(1)
-            .clamp(1, u8::MAX as usize) as u8;
-            return Some(crate::lattice::EdgeChoice {
-                roman: entry.roman.clone(),
-                hanji: entry.hanji.clone(),
-                canonical_tl,
-                // S6 Q7 (Codex BLOCK guard): a custom entry IS a
-                // lexicon-backed hit (not OOV roman synthesis) —
-                // keeps the all-OOV carve-out from firing on a
-                // custom-only path. NEVER infer no-dict from
-                // hanji/freq/is_custom.
-                dict_hit: true,
-                is_custom: true,
-                // S6 Q1 (Codex BLOCK): effective-frequency proxy —
-                // custom still pays the same ln(CORPUS)
-                // normalization toll, NOT a cost floor/discount.
-                frequency: crate::lattice::CUSTOM_EFFECTIVE_FREQ,
-                syllable_count,
-                toneless_len: toneless.chars().count(),
-                user_weight_delta,
-            });
-        }
-        // PR-9.6 — the walker's per-edge dict lookup applies the SAME
-        // source filter as the span-local path so a whole-sentence parse
-        // cannot re-surface (at slot 0) a word whose only source the user
-        // toggled off. Custom edges above are unconditional (custom is not
-        // a toggleable source); dict edges honour
-        // `ctx.enabled_sources_bitmask`.
-        // Learned phrases (§50) — the rows keyed to this edge, filtered by
-        // the same tone pin a custom row answers to. They enter the
-        // dictionary's own `CandidateSortKey` pick; when any is present the edge is
-        // priced at least as a `CUSTOM_EFFECTIVE_FREQ` word so the span
-        // the user once composed as one word keeps winning the
-        // segmentation (the #69 span-vs-word decoupling: "is this span a
-        // word" is the floor, "which word" is the pick).
-        let learned_for_edge: Vec<&LearnedEntry> = learned_map
-            .get(custom_key.as_str())
-            .into_iter()
-            .flatten()
-            .copied()
-            .filter(|entry| edge_tone_pin.admits(None, &entry.canonical_tl))
-            .collect();
+        // Custom rows and learned phrases (§50) under this edge's key join
+        // the dictionary's own edge pick
+        // (`lexicon::best_candidate_for_key_with_barriers`) as competitors,
+        // ordered by the list's own `CandidateSortKey` — no longer a
+        // first-wins custom override (USER 2026-10-16: a never-selected
+        // custom 屢 `lí` took the `li2` edge from 你, and from a custom 李
+        // picked 7×). The dictionary rows honour
+        // `ctx.enabled_sources_bitmask` (PR-9.6); user rows are not a
+        // toggleable source. When any user row matched, the edge is priced
+        // at most at `CUSTOM_EDGE_COST` so the span the user filed or once
+        // composed as one word keeps winning the segmentation (the #69
+        // span-vs-word decoupling: "is this span a word" is the cap, "which
+        // word" is the pick).
+        let custom_for_edge = rows_for_edge(&custom_map, &custom_key, |entry: &CustomEntry| {
+            edge_tone_pin.admits_custom(&entry.roman, mode)
+        });
+        let learned_for_edge = rows_for_edge(&learned_map, &custom_key, |entry: &LearnedEntry| {
+            edge_tone_pin.admits(None, &entry.canonical_tl)
+        });
         match best_candidate_for_key_with_barriers(
             &dict_key,
             &edge_final_only,
             &edge_tone_pin,
             raw_span,
+            &custom_for_edge,
             &learned_for_edge,
             ctx,
         ) {
             Some(lexicon::EdgeBest {
                 candidate: c,
-                span_frequency,
+                span_walker_cost,
             }) => {
-                let span_frequency = if learned_for_edge.is_empty() {
-                    span_frequency
+                let span_walker_cost = if custom_for_edge.is_empty() && learned_for_edge.is_empty()
+                {
+                    span_walker_cost
                 } else {
-                    span_frequency.max(crate::lattice::CUSTOM_EFFECTIVE_FREQ)
+                    span_walker_cost.min(crate::lattice::CUSTOM_EDGE_COST)
                 };
-                // Word = the user's pick (`CandidateSortKey` order). Cost =
-                // `span_frequency` (key max) so a rarer preferred
+                // Word = the edge pick (user weight, context, corpus cost). Cost =
+                // `span_walker_cost` (key min) so a rarer preferred
                 // homophone does not lose the segmentation; the S3
                 // path discount reads the pick's own `user_weight`.
                 Some(crate::lattice::EdgeChoice {
@@ -844,9 +778,8 @@ pub(crate) fn walk_buffer(
                     // key off this, never `hanji.is_none()` /
                     // `frequency == 0`.
                     dict_hit: true,
-                    // S6: a `dict.bin` record is not custom.
-                    is_custom: false,
-                    frequency: span_frequency,
+                    is_custom: c.is_custom,
+                    walker_cost: span_walker_cost,
                     syllable_count: c.syllable_count,
                     // khiin `word_len` for the S5 length
                     // normalization (Codex pre-impl Q1 BLOCK).
@@ -904,7 +837,7 @@ pub(crate) fn walk_buffer(
                     dict_hit: false,
                     // S6: a synthesized OOV roman edge is not custom.
                     is_custom: false,
-                    frequency: 0,
+                    walker_cost: WALKER_COST_UNPRICED,
                     syllable_count,
                     toneless_len,
                     user_weight_delta: 0.0,
@@ -920,8 +853,7 @@ pub(crate) fn walk_buffer(
 /// `fetch_walker_slot0`'s body minus the `LexiconHandle::with_state`
 /// opener, the state `as_ref()?` guards, AND the `build_shadow_lattice_with_barriers`
 /// call (now built ONCE in the seam under **D1 fold** and passed in).
-/// Returns [`WalkerSlot0`] (D3 honest type): `cost` named explicitly;
-/// the seam converts to wire via `score = -(cost as f32)`.
+/// Returns [`WalkerSlot0`]; the seam converts it to a `RawCandidate`.
 ///
 /// v3.5.9 B-0c — `mode: phonetics::InputMode` replaces the prior
 /// `is_poj: bool` (Codex pre-impl SHOULD 2026-05-21 + 2026-05-20 enum
@@ -1073,31 +1005,16 @@ fn fetch_walker_slot0_inner(
     let display_text = hanji.clone().unwrap_or_else(|| canonical_tl.clone());
     // R5 pair-key (#7): walker synth keyed by (display_text,
     // canonical_tl); `get` returns the neutral default on a miss.
-    let user_weight = edge_user_weight_delta(freq_map, now_ms, &display_text, &canonical_tl);
-    // Classify via the lexicon single-source-of-truth so the
-    // synth's `CandidateMessage.script_kind` matches span-local / custom
-    // candidates exactly — including MIXED when the concatenated
-    // hanji contains a Latin letter (e.g. a path through `…hip相`).
-    // Codex PR #285 P2: the earlier `hanji.is_some()` binary
-    // mis-emitted HANT for mixed-script full-buffer paths, breaking
-    // platform dual-line render parity with regular candidates.
-    let script_kind = derive_script_kind(hanji.as_deref());
+    let user_weight = freq_map
+        .get(&display_text, &canonical_tl)
+        .user_weight(now_ms);
     Some(WalkerSlot0 {
-        // S5: `path.cost` is a min-cost (lower = better) total.
-        // The seam converts to wire `score = -(cost as f32)`
-        // (`CandidateMessage` proto field 5) preserving the
-        // higher-better wire monotonic ordering. Slot 0 is an
-        // explicit prepend so the wire value is informational only
-        // (never sort-compared), but the bridge IS the contract —
-        // do not "fix" the sign.
-        cost: path.cost,
         consumed_span,
         syllable_count,
         display_text,
         roman,
         hanji,
         canonical_tl,
-        script_kind,
         user_weight,
         coverage_kind: COVERAGE_KIND_FULL,
         // v3.5.8 S6 (Codex pre-impl S6 Q4): provenance truth — a
@@ -1156,14 +1073,14 @@ pub(crate) fn assemble_candidates(
     shape: ListShape,
 ) -> Vec<RawCandidate> {
     let raw_len = raw.len() as u32;
-    // Whole-buffer tone pin (§17 typed digits / §41 space-closed TPS
-    // tail), computed once per seam invocation for the sources that carry
-    // no span key of their own.
-    let tone_pin = crate::shadow::whole_buffer_tone_pin(raw, mode);
     LexiconHandle::with_state(|state| {
         let inv = state.syllable_inventory.as_ref();
         let prefix = state.prefix_index.as_ref();
         let dict = state.dictionary.as_ref();
+        // Whole-buffer tone pin (§17 typed digits / §41 space-closed TPS
+        // tail / §52 typed boundaries), computed once per seam invocation
+        // for the sources that carry no span key of their own.
+        let tone_pin = crate::shadow::whole_buffer_tone_pin(raw, mode, inv);
 
         // v3.5.9 D7 — build the shared lexicon-fetch context once per
         // seam invocation. `Some` only when BOTH `prefix_index` and
@@ -1200,6 +1117,12 @@ pub(crate) fn assemble_candidates(
                 // extensions). Computed from `raw` by the same rule the
                 // per-key pins use.
                 tone_pin,
+                // The key a custom entry is measured against on the exact
+                // span-local path — the same whole-buffer key the
+                // partial-prefix paths answer.
+                whole_buffer_key: (!custom.is_empty())
+                    .then(|| build_partial_prefix_key(raw, mode).map(|(_, key)| key))
+                    .flatten(),
             });
 
         // ---- Step 1: build keys + shadow/lattice (D1 fold).
@@ -1225,6 +1148,13 @@ pub(crate) fn assemble_candidates(
         let keys: &[(ConsumedSpan, String)] = continuous_keys
             .as_ref()
             .map_or(&[], |continuous_keys| &continuous_keys.keys);
+
+        // Rows ahead of the ranked list: 1 once the walker's whole-sentence
+        // slot is prepended (Step 4), which no later sort may move.
+        let mut walker_slot0_len = 0usize;
+        // Whether a block was appended after the first sorted one (the §35
+        // bare merge, Step 4b, Step 4c) — the only case Step 4d must re-sort.
+        let mut appended_blocks = false;
 
         // ---- Step 2: empty-keys partial-prefix vs span-local fetch.
         let mut candidates: Vec<RawCandidate> = if keys.is_empty() {
@@ -1267,11 +1197,11 @@ pub(crate) fn assemble_candidates(
             // (bare `ㄇ` → the syllabic `ㆬ` span) must not silently drop
             // the partial-prefix continuation list the literal glyph used
             // to reach — the user is mid-word at least as often as done.
-            // Run BOTH and let the (roman, hanji, span) dedupe collapse
+            // Run BOTH and let the (canonical_tl, hanji, span) dedupe collapse
             // overlaps; span results stay first.
             if let Some(ctx) = lex_ctx.as_ref() {
                 let literal_glyph_in_inventory = inv.is_some_and(|inv| {
-                    inv.contains_in(phonetics::InputMode::Tps, &raw.to_lowercase())
+                    inv.contains_in(phonetics::InputMode::Tps, &crate::shadow::lookup_form(raw))
                 });
                 let bare_expanded_only = mode == phonetics::InputMode::Tps
                     && raw.chars().count() == 1
@@ -1279,6 +1209,7 @@ pub(crate) fn assemble_candidates(
                     && !literal_glyph_in_inventory;
                 if bare_expanded_only {
                     c.extend(fetch_via_lexicon_partial_inner(raw, raw_len, mode, ctx));
+                    appended_blocks = true;
                 }
             }
             // ---- Step 3: per-candidate recase loop.
@@ -1304,7 +1235,8 @@ pub(crate) fn assemble_candidates(
             // (Codex pre-impl S2 Q1 — the 8-dim `CandidateSortKey` cannot
             // guarantee slot 0 on its own). Span-aware de-dup against
             // the synth (Codex pre-impl S2 Q1d): drop any span-local
-            // candidate identical on `(roman, hanji, consumed_span)` so
+            // candidate with the synth's `(hanji, consumed_span)` and
+            // either its `canonical_tl` identity or its recased roman, so
             // slot 0 is unique (e.g. a real left-anchored full-buffer
             // dict word equal to the walker path — keep the walker's
             // at slot 0, not a duplicate slot N).
@@ -1322,9 +1254,6 @@ pub(crate) fn assemble_candidates(
             // `(shadow, shadow_to_raw_end, lattice, inv)` plus
             // `prefix`/`dict` from the single seam `with_state`
             // scope — no second `build_shadow_lattice_with_barriers` per fetch.
-            // A2 D3 honest type: the walker returns
-            // [`WalkerSlot0`] (cost-named); convert to wire
-            // `RawCandidate` with `score = -(cost as f32)` here.
             {
                 if let (Some(continuous_keys), Some(inv), Some(ctx)) =
                     (continuous_keys.as_ref(), inv, lex_ctx.as_ref())
@@ -1346,14 +1275,11 @@ pub(crate) fn assemble_candidates(
                             roman: slot0.roman,
                             hanji: slot0.hanji,
                             canonical_tl: slot0.canonical_tl,
-                            // D3 honest conversion: wire `score`
-                            // (proto field 5) = negated min-cost.
-                            score: -(slot0.cost as f32),
-                            form: FORM_NOTONE,
-                            // walker-N/A; slot 0 explicit prepend.
+                            // see `WalkerSlot0`
+                            score: 0.0,
                             frequency: 0,
+                            walker_cost: WALKER_COST_UNPRICED,
                             bitmask: 0,
-                            script_kind: slot0.script_kind,
                             user_weight: slot0.user_weight,
                             context_rank: ranking::CONTEXT_RANK_NONE,
                             coverage_kind: slot0.coverage_kind,
@@ -1369,9 +1295,9 @@ pub(crate) fn assemble_candidates(
                         // own separator form (`-` hyphen / `--` neutral tone), the
                         // space-join is a malformed rendering of that word
                         // (`予我` synth `hōo guá` vs dict `hōo--guá`). The
-                        // existing `(roman, hanji, span)` dedupe below
-                        // can't collapse the pair because `roman` differs
-                        // ONLY in the separator, so the malformed synth
+                        // existing identity / roman dedupe below can't
+                        // collapse the pair because `roman` and
+                        // `canonical_tl` differ ONLY in the separator, so the malformed synth
                         // wins slot 0 and the canonical dict row sinks.
                         //
                         // Fix (display layer, NOT the cost/segmentation
@@ -1415,18 +1341,25 @@ pub(crate) fn assemble_candidates(
                         };
                         // Slot 0 is either the promoted canonical dict row
                         // (removed from its current position) or the synth.
-                        // Both then run the SAME exact-`(roman, hanji, span)`
-                        // dedupe + `insert(0, …)` so slot 0 stays unique.
+                        // Both then run the SAME dedupe — same word identity
+                        // or same recased roman, as [`retain_absent_from`] —
+                        // + `insert(0, …)` so slot 0 stays unique. The
+                        // identity half is a defensive mirror here: the
+                        // walker's edge pick and the lexicon list run the
+                        // same dedupe (a custom row replaces its dictionary
+                        // twin in both), so today slot 0 and its leftover
+                        // twin always share the recased roman.
                         let slot0 = match promote_idx {
                             Some(i) => c.remove(i),
                             None => slot0_cand,
                         };
                         c.retain(|x| {
-                            !(x.roman == slot0.roman
-                                && x.hanji == slot0.hanji
-                                && x.consumed_span == slot0.consumed_span)
+                            !(x.hanji == slot0.hanji
+                                && x.consumed_span == slot0.consumed_span
+                                && (x.canonical_tl == slot0.canonical_tl || x.roman == slot0.roman))
                         });
                         c.insert(0, slot0);
+                        walker_slot0_len = 1;
                     }
                 }
             }
@@ -1447,10 +1380,9 @@ pub(crate) fn assemble_candidates(
             // Step 4b runs the same `fetch_partial_prefix_candidates`
             // machinery that branch uses against the whole-buffer key
             // built by `build_partial_prefix_key(raw, mode)`. The result
-            // carries `COVERAGE_KIND_PARTIAL_PREFIX`, so `CandidateSortKey`'s
-            // leading dim pins these strictly below the FULL block in
-            // the merged vec — concat-without-resort preserves the
-            // `[FULL...][PARTIAL...]` invariant.
+            // carries `COVERAGE_KIND_PARTIAL_PREFIX`; Step 4d places it by
+            // `CandidateSortKey` among the FULL rows (tier first: it covers
+            // the whole input, so it leads front-segment rows).
             //
             // References:
             // - librime `src/rime/gear/table_translator.cc:178` →
@@ -1494,7 +1426,8 @@ pub(crate) fn assemble_candidates(
             // already present in the FULL block (walker slot-0 recases
             // edge-by-edge in `fetch_walker_slot0_inner`; span-local
             // recases here at Step 3) normalizes to the same `(roman,
-            // hanji, consumed_span)` triple and collapses.
+            // hanji, consumed_span)` triple, or carries the same
+            // `(canonical_tl, hanji, consumed_span)` identity, and collapses.
             if let (Some(continuous_keys), Some(ctx)) = (continuous_keys.as_ref(), lex_ctx.as_ref())
             {
                 if synth_consumed_span(
@@ -1548,6 +1481,7 @@ pub(crate) fn assemble_candidates(
                     // un-truncated pool was already sorted by CandidateSortKey),
                     // so `truncate` keeps the global score order.
                     ext.truncate(PARTIAL_PREFIX_OUTPUT_CAP);
+                    appended_blocks |= !ext.is_empty();
                     c.extend(ext);
                 }
             }
@@ -1559,10 +1493,10 @@ pub(crate) fn assemble_candidates(
         // buffer's shape (`shadow::abbrev_query_key`), not "no exact keys":
         // `mk` has the left-anchored syllable `m` and is still the
         // abbreviation of 物件. Hits carry `COVERAGE_KIND_ABBREV`, which
-        // `CandidateSortKey` ranks below PARTIAL, so appending keeps
-        // `[FULL…][PARTIAL…][ABBREV…]` without a re-sort — for a valid onset
-        // like `ts` the single-syllable partial hits stay put and the
-        // abbreviated words trail them. Same recase → exclude → truncate
+        // `CandidateSortKey` ranks below PARTIAL within a tier (Step 4d) —
+        // for a valid onset like `ts` the single-syllable partial hits stay
+        // ahead and the abbreviated words trail them; a whole-input
+        // abbreviation leads front-segment rows (`mk` 物件 before `m` 毋). Same recase → exclude → truncate
         // order as Step 4b: a row can be both a partial extension and an
         // abbreviation hit (`m̄-khíng` under `mk`), and truncating before
         // the exclude would lose real candidates to the duplicates cut.
@@ -1573,8 +1507,23 @@ pub(crate) fn assemble_candidates(
                 recase_all(&mut abbrev, raw, mode);
                 retain_absent_from(&candidates, &mut abbrev);
                 abbrev.truncate(PARTIAL_PREFIX_OUTPUT_CAP);
+                appended_blocks |= !abbrev.is_empty();
                 candidates.extend(abbrev);
             }
+        }
+        // ---- Step 4d: one order over the merged blocks (USER 2026-10-12).
+        // Each block above arrives sorted, but `CandidateSortKey` leads with
+        // the tier: a Step 4b extension or Step 4c abbreviation covering the
+        // whole input outranks a span-local row covering only its front, so
+        // the concatenation is re-sorted (stable — each block's own order and
+        // its exclude → truncate are kept). The walker's slot 0 stays put.
+        if appended_blocks {
+            let ranked = candidates.split_off(walker_slot0_len.min(candidates.len()));
+            candidates.extend(sort_by_candidate_key(
+                ranked,
+                raw_len,
+                RawCandidate::rank_facts,
+            ));
         }
         // ---- Step 5: presentation pass (typed separators, POJ render,
         // Syllable Separator, ⁿ case).
@@ -1672,10 +1621,14 @@ pub(crate) fn assemble_candidates(
         if mode == phonetics::InputMode::Tps {
             dedupe_display_hanji_for_tps(&mut candidates);
         }
-        // A word's list: longer words first, each length keeps its ranking.
+        // A word's list: the Step 4d lead (`candidate_lead`) and match kind,
+        // then longer words first whatever the counts or the custom source
+        // (H4); each length keeps its ranking. The walker's slot 0 stays put.
         if shape == ListShape::Word {
-            candidates.sort_by_key(|candidate| {
+            let ranked_from = walker_slot0_len.min(candidates.len());
+            candidates[ranked_from..].sort_by_key(|candidate| {
                 (
+                    candidate_lead(&candidate.rank_facts(), raw_len),
                     candidate.coverage_kind,
                     std::cmp::Reverse(candidate.consumed_span.1),
                 )
@@ -1842,10 +1795,9 @@ mod tests {
             hanji: Some("鵝".to_string()),
             canonical_tl: "goo".to_string(),
             score: 0.0,
-            form: FORM_NOTONE,
             frequency: 0,
+            walker_cost: WALKER_COST_UNPRICED,
             bitmask: 0,
-            script_kind: lexicon::CandidateScriptKind::Hant,
             user_weight: 0.0,
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: COVERAGE_KIND_FULL,
@@ -1870,10 +1822,9 @@ mod tests {
                 hanji: hanji.map(String::from),
                 canonical_tl: roman.to_string(),
                 score: 0.0,
-                form: FORM_NOTONE,
                 frequency: 0,
+                walker_cost: WALKER_COST_UNPRICED,
                 bitmask: 0,
-                script_kind: lexicon::CandidateScriptKind::Tailo,
                 user_weight: 0.0,
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
@@ -1918,10 +1869,9 @@ mod tests {
                 hanji: hanji.map(String::from),
                 canonical_tl: roman.to_string(),
                 score: 0.0,
-                form: FORM_NOTONE,
                 frequency: 0,
+                walker_cost: WALKER_COST_UNPRICED,
                 bitmask: 0,
-                script_kind: lexicon::CandidateScriptKind::Tailo,
                 user_weight: 0.0,
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
@@ -1948,10 +1898,9 @@ mod tests {
                 hanji: hanji.map(String::from),
                 canonical_tl: roman.to_string(),
                 score: 0.0,
-                form: FORM_NOTONE,
                 frequency: 0,
+                walker_cost: WALKER_COST_UNPRICED,
                 bitmask: 0,
-                script_kind: lexicon::CandidateScriptKind::Tailo,
                 user_weight: 0.0,
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
@@ -1982,10 +1931,9 @@ mod tests {
                 hanji: hanji.map(String::from),
                 canonical_tl: roman.to_string(),
                 score: 0.0,
-                form: FORM_NOTONE,
                 frequency: 0,
+                walker_cost: WALKER_COST_UNPRICED,
                 bitmask: 0,
-                script_kind: lexicon::CandidateScriptKind::Tailo,
                 user_weight: 0.0,
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,

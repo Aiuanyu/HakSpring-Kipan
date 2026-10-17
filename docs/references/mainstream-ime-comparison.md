@@ -5,7 +5,6 @@
 > **Status**: Authoritative as of 2026-09-24. Update when adding a new repo under `references/` or when an existing deep-dive doc lands in `docs/references/`.
 > **Getting the clones**: `references/` is gitignored — run `tools/sync-references.sh` to clone the whole roster (taigikeyboard-org forks preferred, upstream otherwise; `mozc` shallow, `keyboardkit9.9.0` + `fcitx5` tag-pinned) and fast-forward existing clones. Keep that script's roster in sync with this file.
 > **Related deep-dives**:
-> - [`azookey-reference.md`](./azookey-reference.md) — azooKey iOS UI / CustardKit / action model
 > - [`khiin-reference.md`](./khiin-reference.md) — khiin-rs DP segmentation + bigram + dual-trie
 > - [`rime-reference.md`](./rime-reference.md) — librime Pipeline / Spelling Algebra / user-dict decay
 > - [`moe-taigi-reference.md`](./moe-taigi-reference.md) — MOE Taigi InputLine / Nail / segmentation
@@ -28,7 +27,7 @@
 
 | # | Repo (under `references/`) | Lang | Platform | Type | Segmentation / Lattice | Candidate ranking | User adaptation | Tone / Syllabifier | License | Why we keep it |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | `azooKey/` | Swift / SwiftUI | iOS (KeyboardExt) | Full IME (Japanese) | Kana → kanji DP with Mozc-style cost | Frequency + custom dict + neural LM (`zenz-v3`) | Commit history → personal dict; on-device | Kana syllable rules | MIT (azooKey core) | UI vocabulary, action model, Flick/QWERTY dual-track. **Deep-dive**: `azookey-reference.md` |
+| 1 | `azooKey/` | Swift / SwiftUI | iOS (KeyboardExt) | Full IME (Japanese) | Kana → kanji DP with Mozc-style cost | Frequency + custom dict + neural LM (`zenz-v3`) | Commit history → personal dict; on-device | Kana syllable rules | MIT (azooKey core) | UI vocabulary, action model, Flick/QWERTY dual-track (card #1) |
 | 2 | `azooKey-Desktop/` | Swift | macOS (IMK) | Full IME | Same engine as azooKey iOS, exposed via Input Method Kit | Same | Shared user dict format | Shared | MIT | macOS IMK integration patterns; useful if Taigi ever ships Mac |
 | 3 | `CustardKit/` | Swift + JSON | Cross (data format) | Layout DSL | n/a | n/a | n/a | n/a | MIT | Declarative custom-tab JSON schema. Reference for any "export keyboard layout to file" feature |
 | 4 | `keyboardkit9.9.0/` | Swift | iOS (framework) | Framework | n/a (host-defined) | n/a | n/a | n/a | MIT (open) + commercial Pro | What our iOS keyboard *runs on top of*. Vendor SDK; consult `KeyboardKit-Documentation/` first |
@@ -38,8 +37,8 @@
 | 8 | `librime/` | C++ | Cross (desktop) | Engine core | DAG segmentation (Aho-Corasick over prism) + Viterbi | Spelling Algebra penalties + LevelDB user dict with dynamic weight + time decay (`exp((ta-t)/200)`) | LevelDB key-value: `commits / dee / tick` | Per-schema YAML (e.g. luna_pinyin) | BSD | Industry-canonical reference for **modular IME pipeline** and **user dict math**. **Deep-dive**: `rime-reference.md` |
 | 9 | `librime-predict/` | C++ | Cross | RIME plugin | n/a | Standalone next-word predictor table (`predict.db`) | Reads but does not write user state | n/a | BSD | Minimal predictor reference — fewer than 10 source files. Useful if we ever ship a configurable next-word switch instead of always-on |
 | 10 | `rime-moetaigi/` | YAML + dict | Cross (RIME schema) | Schema data | DAG inherits from librime | Frequency from MOE corpus + 楊允言 word stats | Auto user-phrase via librime | TPS (Bopomofo-style) + 9 tone marks | CC0 | **Only mainstream RIME-based Taigi schema**. Reference for keyboard layout, tone-mark placement, Mandarin reverse-lookup mode, TPS-display mode |
-| 11 | `McBopomofo/` | Swift + Obj-C++ + C++ | macOS (IMK) | Full IME | **Gramambular**: ReadingGrid + Span + Node, DAG with topological sort + relaxation | Unigram log-prob + Max-Match weighting (`fscale=2.7`) + heterophone penalties (×0.5 / ×0.25 / floor) | UserPhrasesLM + ExcludedPhrases; **per-syllable epsilon boost** prevents single-char overpowering multi-syllable | Bopomofo syllable validator | MIT | Cleanest open-source **Mandarin IME with deep algorithm doc**. `algorithm.md` is mandatory reading before touching our Phase 9 lattice. The epsilon-boost trick (`McBopomofoLM.cpp:120`) is directly relevant to Taigi user_freq_boost |
-| 12 | `khiin-rs/` | Rust | Desktop (Win/Linux) | Full IME (Taigi) | Word-level DP over `cost_map` with `ln(1/p^FREQ)/word_len^LET * n_syls^SYL` | Unigram + Bigram (`lgram, rgram, n`) | SQLite `unigrams` + `bigrams`; learning on commit | POJ/TL syllable regex + Telex tones (`s/f/l/j`) | MIT | **Most architecturally aligned with us**. Three input modes (Continuous / Classic / Manual) are the model we mirrored in Phase 8. **Deep-dive**: `khiin-reference.md` |
+| 11 | `McBopomofo/` | Swift + Obj-C++ + C++ | macOS (IMK) | Full IME | **Gramambular**: ReadingGrid + Span + Node, DAG with topological sort + relaxation | Unigram log-prob + Max-Match weighting (`fscale=2.7`) + heterophone penalties (×0.5 / ×0.25 / floor) | UserPhrasesLM + ExcludedPhrases; **per-syllable epsilon boost** prevents single-char overpowering multi-syllable | Bopomofo syllable validator | MIT | Cleanest open-source **Mandarin IME with deep algorithm doc**. `algorithm.md` is mandatory reading before touching our lattice walker. The epsilon-boost trick (`McBopomofoLM.cpp:120`) is directly relevant to Taigi user_freq_boost |
+| 12 | `khiin-rs/` | Rust | Desktop (Win/Linux) | Full IME (Taigi) | Word-level DP over `cost_map` with `ln(1/p^FREQ)/word_len^LET * n_syls^SYL` | Unigram `n` then conversion weight (`select_conversions.sql`); `bigrams` table is schema only — the join is commented out | SQLite `unigrams`; nothing in `khiin/src/` writes n-gram counts | POJ/TL syllable regex + Telex tones (`s/f/l/j`) | MIT | **Most architecturally aligned with us**. Our lattice walker cost (`engine/composing/src/lattice/cost.rs`) ports its segmenter. **Deep-dive**: `khiin-reference.md` |
 | 13 | `moe_taigi_apk/` (decompiled) | Java (decompiled from C++) | Android (IME) | Full IME (Taigi, MOE official) | "Nail"-based segment-by-segment commit; `InputLine` + `Segmentation` | Closed-source C++ via SWIG JNI | `UserVoc` + `LearnedVoc` separated; `RIPE_*_APPROVALS` maturity thresholds | TL only; binary `tailo.tab` syllable trie | Closed-source binaries; AGPL-equivalent terms unclear | **Reference Taigi UX baseline**. Nail commit flow, span-units, Han-lo mixed candidates (`VT_MIXED`). **Deep-dive**: `moe-taigi-reference.md` |
 | 14 | `aiongtaigi-sushi/` (decompiled) | Kotlin + Compose (decompiled) | Android (IME) | Full IME (Taigi) | Unknown (closed source; class names obfuscated `p001a0` etc.) | Unknown | Has on-device `hanji_corrections.csv` orthography map | TL primary | Closed-source | **Hanji-correction CSV** at `resources/assets/hanji_corrections.csv` — direct reference for an orthography normalisation pass (`beh,欲,卜` style mapping from preferred → deprecated form) |
 | 15 | `lexical-models/` (Keyman) | TypeScript | Cross (Keyman) | Predictive model registry | Trie-based wordlist + frequency | Keyman's prediction algorithm | Not in scope | n/a (per-locale) | MIT | **Folder convention** (`release/<author>/<bcp47>.<uniq>/`) for shipping pluggable predictive models. Worth borrowing if we ever externalise dictionary distribution |
@@ -69,17 +68,17 @@ If you are working on… → read these in order.
 ### Segmentation / lattice (DP, DAG, Viterbi)
 
 1. **`McBopomofo/algorithm.md`** — clearest pedagogical write-up (ReadingGrid, Spans, topological-sort relaxation). Required reading before touching `engine/composing/src/lattice/walker.rs`.
-2. **`khiin-rs/khiin/src/data/segmenter.rs`** — word-level DP cost function. Already mirrored in our roadmap Phase 9 user_freq_boost work.
+2. **`khiin-rs/khiin/src/data/segmenter.rs`** — word-level DP cost function. Ported as our walker cost (`engine/composing/src/lattice/cost.rs`).
 3. **`librime/src/rime/algo/syllabifier.cc`** — DAG construction with prism (double-array trie). Industry baseline.
 4. **`mozc/src/converter/immutable_converter.cc` + `lattice.cc` + `nbest_generator.cc`** — full connection-cost **Viterbi** + N-best. The "do it properly" end of the spectrum; read when justifying whether a Taigi slice needs a real connection matrix or the cheaper topological-sort relaxation (McBopomofo) / our walker suffices.
 5. **`vChewing-macOS/algorithm.md`** (#23) — Chinese-language write-up of the **Homa** DAG dynamic-programming assembler + input FSM + language-model convergence. Sibling to McBopomofo's `algorithm.md`; useful as a second opinion on the same problem class. Source in `vChewing-LibVanguard/Sources/_Modules/Homa/` (#24).
-6. **`moe-taigi-reference.md`** — segment-by-segment "Nail" UX (we explicitly rejected this in 2026-03; keep for context).
+6. **`moe-taigi-reference.md`** — segment-by-segment "Nail" UX (rejected for our UX; keep for context).
 
 ### Candidate ranking (user_freq, recency, bigram)
 
 1. **`librime` user-dict math** — `src/rime/dict/user_dictionary.cc` for `formula_d(d, t, da, ta) = d + da * exp((ta - t)/200)`. Time-decay formula reference. See `rime-reference.md`.
-2. **`McBopomofo` epsilon boost** — `Source/Engine/McBopomofoLM.cpp:120`. Single-char user phrases get `topScore + 1e-9` so they don't always beat multi-syllable. Same problem we hit in Phase 9.4a.
-3. **`khiin-rs` bigram** — `khiin/src/data/database.rs` SQL schema for `bigrams(lgram, rgram, n)`.
+2. **`McBopomofo` epsilon boost** — `Source/Engine/McBopomofoLM.cpp:120`. Single-char user phrases get `topScore + 1e-9` so they don't always beat multi-syllable. Our counterpart: `WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE` in `engine/composing/src/lattice/cost.rs`.
+3. **`khiin-rs` bigram** — `khiin/src/db/migrations/001/up.sql` SQL schema for `bigrams(lgram, rgram, n)` (schema only; nothing reads or writes it).
 4. **`librime-predict`** — minimal next-word predictor (read all of `src/`, ~500 LOC).
 
 ### User adaptation / personal dict
@@ -93,7 +92,7 @@ If you are working on… → read these in order.
 
 1. **`docs/phonetics/taigi-phonetics-reference.md`** — our internal source of truth. Always first.
 2. **`khiin-rs/ji/src/lomaji.rs` + `tone.rs`** — closest match for what our Rust syllabifier does.
-3. **`rime-moetaigi/moetaigi.schema.yaml`** — TPS (Bopomofo-style) tone-mark placement. Reference for `keyboard/tps/*`.
+3. **`rime-moetaigi/rime-moetaigi/moetaigi-tsuim.schema.yaml`** — TPS (Bopomofo-style) tone-mark placement. Reference for `keyboard/tps/*`.
 4. **`McBopomofo/Source/Engine/Mandarin/`** — Bopomofo input validation. Useful as a structural mirror; phonetic rules don't transfer.
 5. 🔑 **`Tekkon/Sources/Tekkon/Tekkon_SyllableComposer.swift`** (#25) — incremental keystroke → syllable state machine. **Read before touching TPS composing**: it solves the same "this key could be the previous syllable's coda or the next syllable's onset" ambiguity as our §32/§33/S23 work (`engine/phonetics/src/tps_adjust.rs` `adjust_initial_key` / `dual_final_form`). `Tekkon_Constants.swift` holds the layout→phonabet tables; `Tekkon_PinyinTrie.swift` is the romanization→phonabet path. Read-only reference — LGPL, do **not** vendor code.
 
@@ -127,7 +126,7 @@ If you are working on… → read these in order.
 
 ### Custom keyboard layout / UI
 
-1. **`azooKey/KeyboardViews/Custard/`** — declarative grid-fit layout from JSON. See `azookey-reference.md`.
+1. **`azooKey/AzooKeyCore/Sources/KeyboardViews/Custard/`** — declarative grid-fit layout from JSON. See card #1.
 2. **`CustardKit/json/howToMake.md`** — the JSON schema spec itself (Japanese-only doc).
 3. **`florisboard/lib/snygg/`** — Compose-based theming DSL for IME. Closest to what we'd want for Android theming.
 4. **`KeyboardKit-Documentation/`** — vendor SDK we run on; always consult before suspecting a KK bug.
@@ -137,7 +136,7 @@ If you are working on… → read these in order.
 ### Schema / config-driven IME
 
 1. **`librime/`** — gold standard. YAML schemas with `__include`, `__patch`, `__append`, `__merge`. We do **not** want this level of flexibility, but the YAML shape is the reference if we externalise anything.
-2. **`rime-moetaigi/moetaigi.schema.yaml`** — minimal Taigi-shaped RIME schema.
+2. **`rime-moetaigi/rime-moetaigi/moetaigi-tsuim.schema.yaml`** (+ `moetaigi.unspaced.schema.yaml`) — minimal Taigi-shaped RIME schema.
 3. **`trime/app/src/main/java/com/osfans/trime/provider/RimeDataProvider.kt` + `app/data/rime/`** — how a RIME schema/dict bundle is *deployed and exposed* on Android (submodule-vendored data + `DocumentsProvider`).
 4. **`PIME/backends.json`** — minimal registry mapping `name → command/workingDir/params` for pluggable engine backends. The whole multi-engine dispatch in ~20 lines.
 5. **`MacishType/Engines/README.md`** — `manifest.json` engine contract: declare a field → it's fixed; omit it → host auto-exposes a user control. Clean "config sets it OR user controls it" model for settings-vs-defaults seams.
@@ -156,17 +155,17 @@ If you are working on… → read these in order.
 
 ### 1. azooKey (iOS) — `references/azooKey/`
 
-- **What**: Japanese iOS keyboard, SwiftUI-based, ships own kana→kanji engine (`zenz-v3` neural LM in latest versions).
-- **Why we care**: Best open-source iOS keyboard reference. Dual-track layout (Flick `CustardKit` + QWERTY `UnifiedKey`), 47-action protocol, SwiftUI patterns (`@StateObject` + `@EnvironmentObject` + enum-based NavigationStack routing).
+- **What**: Japanese iOS keyboard, SwiftUI-based, ships own kana→kanji engine (`zenz-v3` neural LM in latest versions). MIT.
+- **Why we care**: Best open-source iOS keyboard reference. Dual-track layout — CustardKit (Flick, integer `gridFit(x, y)` grid) + UnifiedKey (QWERTY, float positions + width); one `ActionType` enum for every key action (`.input`, `.delete`, `.moveCursor`, `.moveTab`, `.setBoolState`, …); main app = `TabView` (Tips / Theme / Customize / Settings) + enum-`Path` `NavigationStack` routing, `@StateObject` + `@EnvironmentObject` state.
 - **Where to look**:
-  - `KeyboardViews/View/UnifiedKey/` — unified key system
-  - `KeyboardViews/Custard/` — built-in Flick layouts
-  - `MainApp/Setting/` — settings UI
+  - `AzooKeyCore/Sources/KeyboardViews/View/UnifiedKey/` — unified key system; `UnifiedKeyModelProtocol.swift` (`pressActions` / `longPressActions` / `variationSpace`), `UnifiedVariation.swift` (flick four-way vs long-press linear variations)
+  - `AzooKeyCore/Sources/KeyboardViews/Action.swift` — `ActionType`
+  - `AzooKeyCore/Sources/KeyboardViews/Custard/` — built-in Flick layouts
+  - `MainApp/ContentView.swift` (tab shell), `MainApp/Setting/` — settings UI
 - **Inspiration takeaways for us**:
   - Flick five-way input → Taigi tone variations (`a → á/à/â/ā/a̍`)
-  - `UnifiedKeyModelProtocol` → unified key interface
-  - `MatchedGeometryEffect` for tone-mark animation (already used)
-- **Deep-dive**: [`azookey-reference.md`](./azookey-reference.md)
+  - `UnifiedKeyModelProtocol` → one key interface returning press / long-press / variation behaviour
+- **Not adopted**: CustardKit user-defined layouts and a layout editor (Taigi layouts are fixed; high cost).
 
 ### 2. azooKey-Desktop (macOS) — `references/azooKey-Desktop/`
 
@@ -175,7 +174,7 @@ If you are working on… → read these in order.
 - **Where to look**:
   - `azooKeyMac/` — IMK entry, `InputController.swift`
   - `Core/Sources/` — shared engine
-- **Inspiration takeaways**: shared-core packaging pattern (matches Taigi Phase IV-A direction). Pure Swift shared layer talks to per-platform thin wrappers.
+- **Inspiration takeaways**: shared-core packaging pattern — one engine package, thin per-platform wrappers (the shape of our Rust engine under every shell).
 
 ### 3. CustardKit — `references/CustardKit/`
 
@@ -216,7 +215,7 @@ If you are working on… → read these in order.
   - `librimeFramework.sh` + `InputSchemaBuild.sh` — build pipeline
   - `HamsterKeyboard/` — KeyboardKit-based extension target
   - `Hamster/` — main app
-- **Inspiration takeaways**: If Taigi ever wants to *embed* librime instead of building our own engine (Phase IV-A made that explicitly not our path), this is the prior art. Useful as a "we considered but rejected" cite.
+- **Inspiration takeaways**: prior art for *embedding* librime instead of building our own engine — a "we considered but rejected" cite (we ship our own Rust engine).
 
 ### 8. librime — `references/librime/`
 
@@ -228,8 +227,8 @@ If you are working on… → read these in order.
   - `src/rime/gear/` — processors, translators, filters
   - `src/rime/config/` — `config_compiler.cc`, `config_types.cc`
 - **Inspiration takeaways**:
-  - **Time-decay weight formula** (`formula_d(d, t, da, ta) = d + da * exp((ta - t)/200)`) directly informed our recency_rank work.
-  - **Penalty values** as design vocabulary: -0.693 (= ln 2) for fuzzy/abbrev/autocomplete, -4.605 (= ln 100) for error correction, -23.026 (= ln 1e10) for ambiguity.
+  - **Time-decay weight formula** (`formula_d(d, t, da, ta) = d + da * exp((ta - t)/200)`) informed our user-weight decay (`decayed_user_weight_delta`, `engine/ranking/src/score.rs`).
+  - **Penalty values** as design vocabulary: -0.693 (= log 0.5) for fuzzy / abbreviation, -2.996 (= log 0.05) for completion and ambiguous syllables, -4.605 (= log 0.01) for error correction (table with cites in `rime-reference.md` § Penalty Values).
 - **Deep-dive**: [`rime-reference.md`](./rime-reference.md)
 
 ### 9. librime-predict — `references/librime-predict/`
@@ -261,9 +260,9 @@ If you are working on… → read these in order.
 
 - **What**: Open-source macOS Mandarin IME, IMK-based, Bopomofo. Has the **best algorithm documentation** of any IME we've examined (`algorithm.md`).
 - **Why we care**:
-  - **Gramambular DAG** (`Source/Engine/gramambular2/reading_grid.{h,cpp}`) is the cleanest reference implementation of unigram + topological-sort + relaxation walker. Maps almost 1:1 onto our Phase 9 lattice work.
+  - **Gramambular DAG** (`Source/Engine/gramambular2/reading_grid.{h,cpp}`) is the cleanest reference implementation of unigram + topological-sort + relaxation walker. Maps almost 1:1 onto our lattice walker (`engine/composing/src/lattice/walker.rs`).
   - **Heterophone handling** (`Source/Data/curation/compilers/main_compiler.py:158`): first reading = original freq, second reading × 0.5, third × 0.25, others = floor `-6.8`. Directly applicable to TL heterophones.
-  - **User-phrase epsilon boost** (`McBopomofoLM.cpp:120`): single-syllable user phrases get `topScore + 1e-9` — solves the exact "user word always wins over multi-syllable phrase" bug we hit in v3.5.6.
+  - **User-phrase epsilon boost** (`McBopomofoLM.cpp:120`): single-syllable user phrases get `topScore + 1e-9` — solves the "user word always wins over multi-syllable phrase" problem; our walker damps single-syllable user weight the same way (`WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE`, `cost.rs`).
   - **`fscale = 2.7`** length weighting in `frequency_builder.py` — empirical multiplier for "long words deserve a boost". Reference for any future Taigi DP cost-function tuning.
 - **Where to look**:
   - `algorithm.md` — MANDATORY READ before touching `engine/composing/src/lattice/walker.rs`
@@ -271,7 +270,7 @@ If you are working on… → read these in order.
   - `Source/Engine/McBopomofoLM.cpp:81 (getUnigrams), :120 (epsilon boost), :234 (filterAndTransformUnigrams)`
   - `Source/Engine/ParselessLM.{h,cc}` + `ParselessPhraseDB.{h,cc}` — memory-mapped binary-search dict (alternative to MARISA-trie)
   - `Source/Data/curation/` — Python pipeline for building dict from raw corpora
-- **Inspiration takeaways for us**: too many to list; this is **the** reference for our lattice work. Phase 9.4a/9.4b/9.4c all touch ideas pioneered or cleanly documented here.
+- **Inspiration takeaways for us**: **the** reference for our lattice work — `walker.rs` cites `reading_grid.cpp` for its single-pass relaxation.
 
 ### 12. khiin-rs — `references/khiin-rs/`
 
@@ -283,10 +282,9 @@ If you are working on… → read these in order.
   - `khiin/src/input/converter.rs` — candidate generation
   - `khiin/src/buffer/buffer_mgr.rs` — buffer state machine
 - **Inspiration takeaways**:
-  - **Three input modes** — already mirrored in our keyboard (Phase 8).
-  - **Cost function** `ln(1/p^FREQ_BIAS) / word_len^LET_BIAS * n_syls^SYL_BIAS` — reference for our Phase 9 ranking.
-  - **Two-stage architecture** — segmenter (pure function) + selector (dict-aware) is the model we chose.
-  - **Why we don't fully mirror it**: khiin targets desktop sentence input (10+ words); mobile keyboard does 1-3 words with candidate bar. Our `len^2` + dict-tie-break is cheaper and sufficient.
+  - **Cost function** `ln(1/p^FREQ_BIAS) / word_len^LET_BIAS * n_syls^SYL_BIAS` — our lattice walker is a port of it (`engine/composing/src/lattice/cost.rs`, same `LETTER_COUNT_BIAS` / `SYLLABLE_COUNT_BIAS` = 0.2; `walker.rs` cites `segment_min_cost`).
+  - **Commit-and-resegment** in `khiin/src/buffer/buffer_mgr.rs`.
+  - Three input modes (Continuous / Classic / Manual, `khiin/src/config/conf.rs`) — not mirrored; we have one continuous path.
 - **Deep-dive**: [`khiin-reference.md`](./khiin-reference.md)
 
 ### 13. moe_taigi_apk (decompiled) — `references/moe_taigi_apk/`
@@ -302,8 +300,8 @@ If you are working on… → read these in order.
 - **Inspiration takeaways**:
   - **Multiple readings per candidate** (`List<String> tailos`) — better than single TL string. We do this.
   - **Han-lo mixed candidates** (`VT_MIXED`) — show Hanji + TL in the same candidate. We do this.
-  - **UserVoc / LearnedVoc separation** — manual vs auto-learning. We don't (yet); flagged as potential v3.6 work.
-  - **Nail commit flow** — segment-by-segment confirmation. **Explicitly rejected** for our UX in 2026-03; keep for context.
+  - **UserVoc / LearnedVoc separation** — manual vs auto-learning. We do this: custom dictionary vs learning records (`engine/userdata/src/custom_dictionary.rs`, `learning_records.rs`).
+  - **Nail commit flow** — segment-by-segment confirmation. **Rejected** for our UX; keep for context.
 - **Deep-dive**: [`moe-taigi-reference.md`](./moe-taigi-reference.md) (engine analysis)
 
 ### 14. aiongtaigi-sushi (decompiled) — `references/aiongtaigi-sushi/`
@@ -328,7 +326,7 @@ If you are working on… → read these in order.
   - `experimental/` — work-in-progress models
   - `tools/` — compiler scripts
   - `docs/externally-hosted-models.md` — how third parties publish their own
-- **Inspiration takeaways**: out-of-tree dictionary distribution pattern. Probably YAGNI for us until v4.x.
+- **Inspiration takeaways**: out-of-tree dictionary distribution pattern. YAGNI for us today.
 
 ### 16. Trime (Android) — `references/trime/`
 
@@ -348,7 +346,7 @@ If you are working on… → read these in order.
 
 ### 17. mozc (Google Japanese Input) — `references/mozc/`
 
-- **What**: Google's OSS Japanese IME, C++ / Bazel. Multi-platform (Android lib, macOS, Windows, Linux, ChromeOS). Origin of Google Japanese Input. BSD-3-Clause. Clone `afbf1d089` (2026-05-27). *Previously an external pointer; now cloned — see card here instead of the bottom section.*
+- **What**: Google's OSS Japanese IME, C++ / Bazel. Multi-platform (Android lib, macOS, Windows, Linux, ChromeOS). Origin of Google Japanese Input. BSD-3-Clause. Clone `afbf1d089` (2026-05-27).
 - **Why we care**: The **canonical n-gram + lattice + Viterbi** Japanese converter. Most modern Japanese IMEs (azooKey included) trace their converter design to Mozc. Read it when comparing **full Viterbi** (Mozc) vs the **topological-sort relaxation** McBopomofo uses (#11) vs our walker — i.e. when deciding whether a Taigi lattice slice needs a real connection-cost matrix or the cheaper relaxation is sufficient.
 - **Where to look**:
   - `src/converter/lattice.{h,cc}` — the lattice node structure
@@ -572,10 +570,6 @@ Four repos under `references/` are **not IME engines** and are intentionally abs
 
 Worth knowing about; clone on demand when a specific question arises.
 
-### Mozc — now cloned → see card #17
-
-- **Promoted to a cloned repo** under `references/mozc/` (2026-05-27). See **per-repo card #17** + matrix row 17 above; this entry is kept only as a redirect.
-
 ### libchewing — https://github.com/chewing/libchewing
 
 - Mature OSS Bopomofo engine (Hakka/Mandarin), C. The IBM/Linux Bopomofo IME most distros ship with. SQLite-backed user dict, smart-phrase autocomplete.
@@ -584,23 +578,22 @@ Worth knowing about; clone on demand when a specific question arises.
 ### Gboard (Google) — proprietary, but see research papers
 
 - "Federated Learning of Out-Of-Vocabulary Words" (Hard et al. 2018) and "Federated Learning for Mobile Keyboard Prediction" (McMahan et al. 2018) are the canonical references for on-device personalisation without server uploads.
-- Read when: considering privacy-preserving user-freq sharing across devices (Phase IV+ stretch goal).
+- Read when: considering privacy-preserving user-freq sharing across devices.
 
 ### OpenVanilla — https://github.com/openvanilla/
 
 - Umbrella project, McBopomofo's home. Hosts McBopomofo, OpenVanilla framework (older), and several utility IMEs.
 - McBopomofo (already covered above) is the most-maintained module.
 
-### fcitx5 — now cloned → see card #29; ibus — https://github.com/ibus/ibus
+### ibus — https://github.com/ibus/ibus
 
-- **fcitx5** is cloned under `references/fcitx5/` (pinned 5.1.7). See **per-repo card #29** + matrix row 29; this entry is kept only as a redirect.
-- **ibus** is not cloned. Our IBus engine (`taigi-linux-core`, zbus) talks to the IBus D-Bus interface directly; clone ibus only if that protocol needs reading beyond its published docs.
+- Not cloned. Our IBus engine (`taigi-linux-core`, zbus) talks to the IBus D-Bus interface directly; clone ibus only if that protocol needs reading beyond its published docs. (fcitx5 is cloned — card #29.)
 
 ---
 
 ## Cross-cutting insights (Taigi-specific reading order)
 
-When designing a Phase IV+ engine slice, read in this order:
+When designing a new engine slice, read in this order:
 
 1. **`docs/phonetics/taigi-phonetics-reference.md`** — what TL/POJ/TPS *should* do.
 2. **`docs/engine/*.md`** — what our current engine does.
@@ -610,28 +603,15 @@ When designing a Phase IV+ engine slice, read in this order:
 6. **`moe-taigi-reference.md`** (deep-dive) — what Taiwanese users currently expect as default IME UX.
 7. **This file** (mainstream-ime-comparison.md) — back-pointer when you forget which repo covers which dimension.
 
-For Phase II+ (cross-platform alignment), read:
+For cross-platform alignment, read:
 
-1. **`azookey-reference.md`** — iOS UI patterns.
+1. **Card #1 azooKey** — iOS UI patterns.
 2. **`florisboard/app/src/main/kotlin/dev/patrickgold/florisboard/`** — Android IME service skeleton + Compose IME UI (engine *not* wired in).
 3. **`trime/app/src/main/java/com/osfans/trime/core/` + `daemon/`** — Android IME *with* a native engine wired in via an async daemon; the FFI-threading model for our Android↔Rust boundary.
 4. **`docs/contributing/cross-platform-alignment.md`** — refactor-freeze, parity-correction tier, invariant labels.
 
 ---
 
-## Maintenance log
+## Maintenance
 
-- **2026-05-12** — Initial version. Indexed 13 repos under `references/` + 4 external pointers (Mozc, libchewing, Gboard, OpenVanilla). Built on top of existing deep-dives (azookey/khiin/rime/moe-taigi).
-- **2026-05-17** — Added repo #16 `trime/` (osfans/trime, RIME IME for Android, GPL-3.0, nightly `277b8ea2`). Matrix row + per-repo card + new "Native-engine embedding / FFI threading" topic section + Custom-UI / Schema-deploy / Phase II+ pointers. Index-only (no deep-dive): Trime's engine internals are already covered by `librime` (#8) + `rime-reference.md`; its value is the Android integration layer. Deep-dive deferred until an Android FFI/daemon slice needs it.
-- **2026-05-30** — Indexed 4 newly-cloned IMEs as cards/rows #17–20: **mozc** (`afbf1d089`, BSD-3, promoted from external pointer → cloned; Mozc external entry now a redirect), **rakukan** (`ea8e151`, MIT, Rust + LLM Windows IME, out-of-process engine-host + live conversion), **PIME** (`571759f`, LGPL-2.1, Windows TSF multi-backend host), **MacishType** (`8a6cb3a`, MIT, macOS IMK, JS-pluggable engine + native candidate window). Topic-index additions: lattice (mozc Viterbi), predictive (mozc predictor + rakukan live-conv), native-engine FFI (rakukan/PIME out-of-process), candidate UI (MacishType), config-driven (PIME `backends.json` + MacishType `manifest.json`). Added a "Cloned but out-of-engine-scope" note for `ISEmojiView/` (iOS emoji UI lib, not an IME) + `KeSi/` (Tâi-bûn NLP toolkit, not an IME) so they aren't re-explored as engine refs. Index-only (no deep-dives): create `docs/references/<repo>-reference.md` if a slice ever needs >500 LOC read-through of mozc's Viterbi or rakukan's RPC/live-conv.
-- **2026-06-14** — Indexed 2 previously-uncatalogued Taigi IMEs as cards/rows #21–22: **PhahTaigi_iOS** (`bd91e46`, GPL-3.0, iOS Taigi keyboard, Realm dict, stale 2022 checkout — the iOS Taigi prior art behind the §34/S22 "PhahTaigi parity" cite) + **rime-phah-taibun** (`d569c0e`, MIT, second RIME Taigi schema, ~220K-entry corpus merge, sibling of #10). Softened #10 `rime-moetaigi` "only mainstream RIME Taigi schema" → cross-ref #22. Topic-index "Taigi-specific UX / data" additions for both. Added a third "Cloned but out-of-engine-scope" bullet for `Taigi-Input-method-dictionary-supplement/` (`ada348a`, MOE-IME CSV supplement = dev-supplement source behind PR #368/#369; dictionary data, not an engine). Index-only (no deep-dives). All 25 repos under `references/` now catalogued.
-
-- **2026-08-20** — Indexed 3 vChewing-family repos as cards/rows #23–25: **vChewing-macOS** (`a4cccea6`, MIT-NTL, macOS IMK Mandarin IME, ships a Chinese-language `algorithm.md`), **vChewing-LibVanguard** (`68b63f2`, LGPL-3.0, vChewing's engine being extracted into a UI-free cross-platform Swift package — same engine/platform-seam move as our Rust engine), **Tekkon** (`13c4e7a`, LGPL-3.0 + Section-7 code-signing exception, standalone phonabet syllable composer, ~2,700 LOC; cloned at USER request 2026-08-20). Topic-index additions: segmentation (vChewing `algorithm.md` Homa DAG) + syllabifier (🔑 `Tekkon_SyllableComposer.swift` as the closest structural analogue to our TPS composing — same coda-vs-onset ambiguity as §32/§33/S23). Index-only (no deep-dives). ⚠ Both LGPL repos are flagged **read-only** in their cards: algorithm reference only, no vendoring.
-
-- **2026-09-19** — Cloned and indexed **ChiaKey** (`89aebc8c`, BSD-style, macOS Obj-C++ IMK revival of Yahoo! KeyKey / OpenVanilla) as card/row #26 at USER request. Deep-dive `chiakey-reference.md` written on the same day (engine judged legacy; value = lexicon release contract, `Runtime`/`Engine` facade, bounded learning store, XPC-free coordination, updater trust chain, release workflow, gold-set harness). New topic section "Dictionary distribution / desktop release & update"; entries added under "User adaptation" and "Native-engine embedding". Roster line added to `tools/sync-references.sh` (upstream, no org fork).
-
-- **2026-09-19** — Cloned and indexed **KeyKey** (`81e05f0`, 2012-12-04, New BSD, the Yahoo! KeyKey 1.1.2528 source drop that #26 ChiaKey revives; org fork `taigikeyboard/KeyKey`) as card/row #27 at USER request. Index-only: engine is #26's ancestor, so no deep-dive; unique value recorded = Windows IMM32 thin-DLL ↔ `BaseIMEServer.exe` MS-RPC loader (`BIServerRPCInterface.idl`) and the Takao `DatabaseCooker` corpus → LM → installer pipeline. Topic-index entries added under "Native-engine embedding" (#7) and "Dictionary distribution" (#6). Corpus data is absent from the repo (README pointers only). Roster line added to `tools/sync-references.sh` (org fork).
-
-- **2026-09-24** — Index audit: 3 of 34 clones were uncatalogued. Indexed as cards/rows #28–30: **KeyKey41-Eten-Tribute** (`82a721e`, MIT, Windows TSF Bopomofo IME on McBopomofo, TIP DLL ↔ Named Pipe ↔ server exe; moved out of the removed "Cloned, not yet catalogued" section), **fcitx5** (`8274ece` = tag 5.1.7, LGPL-2.1, the framework headers `make -C linux check-cpp` compiles against; external pointer turned into a redirect), **hazkey** (`23c78b1`, MIT, Fcitx5 addon ↔ Swift azooKey server over Unix socket + protobuf). Topic-index entries under "Native-engine embedding" (#8, #9). Roster lines for `fcitx5` (pinned 5.1.7) + `hazkey` added to `tools/sync-references.sh`. Index-only (no deep-dives). All 34 repos under `references/` now catalogued.
-
-When adding a new repo under `references/`, append a card here and a row in the TL;DR matrix; if the repo is deep enough to warrant its own deep-dive (>500 LOC of read-through), create `docs/references/<repo>-reference.md` and link both ways.
+When adding a new repo under `references/`, append a card here, a row in the TL;DR matrix and a roster line in `tools/sync-references.sh`; if the repo is deep enough to warrant its own deep-dive (>500 LOC of read-through), create `docs/references/<repo>-reference.md` and link both ways.

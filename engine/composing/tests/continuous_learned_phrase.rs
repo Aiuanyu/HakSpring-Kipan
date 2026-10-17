@@ -12,8 +12,10 @@
 //!    typed buffer leads the hanji candidates when the dictionary has no
 //!    word under that key, competes (and loses) against a dictionary
 //!    homophone unless `user_frequency` prefers it, dedupes against the
-//!    same pair from the dictionary, and never outranks a manual custom
-//!    row (Codex 2026-09-20 F5: learned = competitor, custom = override).
+//!    same pair from the dictionary, and never-selected never outranks a
+//!    never-selected manual custom row (Codex 2026-09-20 F5: learned =
+//!    competitor; custom rows compete too since USER 2026-10-16, ahead of
+//!    the never-selected rest).
 //!
 //! Fixture mirrors the USER report (2026-09-20): 記起來 `kì--khí-lâi` is a
 //! 台日-only dictionary word (default off), so a default user composes it as
@@ -28,7 +30,7 @@ use protos::engine::{CandidateMessage, CommitContinuous, FetchAtPos, Start};
 use crate::common;
 use crate::common::Fetch;
 use crate::common::{
-    build_dictionary_fst, build_syllables_fst, build_tkdb_v3, config_tl, effect_kinds,
+    build_dictionary_fst, build_syllables_fst, build_tkdb_v4, config_tl, effect_kinds,
     empty_association_bin, engine_in_continuous, fetch_at_pos_response, fetch_cells, fetch_hanji,
     install_lexicon, req, selected, Cell, Row, NOW_MS,
 };
@@ -339,8 +341,8 @@ fn seven_syllables_is_a_clause_not_a_word() {
 
 #[test]
 fn syllable_count_comes_from_the_joined_tl_not_the_segment_echo() {
-    // A custom-dictionary pick echoes `syllable_count = 1` whatever its
-    // length; the cap must follow the TL itself.
+    // The echoed `syllable_count` is platform input (here understated as
+    // 1 for a 6-syllable word); the cap must follow the TL itself.
     assert_eq!(
         learn(
             "abcdefg",
@@ -409,7 +411,7 @@ fn fixture_rows() -> Vec<Row> {
 const FIXTURE_SYLLABLES: &[&str] = &["ki1", "ki3", "khi2", "lai5"];
 
 fn install(rows: &[Row], syllables: &[&str]) {
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(rows));
     let fst_path = build_dictionary_fst(rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst(syllables);
@@ -634,11 +636,12 @@ fn learned_pair_the_dictionary_also_carries_is_listed_once_from_the_dictionary()
 }
 
 #[test]
-fn custom_row_whose_reading_has_a_word_space_overrides_the_dictionary_word() {
+fn custom_row_whose_reading_has_a_word_space_leads_the_dictionary_word() {
     // A custom roman committed from a multi-word candidate keeps the space
     // between its words (`kì khí-lâi`). The walker key folds that space like
-    // the learned key always did, so the row still overrides the dictionary
-    // word under the same key (機器來), toneless and toned, listed once.
+    // the learned key always did, so the never-selected row still leads the
+    // never-selected dictionary word under the same key (機器來), toneless
+    // and toned, listed once.
     let _lock = engine_install_lock();
     let mut rows = fixture_rows();
     rows.push(Row {
@@ -660,7 +663,7 @@ fn custom_row_whose_reading_has_a_word_space_overrides_the_dictionary_word() {
         let hanji = fetch_hanji(raw, "tl", custom("kì khí-lâi", "既起來"));
         assert_eq!(
             hanji[0], "既起來",
-            "{raw}: custom override wins; got {hanji:?}"
+            "{raw}: the custom row wins the edge; got {hanji:?}"
         );
         assert_eq!(
             hanji.iter().filter(|h| *h == "既起來").count(),
@@ -695,7 +698,7 @@ fn manual_custom_row_outranks_a_learned_row_under_the_same_key() {
     );
     assert_eq!(
         hanji[0], "既起來",
-        "custom override wins the edge; got {hanji:?}"
+        "the never-selected custom row wins the edge; got {hanji:?}"
     );
     assert!(
         hanji.contains(&"記起來".to_string()),
@@ -810,4 +813,55 @@ fn learned_row_answers_the_nasal_oo_alias_key() {
         );
         assert_eq!(hanji[0], "好玄", "typed {typed}; got {hanji:?}");
     }
+}
+
+#[test]
+fn a_custom_word_keeps_its_syllables_in_the_compound_run() {
+    // A custom list row's syllable count comes from its TL, not a fixed 1
+    // (which fused 來 + 記 `kì-khí` into the compound 來記, `lâi-kì-khí`).
+    // Reached through its abbreviation `kkh`: the walker's slot 0 counts a
+    // custom edge itself, so only the list's custom rows carried the 1.
+    // trace: segments 來 (1) + custom 記 (tl_syllables("kì-khí") = 2) →
+    // longest_compound_run stops at 來 → space; the commit learns
+    // `lâi kì-khí`.
+    let rows = [
+        ("lai", "來", "lâi", 1, 5000),
+        ("ki", "記", "kì", 1, 4000),
+        ("khi", "起", "khí", 1, 3000),
+        ("laiki", "來記", "lâi-kì", 2, 100),
+    ]
+    .map(|(toneless_key, hanji, tl, syll, freq)| Row {
+        toneless_key,
+        hanji,
+        tl,
+        syll,
+        freq,
+    });
+    let _lock = engine_install_lock();
+    install(&rows, &["lai5", "ki3", "khi2"]);
+    let cfg = config_tl();
+    let mut engine = engine_in_continuous("laikkh");
+    let find = |engine: &mut Engine, hanji: &str, consumed: u32| {
+        let fetch = Fetch {
+            custom: vec![CustomEntry {
+                roman: "kì-khí".into(),
+                hanji: Some("記".into()),
+            }],
+            ..Fetch::default()
+        };
+        let resp = requests::apply(fetch.intent(), engine, &cfg);
+        let cands = resp.continuous.expect("continuous carrier").candidates;
+        cands
+            .iter()
+            .find(|c| c.hanji.as_deref() == Some(hanji) && c.consumed_span_end == consumed)
+            .cloned()
+            .unwrap_or_else(|| panic!("no {hanji} ending at {consumed}; got {cands:?}"))
+    };
+
+    let lai = find(&mut engine, "來", 3);
+    assert!(engine.apply_learning(commit(&lai), &cfg).learned.is_none());
+    let custom = find(&mut engine, "記", 3);
+    assert_eq!(custom.syllable_count, 2, "kì-khí is two syllables");
+    let fin = engine.apply_learning(commit(&custom), &cfg);
+    assert_eq!(fin.learned, phrase("來記", "lâi kì-khí"));
 }

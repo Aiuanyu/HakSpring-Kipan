@@ -1,6 +1,6 @@
 # Authoring the desktop user manual
 
-`README.md` is the manual: Markdown and pictures for first-time desktop users (macOS, Windows, Linux), readable on GitHub as it is. A cheatsheet picture and the blog post that announces them sit beside it. Sources live here, like `launch-film/`; the website repository (`taigikeyboard/taigikeyboard.github.io`) receives copies.
+`README.md` is the manual: Markdown and pictures for first-time desktop users (macOS, Windows, Linux), readable on GitHub as it is. A cheatsheet picture and the blog post that announces them sit beside it. Sources live here, like `film/`; the website repository (`taigikeyboard/taigikeyboard.github.io`) receives copies.
 
 | Path | What it is |
 |---|---|

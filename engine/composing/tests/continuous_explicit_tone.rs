@@ -23,7 +23,7 @@
 use crate::common::Fetch;
 use crate::common::{
     build_dictionary_fst_tl_toned, build_dictionary_fst_tps, build_syllables_fst_tl,
-    build_syllables_fst_tps, build_tkdb_v3, config, empty_association_bin, fetch_at_pos_response,
+    build_syllables_fst_tps, build_tkdb_v4, config, empty_association_bin, fetch_at_pos_response,
     install_lexicon, Row,
 };
 use test_support::{engine_install_lock, write_temp};
@@ -65,7 +65,7 @@ fn install_fixture() {
 /// Install `rows` as the TL lexicon with `syllables` as the syllable
 /// inventory (toned `tl:` dictionary keys, empty association table).
 fn install_tl_rows(rows: &[Row], syllables: &[&str]) {
-    let dict_path = write_temp("dictionary.bin", &build_tkdb_v3(rows));
+    let dict_path = write_temp("dictionary.bin", &build_tkdb_v4(rows));
     let fst_path = build_dictionary_fst_tl_toned(rows);
     let association_path = write_temp("association.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst_tl(syllables);
@@ -261,7 +261,7 @@ fn closed_tone8_syllable_does_not_trail_its_shorter_prefix_family() {
 
 fn install_fixture_tps() {
     let rows = fixture_rows();
-    let dict_path = write_temp("dictionary-tps.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary-tps.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst_tps(&rows);
     let association_path = write_temp("association-tps.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst_tps(&rows);

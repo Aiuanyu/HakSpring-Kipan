@@ -2,7 +2,7 @@
   "namespace": "settings",
   "keys": {
     "reset": {
-      "comment": "Generic restore-to-default action label / a11y description (恢復 = restore). Used by the reset-settings dialog AND reused for the color-picker / slider reset-icon contentDescription on the theme + layout editors.",
+      "comment": "Generic restore-to-default action label / a11y description (恢復 = restore). Used for the color-picker / slider reset-icon contentDescription on the theme + layout editors.",
       "scope": { "platforms": ["android", "ios", "windows", "linux"], "surfaces": ["host"] },
       "values": { "hanji": "恢復", "tailo": "Hue-ho̍k", "poj": "Hoe-ho̍k", "en": "Reset", "ja": "リセット" }
     },
@@ -12,9 +12,9 @@
       "values": { "hanji": "輸入模式", "tailo": "Su-ji̍p bôo-sik", "poj": "Su-ji̍p bô͘-sek", "en": "Input Mode", "ja": "入力モード" }
     },
     "keyboardLayout": {
-      "comment": "macOS General picker: QWERTY (default), Dvorak, Colemak for TL/POJ input. TPS keeps its fixed QWERTY positions.",
-      "scope": { "platforms": ["macos"], "surfaces": ["host"] },
-      "values": { "hanji": "齒盤排列", "tailo": "Khí-puânn pâi-lia̍t", "poj": "Khí-pôaⁿ pâi-lia̍t", "en": "Keyboard Layout", "ja": "キーボード配列" }
+      "comment": "macOS + Windows General picker: QWERTY (default), Dvorak, Colemak for TL/POJ input. TPS keeps its fixed QWERTY positions. Linux follows the system layout and has no row.",
+      "scope": { "platforms": ["macos", "windows"], "surfaces": ["host"] },
+      "values": { "hanji": "齒盤佈局", "tailo": "Khí-puânn pòo-kio̍k", "poj": "Khí-pôaⁿ pò͘-kio̍k", "en": "Keyboard Layout", "ja": "キーボード配列" }
     },
     "displayLanguage": {
       "comment": "Settings row + sub-screen title for selecting the app UI display language (orthogonal to the input mode). Most option labels are endonyms (own-script, not i18n keys); the Automatic option uses displayLanguageAutomatic.",
@@ -47,7 +47,7 @@
       "values": { "hanji": "台語", "tailo": "Tâi-gí", "poj": "Tâi-gí", "en": "Taigi", "ja": "台湾語" }
     },
     "tpsMode": {
-      "comment": "Input-mode option: Taiwanese Phonetic Symbols (TPS). Also the iOS smartbar input-mode button a11y label (extension surface). Also the TPS settings section header and the layout page's TPS section header (tpsSettingsSectionTitle / layout.taigiPhonetic merged 2026-09-20).",
+      "comment": "Input-mode option: Taiwanese Phonetic Symbols (TPS). Also the iOS smartbar input-mode button a11y label (extension surface). Also the desktop Shortcuts pane header above the TPS switch and key panel (USER 2026-10-16). Also the TPS settings section header and the layout page's TPS section header (tpsSettingsSectionTitle / layout.taigiPhonetic merged 2026-09-20).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
       "values": { "hanji": "方音符號", "tailo": "Hong-im-hû-hō", "poj": "Hong-im-hû-hō", "en": "Phonetic Symbols", "ja": "方音符号" }
     },
@@ -97,7 +97,7 @@
       "values": { "hanji": "漢字", "tailo": "Hàn-jī", "poj": "Hàn-jī", "en": "Hanji", "ja": "漢字" }
     },
     "outputScriptRoman": {
-      "comment": "Picker value: commit writes the romanization; the Hanji is the subtitle.",
+      "comment": "Picker value: commit writes the romanization; the Hanji is the subtitle. Also the desktop Shortcuts pane header above the romanization switches (USER 2026-10-16).",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
       "values": { "hanji": "羅馬字", "tailo": "Lô-má-jī", "poj": "Lô-má-jī", "en": "Romanization", "ja": "ローマ字" }
     },
@@ -127,14 +127,14 @@
       "values": { "hanji": "顯示選字窗", "tailo": "Hián-sī suán-jī-thang", "poj": "Hián-sī soán-jī-thang", "en": "Show Candidate Window", "ja": "候補ウィンドウを表示" }
     },
     "literalRomanCandidate": {
-      "comment": "Toggle label: show what is being typed as the first candidate in the strip (§34 literal-roman candidate). All four platforms.",
+      "comment": "Toggle label: show what is being typed as the first candidate in the strip (§34 literal-roman candidate). All five platforms.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "當咧拍 ê 字囥第一个", "tailo": "Tng-teh phah ê jī khǹg tē-it ê", "poj": "Tng-teh phah ê jī khǹg tē-it ê", "en": "Show Typed Text First", "ja": "入力中の文字を先頭に表示" }
+      "values": { "hanji": "拍的羅馬字囥第一格", "tailo": "Phah ê lô-má-jī khǹg tē-it keh", "poj": "Phah ê lô-má-jī khǹg tē-it keh", "en": "Show Typed Text First", "ja": "入力中の文字を先頭に表示" }
     },
     "literalRomanCandidateInfo": {
       "comment": "Help text for the Show Typed Text First toggle.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hanji": "候選詞列第一格顯示你拍 ê 羅馬字，點揤抑是揤 Enter 送出。關閉了後干焦會當用 Enter 送出。", "tailo": "Hāu-suán sû lia̍t tē-it keh hián-sī lí phah ê lô-má-jī, tiám-tshi̍h ah-sī tshi̍h Enter sàng-tshut. Kuainn--khí-lâi liáu-āu kan-ta ē-tàng iōng Enter sàng-tshut.", "poj": "Hāu-soán sû lia̍t tē-it keh hián-sī lí phah ê lô-má-jī, tiám-chhi̍h ah-sī chhi̍h Enter sàng-chhut. Koaiⁿ--khí-lâi liáu-āu kan-ta ē-tàng iōng Enter sàng-chhut.", "en": "Shows what you typed in the first slot of the candidate bar; tap it or press Enter to commit. When off, only Enter commits it.", "ja": "入力したローマ字を候補バーの先頭に表示し、タップか Enter で確定できます。オフの場合は Enter でのみ確定できます。" }
+      "values": { "hanji": "候選詞列第一格顯示你拍的羅馬字，點揤抑是揤 Enter 送出。關閉了後干焦會當用 Enter 送出。", "tailo": "Hāu-suán sû lia̍t tē-it keh hián-sī lí phah ê lô-má-jī, tiám-tshi̍h ah-sī tshi̍h Enter sàng-tshut. Kuainn--khí-lâi liáu-āu kan-ta ē-tàng iōng Enter sàng-tshut.", "poj": "Hāu-soán sû lia̍t tē-it keh hián-sī lí phah ê lô-má-jī, tiám-chhi̍h ah-sī chhi̍h Enter sàng-chhut. Koaiⁿ--khí-lâi liáu-āu kan-ta ē-tàng iōng Enter sàng-chhut.", "en": "Shows what you typed in the first slot of the candidate bar; tap it or press Enter to commit. When off, only Enter commits it.", "ja": "入力したローマ字を候補バーの先頭に表示し、タップか Enter で確定できます。オフの場合は Enter でのみ確定できます。" }
     },
     "autoCapitalization": {
       "comment": "Toggle label: automatic capitalization in English mode.",
@@ -159,7 +159,7 @@
     "autoSpace": {
       "comment": "Toggle label: auto-insert a space after committing a word.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "自動閬一格", "tailo": "Tsū-tōng làng tsi̍t ê phāng", "poj": "Chū-tōng làng chi̍t ê phāng", "en": "Auto-Space", "ja": "自動スペース" }
+      "values": { "hanji": "自動插入空白", "tailo": "Tsū-tōng tshah-ji̍p khàng-pe̍h", "poj": "Chū-tōng chhah-ji̍p khàng-pe̍h", "en": "Auto-Space", "ja": "自動スペース" }
     },
     "keyboardSectionTitle": {
       "comment": "Section header for keyboard-chrome settings.",
@@ -214,7 +214,7 @@
     "nasalMarkerUppercase": {
       "comment": "Picker label: how the POJ nasal marker is written in capitals — the stored switch, true = ᴺ (nasalMarkerUppercaseCapital, the default), false = ⁿ (nasalMarkerUppercaseSmall). All five platforms (host settings) plus the mobile keyboard settings overlay.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "白話字大本鼻音", "tailo": "Pe̍h-uē-jī tuā-pún phīnn-im", "poj": "Pe̍h-ōe-jī tōa-pún phīⁿ-im", "en": "Nasal mark in POJ capitals", "ja": "白話字の大文字での鼻音記号" }
+      "values": { "hanji": "白話字大本字的鼻音符號輸出", "tailo": "Pe̍h-uē-jī tuā-pún-jī ê phīnn-im hû-hō su-tshut", "poj": "Pe̍h-ōe-jī tōa-pún-jī ê phīⁿ-im hû-hō su-chhut", "en": "Nasal mark in POJ capitals", "ja": "白話字の大文字での鼻音記号" }
     },
     "nasalMarkerUppercaseCapital": {
       "comment": "Picker value (default): in capitals the nasal marker follows the letters before it, ᴺ (SIÂᴺ).",
@@ -237,19 +237,9 @@
       "values": { "hanji": "開啟時 or 顯示做 ㄜ，關閉時顯示做 ㄛ。袂影響揣詞結果。", "tailo": "Phah-khui sî or hián-sī tsò ㄜ, kuainn--khí-lâi sî hián-sī tsò ㄛ. Buē íng-hióng tshuē sû kiat-kó.", "poj": "Phah-khui sî or hián-sī chò ㄜ, koaiⁿ--khí-lâi sî hián-sī chò ㄛ. Bōe éng-hióng chhōe sû kiat-kó.", "en": "When on, 'or' appears as ㄜ; when off, as ㄛ. Search results are unaffected.", "ja": "オンでは「or」を ㄜ、オフでは ㄛ と表示します。検索結果には影響しません。" }
     },
     "resetSettings": {
-      "comment": "Destructive action row + dialog title: reset all settings to their defaults. Settings only — learning records and custom words are untouched.",
+      "comment": "Destructive action row: reset all settings to their defaults. Settings only — learning records and custom words are untouched. Same wording as theme.editorResetAll, the desktop panes' reset row.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hanji": "恢復設定", "tailo": "Hue-ho̍k siat-tīng", "poj": "Hoe-ho̍k siat-tēng", "en": "Reset Settings", "ja": "設定をリセット" }
-    },
-    "resetSettingsMessage": {
-      "comment": "Confirmation-dialog body for resetting settings; explicitly states that learning records and custom words are kept.",
-      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hanji": "這會恢復所有設定。學習紀錄佮自訂詞攏會保留。敢欲繼續？", "tailo": "Tse ē hue-ho̍k sóo-iú siat-tīng. Ha̍k-si̍p kì-lio̍k kah tsū-tīng-sû lóng ē pó-liû. Kám beh kè-sio̍k?", "poj": "Che ē hoe-ho̍k só͘-iú siat-tēng. Ha̍k-si̍p kì-lio̍k kah chū-tēng-sû lóng ē pó-liû. Kám beh kè-sio̍k?", "en": "This resets all settings. Learning records and custom words are kept. Continue?", "ja": "すべての設定をリセットします。学習記録とカスタム単語は保持されます。続けますか？" }
-    },
-    "resetSuccess": {
-      "comment": "Toast shown after settings were reset successfully.",
-      "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hanji": "設定已恢復", "tailo": "Siat-tīng í hue-ho̍k", "poj": "Siat-tēng í hoe-ho̍k", "en": "Settings reset", "ja": "設定をリセットしました" }
+      "values": { "hanji": "恢復預設設定", "tailo": "Hue-ho̍k ī-siat siat-tīng", "poj": "Hoe-ho̍k ī-siat siat-tēng", "en": "Reset to Defaults", "ja": "既定値に戻す" }
     },
     "resetFailed": {
       "comment": "Toast shown when resetting settings fails.",

@@ -26,13 +26,14 @@ use crate::api::{CaretDirection, CommitScript, ComposingError, Engine, Intent, P
 use crate::continuous::{assemble_candidates, retain_first_by_key, roman_reading_eq, ListShape};
 use crate::derived::buffer_input_mode;
 use lexicon::{
-    classification::is_hanji, derive_script_kind, ConsumedSpan, LearnedEntry, RawCandidate,
-    SyllableInventory, COVERAGE_KIND_FULL, FORM_NOTONE,
+    classification::is_hanji, ConsumedSpan, LearnedEntry, RawCandidate, SyllableInventory,
+    COVERAGE_KIND_FULL,
 };
 use protos::engine::{
     composing_request, AppConfig, CandidateMessage, CommitScript as WireCommitScript,
     ComposingRequest, ComposingResponse, ContinuousResponse, DictionarySourceToggles, FetchAtPos,
 };
+use ranking::WALKER_COST_UNPRICED;
 
 /// Decode the proto request into a typed `Intent`. Returns `MissingMethod`
 /// when `oneof method` is empty.
@@ -50,7 +51,6 @@ pub fn decode_intent(req: &ComposingRequest) -> Result<Intent, ComposingError> {
         },
         Method::DeleteBackward(_) => Intent::DeleteBackward,
         Method::CommitRaw(_) => Intent::CommitRaw,
-        Method::SelectCandidate(m) => Intent::SelectCandidate { text: m.text },
         Method::CommitPreeditThenInsertExternal(m) => {
             Intent::CommitPreeditThenInsertExternal { text: m.text }
         }
@@ -68,6 +68,12 @@ pub fn decode_intent(req: &ComposingRequest) -> Result<Intent, ComposingError> {
             hanji: m.hanji,
             consumed_bytes: m.consumed_bytes as usize,
             syllable_count: clamp_syllable_count(m.syllable_count),
+        },
+        Method::CommitPrediction(m) => Intent::CommitPrediction {
+            script: commit_script(m.script()),
+            roman: m.roman,
+            hanji: m.hanji,
+            canonical_tl: m.canonical_tl,
         },
         Method::TelexKey(m) => Intent::TelexKey { key: m.key },
         Method::TpsKey(m) => Intent::TpsKey { key: m.key },
@@ -216,9 +222,9 @@ fn handle_fetch_at_pos(
     // the same detection `derived::derived_display` uses) makes the fetch
     // `InputMode::Tps`, whatever `input_mode` says; a Bopomofo-free buffer
     // composes under `composing_mode`, which reads the TPS layout
-    // (`"tps"`, or the pre-R6 wire's `"tl"`) as TL. So a TPS buffer that
-    // opens with `-` or a lone tone mark takes the TL tables until its
-    // first Bopomofo glyph, on either wire.
+    // (`input_mode = "tps"`, the only TPS wire — the engine ships inside
+    // each app) as TL. So a TPS buffer that opens with `-` or a lone tone
+    // mark takes the TL tables until its first Bopomofo glyph.
     //
     // Single-source mode flow into `assemble_candidates`: the seam
     // derives every TPS-gated branch from `mode == InputMode::Tps`
@@ -268,7 +274,7 @@ fn handle_fetch_at_pos(
     // = show (legacy always-on), so un-wired builds are unaffected.
     if !literal_roman_candidate_disabled {
         if let Some(mut literal) = literal_roman_candidate(raw, config, mode) {
-            // Drop a pre-existing IDENTICAL bare-roman (hanji-absent Tailo)
+            // Drop a pre-existing IDENTICAL bare-roman (hanji-absent)
             // so the literal is not duplicated; dict rows with hanji stay (a
             // `tâi`/台 dict candidate and a bare `tâi` commit differ — Codex
             // pre-impl F5).
@@ -359,15 +365,17 @@ fn adopt_collapsed_dict_identity(literal: &mut RawCandidate, candidates: &[RawCa
 ///   promoted to `InputMode::Tps` upstream); English excluded.
 /// * the preedit literal is non-empty.
 ///
-/// The candidate is roman-only (`hanji = None` → `CandidateScriptKind::Tailo`),
-/// with `roman == display_text ==` the preedit literal (except the identity
-/// it inherits under a single-script display — `adopt_collapsed_dict_identity`)
+/// The candidate is roman-only (`hanji = None`),
+/// with `roman ==` the preedit literal. `display_text` preserves the prior
+/// literal learning key (except the dictionary identity inherited under a
+/// single-script display — `adopt_collapsed_dict_identity`)
 /// — WYSIWYG with the underline (§30 literal-no-fold: tone marks only, no spelling fold). It
-/// mirrors the preedit EXACTLY, so a tone-1/4 syllable or an unhyphenated
-/// multi-syllable blob keeps its raw digits as the underline shows them
-/// (`tai1`, `goa2ai3li2` — the engine does not auto-syllabify, §10.2). It
-/// carries `canonical_tl` via `canonical_tl_form` so the frequency / association records learn the
-/// canonical `(∅, TL)` identity on commit (Core Principle #7; §24/§28).
+/// mirrors the preedit EXACTLY. Each tone digit closes a segment: a valid
+/// syllable takes its usual mark, anything else marks its last vowel
+/// cluster (`tai5gi2` → `tâigí`, `taigi2` → `taigí`).
+/// Tones 1 and 4 consume their digits without a visible mark. It
+/// carries `canonical_tl` via `canonical_tl_form` of that stable learning
+/// text, preserving tone boundaries and existing `(text, TL)` records.
 fn literal_roman_candidate(
     raw: &str,
     config: &AppConfig,
@@ -380,19 +388,19 @@ fn literal_roman_candidate(
     if literal.is_empty() {
         return None;
     }
-    let canonical_tl = phonetics::api::canonical_tl_form(&literal, mode);
+    let learning_text = crate::derived::learning_text(raw, config);
+    let canonical_tl = phonetics::api::canonical_tl_form(&learning_text, mode);
     Some(RawCandidate {
         consumed_span: (0, raw.len() as u32),
         syllable_count: literal.split('-').count().min(u8::MAX as usize) as u8,
-        display_text: literal.clone(),
+        display_text: learning_text,
         roman: literal,
         hanji: None,
         canonical_tl,
         score: 0.0,
-        form: FORM_NOTONE,
         frequency: 0,
+        walker_cost: WALKER_COST_UNPRICED,
         bitmask: 0,
-        script_kind: derive_script_kind(None),
         user_weight: 0.0,
         context_rank: ranking::CONTEXT_RANK_NONE,
         coverage_kind: COVERAGE_KIND_FULL,
@@ -447,19 +455,15 @@ fn first_learned_per_reading(entries: &[LearnedEntry]) -> Vec<LearnedEntry> {
 
 fn raw_to_proto_candidate(c: RawCandidate) -> CandidateMessage {
     CandidateMessage {
-        consumed_span_start: c.consumed_span.0,
         consumed_span_end: c.consumed_span.1,
         syllable_count: c.syllable_count as u32,
         display_text: c.display_text,
-        score: c.score,
-        form: c.form as u32,
-        script_kind: c.script_kind.to_proto_i32(),
         // v3.5.8 Phase 9 Item 5 — `roman` is always non-empty for a
         // dictionary-sourced candidate; it is the display romanization
         // for the active input mode (TL, or POJ-display after the
         // continuous seam's POJ presentation pass). `hanji` is a proto3
         // `optional string` so prost serializes `None` as wire-absent
-        // (distinguishes TAILO from defective empty-string emission).
+        // (distinguishes a roman-only candidate from defective empty-string emission).
         // See `docs/engine/continuous-candidate-display.md` §4.2.
         roman: c.roman,
         hanji: c.hanji,
@@ -515,7 +519,6 @@ mod tests {
     //! the `Engine` + lexicon singletons.
 
     use super::*;
-    use lexicon::FORM_NOTONE;
 
     #[test]
     fn clamp_syllable_count_saturates() {
@@ -527,8 +530,8 @@ mod tests {
     }
 
     /// v3.5.8 Phase 9 Item 5 — `raw_to_proto_candidate` must propagate
-    /// `roman` and `hanji` onto the wire. HANT records carry both;
-    /// TAILO records emit `roman` only and leave proto `hanji` as
+    /// `roman` and `hanji` onto the wire. Records with hanji carry both;
+    /// roman-only records emit `roman` only and leave proto `hanji` as
     /// `None` (proto3 `optional string` wire-absent, NOT `Some("")`).
     #[test]
     fn raw_to_proto_candidate_propagates_roman_and_some_hanji() {
@@ -540,10 +543,9 @@ mod tests {
             hanji: Some("臺灣".to_owned()),
             canonical_tl: "tâi-uân".to_owned(),
             score: 1.5,
-            form: FORM_NOTONE,
             frequency: 12,
+            walker_cost: WALKER_COST_UNPRICED,
             bitmask: 0,
-            script_kind: lexicon::CandidateScriptKind::Hant,
             user_weight: 0.0,
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: lexicon::COVERAGE_KIND_FULL,
@@ -567,10 +569,9 @@ mod tests {
             hanji: None,
             canonical_tl: "tāi".to_owned(),
             score: 0.5,
-            form: FORM_NOTONE,
             frequency: 3,
+            walker_cost: WALKER_COST_UNPRICED,
             bitmask: 0,
-            script_kind: lexicon::CandidateScriptKind::Tailo,
             user_weight: 0.0,
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: lexicon::COVERAGE_KIND_FULL,
@@ -598,10 +599,9 @@ mod tests {
                 hanji: hanji.map(str::to_owned),
                 canonical_tl: roman.to_owned(),
                 score: 1.0,
-                form: FORM_NOTONE,
                 frequency: 1,
+                walker_cost: WALKER_COST_UNPRICED,
                 bitmask: 0,
-                script_kind: lexicon::CandidateScriptKind::Hant,
                 user_weight: 0.0,
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: lexicon::COVERAGE_KIND_FULL,
@@ -637,7 +637,6 @@ mod tests {
             oo_doubletap_enabled: false,
             nn_doubletap_enabled: false,
             is_hanji_first: false,
-            platform_id: 0,
             output_both_scripts: false,
             candidate_display_mode: 0,
             syllable_separator: 0,
@@ -657,7 +656,7 @@ mod tests {
     #[test]
     fn literal_roman_candidate_tl_single_syllable_is_tailo_wysiwyg() {
         // Headline case: `nng7` → the literal tone-marked roman (`nn̄g`),
-        // roman-only (hanji None → Tailo), matching the preedit byte-for-byte.
+        // roman-only (hanji None), matching the preedit byte-for-byte.
         let cfg = config_tl();
         let cand = literal_roman_candidate("nng7", &cfg, phonetics::InputMode::Tl)
             .expect("nng7 must yield a literal roman candidate");
@@ -665,7 +664,6 @@ mod tests {
         assert_eq!(cand.display_text, cand.roman); // WYSIWYG: display == roman
         assert_ne!(cand.roman, "nng7"); // a tone-mark conversion happened
         assert!(cand.hanji.is_none());
-        assert_eq!(cand.script_kind, lexicon::CandidateScriptKind::Tailo);
         assert_eq!(cand.consumed_span, (0, 4));
         assert!(!cand.canonical_tl.is_empty()); // #7 identity sidechannel set
     }
@@ -724,16 +722,58 @@ mod tests {
     }
 
     #[test]
-    fn literal_roman_candidate_mirrors_preedit_verbatim_with_digits() {
-        // The candidate is EXACTLY the preedit (§30 / §10.2): a tone-1/4
-        // syllable and an unhyphenated multi-syllable blob keep their raw
-        // digits as the underline shows them — the engine does not
-        // auto-syllabify, and the candidate must not diverge from the
-        // underline (consistency).
+    fn literal_roman_candidate_preserves_digits_without_a_tone_target() {
         let cfg = config_tl();
-        for raw in ["tai1", "goa2ai3li2", "tai5gi2"] {
+        for raw in ["t2", "123", "tai-2"] {
             let cand = literal_roman_candidate(raw, &cfg, phonetics::InputMode::Tl).unwrap();
+            assert_eq!(cand.roman, raw);
             assert_eq!(cand.roman, crate::derived::derived_display(raw, &cfg));
+        }
+    }
+
+    #[test]
+    fn literal_roman_candidate_permissive_tones_mirror_preview() {
+        let cfg = config_tl();
+        for (raw, expected) in [
+            ("tai5gi2", "tâigí"),
+            ("goa2ai3li2", "goáàilí"),
+            ("tai1", "tai"),
+            ("bak4", "bak"),
+            ("tai1bak4", "taibak"),
+            ("taigi2", "taigí"),
+        ] {
+            let cand = literal_roman_candidate(raw, &cfg, phonetics::InputMode::Tl).unwrap();
+            assert_eq!(cand.roman, expected, "{raw}");
+            assert_eq!(cand.roman, crate::derived::derived_display(raw, &cfg));
+            assert_eq!(cand.consumed_span, (0, raw.len() as u32));
+        }
+    }
+
+    #[test]
+    fn literal_roman_candidate_preserves_existing_learning_keys() {
+        for mode in [phonetics::InputMode::Tl, phonetics::InputMode::Poj] {
+            let cfg = AppConfig {
+                input_mode: if mode == phonetics::InputMode::Tl {
+                    "tl"
+                } else {
+                    "poj"
+                }
+                .into(),
+                ..config_tl()
+            };
+            for (raw, text, canonical_tl) in [
+                ("a1i3", "a1i3", "a1i3"),
+                ("ai3", "ài", "ài"),
+                ("a1i1", "a1i1", "a1i1"),
+                ("ai1", "ai1", "ai"),
+                ("a4i3", "a4i3", "a4i3"),
+                ("tai5gi2", "tai5gi2", "tai5gi2"),
+            ] {
+                let cand = literal_roman_candidate(raw, &cfg, mode).unwrap();
+                assert_eq!(cand.display_text, text, "{mode:?}: {raw}");
+                assert_eq!(cand.canonical_tl, canonical_tl, "{mode:?}: {raw}");
+                assert_eq!(cand.roman, crate::derived::derived_display(raw, &cfg));
+            }
         }
     }
 
@@ -763,9 +803,8 @@ mod tests {
 
     #[test]
     fn literal_roman_candidate_poj_doubletap_mirrors_preedit() {
-        // POJ `oo`/`nn` doubletap rewrites the spelling (`oo1`→`o͘1`); the
-        // candidate mirrors the preedit verbatim (including any residual
-        // tone-1/4 digit) — consistency with the underline, no special gate.
+        // POJ `oo`/`nn` doubletap preprocessing is preserved (`oo1`→`o͘`);
+        // the candidate mirrors the preedit, including invisible tones 1/4.
         let cfg = AppConfig {
             input_mode: "poj".to_string(),
             oo_doubletap_enabled: true,
@@ -775,6 +814,35 @@ mod tests {
         for raw in ["oo1", "oo4", "oo2"] {
             let cand = literal_roman_candidate(raw, &cfg, phonetics::InputMode::Poj).unwrap();
             assert_eq!(cand.roman, crate::derived::derived_display(raw, &cfg));
+        }
+    }
+
+    #[test]
+    fn literal_learning_keys_preserve_poj_doubletap_and_nasal_case_settings() {
+        for force_lowercase in [false, true] {
+            let cfg = AppConfig {
+                oo_doubletap_enabled: true,
+                nn_doubletap_enabled: true,
+                force_lowercase_nasal_marker: force_lowercase,
+                ..config_poj()
+            };
+            for (raw, expected) in [
+                ("oo1", "o͘1"),
+                ("oo4", "o͘4"),
+                ("oo2", "ó͘"),
+                (
+                    "SIANN1",
+                    if force_lowercase {
+                        "SIAⁿ1"
+                    } else {
+                        "SIAᴺ1"
+                    },
+                ),
+            ] {
+                let cand = literal_roman_candidate(raw, &cfg, phonetics::InputMode::Poj).unwrap();
+                assert_eq!(cand.display_text, expected);
+                assert_eq!(cand.roman, crate::derived::derived_display(raw, &cfg));
+            }
         }
     }
 }

@@ -1,7 +1,5 @@
 package com.siansiansu.taigikeyboard.ime.text
 
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.EditorInfo
@@ -40,7 +38,6 @@ class TextInputManager(
     private val prefs: com.siansiansu.taigikeyboard.ime.settings.PrefHelper,
 ) : CoroutineScope by MainScope(),
     TaigiKeyboard.EventListener {
-    private val osHandler = Handler(Looper.getMainLooper())
     var textViewGroup: android.view.ViewGroup? = null
         private set
 
@@ -90,11 +87,14 @@ class TextInputManager(
         }
     }
 
+    private val isComposingProvider: () -> Boolean =
+        { synchronized(composingLock) { composingManager?.isComposing() == true } }
+
     private val appearanceResolver = KeyboardAppearanceResolver(
         prefs = prefs,
         taigikeyboard = taigikeyboard,
         capsStateManager = capsStateManager,
-        isComposingProvider = { synchronized(composingLock) { composingManager?.isComposing() == true } },
+        isComposingProvider = isComposingProvider,
         fullWidthPunctuationProvider = fullWidthPunctuationProvider,
     )
 
@@ -126,6 +126,12 @@ class TextInputManager(
                 capsStateManager = capsStateManager,
                 composeHostProvider = { composeHost },
                 keyAreaOffsetXProvider = { coordinator.keyAreaOffsetX },
+                isComposingProvider = isComposingProvider,
+                // The cursor leaves the text these marks and predictions were made for.
+                onCursorSwipeStart = {
+                    taigikeyboard.clearSpaceMarks()
+                    smartbarManager.clearCandidates()
+                },
                 onDispatchKeyPress = { data -> sendKeyPress(data) },
             ),
         )
@@ -140,7 +146,6 @@ class TextInputManager(
         prefs = prefs,
         capsStateManager = capsStateManager,
         uiCoordinator = uiCoordinator,
-        osHandler = osHandler,
         composingManagerProvider = { composingManager },
         candidateCoordinatorProvider = { candidateCoordinator },
         smartbarManagerProvider = { smartbarManager },
@@ -271,7 +276,6 @@ class TextInputManager(
         popupHost.dismissAllPopups()
 
         cancel()
-        osHandler.removeCallbacksAndMessages(null)
         smartbarManager.onDestroy()
     }
 
@@ -358,6 +362,7 @@ class TextInputManager(
         )
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        getComposingManager()?.onInputViewFinished()
         candidateCoordinator.cancelAll()
         smartbarManager.onFinishInputView()
     }
@@ -378,17 +383,9 @@ class TextInputManager(
         themeSurface?.apply(appearanceResolver.resolvedColors())
     }
 
+    /** Per-key recomposition is driven by the appearance data class, so a
+     *  full appearance push covers any subset of keys at no extra cost. */
     fun invalidateAllKeys() {
-        pushAppearance()
-    }
-
-    /** Targeted invalidation became a no-op when the keyboard moved to
-     *  Compose: per-key recomposition is driven by the appearance data class,
-     *  so a full appearance push covers any subset of keys at no extra cost.
-     *  [keyCodes] is retained for source compatibility with callers (e.g.,
-     *  `SmartbarManager.toggleTranslateSwapped`) but is ignored. */
-    @Suppress("UNUSED_PARAMETER")
-    fun invalidateKeysByCode(vararg keyCodes: Int) {
         pushAppearance()
     }
 
@@ -478,7 +475,7 @@ class TextInputManager(
     ) {
         // A host "no composing region" report (`-1/-1`) must not re-insert
         // stale preedit at the new cursor (`composing-state-boundary.md`
-        // §11.10 divergence #3; `INVARIANT_composing_external_region_clear_
+        // §11.10; `INVARIANT_composing_external_region_clear_
         // discards_state`), but it may also be older than our own last write
         // — the manager reconciles against the host before discarding.
         composingManager?.onHostSelectionUpdate(candidatesStart, candidatesEnd, taigikeyboard.currentInputConnection)

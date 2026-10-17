@@ -1,6 +1,7 @@
 ---
 name: release-mobile
 description: Prepare a MOBILE release (iOS + Android, one shared version) of the version already in the tree - changelog, store What's New text, rebuild, commit, tag `mobile-<version>`; never uploads or submits. Optional arg: a release base. Desktop train (macOS + Windows + Linux) is `release-desktop`.
+disable-model-invocation: true
 ---
 
 # Release Mobile
@@ -33,8 +34,7 @@ That check is what proves the iOS `MARKETING_VERSION` carries the same number,
 so a half-applied bump stops here instead of shipping. The skill must not edit
 the user-owned iOS `.pbxproj`: when the two disagree, hand the user the one
 command that sets both — `make version-mobile <target without the v>` — and
-continue after they run it. The desktop train is numbered separately and is not
-this skill's concern.
+continue after they run it.
 
 Derive the release base unless one was passed:
 
@@ -86,10 +86,9 @@ Run the `upgrade-check` procedure for `<base-tag> → HEAD`:
 **The skill runs these itself** — the artifact shipped must be built from the
 commit being released.
 
-**Always**, not only when the range touched them. The engine binaries iOS and
-Android link are generated and gitignored, so a clean tree says nothing about
-which commit the local copies came from; a machine that last built on another
-branch would ship that.
+**Always**, not only when the range touched them — a clean tree proves nothing
+about the gitignored engine binaries (`docs/architecture/build-artifacts.md`
+§ A release rebuilds first).
 
 ```bash
 make i18n
@@ -122,14 +121,8 @@ If target content already exists, merge new information by topic. Refine an exis
 Canonical store-note rules:
 
 - English only: UI labels by their i18n `en` value, quotes translated; CJK / TL / POJ / TPS only for Taigi example words and readings.
-- One to eight non-empty entries without source bullet markers. The 500-character
-  ceiling usually binds first.
-- Start each entry with `New:`, `Fixed:`, `Improved:`, `Changed:`, or `Updated:`.
-- End each entry with punctuation.
-- Include only concrete user-visible changes.
-- Exclude refactors, tests, tooling, dependencies, issue/PR numbers, URLs, rankings, marketing claims, and future work.
-- Do not mention another platform in platform-specific notes: no Android in `ios.txt`, no App Store in `android.txt`, and no macOS in either. `validate_notes` rejects all three.
-- Keep rendered bullets and newlines within 500 Unicode characters.
+- Shape (1–8 entries without bullet markers, each starting `New:` / `Fixed:` / `Improved:` / `Changed:` / `Updated:` and ending in punctuation, ≤ 500 rendered characters, no other platform named): `docs/architecture/manual-release-notes.md` § Prepare notes; `release_notes.py check` enforces it.
+- Include only concrete user-visible changes. Exclude refactors, tests, tooling, dependencies, issue/PR numbers, URLs, rankings, marketing claims, and future work.
 
 ## 5. Validate and render
 
@@ -152,8 +145,7 @@ Passing deterministic validation does not replace the user's factual review.
 ## 6. Commit, tag, and hand off
 
 Commit and push `main`, then tag the release commit and push the tag. The tag
-name is `mobile-<version>` without the `v` (`v3.6.8` → `mobile-3.6.8`); the
-pre-2026-09 mobile tags are the bare `v<version>` form and stay as they are.
+name is `mobile-<version>` without the `v` (`v3.6.8` → `mobile-3.6.8`).
 
 ```bash
 git add -A
@@ -176,19 +168,12 @@ The user pastes iOS text into App Store Connect and Android text into the chosen
 
 ## Desktop train
 
-macOS, Windows and Linux are the **desktop train**: one version number shared by the three, moved by `make version-desktop x.y.z`, independent of the mobile number this skill prepares. It has its own skill (`release-desktop`), its own record (`changelog/desktop-v<version>.md`), and its own publish scripts. This skill never writes that file, runs those scripts, or publishes anything for desktop.
-
-What that means while preparing a mobile release:
-
-- Keep macOS, Windows and Linux out of `changelog/mobile-<target>.md` entirely: that file is the mobile record, and a desktop change in it describes work its readers cannot install. Desktop work waits for its own `changelog/desktop-v<version>.md`.
-- Keep macOS out of `ios.txt` and `android.txt`. `validate_notes` forbids the whole words `macOS` and `Mac` in both, so a leak fails `check` rather than reaching a store listing.
-- `check-versions --train mobile` verifies iOS + Android only. A macOS, Windows or Linux version that differs from `<target>` is expected, not a finding.
+macOS, Windows and Linux are a separate train with its own version, skill (`release-desktop`) and changelog (`docs/architecture/manual-release-notes.md` § Two release trains). `check-versions --train mobile` verifies iOS + Android only; a desktop version that differs from `<target>` is expected, not a finding.
 
 ## Guardrails
 
 - Never edit another version's changelog or store-note files.
 - Never touch `changelog/desktop-v<version>.md`, `macos/`, `windows/`, `linux/`, or `desktop/` — that is `release-desktop`'s surface.
-- Never hand-edit the generated target history entry.
 - Tag only the release commit made in § 6, only as `mobile-<version>`, and never move or delete an existing tag.
 - Never request, store, or use signing certificates, keystores, API keys, or store credentials.
 - Never upload a build, edit a live store listing, or submit production.

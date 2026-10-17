@@ -26,11 +26,11 @@ public  final class ComposingRequest extends
     REPLACE_LAST(13),
     DELETE_BACKWARD(14),
     COMMIT_RAW(16),
-    SELECT_CANDIDATE(17),
     COMMIT_PREEDIT_THEN_INSERT_EXTERNAL(18),
     RESET(19),
     FETCH_AT_POS(31),
     COMMIT_CONTINUOUS(32),
+    COMMIT_PREDICTION(34),
     TELEX_KEY(40),
     MOVE_CARET(41),
     TPS_KEY(42),
@@ -57,11 +57,11 @@ public  final class ComposingRequest extends
         case 13: return REPLACE_LAST;
         case 14: return DELETE_BACKWARD;
         case 16: return COMMIT_RAW;
-        case 17: return SELECT_CANDIDATE;
         case 18: return COMMIT_PREEDIT_THEN_INSERT_EXTERNAL;
         case 19: return RESET;
         case 31: return FETCH_AT_POS;
         case 32: return COMMIT_CONTINUOUS;
+        case 34: return COMMIT_PREDICTION;
         case 40: return TELEX_KEY;
         case 41: return MOVE_CARET;
         case 42: return TPS_KEY;
@@ -408,56 +408,6 @@ public  final class ComposingRequest extends
     }
   }
 
-  public static final int SELECT_CANDIDATE_FIELD_NUMBER = 17;
-  /**
-   * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-   */
-  @java.lang.Override
-  public boolean hasSelectCandidate() {
-    return methodCase_ == 17;
-  }
-  /**
-   * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-   */
-  @java.lang.Override
-  public com.siansiansu.taigikeyboard.engine.proto.SelectCandidate getSelectCandidate() {
-    if (methodCase_ == 17) {
-       return (com.siansiansu.taigikeyboard.engine.proto.SelectCandidate) method_;
-    }
-    return com.siansiansu.taigikeyboard.engine.proto.SelectCandidate.getDefaultInstance();
-  }
-  /**
-   * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-   */
-  private void setSelectCandidate(com.siansiansu.taigikeyboard.engine.proto.SelectCandidate value) {
-    java.util.Objects.requireNonNull(value);
-    method_ = value;
-    methodCase_ = 17;
-  }
-  /**
-   * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-   */
-  private void mergeSelectCandidate(com.siansiansu.taigikeyboard.engine.proto.SelectCandidate value) {
-    java.util.Objects.requireNonNull(value);
-    if (methodCase_ == 17 &&
-        method_ != com.siansiansu.taigikeyboard.engine.proto.SelectCandidate.getDefaultInstance()) {
-      method_ = com.siansiansu.taigikeyboard.engine.proto.SelectCandidate.newBuilder((com.siansiansu.taigikeyboard.engine.proto.SelectCandidate) method_)
-          .mergeFrom(value).buildPartial();
-    } else {
-      method_ = value;
-    }
-    methodCase_ = 17;
-  }
-  /**
-   * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-   */
-  private void clearSelectCandidate() {
-    if (methodCase_ == 17) {
-      methodCase_ = 0;
-      method_ = null;
-    }
-  }
-
   public static final int COMMIT_PREEDIT_THEN_INSERT_EXTERNAL_FIELD_NUMBER = 18;
   /**
    * <code>.taigi.engine.CommitPreeditThenInsertExternal commit_preedit_then_insert_external = 18;</code>
@@ -673,6 +623,76 @@ public  final class ComposingRequest extends
    */
   private void clearCommitContinuous() {
     if (methodCase_ == 32) {
+      methodCase_ = 0;
+      method_ = null;
+    }
+  }
+
+  public static final int COMMIT_PREDICTION_FIELD_NUMBER = 34;
+  /**
+   * <pre>
+   * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+   * </pre>
+   *
+   * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+   */
+  @java.lang.Override
+  public boolean hasCommitPrediction() {
+    return methodCase_ == 34;
+  }
+  /**
+   * <pre>
+   * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+   * </pre>
+   *
+   * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.CommitPrediction getCommitPrediction() {
+    if (methodCase_ == 34) {
+       return (com.siansiansu.taigikeyboard.engine.proto.CommitPrediction) method_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.CommitPrediction.getDefaultInstance();
+  }
+  /**
+   * <pre>
+   * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+   * </pre>
+   *
+   * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+   */
+  private void setCommitPrediction(com.siansiansu.taigikeyboard.engine.proto.CommitPrediction value) {
+    java.util.Objects.requireNonNull(value);
+    method_ = value;
+    methodCase_ = 34;
+  }
+  /**
+   * <pre>
+   * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+   * </pre>
+   *
+   * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+   */
+  private void mergeCommitPrediction(com.siansiansu.taigikeyboard.engine.proto.CommitPrediction value) {
+    java.util.Objects.requireNonNull(value);
+    if (methodCase_ == 34 &&
+        method_ != com.siansiansu.taigikeyboard.engine.proto.CommitPrediction.getDefaultInstance()) {
+      method_ = com.siansiansu.taigikeyboard.engine.proto.CommitPrediction.newBuilder((com.siansiansu.taigikeyboard.engine.proto.CommitPrediction) method_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      method_ = value;
+    }
+    methodCase_ = 34;
+  }
+  /**
+   * <pre>
+   * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+   * </pre>
+   *
+   * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+   */
+  private void clearCommitPrediction() {
+    if (methodCase_ == 34) {
       methodCase_ = 0;
       method_ = null;
     }
@@ -1375,54 +1395,6 @@ public  final class ComposingRequest extends
     }
 
     /**
-     * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-     */
-    @java.lang.Override
-    public boolean hasSelectCandidate() {
-      return instance.hasSelectCandidate();
-    }
-    /**
-     * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-     */
-    @java.lang.Override
-    public com.siansiansu.taigikeyboard.engine.proto.SelectCandidate getSelectCandidate() {
-      return instance.getSelectCandidate();
-    }
-    /**
-     * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-     */
-    public Builder setSelectCandidate(com.siansiansu.taigikeyboard.engine.proto.SelectCandidate value) {
-      copyOnWrite();
-      instance.setSelectCandidate(value);
-      return this;
-    }
-    /**
-     * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-     */
-    public Builder setSelectCandidate(
-        com.siansiansu.taigikeyboard.engine.proto.SelectCandidate.Builder builderForValue) {
-      copyOnWrite();
-      instance.setSelectCandidate(builderForValue.build());
-      return this;
-    }
-    /**
-     * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-     */
-    public Builder mergeSelectCandidate(com.siansiansu.taigikeyboard.engine.proto.SelectCandidate value) {
-      copyOnWrite();
-      instance.mergeSelectCandidate(value);
-      return this;
-    }
-    /**
-     * <code>.taigi.engine.SelectCandidate select_candidate = 17;</code>
-     */
-    public Builder clearSelectCandidate() {
-      copyOnWrite();
-      instance.clearSelectCandidate();
-      return this;
-    }
-
-    /**
      * <code>.taigi.engine.CommitPreeditThenInsertExternal commit_preedit_then_insert_external = 18;</code>
      */
     @java.lang.Override
@@ -1635,6 +1607,78 @@ public  final class ComposingRequest extends
     public Builder clearCommitContinuous() {
       copyOnWrite();
       instance.clearCommitContinuous();
+      return this;
+    }
+
+    /**
+     * <pre>
+     * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+     * </pre>
+     *
+     * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+     */
+    @java.lang.Override
+    public boolean hasCommitPrediction() {
+      return instance.hasCommitPrediction();
+    }
+    /**
+     * <pre>
+     * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+     * </pre>
+     *
+     * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.CommitPrediction getCommitPrediction() {
+      return instance.getCommitPrediction();
+    }
+    /**
+     * <pre>
+     * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+     * </pre>
+     *
+     * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+     */
+    public Builder setCommitPrediction(com.siansiansu.taigikeyboard.engine.proto.CommitPrediction value) {
+      copyOnWrite();
+      instance.setCommitPrediction(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+     * </pre>
+     *
+     * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+     */
+    public Builder setCommitPrediction(
+        com.siansiansu.taigikeyboard.engine.proto.CommitPrediction.Builder builderForValue) {
+      copyOnWrite();
+      instance.setCommitPrediction(builderForValue.build());
+      return this;
+    }
+    /**
+     * <pre>
+     * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+     * </pre>
+     *
+     * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+     */
+    public Builder mergeCommitPrediction(com.siansiansu.taigikeyboard.engine.proto.CommitPrediction value) {
+      copyOnWrite();
+      instance.mergeCommitPrediction(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+     * </pre>
+     *
+     * <code>.taigi.engine.CommitPrediction commit_prediction = 34;</code>
+     */
+    public Builder clearCommitPrediction() {
+      copyOnWrite();
+      instance.clearCommitPrediction();
       return this;
     }
 
@@ -1932,11 +1976,11 @@ public  final class ComposingRequest extends
             com.siansiansu.taigikeyboard.engine.proto.ReplaceLast.class,
             com.siansiansu.taigikeyboard.engine.proto.DeleteBackward.class,
             com.siansiansu.taigikeyboard.engine.proto.CommitRaw.class,
-            com.siansiansu.taigikeyboard.engine.proto.SelectCandidate.class,
             com.siansiansu.taigikeyboard.engine.proto.CommitPreeditThenInsertExternal.class,
             com.siansiansu.taigikeyboard.engine.proto.Reset.class,
             com.siansiansu.taigikeyboard.engine.proto.FetchAtPos.class,
             com.siansiansu.taigikeyboard.engine.proto.CommitContinuous.class,
+            com.siansiansu.taigikeyboard.engine.proto.CommitPrediction.class,
             com.siansiansu.taigikeyboard.engine.proto.TelexKey.class,
             com.siansiansu.taigikeyboard.engine.proto.MoveCaret.class,
             com.siansiansu.taigikeyboard.engine.proto.TpsKey.class,
@@ -1945,8 +1989,8 @@ public  final class ComposingRequest extends
           };
           java.lang.String info =
               "\u0000\u0010\u0001\u0000\n,\u0010\u0000\u0000\u0000\n<\u0000\u000b<\u0000\f<\u0000" +
-              "\r<\u0000\u000e<\u0000\u0010<\u0000\u0011<\u0000\u0012<\u0000\u0013<\u0000\u001f" +
-              "<\u0000 <\u0000(<\u0000)<\u0000*<\u0000+<\u0000,<\u0000";
+              "\r<\u0000\u000e<\u0000\u0010<\u0000\u0012<\u0000\u0013<\u0000\u001f<\u0000 <\u0000" +
+              "\"<\u0000(<\u0000)<\u0000*<\u0000+<\u0000,<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

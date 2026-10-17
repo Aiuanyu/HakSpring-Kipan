@@ -34,7 +34,6 @@ final class SettingsStoreTests: XCTestCase {
     func testStore_withNothingStored_isHanjiFirst() {
         let store = makeStore()
         XCTAssertTrue(store.storedIsHanjiFirst)
-        XCTAssertTrue(store.isFullWidthPunctuation)
         XCTAssertNil(userDefaults.object(forKey: SettingsStore.Keys.isHanjiFirst.name))
     }
 
@@ -189,23 +188,20 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertNil(userDefaults.string(forKey: SettingsStore.Keys.lastRomanizationMode.name))
     }
 
-    /// Under TPS punctuation is full width whatever the stored swap, and the
-    /// digits pick; both come back with the romanization.
-    func testTps_widensPunctuation_andPicksWithTheKeypad() {
+    /// Under TPS the digits pick, and the stored swap is kept for the way
+    /// back; both come back with the romanization.
+    func testTps_picksWithTheKeypad_andKeepsTheStoredSwap() {
         let store = makeStore()
         store.storedIsHanjiFirst = false
-        XCTAssertFalse(store.isFullWidthPunctuation)
         XCTAssertEqual(store.candidateSlotKeySet, .bareKeys)
 
         store.switchInputMode(.pick(.tps))
 
-        XCTAssertTrue(store.isFullWidthPunctuation)
         XCTAssertEqual(store.candidateSlotKeySet, .tpsDigits)
         XCTAssertFalse(store.storedIsHanjiFirst)
 
         store.switchInputMode(.toggleTps)
 
-        XCTAssertFalse(store.isFullWidthPunctuation)
         XCTAssertEqual(store.candidateSlotKeySet, .bareKeys)
     }
 
@@ -296,7 +292,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertNil(userDefaults.object(forKey: SettingsStore.Keys.candidateSize.name), "removed, not written")
     }
 
-    /// The typeface is Manage Typefaces', not Appearance's: a pane's reset restores the rows
+    /// The typeface is Manage Fonts', not Appearance's: a pane's reset restores the rows
     /// that pane shows, and Appearance no longer shows the typeface.
     @MainActor
     func testResetAppearanceSettings_leavesTheTypefaceAlone() {
@@ -586,23 +582,61 @@ final class SettingsStoreTests: XCTestCase {
         let rows = try shortcuts().rows
         XCTAssertEqual(rows.count, 7)
         for row in rows {
-            XCTAssertEqual(row.chord, row.defaultChord, row.name)
+            for field in row.fields {
+                XCTAssertEqual(field.chord, field.shippedChord, field.settingsKey)
+            }
         }
     }
 
-    /// The pane empties the rows a recording takes a chord from — never the
-    /// row being recorded, which is not its own conflict.
-    func testTheRowsHoldingAChord_leaveOutTheRowBeingRecorded() throws {
+    /// The pane empties the fields a recording takes a chord from — never the
+    /// field being recorded, which is not its own conflict.
+    func testTheFieldsHoldingAChord_leaveOutTheFieldBeingRecorded() throws {
         let rows = try shortcuts()
-        let nextCandidate = try row("nextCandidate")
+        let nextCandidate = try row("nextCandidate").first
         let tab = try XCTUnwrap(nextCandidate.chord)
 
-        XCTAssertEqual(rows.rows(holding: tab).map(\.name), ["nextCandidate"])
-        XCTAssertEqual(rows.rows(holding: tab, excluding: nextCandidate).map(\.name), [])
+        XCTAssertEqual(rows.fields(holding: tab).map(\.settingsKey), [nextCandidate.settingsKey])
+        XCTAssertEqual(rows.fields(holding: tab, excluding: nextCandidate), [])
         XCTAssertEqual(
-            try rows.rows(holding: tab, excluding: row("pageForward")).map(\.name),
-            ["nextCandidate"],
+            try rows.fields(holding: tab, excluding: row("pageForward").first).map(\.settingsKey),
+            [nextCandidate.settingsKey],
         )
+    }
+
+    /// Space ships on Confirm Key's second field (USER 2026-10-15); the three
+    /// commit rows have two (USER 2026-10-16). A chord recorded there is read back and
+    /// takes the key from the default that held it.
+    func testASecondFieldChord_isReadBackAndTakesTheKeyFromADefault() throws {
+        let store = makeStore()
+        let space = try TestFixtures.chord(" ")
+        XCTAssertEqual(try row("confirmHighlighted").fields[1].chord, space, "shipped")
+        XCTAssertEqual(try row("commitAlternateScript").fields.count, 2)
+        XCTAssertEqual(try row("pageForward").fields.count, 1)
+        let tab = try TestFixtures.chord("\t")
+
+        try store.setComposingChord(tab, for: row("confirmHighlighted").fields[1])
+
+        XCTAssertEqual(try row("confirmHighlighted").fields[1].chord, tab)
+        XCTAssertNil(try row("nextCandidate").first.chord)
+        XCTAssertEqual(
+            userDefaults.string(forKey: "composingShortcut.confirmHighlighted.second"),
+            tab.rawValue,
+        )
+    }
+
+    /// A chord stored on two fields — by hand, or by a build that never read
+    /// the second field — shows on one; the other is still a holder a
+    /// recording has to clear, or it would come back on the next read.
+    func testTheFieldsHoldingAChord_includeOneTheResolverHid() throws {
+        let chord = try TestFixtures.chordNoDefaultHolds()
+        userDefaults.set(chord.rawValue, forKey: "composingShortcut.nextCandidate")
+        userDefaults.set(chord.rawValue, forKey: "composingShortcut.confirmHighlighted.second")
+
+        XCTAssertEqual(
+            try shortcuts().fields(holding: chord).map(\.settingsKey),
+            ["composingShortcut.nextCandidate", "composingShortcut.confirmHighlighted.second"],
+        )
+        XCTAssertNil(try row("nextCandidate").first.chord, "hidden behind the later field")
     }
 
     func testComposingChords_roundTripThroughTheSuite() throws {
@@ -611,9 +645,9 @@ final class SettingsStoreTests: XCTestCase {
         // and the round trip is the only thing under test.
         let chord = try TestFixtures.chordNoDefaultHolds()
 
-        try store.setComposingChord(chord, for: row("pageForward"))
+        try store.setComposingChord(chord, for: row("pageForward").first)
 
-        XCTAssertEqual(try row("pageForward").chord, chord)
+        XCTAssertEqual(try row("pageForward").first.chord, chord)
         XCTAssertEqual(
             userDefaults.string(forKey: "composingShortcut.pageForward"),
             chord.rawValue,
@@ -628,9 +662,9 @@ final class SettingsStoreTests: XCTestCase {
         let store = makeStore()
         let bareBacktick = try TestFixtures.chord("`")
 
-        try store.setComposingChord(bareBacktick, for: row("pageBackward"))
+        try store.setComposingChord(bareBacktick, for: row("pageBackward").first)
 
-        XCTAssertEqual(try row("pageBackward").chord, bareBacktick)
+        XCTAssertEqual(try row("pageBackward").first.chord, bareBacktick)
         XCTAssertEqual(
             userDefaults.string(forKey: "composingShortcut.pageBackward"),
             "|0060",
@@ -643,9 +677,9 @@ final class SettingsStoreTests: XCTestCase {
     func testClearedComposingChord_staysClearedAcrossReads() throws {
         let store = makeStore()
 
-        try store.setComposingChord(nil, for: row("pageForward"))
+        try store.setComposingChord(nil, for: row("pageForward").first)
 
-        XCTAssertNil(try row("pageForward").chord)
+        XCTAssertNil(try row("pageForward").first.chord)
         XCTAssertEqual(
             userDefaults.string(forKey: "composingShortcut.pageForward"),
             "",
@@ -658,7 +692,7 @@ final class SettingsStoreTests: XCTestCase {
     func testComposingChords_withAnUnparsableStoredValue_readAsCleared() throws {
         userDefaults.set("nonsense", forKey: "composingShortcut.pageForward")
 
-        XCTAssertNil(try row("pageForward").chord)
+        XCTAssertNil(try row("pageForward").first.chord)
     }
 
     /// The General pane writes the scheme's raw value; the store reads it, and
@@ -690,29 +724,9 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertFalse(makeStore().isCandidateWindowEnabled)
     }
 
-    /// The rules the swap shortcut and the punctuation width read live on the enum — pinned once.
+    /// The rule the swap shortcut reads live on the enum — pinned once.
     func testCandidateDisplayMode_rules_perMode() {
         XCTAssertEqual(CandidateDisplayMode.allCases.filter(\.allowsSwapToggle), [.sideBySide, .combined])
         XCTAssertEqual(CandidateDisplayMode.allCases.filter { !$0.showsHanji }, [.romanOnly])
-        // Punctuation width follows the STORED swap under Hanji–Romanization Pairing / Hanji with Romanization, never under Romanization Only.
-        XCTAssertFalse(CandidateDisplayMode.combined.effectiveFullWidthPunctuation(stored: false))
-        XCTAssertTrue(CandidateDisplayMode.combined.effectiveFullWidthPunctuation(stored: true))
-        XCTAssertFalse(CandidateDisplayMode.romanOnly.effectiveFullWidthPunctuation(stored: true))
-    }
-
-    /// Under Hanji with Romanization the candidate projection stays swapped while the punctuation
-    /// width follows the stored flag the swap shortcut toggles.
-    func testStore_underCombined_punctuationWidthFollowsTheStoredSwap() {
-        let store = makeStore()
-        store.candidateDisplayMode = .combined
-
-        store.storedIsHanjiFirst = false
-        XCTAssertFalse(store.isFullWidthPunctuation, "half-width until the chord is pressed")
-
-        store.storedIsHanjiFirst = true
-        XCTAssertTrue(store.isFullWidthPunctuation, "full-width after the chord is pressed")
-
-        store.candidateDisplayMode = .romanOnly
-        XCTAssertFalse(store.isFullWidthPunctuation, "羅馬字 is always half-width")
     }
 }

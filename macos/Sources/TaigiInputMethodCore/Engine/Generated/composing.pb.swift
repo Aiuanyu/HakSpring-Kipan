@@ -86,7 +86,7 @@ public nonisolated enum Taigi_Engine_CommitOutcome: SwiftProtobuf.Enum, Swift.Ca
   /// mid-commit: the composition continues
   case nailed // = 1
 
-  /// the buffer was consumed; the engine is Idle
+  /// the buffer was consumed; the engine is Idle (a prediction: written)
   case finalized // = 2
 
   /// nothing changed (stale generation, rejected pick)
@@ -179,61 +179,6 @@ public nonisolated enum Taigi_Engine_CaretDirection: SwiftProtobuf.Enum, Swift.C
 
 }
 
-/// v3.5.8 Phase 9.2 — candidate-type discriminator. MOE `VocType`
-/// (`VT_HANT` / `VT_TAILO` / `VT_MIXED`) is the cite. Derived in Rust
-/// from `DictionaryRecord.hanji` presence + NFKD-normalized Latin-letter
-/// detection; see `engine/lexicon/src/continuous/mod.rs::derive_script_kind`.
-///
-/// Metadata-only: this field does NOT enter the `CandidateSortKey` tie-break
-/// in v3.5.8 (per `docs/releases/v3.5.8/plan.md` § Phase 9 R2 Q3.a — "reserve rank
-/// use until real collisions are measured"). It is orthogonal to the
-/// existing `form` axis (toneless / numeric / hanji / abbrev).
-///
-/// `UNSPECIFIED = 0` is the proto3 default and never emitted by Rust;
-/// platforms must treat `UNSPECIFIED` as "unknown carrier — fall back
-/// to display-text sniff" rather than as HANT.
-public nonisolated enum Taigi_Engine_CandidateScriptKind: SwiftProtobuf.Enum, Swift.CaseIterable {
-  public typealias RawValue = Int
-  case unspecified // = 0
-  case hant // = 1
-  case tailo // = 2
-  case mixed // = 3
-  case UNRECOGNIZED(Int)
-
-  public init() {
-    self = .unspecified
-  }
-
-  public init?(rawValue: Int) {
-    switch rawValue {
-    case 0: self = .unspecified
-    case 1: self = .hant
-    case 2: self = .tailo
-    case 3: self = .mixed
-    default: self = .UNRECOGNIZED(rawValue)
-    }
-  }
-
-  public var rawValue: Int {
-    switch self {
-    case .unspecified: return 0
-    case .hant: return 1
-    case .tailo: return 2
-    case .mixed: return 3
-    case .UNRECOGNIZED(let i): return i
-    }
-  }
-
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  public static let allCases: [Taigi_Engine_CandidateScriptKind] = [
-    .unspecified,
-    .hant,
-    .tailo,
-    .mixed,
-  ]
-
-}
-
 public nonisolated struct Taigi_Engine_ComposingRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -290,14 +235,6 @@ public nonisolated struct Taigi_Engine_ComposingRequest: Sendable {
     set {method = .commitRaw(newValue)}
   }
 
-  public var selectCandidate: Taigi_Engine_SelectCandidate {
-    get {
-      if case .selectCandidate(let v)? = method {return v}
-      return Taigi_Engine_SelectCandidate()
-    }
-    set {method = .selectCandidate(newValue)}
-  }
-
   public var commitPreeditThenInsertExternal: Taigi_Engine_CommitPreeditThenInsertExternal {
     get {
       if case .commitPreeditThenInsertExternal(let v)? = method {return v}
@@ -329,6 +266,15 @@ public nonisolated struct Taigi_Engine_ComposingRequest: Sendable {
       return Taigi_Engine_CommitContinuous()
     }
     set {method = .commitContinuous(newValue)}
+  }
+
+  /// A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+  public var commitPrediction: Taigi_Engine_CommitPrediction {
+    get {
+      if case .commitPrediction(let v)? = method {return v}
+      return Taigi_Engine_CommitPrediction()
+    }
+    set {method = .commitPrediction(newValue)}
   }
 
   /// --- Desktop keys (40s: Telex tone keys, composing caret, TPS keys, the
@@ -383,12 +329,13 @@ public nonisolated struct Taigi_Engine_ComposingRequest: Sendable {
     case replaceLast(Taigi_Engine_ReplaceLast)
     case deleteBackward(Taigi_Engine_DeleteBackward)
     case commitRaw(Taigi_Engine_CommitRaw)
-    case selectCandidate(Taigi_Engine_SelectCandidate)
     case commitPreeditThenInsertExternal(Taigi_Engine_CommitPreeditThenInsertExternal)
     case reset(Taigi_Engine_Reset)
     /// --- Continuous-input ops (30s, v3.5.8 Phase 6) ---
     case fetchAtPos(Taigi_Engine_FetchAtPos)
     case commitContinuous(Taigi_Engine_CommitContinuous)
+    /// A NextWord prediction tap (D1): stateless, beside the Continuous pick.
+    case commitPrediction(Taigi_Engine_CommitPrediction)
     /// --- Desktop keys (40s: Telex tone keys, composing caret, TPS keys, the
     /// commits of a Hanji conversion) ---
     case telexKey(Taigi_Engine_TelexKey)
@@ -473,20 +420,6 @@ public nonisolated struct Taigi_Engine_CommitRaw: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
-
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  public init() {}
-}
-
-/// Commit the supplied platform-resolved suggestion text, atomically
-/// replacing the current preedit.
-public nonisolated struct Taigi_Engine_SelectCandidate: Sendable {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  public var text: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -700,7 +633,46 @@ public nonisolated struct Taigi_Engine_CommitContinuous: Sendable {
   fileprivate var _hanji: String? = nil
 }
 
-/// What a `CommitContinuous` did (R5) — replaces the platforms' effect scans.
+/// A tap on a NextWord prediction (`nextword.proto` `EnginePrediction`),
+/// strip or expanded overlay (D1). The engine resolves the document text
+/// from `roman`, `hanji` and the request's `AppConfig` exactly as for a
+/// Continuous pick (`composing::commit_text`) and answers
+/// `ComposingResponse.commit`: FINALIZED with the text, or IGNORED (no
+/// script, `OTHER` where the mode shows one script, no `hanji`, or nothing to
+/// write — a Hanji-only prediction once the swap is off) — the platform then
+/// writes nothing. A split cell whose own script is missing commits the lead,
+/// as a Continuous pick does (the phones' fail-open marker rule). With the
+/// user-data stores open the engine counts the pick's usage under `(hanji,
+/// canonical_tl)` itself (the platform sends no `RecordUsage` for it) and
+/// touches no learned phrase. Stateless: the composition is left as it is
+/// (a new generation still resets it, as for every request); NextWord
+/// learning stays the platform's `WordSelected`.
+public nonisolated struct Taigi_Engine_CommitPrediction: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// `COMMIT_SCRIPT_LEAD`, or the §42 split cell's own script.
+  public var script: Taigi_Engine_CommitScript = .unspecified
+
+  /// The prediction's display romanization as the engine shaped it — the
+  /// `EnginePrediction.text` of a prediction with a `subtitle` (POJ-rendered,
+  /// syllable-separated); empty for a Hanji-only prediction.
+  public var roman: String = String()
+
+  /// `EnginePrediction.hanji` — identity and the Hanji half of the commit.
+  public var hanji: String = String()
+
+  /// `EnginePrediction.tl` — the canonical TL the usage is counted under.
+  public var canonicalTl: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// What a `CommitContinuous` (R5) or a `CommitPrediction` (D1) did — replaces
+/// the platforms' effect scans.
 public nonisolated struct Taigi_Engine_CommitResolution: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -708,8 +680,9 @@ public nonisolated struct Taigi_Engine_CommitResolution: Sendable {
 
   public var outcome: Taigi_Engine_CommitOutcome = .unspecified
 
-  /// The text this pick wrote into the composition — the segment, not the
-  /// whole finalized composition. Empty when IGNORED.
+  /// What the pick wrote: a Continuous pick, into the composition — the
+  /// segment, not the whole finalized composition; a prediction, into the
+  /// document. Empty when IGNORED.
   public var documentText: String = String()
 
   /// `document_text` carries romanization (behavioral-invariants §23).
@@ -878,7 +851,8 @@ public nonisolated struct Taigi_Engine_ComposingResponse: Sendable {
   /// Clears the value of `continuous`. Subsequent reads from it will return its default value.
   public mutating func clearContinuous() {self._continuous = nil}
 
-  /// R5 — set by every `CommitContinuous`; absent for every other request.
+  /// R5 — set by every `CommitContinuous` and `CommitPrediction`; absent for
+  /// every other request.
   public var commit: Taigi_Engine_CommitResolution {
     get {_commit ?? Taigi_Engine_CommitResolution()}
     set {_commit = newValue}
@@ -939,22 +913,14 @@ public nonisolated struct Taigi_Engine_ContinuousResponse: Sendable {
 /// v3.5.8 Phase 6 — single span-local continuous candidate. Wire mirror of
 /// `lexicon::RawCandidate` (`engine/lexicon/src/continuous/`).
 ///
-/// `consumed_span` is encoded as two scalar fields rather than a nested
-/// message to keep wire overhead low. `consumed_span_start` /
-/// `consumed_span_end` are byte offsets in the **original raw user
+/// `consumed_span_end` is a byte offset in the **original raw user
 /// input** stored in `Phase::Continuous { raw }` — not in any canonical
 /// TL transform. TL / POJ users → ASCII bytes; TPS users → Bopomofo
 /// bytes (Phase 6 dispatcher converts TPS spans to canonical TL FST
 /// keys for lookup but emits the span back in the user-facing TPS byte
-/// space). Platform UI slices `pending[start..end]` off
-/// `Phase::Continuous { raw }` (or its preedit mirror) on commit.
-///
-/// `form` is currently always `1` (FORM_NOTONE; see
-/// `engine/lexicon/src/continuous/`); reserved for hanji (0) /
-/// numeric (2) / abbrev (3) when proto-side carriers exist.
-///
-/// `script_kind` (Phase 9.2) is the MOE-aligned candidate-type discriminator;
-/// see `CandidateScriptKind` above.
+/// space). The platform sends it back as `CommitContinuous.consumed_bytes`;
+/// where the listed word starts is the engine's own knowledge
+/// (`composing::conversion::word_list_start`).
 ///
 /// v3.5.8 Phase 9 Item 5 — `roman` + `hanji` are display-only
 /// sidechannels added so platform UI can build dual-line cells
@@ -964,7 +930,10 @@ public nonisolated struct Taigi_Engine_ContinuousResponse: Sendable {
 /// (= `hanji.unwrap_or(roman)`; under a single-script display the §34
 /// literal carries the identity of the same-roman dictionary row it
 /// absorbed — `composing::requests::adopt_collapsed_dict_identity`);
-/// `roman` and `hanji` are NEVER read for commit. `roman` is the display romanization for the active
+/// `roman` and `hanji` are display sidechannels: a Continuous pick sends
+/// them back inside `CommitContinuous`, and the engine resolves the committed
+/// text from the pick's scripts under the live settings (`commit_text.rs`).
+/// `roman` is the display romanization for the active
 /// input mode — the underlying `DictionaryRecord.tl` by default, or
 /// POJ-display (`oo`→`o͘`, `nn`→`ⁿ`, …) when
 /// `AppConfig.input_mode = poj` (engine-rendered, mirroring the
@@ -972,26 +941,18 @@ public nonisolated struct Taigi_Engine_ContinuousResponse: Sendable {
 /// (proto3 `optional` distinguishes "TAILO candidate — no hanji
 /// exists" from "wire-frame defect"). See
 /// `docs/engine/continuous-candidate-display.md` §4 for the full
-/// rationale; the companion `(roman, hanji, consumed_span)` dedupe is
+/// rationale; the companion `(canonical_tl, hanji, consumed_span)` dedupe is
 /// `lexicon::continuous::candidate::dedupe_by_roman_hanji_span`.
 public nonisolated struct Taigi_Engine_CandidateMessage: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var consumedSpanStart: UInt32 = 0
-
   public var consumedSpanEnd: UInt32 = 0
 
   public var syllableCount: UInt32 = 0
 
   public var displayText: String = String()
-
-  public var score: Float = 0
-
-  public var form: UInt32 = 0
-
-  public var scriptKind: Taigi_Engine_CandidateScriptKind = .unspecified
 
   public var roman: String = String()
 
@@ -1035,8 +996,9 @@ public nonisolated struct Taigi_Engine_CandidateMessage: Sendable {
 /// (iOS `HostTextWriter`; `insertText` only when nothing is marked). An iOS
 /// commit and the literals the same event writes after it reach the host as
 /// one write (`INVARIANT_composing_host_commit_one_write_per_event`). Autocomplete-control effects (`ClearCandidates` /
-/// `RefreshCandidates` / `ResetCandidateContext`) route to the platform
-/// autocomplete subsystem (stays platform-side until v3.5.5 NextWord slice).
+/// `RefreshCandidates` / `ResetCandidateContext`) route to the platform's
+/// candidate strip; the NextWord ranking they refresh runs in the engine
+/// (`engine/nextword`).
 ///
 /// `NextWord*` effects (tags 8/9/10) are Phase 4 continuous-input handshake.
 /// The platform FFI shim translates each to a `NextWordRequest` and dispatches
@@ -1285,13 +1247,9 @@ nonisolated extension Taigi_Engine_CaretDirection: SwiftProtobuf._ProtoNameProvi
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CARET_DIRECTION_UNSPECIFIED\0\u{1}CARET_DIRECTION_LEFT\0\u{1}CARET_DIRECTION_RIGHT\0\u{1}CARET_DIRECTION_START\0\u{1}CARET_DIRECTION_END\0")
 }
 
-nonisolated extension Taigi_Engine_CandidateScriptKind: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CANDIDATE_SCRIPT_KIND_UNSPECIFIED\0\u{1}CANDIDATE_SCRIPT_KIND_HANT\0\u{1}CANDIDATE_SCRIPT_KIND_TAILO\0\u{1}CANDIDATE_SCRIPT_KIND_MIXED\0")
-}
-
 nonisolated extension Taigi_Engine_ComposingRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ComposingRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\u{a}start\0\u{1}append\0\u{3}append_hyphen\0\u{3}replace_last\0\u{3}delete_backward\0\u{4}\u{2}commit_raw\0\u{3}select_candidate\0\u{3}commit_preedit_then_insert_external\0\u{1}reset\0\u{4}\u{c}fetch_at_pos\0\u{3}commit_continuous\0\u{4}\u{8}telex_key\0\u{3}move_caret\0\u{3}tps_key\0\u{3}commit_as_shown\0\u{3}commit_as_typed\0\u{b}set_selected_candidate_index\0\u{b}query_state\0\u{b}commit_derived\0\u{b}enter_continuous\0\u{b}reset_continuous\0\u{c}\u{14}\u{1}\u{c}\u{15}\u{1}\u{c}\u{f}\u{1}\u{c}\u{1e}\u{1}\u{c}!\u{1}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\u{a}start\0\u{1}append\0\u{3}append_hyphen\0\u{3}replace_last\0\u{3}delete_backward\0\u{4}\u{2}commit_raw\0\u{4}\u{2}commit_preedit_then_insert_external\0\u{1}reset\0\u{4}\u{c}fetch_at_pos\0\u{3}commit_continuous\0\u{4}\u{2}commit_prediction\0\u{4}\u{6}telex_key\0\u{3}move_caret\0\u{3}tps_key\0\u{3}commit_as_shown\0\u{3}commit_as_typed\0\u{b}set_selected_candidate_index\0\u{b}query_state\0\u{b}commit_derived\0\u{b}enter_continuous\0\u{b}reset_continuous\0\u{b}select_candidate\0\u{c}\u{14}\u{1}\u{c}\u{15}\u{1}\u{c}\u{f}\u{1}\u{c}\u{1e}\u{1}\u{c}!\u{1}\u{c}\u{11}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1377,19 +1335,6 @@ nonisolated extension Taigi_Engine_ComposingRequest: SwiftProtobuf.Message, Swif
           self.method = .commitRaw(v)
         }
       }()
-      case 17: try {
-        var v: Taigi_Engine_SelectCandidate?
-        var hadOneofValue = false
-        if let current = self.method {
-          hadOneofValue = true
-          if case .selectCandidate(let m) = current {v = m}
-        }
-        try decoder.decodeSingularMessageField(value: &v)
-        if let v = v {
-          if hadOneofValue {try decoder.handleConflictingOneOf()}
-          self.method = .selectCandidate(v)
-        }
-      }()
       case 18: try {
         var v: Taigi_Engine_CommitPreeditThenInsertExternal?
         var hadOneofValue = false
@@ -1440,6 +1385,19 @@ nonisolated extension Taigi_Engine_ComposingRequest: SwiftProtobuf.Message, Swif
         if let v = v {
           if hadOneofValue {try decoder.handleConflictingOneOf()}
           self.method = .commitContinuous(v)
+        }
+      }()
+      case 34: try {
+        var v: Taigi_Engine_CommitPrediction?
+        var hadOneofValue = false
+        if let current = self.method {
+          hadOneofValue = true
+          if case .commitPrediction(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.method = .commitPrediction(v)
         }
       }()
       case 40: try {
@@ -1542,10 +1500,6 @@ nonisolated extension Taigi_Engine_ComposingRequest: SwiftProtobuf.Message, Swif
       guard case .commitRaw(let v)? = self.method else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 16)
     }()
-    case .selectCandidate?: try {
-      guard case .selectCandidate(let v)? = self.method else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 17)
-    }()
     case .commitPreeditThenInsertExternal?: try {
       guard case .commitPreeditThenInsertExternal(let v)? = self.method else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
@@ -1561,6 +1515,10 @@ nonisolated extension Taigi_Engine_ComposingRequest: SwiftProtobuf.Message, Swif
     case .commitContinuous?: try {
       guard case .commitContinuous(let v)? = self.method else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 32)
+    }()
+    case .commitPrediction?: try {
+      guard case .commitPrediction(let v)? = self.method else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 34)
     }()
     case .telexKey?: try {
       guard case .telexKey(let v)? = self.method else { preconditionFailure() }
@@ -1741,36 +1699,6 @@ nonisolated extension Taigi_Engine_CommitRaw: SwiftProtobuf.Message, SwiftProtob
   }
 }
 
-nonisolated extension Taigi_Engine_SelectCandidate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".SelectCandidate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.text) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.text.isEmpty {
-      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Taigi_Engine_SelectCandidate, rhs: Taigi_Engine_SelectCandidate) -> Bool {
-    if lhs.text != rhs.text {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
 nonisolated extension Taigi_Engine_CommitPreeditThenInsertExternal: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CommitPreeditThenInsertExternal"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0")
@@ -1928,6 +1856,51 @@ nonisolated extension Taigi_Engine_CommitContinuous: SwiftProtobuf.Message, Swif
     if lhs._hanji != rhs._hanji {return false}
     if lhs.script != rhs.script {return false}
     if lhs.roman != rhs.roman {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_CommitPrediction: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CommitPrediction"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}script\0\u{1}roman\0\u{1}hanji\0\u{3}canonical_tl\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.script) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.roman) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.hanji) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.canonicalTl) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.script != .unspecified {
+      try visitor.visitSingularEnumField(value: self.script, fieldNumber: 1)
+    }
+    if !self.roman.isEmpty {
+      try visitor.visitSingularStringField(value: self.roman, fieldNumber: 2)
+    }
+    if !self.hanji.isEmpty {
+      try visitor.visitSingularStringField(value: self.hanji, fieldNumber: 3)
+    }
+    if !self.canonicalTl.isEmpty {
+      try visitor.visitSingularStringField(value: self.canonicalTl, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_CommitPrediction, rhs: Taigi_Engine_CommitPrediction) -> Bool {
+    if lhs.script != rhs.script {return false}
+    if lhs.roman != rhs.roman {return false}
+    if lhs.hanji != rhs.hanji {return false}
+    if lhs.canonicalTl != rhs.canonicalTl {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2232,7 +2205,7 @@ nonisolated extension Taigi_Engine_ContinuousResponse: SwiftProtobuf.Message, Sw
 
 nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CandidateMessage"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}consumed_span_start\0\u{3}consumed_span_end\0\u{3}syllable_count\0\u{3}display_text\0\u{1}score\0\u{1}form\0\u{3}script_kind\0\u{1}roman\0\u{1}hanji\0\u{3}canonical_tl\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{2}consumed_span_end\0\u{3}syllable_count\0\u{3}display_text\0\u{2}\u{4}roman\0\u{1}hanji\0\u{3}canonical_tl\0\u{b}consumed_span_start\0\u{b}score\0\u{b}form\0\u{b}script_kind\0\u{c}\u{1}\u{1}\u{c}\u{5}\u{1}\u{c}\u{6}\u{1}\u{c}\u{7}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2240,13 +2213,9 @@ nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, Swif
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.consumedSpanStart) }()
       case 2: try { try decoder.decodeSingularUInt32Field(value: &self.consumedSpanEnd) }()
       case 3: try { try decoder.decodeSingularUInt32Field(value: &self.syllableCount) }()
       case 4: try { try decoder.decodeSingularStringField(value: &self.displayText) }()
-      case 5: try { try decoder.decodeSingularFloatField(value: &self.score) }()
-      case 6: try { try decoder.decodeSingularUInt32Field(value: &self.form) }()
-      case 7: try { try decoder.decodeSingularEnumField(value: &self.scriptKind) }()
       case 8: try { try decoder.decodeSingularStringField(value: &self.roman) }()
       case 9: try { try decoder.decodeSingularStringField(value: &self._hanji) }()
       case 10: try { try decoder.decodeSingularStringField(value: &self.canonicalTl) }()
@@ -2260,9 +2229,6 @@ nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, Swif
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
-    if self.consumedSpanStart != 0 {
-      try visitor.visitSingularUInt32Field(value: self.consumedSpanStart, fieldNumber: 1)
-    }
     if self.consumedSpanEnd != 0 {
       try visitor.visitSingularUInt32Field(value: self.consumedSpanEnd, fieldNumber: 2)
     }
@@ -2271,15 +2237,6 @@ nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, Swif
     }
     if !self.displayText.isEmpty {
       try visitor.visitSingularStringField(value: self.displayText, fieldNumber: 4)
-    }
-    if self.score.bitPattern != 0 {
-      try visitor.visitSingularFloatField(value: self.score, fieldNumber: 5)
-    }
-    if self.form != 0 {
-      try visitor.visitSingularUInt32Field(value: self.form, fieldNumber: 6)
-    }
-    if self.scriptKind != .unspecified {
-      try visitor.visitSingularEnumField(value: self.scriptKind, fieldNumber: 7)
     }
     if !self.roman.isEmpty {
       try visitor.visitSingularStringField(value: self.roman, fieldNumber: 8)
@@ -2294,13 +2251,9 @@ nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, Swif
   }
 
   public static func ==(lhs: Taigi_Engine_CandidateMessage, rhs: Taigi_Engine_CandidateMessage) -> Bool {
-    if lhs.consumedSpanStart != rhs.consumedSpanStart {return false}
     if lhs.consumedSpanEnd != rhs.consumedSpanEnd {return false}
     if lhs.syllableCount != rhs.syllableCount {return false}
     if lhs.displayText != rhs.displayText {return false}
-    if lhs.score != rhs.score {return false}
-    if lhs.form != rhs.form {return false}
-    if lhs.scriptKind != rhs.scriptKind {return false}
     if lhs.roman != rhs.roman {return false}
     if lhs._hanji != rhs._hanji {return false}
     if lhs.canonicalTl != rhs.canonicalTl {return false}

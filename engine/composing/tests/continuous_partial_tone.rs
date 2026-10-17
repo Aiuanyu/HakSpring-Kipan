@@ -23,7 +23,7 @@
 //! row and asserted on: 豬 `ti` / 鎮 `tìn` under `ting`, 是 `sī` under `sik`.
 
 use crate::common::{
-    build_dictionary_fst_tl_toned, build_syllables_fst_tl, build_tkdb_v3, empty_association_bin,
+    build_dictionary_fst_tl_toned, build_syllables_fst_tl, build_tkdb_v4, empty_association_bin,
     fetch_hanji_with_custom as fetch_hanji_in, install_lexicon, Row,
 };
 use lexicon::CustomEntry;
@@ -112,7 +112,7 @@ fn fixture_rows() -> Vec<Row> {
 
 fn install_fixture() {
     let rows = fixture_rows();
-    let dict_path = write_temp("dictionary-partial-tone.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary-partial-tone.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst_tl_toned(&rows);
     let association_path = write_temp("association-partial-tone.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst_tl(&[
@@ -263,9 +263,9 @@ fn custom_entries_answer_the_same_pin_on_both_paths() {
     install_fixture();
     // Custom matching is toneless, so without the pin a custom entry with
     // the wrong tone would surface — through the lexicon whole-buffer merge
-    // AND the walker's per-edge override (slot 0). Two entries under the
-    // same toneless key, wrong tone FIRST: the walker must pick the first
-    // ELIGIBLE entry, not filter its first-wins pick down to nothing.
+    // AND the walker's per-edge pick (slot 0). Two entries under the same
+    // toneless key, wrong tone FIRST: the walker must pick among the
+    // ELIGIBLE entries, not filter a first-wins pick down to nothing.
     let custom = vec![
         CustomEntry {
             roman: "tíng-sik".into(),
@@ -288,7 +288,7 @@ fn custom_entries_answer_the_same_pin_on_both_paths() {
     assert_eq!(
         hanji.first().map(String::as_str),
         Some("乙"),
-        "slot 0 (walker custom override) must be the first ELIGIBLE entry; got {hanji:?}"
+        "slot 0 (walker edge pick) must be an ELIGIBLE entry; got {hanji:?}"
     );
 
     // Fully toned input pins custom entries too — the verbatim key only

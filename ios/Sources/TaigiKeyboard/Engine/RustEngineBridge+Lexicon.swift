@@ -12,20 +12,18 @@ public extension RustEngineBridge {
 
     /// Bridge-synthesized companion to the proto `TaigiWord` returned by
     /// lexicon search responses. Optional fields surface as Swift
-    /// `Optional` per proto3 `optional` semantics; consumer in
-    /// `LexiconService` converts to the platform-side `TaigiWord`.
+    /// `Optional` per proto3 `optional` semantics; `LexiconClient` hands
+    /// the rows on as they are.
     struct LexiconRow: Equatable {
         public let id: Int64
         public let roman: String
         public let hanji: String?
-        public let lengthScore: Int32?
         /// The dictionaries the record belongs to, in the engine's
         /// (source-bit) order — the order the badges are drawn in.
         let sources: [DictionarySource]
     }
 
-    /// Engine install diagnostic counts, surfaced for dogfood-time
-    /// inspection through `RustEngineBridge.diagnostics()` callers.
+    /// Engine install diagnostic counts.
     struct LexiconInstallStats: Equatable {
         public let dictionaryRecordCount: UInt64
         public let prefixIndexEntryCount: UInt64
@@ -76,6 +74,7 @@ public extension RustEngineBridge {
             public let sintik: Bool
             public let taichung: Bool
             public let nameAppendix: Bool
+            public let altReading: Bool
         }
     }
 
@@ -238,6 +237,7 @@ public extension RustEngineBridge {
         subcollProto.accentSintik = toggles.kautianSubcoll.sintik
         subcollProto.accentTaichung = toggles.kautianSubcoll.taichung
         subcollProto.nameAppendix = toggles.kautianSubcoll.nameAppendix
+        subcollProto.altReading = toggles.kautianSubcoll.altReading
         togglesProto.kautianSubcollections = subcollProto
         return togglesProto
     }
@@ -266,7 +266,6 @@ public extension RustEngineBridge {
             id: proto.id,
             roman: proto.roman,
             hanji: proto.hasHanji ? proto.hanji : nil,
-            lengthScore: proto.hasLengthScore ? proto.lengthScore : nil,
             sources: proto.sources.compactMap(platformDictionarySource(from:)),
         )
     }
@@ -315,7 +314,7 @@ public extension RustEngineBridge {
 
         guard let response = send(request, op: op) else { return nil }
         guard response.error == .ok else {
-            recordFailure(op: op, message: "engine returned \(response.error)", code: Int32(response.error.rawValue))
+            recordFailure(op: op, message: "engine returned \(response.error)")
             return nil
         }
         guard case let .lexicon(payload) = response.payload else {
@@ -356,6 +355,7 @@ extension RustEngineBridge.DictionaryToggles {
                 sintik: settings.isKautianAccentSintikEnabled,
                 taichung: settings.isKautianAccentTaichungEnabled,
                 nameAppendix: settings.isKautianNameAppendixEnabled,
+                altReading: settings.isKautianAltReadingEnabled,
             ),
         )
     }

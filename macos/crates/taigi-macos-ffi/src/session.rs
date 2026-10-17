@@ -20,7 +20,7 @@ use taigi_desktop_core::composing::{
 };
 use taigi_desktop_core::engine::Effect as EngineEffect;
 use taigi_desktop_core::keys::{
-    CandidateNavigation, ComposingKeyBindings, ComposingKeyIntent, KeyEventSnapshot,
+    CandidateNavigation, ComposingKeyBindings, ComposingKeyIntent, KeyEventSnapshot, TpsKeyCapIndex,
 };
 use taigi_desktop_core::runtime::DesktopRuntime;
 use taigi_desktop_core::settings::keys;
@@ -506,6 +506,16 @@ impl IntentSurface for RecordingSurface<'_> {
             direction: navigation(direction) as i32,
         }));
     }
+
+    /// Swift's key panel flashes the cap.
+    fn tps_keyboard_cap_typed(&mut self, cap: TpsKeyCapIndex) {
+        self.record(effect::Effect::TpsKeyboardKeyTyped(
+            proto::TpsKeyboardKeyTyped {
+                row: cap.row as u32,
+                cap: cap.cap as u32,
+            },
+        ));
+    }
 }
 
 pub(crate) fn navigation(direction: CandidateNavigation) -> proto::CandidateNavigation {
@@ -585,6 +595,11 @@ mod tests {
 
     fn closed() -> effect::Effect {
         effect::Effect::CandidatesClosed(proto::CandidatesClosed {})
+    }
+
+    /// The key panel's flash of the cap at `row`, `cap` (counted from 0).
+    fn flashed(row: u32, cap: u32) -> effect::Effect {
+        effect::Effect::TpsKeyboardKeyTyped(proto::TpsKeyboardKeyTyped { row, cap })
     }
 
     fn arm() -> effect::Effect {
@@ -948,13 +963,29 @@ mod tests {
         assert_eq!(effects(&reply), vec![]);
     }
 
-    /// trace: Space = the highlighted cell's other script; cell 0 leads
+    /// trace: Space ships on Confirm Key (USER 2026-10-15) — cell 0 leads
+    /// with Hanji and is written as shown; a Hanji commit earns no auto
+    /// space.
+    #[test]
+    fn space_confirms_the_highlighted_cell_by_default() {
+        let (_engine, shell) = engine_shell();
+        let typist = Typist::activated(shell, auto_space());
+        let cells = shown_list(&typist.type_text("ka")).cells;
+        let reply = typist.key(typed(" "), list(Some(0)));
+        assert!(reply.handled && !reply.is_composing);
+        assert_eq!(effects(&reply), vec![insert(&cells[0].text), closed()]);
+    }
+
+    /// trace: Space recorded on Output the Other Script (its shipped key
+    /// until 2026-10-15) = the highlighted cell's other script; cell 0 leads
     /// with Hanji, so its annotation (romanization) is written, which earns
     /// the auto space and its arm.
     #[test]
-    fn space_commits_the_other_script_with_its_auto_space() {
+    fn space_on_the_other_script_row_commits_it_with_its_auto_space() {
         let (_engine, shell) = engine_shell();
-        let typist = Typist::activated(shell, auto_space());
+        let mut settings = auto_space();
+        settings.push(text("composingShortcut.commitAlternateScript", "|0020"));
+        let typist = Typist::activated(shell, settings);
         let cells = shown_list(&typist.type_text("ka")).cells;
         let romanization = cells[0].annotation.clone().expect("a Hanji cell");
         let reply = typist.key(typed(" "), list(Some(0)));
@@ -981,9 +1012,11 @@ mod tests {
 
     /// trace: the default display is Hanji-first, whose punctuation is full
     /// width: `,` mid-composition commits `l` and writes `，` with the auto
-    /// space in one write, then arms; ⌃`,` flips to the half width.
+    /// space in one write, then arms. ⌃`,` types no other width (USER
+    /// 2026-10-07): under TL it is the host's chord, like ⌘ below — `l` is
+    /// committed as typed, no mark, no space, the key handed back.
     #[test]
-    fn punctuation_commits_then_inserts_and_the_width_flip_flips_it() {
+    fn punctuation_commits_then_inserts_and_ctrl_punctuation_is_the_hosts() {
         let (_engine, shell) = engine_shell();
         let typist = Typist::activated(shell, auto_space());
         typist.type_text("l");
@@ -992,8 +1025,9 @@ mod tests {
         assert_eq!(effects(&reply), vec![insert("l， "), closed(), arm()]);
 
         typist.type_text("l");
-        let flipped = typist.key(chord(",", CONTROL, None), list(Some(0)));
-        assert_eq!(effects(&flipped), vec![insert("l, "), closed(), arm()]);
+        let chorded = typist.key(chord(",", CONTROL, None), list(Some(0)));
+        assert!(!chorded.handled && !chorded.is_composing);
+        assert_eq!(effects(&chorded), vec![insert("l"), closed()]);
     }
 
     /// ⌘ is the host's: the composition is finished, the key handed back.
@@ -1101,7 +1135,7 @@ mod tests {
 
     /// Under TPS the picker commits the composition as shown even over a
     /// highlight: a pick would only nail a word and keep composing (Hanji
-    /// conversion H6). trace, read by running: ㄍㄚˋ → 假, no space.
+    /// conversion H6). trace, read by running: ㄍㄚˋ → 絞 (E1 P5a corpus pick), no space.
     #[test]
     fn under_tps_the_picker_commits_the_composition_as_shown() {
         let (_engine, shell) = engine_shell();
@@ -1113,7 +1147,7 @@ mod tests {
         assert!(!shown_list(&typist.key(down, no_list())).cells.is_empty());
         let reply = typist.commit_for_symbol_picker(list(Some(0)));
         assert!(!reply.handled && !reply.is_composing);
-        assert_eq!(effects(&reply), vec![insert("假"), closed()]);
+        assert_eq!(effects(&reply), vec![insert("絞"), closed()]);
     }
 
     /// No highlight: the composition as typed, spaced under TL
@@ -1361,9 +1395,10 @@ mod tests {
         let typist = Typist::activated(shell, vec![text("inputMode", "tps")]);
         typist.key(typed("e"), no_list());
         let reply = typist.key(typed("8"), no_list());
+        // trace: `8` is the number row's eighth cap (row 0, cap 7).
         assert_eq!(
             effects(&reply),
-            vec![marked("ㄍㄚ", 2)],
+            vec![marked("ㄍㄚ", 2), flashed(0, 7)],
             "no list while typing"
         );
         let down = chord("\u{F701}", FUNCTION | NUMERIC_PAD, Some(0xF701));
@@ -1382,6 +1417,7 @@ mod tests {
         };
         let picked = typist.key(two, list(Some(0)));
         assert!(picked.handled && picked.is_composing);
+        // A pick types no glyph, so no cap flashes.
         assert_eq!(effects(&picked), vec![marked(&second, 1), closed()]);
         let enter = typist.key(chord("\r", 0, Some(CARRIAGE_RETURN)), no_list());
         assert!(enter.handled && !enter.is_composing);
@@ -1390,7 +1426,7 @@ mod tests {
 
     /// Hanji conversion on macOS: `e` `8` `4` (ㄍㄚˋ) is marked converted; a
     /// plain ← steps the caret over the word; ⇧Return writes the glyphs.
-    /// trace, read by running: ㄍㄚˋ → 假.
+    /// trace, read by running: ㄍㄚˋ → 絞 (E1 P5a corpus pick: 絞/ká 66 > 假/ká 25).
     #[test]
     fn under_tps_a_closed_reading_is_marked_converted_and_shift_return_writes_the_glyphs() {
         let (_engine, shell) = engine_shell();
@@ -1398,11 +1434,11 @@ mod tests {
         typist.key(typed("e"), no_list());
         typist.key(typed("8"), no_list());
         let reply = typist.key(typed("4"), no_list());
-        assert_eq!(effects(&reply), vec![marked("假", 1)]);
+        assert_eq!(effects(&reply), vec![marked("絞", 1), flashed(0, 3)]);
         let left = chord("\u{F702}", FUNCTION | NUMERIC_PAD, Some(LEFT_ARROW));
         let stepped = typist.key(left, no_list());
         assert!(stepped.handled && stepped.is_composing);
-        assert_eq!(effects(&stepped), vec![marked("假", 0)]);
+        assert_eq!(effects(&stepped), vec![marked("絞", 0)]);
         let shift_enter = typist.key(chord("\r", SHIFT, Some(CARRIAGE_RETURN)), no_list());
         assert!(shift_enter.handled && !shift_enter.is_composing);
         assert_eq!(effects(&shift_enter).first(), Some(&insert("ㄍㄚˋ")));
@@ -1512,15 +1548,20 @@ mod tests {
         let typist = Typist::activated(shell, vec![text("inputMode", "tps")]);
         let first = typist.tps_keyboard_press("ㄍ", no_list());
         assert!(first.handled && first.is_composing);
-        assert_eq!(effects(&first), vec![marked("ㄍ", 1)]);
+        // trace: ㄍ is `e`, row 1 cap 2 — the clicked cap flashes as a key's.
+        assert_eq!(effects(&first), vec![marked("ㄍ", 1), flashed(1, 2)]);
         typist.tps_keyboard_press("ㄚ", no_list());
         let down = chord("\u{F701}", FUNCTION | NUMERIC_PAD, Some(0xF701));
         assert!(!shown_list(&typist.key(down, no_list())).cells.is_empty());
         // trace: KEYS `4` = ˋ (U+02CB, tone 2); after ㄚ the adjuster keeps it,
-        // and the closed reading shows converted (read by running: 假).
+        // and the closed reading shows converted (read by running: 絞).
         let over_list = typist.tps_keyboard_press("\u{02cb}", list(Some(0)));
         assert!(over_list.handled && over_list.is_composing);
-        assert_eq!(effects(&over_list), vec![marked("假", 1), closed()]);
+        // The flash comes before the window goes, as the executor runs them.
+        assert_eq!(
+            effects(&over_list),
+            vec![marked("絞", 1), flashed(0, 3), closed()]
+        );
     }
 
     /// A press is not handled outside TPS — a click that raced a switch —

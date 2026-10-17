@@ -70,27 +70,6 @@ pub(crate) const ZHUYIN_VOWELS: &[(&str, &str)] = &[
     ("n", "\u{3123}"),
 ];
 
-/// True when `c` is a TPS nucleus glyph that can START a syllable body
-/// after an onset — a base vowel / medial / nasalized vowel / precomposed
-/// nasal-coda final (ㄚㄧㄨㄛㆦㆤㄜㄝㆨㄞㄠ, the ㆩㆥㆪㆧㆫㆮㆯ nasalized set,
-/// and the ㆰㄢㄤㆱㆲ am/an/ang/om/ong finals). Derived from
-/// [`ZHUYIN_VOWELS`] minus the three syllabic/coda-nasal forms `ㆬ`(m) /
-/// `ㄣ`(n) / `ㆭ`(ng), which are codas, not nuclei.
-///
-/// Used by the continuous-input de-fold predicate (`composing::shadow`):
-/// a folded coda glyph is only de-folded to an onset when the FOLLOWING
-/// char is vowel material — i.e. the coda is positioned where a real
-/// onset could begin the next syllable (`ㄍㆤㆷ|ㄧㄥ`), never before a tone
-/// mark, separator, or another coda.
-pub fn is_tps_vowel_material(c: char) -> bool {
-    // The syllabic / coda nasal forms are codas, not nuclei — exclude them
-    // even though they live in `ZHUYIN_VOWELS`.
-    if matches!(c, '\u{31ac}' | '\u{3123}' | '\u{31ad}') {
-        return false;
-    }
-    ZHUYIN_VOWELS.iter().any(|(_, glyph)| glyph.starts_with(c))
-}
-
 pub(crate) const ZHUYIN_TONES: &[(&str, &str)] = &[
     ("1", " "),
     ("2", "\u{02cb}"),
@@ -204,20 +183,6 @@ pub fn is_tps_char(ch: char) -> bool {
     matches!(ch, '\u{3100}'..='\u{312f}' | '\u{31a0}'..='\u{31bf}')
 }
 
-/// True when `ch` is the leading consonant of a TPS initial. Derived
-/// from [`ZHUYIN_INITIALS`] (the first `char` of each Bopomofo value),
-/// so it tracks edits to that table with no parallel const set to keep
-/// in sync. The four `REV_INITIALS` extras (ㄐ ㄑ ㄒ ㆢ) are already the
-/// first chars of the `tsi` / `tshi` / `si` / `ji` two-symbol initials,
-/// so iterating `ZHUYIN_INITIALS` alone covers the full set.
-///
-/// Used by the composing TPS syllabifier's "next initial seen" rule to
-/// infer a tone-1 syllable boundary: an initial appearing after a
-/// nucleus has been consumed starts a new syllable.
-pub fn is_tps_initial(ch: char) -> bool {
-    ZHUYIN_INITIALS.iter().any(|(_, tps)| tps.starts_with(ch))
-}
-
 /// Standalone TPS tone marks: `\u{02c6}` ˆ tone-9, `\u{02c7}` ˇ tone-6,
 /// `\u{02ca}` ́ tone-5, `\u{02cb}` ̀ tone-2, `\u{02d9}` ˙ encode-safe
 /// tone-8 dot, `\u{02ea}` ˪ tone-3, `\u{02eb}` ˫ tone-7, `\u{0307}`
@@ -244,12 +209,45 @@ pub fn is_tps_tone_mark(ch: char) -> bool {
     )
 }
 
-/// Canonicalize a single TPS tone-8 scalar: platform keyboards type the
-/// standalone modifier-letter dot `U+02D9` (˙), but the build pipeline
+/// The numeric tone a standalone TPS tone mark writes (`ˋ` → `'2'`, `˙` /
+/// `U+0307` → `'8'`), read back from [`ZHUYIN_TONES`]; `None` for any other
+/// char. Only a row encoding the mark alone matches — the coda-carrying
+/// `p4` / `p8` rows hold a final plus a mark, and tone 1's space is a
+/// separator, not a mark.
+pub fn tps_tone_mark_number(mark: char) -> Option<char> {
+    let mark = normalize_tps_lookup_scalar(mark);
+    if !is_tps_tone_mark(mark) {
+        return None;
+    }
+    ZHUYIN_TONES
+        .iter()
+        .find(|(_, encoded)| encoded.chars().eq(std::iter::once(mark)))
+        .and_then(|(tone, _)| tone.chars().next())
+}
+
+/// Fold a duplicate-encoded TPS glyph onto the one the tables use: `U+31B3`
+/// ㆳ (BOPOMOFO LETTER INNN) is the same symbol as `U+31AA` ㆪ (`inn`) —
+/// Unicode encodes nasalized `i` twice, once per writing direction
+/// (L2/18-052; `docs/phonetics/tps-auto-correct-rules.md`). The tables and
+/// the build pipeline emit only ㆪ, so any raw TPS text a lookup reads must
+/// fold ㆳ first. Both are 3 bytes in UTF-8, so the fold is byte-length
+/// preserving and offset maps over the raw buffer stay valid. Every other
+/// char passes through.
+pub fn fold_tps_glyph_alias(ch: char) -> char {
+    if ch == '\u{31b3}' {
+        '\u{31aa}'
+    } else {
+        ch
+    }
+}
+
+/// Canonicalize a single raw-input TPS scalar for a `tps:` key:
+/// [`fold_tps_glyph_alias`], plus the tone-8 dot — platform keyboards type
+/// the standalone modifier-letter dot `U+02D9` (˙), but the build pipeline
 /// stores tone-8 as the combining dot above `U+0307` in every `tps:<tps_num>`
-/// FST key (see [`ZHUYIN_TONES`] vs [`ZHUYIN_TONES_ENCODE_SAFE`]). Map
-/// `U+02D9 → U+0307` so a raw-buffer TPS span matches the stored toned key;
-/// every other char (including the already-combining `U+0307`) passes through.
+/// FST key (see [`ZHUYIN_TONES`] vs [`ZHUYIN_TONES_ENCODE_SAFE`]), so map
+/// `U+02D9 → U+0307`. Every other char (including the already-combining
+/// `U+0307`) passes through.
 ///
 /// Char-level shared source for the key-shaping sites that build a `tps:` key
 /// from raw buffer input: `KeyFamily::search_key` (Tab3 search),
@@ -258,12 +256,13 @@ pub fn is_tps_tone_mark(ch: char) -> bool {
 /// (`composing::syllabifier::tps`) applies the same `U+02D9 → U+0307`
 /// substitution inline at the string level (allocating only when the buffer
 /// contains `U+02D9`) — same mapping, kept separate for that hot-path's
-/// allocation tuning.
-pub fn normalize_tps_tone8_scalar(ch: char) -> char {
+/// allocation tuning; the glyph alias reaches it already folded by the
+/// composing shadow.
+pub fn normalize_tps_lookup_scalar(ch: char) -> char {
     if ch == '\u{02d9}' {
         '\u{0307}'
     } else {
-        ch
+        fold_tps_glyph_alias(ch)
     }
 }
 
@@ -440,23 +439,46 @@ fn tps_notone_from_numeric_token(numeric_token: &str) -> String {
 /// typing the ㄛ form reaches the row through `tps_notone_var`, so a
 /// primary-only comparison would reject a legitimate hit.
 pub fn tps_notone_prefix_boundary_tone(record_tl: &str, notone_prefix: &str) -> Option<char> {
-    if notone_prefix.is_empty() {
-        return None;
-    }
-    let mut accumulated = String::with_capacity(notone_prefix.len());
-    for token in tl_syllable_tokens(record_tl) {
-        let numeric = crate::api::to_tone_number(token);
-        let tone = numeric.chars().next_back().filter(char::is_ascii_digit)?;
-        accumulated.push_str(&tps_notone_from_numeric_token(&numeric));
-        if accumulated.len() > notone_prefix.len() {
+    tps_notone_boundary_tones(record_tl, notone_prefix, [notone_prefix.len()])?
+        .first()
+        .copied()
+}
+
+/// §17 case 4 — [`tps_notone_prefix_boundary_tone`] for several syllable
+/// closes in ONE walk of `record_tl`: the tone of the syllable ending
+/// exactly at each of `ends` (ascending byte offsets into `notone_body`),
+/// or `None` when any end is 0, lands mid-syllable, runs past the reading,
+/// or the reading's surface up to it is not `notone_body`'s (or→er variant
+/// accepted, as there). `notone_body` may run past the last end — a
+/// partial-prefix extension's matched key does.
+pub fn tps_notone_boundary_tones(
+    record_tl: &str,
+    notone_body: &str,
+    ends: impl IntoIterator<Item = usize>,
+) -> Option<Vec<char>> {
+    let mut ends = ends.into_iter().peekable();
+    let mut tones = Vec::new();
+    let mut accumulated = String::with_capacity(notone_body.len());
+    let mut tokens = tl_syllable_tokens(record_tl);
+    while let Some(&end) = ends.peek() {
+        if end == 0 {
             return None;
         }
-        let variant = tps_notone_or_variant(&accumulated);
-        if accumulated == notone_prefix || (!variant.is_empty() && variant == notone_prefix) {
-            return Some(tone);
+        let numeric = crate::api::to_tone_number(tokens.next()?);
+        let tone = numeric.chars().next_back().filter(char::is_ascii_digit)?;
+        accumulated.push_str(&tps_notone_from_numeric_token(&numeric));
+        if accumulated.len() < end {
+            continue;
         }
+        let typed = notone_body.get(..end)?;
+        let variant = tps_notone_or_variant(&accumulated);
+        if accumulated != typed && (variant.is_empty() || variant != typed) {
+            return None;
+        }
+        tones.push(tone);
+        ends.next();
     }
-    None
+    Some(tones)
 }
 
 /// v3.5.9 D / C-3b — runtime mirror of
@@ -556,8 +578,8 @@ pub fn tps_abbrev_from_tl(record_tl: &str) -> String {
 ///
 /// Single-token: caller pre-splits multi-token TL on `[-\s]+`. v3.5.9 D /
 /// C-5 widened to `pub` so lexicon parity tests + composing golden
-/// fixtures can emit per-syllable tone-marked TPS samples without
-/// rebuilding the `Method::TlNumericToTps` proto plumbing.
+/// fixtures can emit per-syllable tone-marked TPS samples without going
+/// through `api::tl_numeric_to_tps`'s multi-token join.
 pub fn to_zhuyin(text: &str, encode_safe: bool, or_maps_to_er: bool) -> String {
     let mut remaining: String = text.to_lowercase();
     let mut pre_punct = String::new();
@@ -695,7 +717,7 @@ pub fn from_zhuyin(text: &str) -> String {
         ("\u{ff1f}", "?"),
         ("\u{ff0e}", "\u{00b7}"),
     ];
-    let mut input = text.to_string();
+    let mut input: String = text.chars().map(fold_tps_glyph_alias).collect();
     for (tps, ascii) in rev_punct {
         input = input.replace(tps, ascii);
     }
@@ -875,7 +897,70 @@ mod tests {
         }
     }
 
+    // trace: tāi-uân → `ㄉㄞ` (6, tone 7) + `ㄨㄢ` (12, tone 5); the body
+    // may run past the last end; 0, mid-syllable, past-the-reading and a
+    // body that is not the reading's surface are rejects.
+    #[test]
+    fn boundary_tones_reads_every_end_in_one_walk() {
+        assert_eq!(
+            tps_notone_boundary_tones("tāi-uân", "ㄉㄞㄨㄢ", [6, 12]),
+            Some(vec!['7', '5'])
+        );
+        assert_eq!(
+            tps_notone_boundary_tones("tāi-uân", "ㄉㄞㄨㄢㄒㄧ", [6]),
+            Some(vec!['7'])
+        );
+        assert_eq!(
+            tps_notone_boundary_tones("tāi-uân", "ㄉㄞ", []),
+            Some(vec![])
+        );
+        for ends in [vec![0], vec![3], vec![6, 9], vec![6, 15]] {
+            assert_eq!(
+                tps_notone_boundary_tones("tāi-uân", "ㄉㄞㄨㄢ", ends.clone()),
+                None,
+                "{ends:?}"
+            );
+        }
+        assert_eq!(tps_notone_boundary_tones("tāi-uân", "ㄉㄚㄨㄢ", [6]), None);
+    }
+
+    // trace: ZHUYIN_TONES single-digit rows — 2 ˋ, 3 ˪, 5 ˊ, 6 ˇ, 7 ˫,
+    // 8 U+0307 (the keyboard's ˙ U+02D9 normalizes onto it), 9 ˆ.
+    #[test]
+    fn tone_mark_number_reads_every_standalone_mark() {
+        for (mark, tone) in [
+            ('\u{02cb}', '2'),
+            ('\u{02ea}', '3'),
+            ('\u{02ca}', '5'),
+            ('\u{02c7}', '6'),
+            ('\u{02eb}', '7'),
+            ('\u{0307}', '8'),
+            ('\u{02d9}', '8'),
+            ('\u{02c6}', '9'),
+        ] {
+            assert_eq!(tps_tone_mark_number(mark), Some(tone), "{mark:?}");
+        }
+    }
+
+    #[test]
+    fn tone_mark_number_rejects_glyphs_codas_and_the_space() {
+        for c in ['ㄒ', 'ㄧ', 'ㆷ', 'ㆴ', ' ', '5'] {
+            assert_eq!(tps_tone_mark_number(c), None, "{c:?}");
+        }
+    }
+
     use super::*;
+
+    #[test]
+    fn innn_glyph_folds_onto_inn_for_every_lookup() {
+        assert_eq!(fold_tps_glyph_alias('ㆳ'), 'ㆪ');
+        assert_eq!('ㆳ'.len_utf8(), 'ㆪ'.len_utf8());
+        assert_eq!(normalize_tps_lookup_scalar('ㆳ'), 'ㆪ');
+        for inn in ["ㄒㆪ", "ㄒㆪˋ", "ㄏㆪㄍㄚ"] {
+            let innn = inn.replace('ㆪ', "ㆳ");
+            assert_eq!(from_zhuyin(&innn), from_zhuyin(inn), "{innn}");
+        }
+    }
 
     /// Exact-output pin for the `phonetics::tps_to_tl` re-export — guards
     /// the literal romanization.
@@ -903,28 +988,6 @@ mod tests {
         assert_eq!(to_zhuyin("kir1", false, true), "ㄍㆨ ");
         assert_eq!(to_zhuyin("tsinn5", false, true), "ㄐㆪˊ");
         assert_eq!(to_zhuyin("tsia2", false, true), "ㄐㄧㄚˋ");
-    }
-
-    #[test]
-    fn is_tps_vowel_material_accepts_nuclei_rejects_coda_nasals() {
-        // Base vowels / medials / nasalized vowels / precomposed nasal-coda
-        // finals are nucleus material (can follow a de-folded onset).
-        for c in [
-            'ㄚ', 'ㄧ', 'ㄨ', 'ㄛ', 'ㆦ', 'ㆤ', 'ㄞ', 'ㄠ', 'ㆩ', 'ㄢ', 'ㄤ',
-        ] {
-            assert!(is_tps_vowel_material(c), "{c} should be vowel material");
-        }
-        // The syllabic / coda nasal forms are codas, NOT nuclei.
-        for c in ['ㆬ', 'ㄣ', 'ㆭ'] {
-            assert!(
-                !is_tps_vowel_material(c),
-                "{c} (coda nasal) must be rejected"
-            );
-        }
-        // Onsets / stop codas / tone marks / space are not vowel material.
-        for c in ['ㄍ', 'ㆷ', 'ㆵ', '\u{02cb}', ' '] {
-            assert!(!is_tps_vowel_material(c), "{c} must be rejected");
-        }
     }
 
     /// `canonicalize_tps_syllable` splits a trailing tone mark off a

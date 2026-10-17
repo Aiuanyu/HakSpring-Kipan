@@ -13,8 +13,8 @@ use std::time::{Duration, Instant};
 
 use protos::engine::{
     composing_request, next_word_request, next_word_response, request, response, user_data_request,
-    CommitContinuous, CommitOutcome, CommitScript, ComposingRequest, ComposingResponse,
-    DecisionInput, NextWordRequest, RecordUsage, Response, Start, WordSelected,
+    CommitContinuous, CommitOutcome, CommitPrediction, CommitScript, ComposingRequest,
+    ComposingResponse, DecisionInput, NextWordRequest, RecordUsage, Response, Start, WordSelected,
 };
 use userdata::{JournalMode, UserDataPaths, UserDataStores};
 
@@ -184,7 +184,6 @@ fn the_engine_writes_what_the_platforms_wrote() {
         record_usage(RecordUsage {
             display_text: "台灣".to_owned(),
             canonical_tl: "tâi-uân".to_owned(),
-            hanji: Some("台灣".to_owned()),
         })
         .payload,
         Some(response::Payload::UserData(_))
@@ -194,23 +193,16 @@ fn the_engine_writes_what_the_platforms_wrote() {
         .rows_for_words(&["台灣".to_owned()])
         .is_some_and(|rows| rows.len() == 1 && rows[0].tl == "tâi-uân")));
 
-    // A learned phrase picked whole is touched as well as counted (§50).
+    // A platform pick of a learned phrase counts it but does not touch it
+    // (§50): the touch belongs to the commits the engine resolves itself.
     record_usage(RecordUsage {
         display_text: "做進出口".to_owned(),
         canonical_tl: "tsò tsìn-tshut-kháu".to_owned(),
-        hanji: Some("做進出口".to_owned()),
     });
-    assert!(eventually(|| reader
-        .learned_phrases
-        .all_rows()
-        .is_some_and(|rows| rows
-            .iter()
-            .any(|row| row.learn_count == 2))));
-    // A later count landing proves the queue drained past the touch.
+    // A later count landing proves the queue drained past the pick.
     record_usage(RecordUsage {
         display_text: "台北".to_owned(),
         canonical_tl: "tâi-pak".to_owned(),
-        ..RecordUsage::default()
     });
     assert!(eventually(|| reader
         .frequency
@@ -221,7 +213,14 @@ fn the_engine_writes_what_the_platforms_wrote() {
             .frequency
             .rows_for_words(&["做進出口".to_owned()])
             .is_some_and(|rows| rows.len() == 1),
-        "the touched phrase was counted too: every pick counts"
+        "every pick counts"
+    );
+    assert!(
+        reader
+            .learned_phrases
+            .all_rows()
+            .is_some_and(|rows| rows.iter().all(|row| row.learn_count == 1)),
+        "a platform pick names no Hanji, so no phrase is touched"
     );
 
     // A final commit of hanji picks is learned into the engine's store (§50).
@@ -257,6 +256,7 @@ fn the_engine_writes_what_the_platforms_wrote() {
     );
 
     engine_resolved_picks_are_counted_by_the_engine(&reader);
+    prediction_taps_are_counted_by_the_engine(&reader);
 }
 
 /// R5: a pick whose document text the engine resolved is counted by the
@@ -314,4 +314,37 @@ fn engine_resolved_picks_are_counted_by_the_engine(reader: &UserDataStores) {
         Some(("khí-lâi".to_owned(), 1))
     );
     assert_eq!(learn_count(reader, "做進出口"), Some(touched_before + 1));
+}
+
+/// D1: a NextWord prediction tap is counted by the engine under the
+/// prediction's `(hanji, canonical TL)` pair, and touches no learned phrase —
+/// as the platforms' `RecordUsage` for it did (no Hanji sent).
+fn prediction_taps_are_counted_by_the_engine(reader: &UserDataStores) {
+    let tap = |hanji: &str, tl: &str| {
+        composing_request::Method::CommitPrediction(CommitPrediction {
+            script: CommitScript::Lead as i32,
+            roman: tl.to_owned(),
+            hanji: hanji.to_owned(),
+            canonical_tl: tl.to_owned(),
+        })
+    };
+    let phrase = "做進出口";
+    let reading = "tsò tsìn-tshut-kháu";
+    let touched_before = learn_count(reader, phrase).expect("seeded phrase");
+    let counted_before = frequency_row(reader, phrase).map_or(0, |(_, count)| count);
+    let written = composing(tap(phrase, reading)).commit;
+    assert_eq!(
+        written.map(|commit| commit.outcome),
+        Some(CommitOutcome::Finalized as i32)
+    );
+    // A later count landing proves the queue drained past the phrase tap.
+    composing(tap("茶", "tê"));
+    assert!(eventually(
+        || frequency_row(reader, "茶") == Some(("tê".to_owned(), 1))
+    ));
+    assert_eq!(
+        frequency_row(reader, phrase).map(|(_, count)| count),
+        Some(counted_before + 1)
+    );
+    assert_eq!(learn_count(reader, phrase), Some(touched_before));
 }

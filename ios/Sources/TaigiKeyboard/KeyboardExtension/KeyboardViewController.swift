@@ -38,6 +38,9 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
     /// Previous values for change detection in syncSettings()
     var lastInputMode: InputMode?
     var lastKeyboardLayoutType: KeyboardLayoutType?
+    /// Previous active custom layout. Its keys are baked into the layout; a switch or an edit
+    /// re-renders through the keyboard context in `syncSettings()`.
+    var lastActiveCustomLayout: CustomLayout?
 
     /// Previous resolved key-height scale. Row height lives in the layout, which
     /// is built once in `createKeyboardView`; when the active/edited theme changes
@@ -55,6 +58,11 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
     /// SDK's broken `documentIdentifier` UUID bridge.
     private var lastTextInputID: ObjectIdentifier?
 
+    /// Return key type of the field last seen by `textDidChange`. The Return icon
+    /// follows it, but it is not a published `KeyboardContext` property, so a switch
+    /// between two fields of one input type would otherwise keep the old icon.
+    private var lastReturnKeyType: UIReturnKeyType?
+
     var emojiService: EmojiService {
         if emojiServiceStorage == nil {
             emojiServiceStorage = EmojiService()
@@ -65,8 +73,6 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
 
     // MARK: - Initialization
 
-    // TODO: Migrate actionHandler/emojiService to weak refs,
-    // so deinit only handles logical state reset (composing/markedText/autocomplete).
     deinit {
         performCleanup()
     }
@@ -213,6 +219,13 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
     // MARK: - Text Input Change
 
     override func textDidChange(_ textInput: UITextInput?) {
+        // Ahead of the echo guard: a field switch inside the echo window
+        // (same text around the cursor) must still refresh the Return icon.
+        let returnKeyType = textDocumentProxy.returnKeyType
+        if lastReturnKeyType != returnKeyType {
+            lastReturnKeyType = returnKeyType
+            state.keyboardContext.notifyDisplayChange()
+        }
         // Our own commit's echo stays unseen — as before #352, when the commit
         // raised no callback — so neither KeyboardKit's autocomplete refresh
         // nor the reset below wipes the predictions the commit just set up.
@@ -254,6 +267,8 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
         // post-impl P2-2. Android does the equivalent in
         // `NextWordController.resetContext()` invoked from `onStartInputView`.
         actionHandler?.nextWordController.bumpEnvelopeGeneration()
+        // A space written in the old field is no auto space or double-space half here.
+        actionHandler?.clearSpaceMarks()
     }
 
     /// FIXME: Workaround layer 1/2 for KeyboardKit 10 auto-capitalization override.
@@ -360,5 +375,10 @@ class KeyboardViewController: KeyboardInputViewController, ComposingDelegate {
             self?.syncSettings()
         }
         .store(in: &cancellables)
+    }
+
+    /// Settings observer + keyboard-case guards stop with the keyboard (`performCleanup()`).
+    func cancelSubscriptions() {
+        cancellables.removeAll()
     }
 }

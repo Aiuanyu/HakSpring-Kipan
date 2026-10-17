@@ -3,6 +3,7 @@ package com.siansiansu.taigikeyboard.engine
 import com.siansiansu.taigikeyboard.BuildConfig
 import com.siansiansu.taigikeyboard.engine.proto.CommitContinuous
 import com.siansiansu.taigikeyboard.engine.proto.CommitOutcome
+import com.siansiansu.taigikeyboard.engine.proto.CommitPrediction
 import com.siansiansu.taigikeyboard.engine.proto.CommitResolution
 import com.siansiansu.taigikeyboard.engine.proto.CommitScript
 import com.siansiansu.taigikeyboard.engine.proto.ErrorCode
@@ -12,15 +13,14 @@ import com.siansiansu.taigikeyboard.ime.core.logging.LoggerBackend
 import com.siansiansu.taigikeyboard.ime.core.logging.NullLoggerBackend
 import com.siansiansu.taigikeyboard.ime.dictionary.DictionarySource
 import com.siansiansu.taigikeyboard.ime.settings.EngineSettings
-import java.util.ArrayDeque
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Thin Kotlin wrapper around the Rust shared-core FFI exposed by
  * `engine/android-jni/src/lib.rs`.
  *
- * This object owns the JNI seam, [dispatch], the logger / diagnostics
- * state and every nested DTO type (`AppConfig` is built in `EngineAppConfig.kt`). The per-slice
+ * This object owns the JNI seam, [dispatch], the logger state and every
+ * nested DTO type (`AppConfig` is built in `EngineAppConfig.kt`). The per-slice
  * ops are extension functions on it, one file per slice (mirrors iOS
  * `RustEngineBridge+<Slice>.swift`):
  * - `PhoneticsBridge.kt` — phonetics core + TPS
@@ -41,10 +41,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * mandatory parameter — no `PojMarkerOptions(true, true, true)` silent default.
  *
  * Per Codex v2 §8 + v3 §7 + v4 §5: error visibility is hardened. Failures
- * increment a counter and append a structured [DiagnosticsEntry] to a
- * 32-entry bounded queue (synchronized). DEBUG additionally surfaces the
- * failure via `installedBackend.e` for logcat traceability — NEVER throws
- * (would kill IME mid-keystroke).
+ * are logged at warn and error level for logcat traceability — NEVER
+ * throws (would kill IME mid-keystroke).
  */
 object RustEngineBridge {
     init {
@@ -95,7 +93,6 @@ object RustEngineBridge {
         val id: Long,
         val roman: String,
         val hanji: String?,
-        val lengthScore: Int?,
         /** The dictionaries the record belongs to, in the engine's (source-bit) order — the badge order. */
         val sources: List<DictionarySource>,
     )
@@ -158,6 +155,7 @@ object RustEngineBridge {
             val sintik: Boolean,
             val taichung: Boolean,
             val nameAppendix: Boolean,
+            val altReading: Boolean,
         )
 
         companion object {
@@ -188,6 +186,7 @@ object RustEngineBridge {
                         sintik = settings.isKautianAccentSintikEnabled,
                         taichung = settings.isKautianAccentTaichungEnabled,
                         nameAppendix = settings.isKautianNameAppendixEnabled,
+                        altReading = settings.isKautianAltReadingEnabled,
                     ),
                 )
         }
@@ -327,64 +326,18 @@ object RustEngineBridge {
     }
 
     /**
-     * MOE-aligned candidate-type discriminator. Wire mirror of
-     * `protos::engine::CandidateScriptKind` (Phase 9.2). Engine derives in Rust
-     * from `DictionaryRecord.hanji` presence + NFKD-normalized Latin-letter
-     * detection (`engine/lexicon/src/continuous/mod.rs::derive_script_kind`); the
-     * platform reads but never recomputes (no display-text sniffing —
-     * that would parallel-implement the derive and violate
-     * `docs/contributing/cross-platform-alignment.md`).
-     *
-     * Metadata-only in v3.5.8 — does NOT enter the engine's `CandidateSortKey`
-     * tie-break (per `docs/releases/v3.5.8/plan.md` § Phase 9 R2 Q3.a). `UNSPECIFIED`
-     * is the proto3 default and means "unknown carrier — old engine or
-     * dropped field"; never emitted by the current Rust engine.
-     * Platforms must treat `UNSPECIFIED` as "ignore it" rather than
-     * falling back to any local classification.
-     */
-    enum class CandidateScriptKind {
-        UNSPECIFIED,
-        HANT,
-        TAILO,
-        MIXED,
-        ;
-
-        companion object {
-            /**
-             * Decode the wire integer (`CandidateMessage.getScriptKindValue()`)
-             * produced by protobuf-javalite. Unrecognized values
-             * (forward-compat from a newer engine) collapse to `UNSPECIFIED`
-             * so the platform never crashes on a binding mismatch.
-             */
-            fun decode(wire: Int): CandidateScriptKind =
-                when (wire) {
-                    1 -> HANT
-                    2 -> TAILO
-                    3 -> MIXED
-                    else -> UNSPECIFIED
-                }
-        }
-    }
-
-    /**
      * Single span-local continuous-input candidate. Wire mirror of
-     * `protos::engine::CandidateMessage` (Phase 6 + 9.2 `script_kind`).
+     * `protos::engine::CandidateMessage` (Phase 6).
      *
-     * `consumedSpanStart` / `consumedSpanEnd` are byte offsets into the
-     * **original raw user input** stored in `Phase::Continuous { raw }` —
-     * TL/POJ users → ASCII bytes, TPS users → Bopomofo bytes. Platform UI
-     * slices `pending` from `start` to `end` on commit. `form` is currently
-     * always 1 (FORM_NOTONE). `scriptKind` is the Phase 9.2 carrier;
-     * metadata-only.
+     * `consumedSpanEnd` is a byte offset into the **original raw user input**
+     * stored in `Phase::Continuous { raw }` — TL/POJ users → ASCII bytes, TPS
+     * users → Bopomofo bytes. The tap path hands it back as `consumedBytes`
+     * so the engine drops that many bytes from `pending` on commit.
      */
     data class ContinuousCandidate(
-        val consumedSpanStart: Int,
         val consumedSpanEnd: Int,
         val syllableCount: Int,
         val displayText: String,
-        val score: Float,
-        val form: Int,
-        val scriptKind: CandidateScriptKind,
         /**
          * v3.5.8 Phase 9 Item 5 — display-romanization sidechannel for
          * dual-line cell render. Always non-empty for dictionary-
@@ -503,6 +456,44 @@ object RustEngineBridge {
         }
     }
 
+    /**
+     * One NextWord prediction tap (D1): which of its scripts the document
+     * gets, and the prediction's own fields the engine resolves the text from
+     * (`engine/composing/src/commit_text.rs`) and counts the usage under.
+     * Mirrors iOS `RustEngineBridge.PredictionPick`.
+     */
+    data class PredictionPick(
+        val script: CommitScript,
+        /**
+         * The prediction's display romanization (`EnginePrediction.text` of a
+         * prediction with a subtitle); empty for a Hanji-only prediction.
+         */
+        val roman: String,
+        val hanji: String,
+        /** The canonical TL the engine counts the usage under. */
+        val canonicalTl: String,
+    ) {
+        /** The wire request. */
+        fun toRequest(): CommitPrediction =
+            CommitPrediction
+                .newBuilder()
+                .setScript(script)
+                .setRoman(roman)
+                .setHanji(hanji)
+                .setCanonicalTl(canonicalTl)
+                .build()
+    }
+
+    /**
+     * What a prediction tap writes into the document, as the engine resolved
+     * it. [earnsAutoSpace] is the engine's §23 verdict; the live Auto-Space
+     * setting is the caller's.
+     */
+    data class PredictionCommit(
+        val text: String,
+        val earnsAutoSpace: Boolean,
+    )
+
     // endregion
     // region NextWord DTOs — ops are extensions in NextWordBridge.kt
 
@@ -566,12 +557,6 @@ object RustEngineBridge {
         val subtitle: String?,
         val hanji: String,
         val tl: String,
-        /**
-         * Merged score. Android maps to `TaigiWord.lengthScore`. iOS does
-         * not currently consume this field (predictions render in array
-         * order); kept for parity + diagnostics.
-         */
-        val score: Double,
     )
 
     /**
@@ -582,46 +567,6 @@ object RustEngineBridge {
     data class NextWordFilterResult(
         val predictions: List<NextWordEnginePrediction>,
         val wasStale: Boolean,
-    )
-
-    // endregion
-    // region Diagnostics (Codex v2 §8 / v3 §7 / v4 §5)
-
-    data class DiagnosticsEntry(
-        val timestampMs: Long,
-        val op: String,
-        val errorCode: Int,
-        val message: String,
-    )
-
-    /**
-     * Read-only snapshot of in-memory failure tracking. For debug menu
-     * + test inspection. Counter increments on every fallback path
-     * (encode error, dispatch returned non-OK, missing result variant).
-     * Recent entries capped at 32 to bound memory. NEVER throws.
-     */
-    @JvmStatic
-    fun diagnostics(): DiagnosticsSnapshot {
-        synchronized(diagnosticsLock) {
-            return DiagnosticsSnapshot(
-                failureCount = failureCounter.get(),
-                recentErrors = recentErrors.toList(),
-            )
-        }
-    }
-
-    /** Test-only: clears counters so independent test cases don't bleed. */
-    @JvmStatic
-    fun resetDiagnosticsForTesting() {
-        synchronized(diagnosticsLock) {
-            failureCounter.set(0)
-            recentErrors.clear()
-        }
-    }
-
-    data class DiagnosticsSnapshot(
-        val failureCount: Int,
-        val recentErrors: List<DiagnosticsEntry>,
     )
 
     // endregion
@@ -683,7 +628,7 @@ object RustEngineBridge {
             return null
         }
         if (response.error != ErrorCode.OK) {
-            recordFailure(op, "engine returned ${response.error}", response.error.number)
+            recordFailure(op, "engine returned ${response.error}")
             return null
         }
         return response
@@ -720,34 +665,20 @@ object RustEngineBridge {
     }
 
     // endregion
-    // region Diagnostics (shared by sibling bridges)
+    // region Failure log (shared by sibling bridges)
 
-    private val diagnosticsLock = Any()
-    private val failureCounter = AtomicInteger(0)
-    private val recentErrors = ArrayDeque<DiagnosticsEntry>(RECENT_ERRORS_CAP)
+    private val failureLogLock = Any()
 
     /**
-     * Records an FFI failure into the bounded diagnostics queue + emits
-     * a warn-level log. `internal` so sibling impl objects route their
-     * own failures through the same counter.
+     * Logs an FFI failure at warn level. `internal` so sibling impl
+     * objects route their own failures through the same sink; the lock
+     * keeps each failure's warn / error pair adjacent in logcat.
      */
     internal fun recordFailure(
         op: String,
         message: String,
-        code: Int = -1,
     ) {
-        synchronized(diagnosticsLock) {
-            failureCounter.incrementAndGet()
-            val entry = DiagnosticsEntry(
-                timestampMs = System.currentTimeMillis(),
-                op = op,
-                errorCode = code,
-                message = message,
-            )
-            if (recentErrors.size >= RECENT_ERRORS_CAP) {
-                recentErrors.removeFirst()
-            }
-            recentErrors.addLast(entry)
+        synchronized(failureLogLock) {
             installedBackend.w("RustEngineBridge", "[$op] $message")
             // Codex v3 §7 / v4 §5: also surface as error severity for logcat
             // traceability. The facade is itself DEBUG-gated (release builds
@@ -762,7 +693,6 @@ object RustEngineBridge {
     private const val LEVEL_WARN = 1
     private const val LEVEL_INFO = 2
     private const val LEVEL_DEBUG = 3
-    private const val RECENT_ERRORS_CAP = 32
 
     // endregion
 }

@@ -286,6 +286,7 @@ message Effect {
     CandidatesChanged candidates_changed = 6;
     CandidatesClosed candidates_closed = 7;
     Navigate navigate = 8;
+    TpsKeyboardKeyTyped tps_keyboard_key_typed = 9;
   }
 }
 
@@ -348,6 +349,14 @@ enum CandidateNavigation {
   CANDIDATE_NAVIGATION_PAGE_DOWN = 6;
   CANDIDATE_NAVIGATION_NEXT_CANDIDATE = 7;
   CANDIDATE_NAVIGATION_PREVIOUS_CANDIDATE = 8;
+}
+
+// The engine took a TPS key: the on-screen key panel flashes the cap that
+// types it (desktop TPS roadmap D6). Both counted from 0, as
+// `TpsKeyboardRowsReply` lists the rows and their caps.
+message TpsKeyboardKeyTyped {
+  uint32 row = 1;
+  uint32 cap = 2;
 }
 
 // ---- The key rules of the Shortcuts pane and the symbol picker (P14) ----
@@ -435,30 +444,55 @@ message ComposingShortcutsReply {
   // the order a block of the pane draws them in and conflicts list them in.
   repeated ComposingShortcut actions = 1;
   // The fixed rows, as the pane prints them (`shortcut_labels`): the live
-  // slot keys bare and behind ⇧, the navigation keys, the caret and
-  // width-flip chords, the cancel key.
+  // slot keys, the navigation keys, the caret chords.
   string slot_keys = 2;
-  string shifted_slot_keys = 3;
+  // The shifted slot keys row, folded into its action's `fixed_keys`
+  // 2026-10-16.
+  reserved 3;
+  reserved "shifted_slot_keys";
   string navigation_keys = 4;
   string caret_chords = 5;
-  string width_flip_chords = 6;
-  string cancel_key = 7;
+  // The width-flip chords row, removed 2026-10-07.
+  reserved 6;
+  reserved "width_flip_chords";
+  // The cancel key row, removed 2026-10-16.
+  reserved 7;
+  reserved "cancel_key";
 }
 
 message ComposingShortcut {
   // `ComposingAction::raw`: `nextCandidate`.
   string name = 1;
-  // Where its chord is stored: `composingShortcut.<name>`.
-  string settings_key = 2;
+  // The row's one chord, before each row had two fields (2026-10-15).
+  reserved 2, 5, 6;
+  reserved "settings_key", "chord", "default_chord";
   // Its label, as an i18n key (`i18n_desktop_actionNextCandidate`).
   string label_key = 3;
   // Its block on the pane (`ComposingAction::GROUPS`): 0 through the
   // candidates, 1 out of the composition.
   uint32 group = 4;
-  // The resolved chord; unset = the row is empty.
-  Chord chord = 5;
-  // What a fresh install has on it.
-  Chord default_chord = 6;
+  // Its fields (`ComposingAction::fields`), first then — on the
+  // commit actions — second; either fires the action.
+  repeated ComposingShortcutField fields = 7;
+  // The fixed keys that also fire it, drawn as the row's subtitle
+  // (`shortcut_labels::fixed_keys_label`); empty for most actions.
+  string fixed_keys = 8;
+}
+
+message ComposingShortcutField {
+  // Where its chord is stored: `composingShortcut.<name>`, or
+  // `composingShortcut.<name>.second` for the second field.
+  string settings_key = 1;
+  // The resolved chord; unset = the field is empty.
+  Chord chord = 2;
+  // What a fresh install has on it; unset on the second field, which ships
+  // empty.
+  Chord shipped_chord = 3;
+  // What the store holds, parsed; unset when absent, cleared or unparsable.
+  // A chord stored here that the resolver hid behind another field is still
+  // a holder a recording must clear
+  // (`ShortcutConflicts::composing_fields_holding`).
+  Chord stored_chord = 4;
 }
 
 // The core's one input-mode writer (`SettingsDocument::switch_input_mode`,

@@ -2,76 +2,20 @@
 
 > **Type**: Reference (design record + PR table; shipped)
 > **Keywords**: `user data`, `SQLite`, `rusqlite`, `user_frequency`, `user_association`, `custom_dictionary`, `learned_phrases`, `.taigi`, `migration`, `engine`
-> **Status**: complete — P0–P9d merged 2026-09-26 (#219–#237); per-platform device dogfood pending.
-> **Session memory**: project memory `project_user_data_engine.md` (Claude auto-memory)
+> **Status**: complete — P0–P9d merged; user data is engine-owned on every platform (shipped in mobile v3.6.10 and desktop v3.7.0).
 > **Supersedes**: the "user-data SQLite stays platform-native" rule (`docs/contributing/rust-migration-policy.md` §6, rewritten 2026-09-26) and every `wont_migrate` row for the four stores in `docs/engine/migration-inventory.csv`
 
 ---
 
 ## Summary
-
-- **Decision** (USER 2026-09-26): "moving the shared implementation into the engine is what makes sense; it keeps the implementation consistent". The engine owns the four user-writable SQLite stores; each platform supplies a directory and the UI, nothing else.
-- **Why now**: four hand-written implementations (iOS, Android, macOS, `desktop/` Rust for Windows + Linux) have drifted (§ Drift), and the next suggestion features (brainstorm `docs/reports/2026-09-24-mobile-smart-suggestions-brainstorm.md` batch A/B: shown-counter column, two-word context) are schema changes that would otherwise be written four times. This is also brainstorm R5: once the engine reads user frequency itself, the two-call candidate fetch on every platform disappears.
-- **Starting point**: `desktop/crates/taigi-desktop-storage` already implements all four stores in Rust (rusqlite 0.40 `bundled`, ~2.9k lines, Windows + Linux in production, SQL stated byte-identical to macOS). It moves down into a new engine crate; the phones and macOS then switch to it.
+- **Decision**: the engine owns the four user-writable SQLite stores (custom dictionary, frequency, association, learned phrases); each platform supplies a directory and the UI, nothing else, so the implementation stays consistent.
+- **Why**: four hand-written implementations (iOS, Android, macOS, `desktop/` Rust for Windows + Linux) had drifted (busy timeouts, unsafe wipes, CSV round-trip, reset scope, journal mode), and every new suggestion feature would otherwise be a schema change written four times. Once the engine reads user frequency itself, the two-call candidate fetch disappears.
+- **Starting point**: `desktop/crates/taigi-desktop-storage` already implemented all four stores in Rust (rusqlite `bundled`); they moved down into `engine/userdata`, and the phones and macOS switched to it.
 - **Shape**: extract (behaviour freeze) → engine lifecycle + migration → engine-side reads/writes → admin codec ops → switch one platform at a time (all four stores per platform at once) → cleanup. Release scope and timing are USER-gated.
 
 ---
 
-## Today (grounded in code, 2026-09-26 audit)
-
-### Who reads and writes what
-
-| Path | Today | File:line |
-|---|---|---|
-| Candidate fetch | Every platform: neutral `FetchAtPos` → SQL frequency lookup on the returned display texts → second `FetchAtPos` with `frequency_entries` + `now_ms`; custom and learned rows pushed as `custom_entries` / `learned_entries` | iOS `ios/Sources/TaigiKeyboard/Input/Composing/ComposingManager.swift:225-310`; Android `android/.../ime/text/composing/ComposingManager.kt:486-560`; macOS `macos/Sources/TaigiInputMethodCore/Composing/ComposingManager.swift:297-321`; desktop `desktop/crates/taigi-desktop-core/src/composing/manager.rs:242-301`; proto `engine/protos/proto/composing.proto:193-233` |
-| Next-word prediction | Platform SQL (`CASE prev_tl` tiers, then `count DESC, last_used DESC, id ASC`) → `PredictNext.user_rows`; first row wins a collision (behavioral-invariants §24) | iOS `NextWord/Repository/NextWordRepository.swift:144-187`; Android `ime/dictionary/NextWordService.kt:91-101`; engine `engine/dispatch/src/predict.rs:15-41` |
-| Association write | Engine emits `RecordAssociation` / `RecordCompoundAssociations`; platform persists | `engine/nextword/src/decide.rs:76-156`; iOS `NextWord/NextWordController.swift:175-204`; desktop `taigi-desktop-core/src/composing/learner.rs:69-82` |
-| Learned-phrase write | Engine emits `Effect.phrase_learned` ("the engine decides, the platform persists") | `engine/composing/src/transition.rs:854-856`; `composing.proto:515-526` |
-| Frequency write | No effect; platform records on tap (desktop / macOS gate on a frequency-recording setting) | iOS `Actions/ActionHandler+Suggestions.swift:175,231`; Android `CandidateClickHandler.kt:143`; macOS `ComposingManager.swift:518-519`; desktop `manager.rs:451-453` |
-| Custom-dict search keys | Engine derives (in-process `userdata` write bundle) and runs the SQL behind `SearchCustomEntries` (the `DeriveCustomQueryKey` op lost its last caller when the desktop settings windows switched to the op, 2026-09-30) | `engine/phonetics/src/custom_search.rs`, `engine/userdata/src/requests.rs` (`SearchCustomEntries`), `engine/dispatch/src/user_data/with_stores.rs` (`FetchAtPos`) |
-| Engine file paths | Read-only mmaps via `LexiconRequest.install`; no writable directory concept | `engine/lexicon/src/api.rs:22-35`, `paths.rs:32-55` |
-
-### The four implementations
-
-| | iOS | Android | macOS | Desktop Rust (Win + Linux) |
-|---|---|---|---|---|
-| SQLite | system (`import SQLite3`) | system, minSdk 28 → 3.22 (no UPSERT / `RETURNING` / `DROP COLUMN`) | system | rusqlite 0.40.2 bundled (`desktop/Cargo.toml:44`) |
-| Location | App Group container (`Lexicon/Database/SharedDatabasePath.swift:12-20`) | `databases/`; `user_association.db` in `filesDir` (`NextWordService.kt:193`) | `~/Library/Application Support/<bundle id>/` (`Storage/UserDataDirectory.swift:30-54`) | `%APPDATA%` / XDG (`taigi-desktop-storage/src/directory.rs:27-30`) |
-| Processes | main app + keyboard extension share files | one (IME + settings) | one (settings window in the IME process) | IME host + settings app |
-| Journal | `DELETE` pinned, `synchronous=NORMAL`, `cache_size=10000`; one-time WAL→DELETE (`SQLiteConnectionManager.swift:62-88,114-121`) | default; association WAL→DELETE on open (`NextWordService.kt:467-493`) | default (`SQLiteConnection.swift:83-104`) | WAL (`database.rs:153-154`) |
-| busy timeout | **none** | none | 250 ms | writer 250 ms, reader 0 + `try_lock` |
-| Threading | serial queue per store, hot-path `queue.sync` | `Dispatchers.IO` + init mutex | serial queue per file | writer thread + bounded queue (256, drops when full) + read-only reader (`database.rs:47-76,195-230`) |
-| Backup exclusion | `isExcludedFromBackup` (§29) | `allowBackup="false"` + rules exclude all (`AndroidManifest.xml:23-25`) | deliberately not excluded (named divergence) | n/a |
-| `.taigi` | JSON v2 export/import (`Lexicon/Services/BackupService.swift`) | JSON v2 (`ime/dictionary/BackupService.kt`) | none (pane retired) | none |
-
-Schema versions: `user_frequency` v2 and `user_association` v6 and `learned_phrases` v1 agree everywhere. `custom_dictionary` has **three version namespaces for one logical schema** (portability D5):
-
-| Logical step | Android `DATABASE_VERSION` | iOS `user_version` | macOS / desktop |
-|---|---|---|---|
-| derived columns (`notone`/`abbrev`/`roman_num`) | 1–5 | 1 | — |
-| `custom_search_key` side table | 6 | 2 | — |
-| POJ glyph re-derive | 7 | 3 | — |
-| §46 abbreviation re-derive | 8 | 4 | 4 |
-| unreleased learned-in-custom shape (`origin`, `learn_count`) | 9 | 5 | — |
-| learned phrases moved out (§50) | 10 | 6 | — (drops leftovers via `DROP COLUMN`) |
-
-Sources: `CustomDictionaryService.kt:36-42,533-547`; `CustomDictionarySchema.swift:39`, `CustomDictionaryMigrator.swift:6-84`; `macos/.../Storage/CustomDictionaryStore.swift:51-60`; `taigi-desktop-storage/src/custom_dictionary.rs:19,567-603`. iOS and Android still write the legacy derived columns for rollback.
-
-### Drift the audit found
-
-Each is a symptom of four implementations; each is fixed once by the engine store, not per platform.
-
-1. iOS app + extension share files with no `busy_timeout`; `SQLITE_BUSY` fails at once and fire-and-forget writes swallow it.
-2. iOS and Android wipe `user_frequency` (and iOS `user_association`) by unlinking the file while another connection may hold it (`UserFrequencyRepository.swift:176-194`, `NextWordService.swift:219-236`, `UserFrequencyService.kt:387-401`); learned phrases deliberately `DELETE` instead (`LearnedPhraseRepository.swift:156-158`).
-3. CSV: iOS parser toggles on `"` while export doubles quotes — a quoted field does not round-trip (`CustomDictionaryService.swift:166-192`); Android splits on `\n` before unquoting (`CustomDictionaryService.kt:481-489`).
-4. iOS custom-dictionary timestamps use a `DateFormatter` without `en_US_POSIX` (`CustomDictionaryRepository.swift:444-449`).
-5. Reset scope differs (iOS wipes three stores, Android differs in scope and error handling — `SettingsResetCoordinator.kt:14-19`).
-6. Restore sets `last_used = now` and exports `lastUsed: ""` on both phones.
-7. Journal mode, busy timeout and threading all differ (table above); desktop's "byte-identical" claim holds only against macOS.
-
----
-
-## Design (Codex ANALYSIS-ONLY pre-review 2026-09-26 applied)
+## Design
 
 **U1 — One engine crate `engine/userdata`.** Moved from `taigi-desktop-storage`: `database`, `capacity`, `frequency`, `association`, `custom_dictionary`, `learned_phrases`, `csv`, `timestamp`. The row types and store traits move down from `taigi-desktop-core` (`composing/stores.rs:8-41`, `engine/composing.rs:30-52`, `engine/nextword.rs:22`, `engine/phonetics.rs:21`); the search-key deriver becomes a direct call into `phonetics`. The injectable `SearchKeyDeriver` seam (an `Option`-returning closure built for the proto round-trip) stays through P1 so the moved store bodies are byte-identical; P4 drops it and the stores call `phonetics` directly. *Superseded by maintainability R4 PR-B (2026-09-30):* the single-impl store traits and their mirror row types are gone — `dispatch` calls the stores' own `rows_matching`, each store owns its row type (`FrequencyRow` in `frequency.rs`, `AssociationPair` in `association.rs`), and the one search-key type is `phonetics::api::CustomSearchKey`. `directory.rs`, `settings_file.rs`, `font_library.rs` stay in `desktop/`. New dependencies: rusqlite (bundled), uuid (custom-dictionary ids). rusqlite 0.40.2 / libsqlite3-sys 0.38.2 declare no `rust-version`; the engine stays on 1.86 unless the moved code needs newer syntax (checked in P1, not assumed). No `unsafe` in the moved code; the workspace `forbid` holds.
 
@@ -108,31 +52,28 @@ Each is a symptom of four implementations; each is fixed once by the engine stor
 
 ## Phases
 
-| # | PR | Type | Content | Status |
-|---|---|---|---|---|
-| 0 | admin | docs | this roadmap; `rust-migration-policy.md` §6 rewritten; project memory | Merged #219 `7a1af073` |
-| 1 | `refactor(engine): move user-data stores into engine/userdata` | Refactor — Windows/Linux behaviour freeze | U1 extraction; `taigi-desktop-storage` keeps desktop-only modules and re-uses the engine crate; `refactor-reviewer` + `/code-review` | Merged #220 `1a1c0730` |
-| 2 | `feat(engine): user-data takeover and migration` | Feature (engine, `userdata` crate only) | U3 journal parameter (`JournalMode`) + reader wait under a rollback journal; per-file `UserDataPaths`; U7 takeover marker, future-version guard, pre-takeover copy, shape-detecting migrations + fixtures; U8 matrix. No platform caller yet: the proto ops and the process-wide handle moved to P3 with the dispatch wiring, where U11's fork is decided | Merged #222 `e392f670` |
-| 3a | `feat(engine): user-data open and reset ops` | Feature (engine) | `user_data.proto` (`OpenUserData` / `ResetUserData`, envelope tag 15); process-wide handle in `dispatch` behind the `user-data` feature (U11 decided above); `UserDataStores::open_blocking` opens, re-derives and seeds before answering which stores are ready — the one open path, so no caller has to remember `rederive_search_keys_if_needed` again; platform bindings regenerated | Merged #223 `8972cda8` |
-| 3b | `feat(engine): engine reads user data` | Feature (engine) | `dispatch` answers `FetchAtPos` from the open stores: the pending buffer (`composing::EngineHandle::pending_raw`) → query key → custom (unless the new `FetchAtPos.custom_dictionary_disabled`) + learned rows → neutral fetch → frequency rows for its candidates → re-ranked fetch, all in-process (one FFI call — brainstorm R5); `PredictNext` reads `user_association.db` with the new `PredictNext.roman` (§24 tiers, `UserAssociationStore::rows_following`); rows a platform still sends are replaced, never merged (U9); equivalence test: engine reads answer exactly what the platform rows answered | Merged #224 `e479af96` |
-| 3c | `feat(engine): engine writes user data` | Feature (engine) | once the stores are open the engine persists what it decides — `Effect.phrase_learned` into `learned_phrases.db`, `NextWordEffect.record_association` / `record_compound_associations` into `user_association.db` — and leaves those effects out of the response; the pick-time writes the platform decides (candidate or prediction tap: frequency count + learned-phrase touch) become `UserDataRequest.record_usage`, sent where each platform called `recordUsage`, with the desktop's recording setting as `frequency_recording_disabled` (tag 4 reserved 2026-09-30 — the toggle never shipped on any platform, so every pick counts) | Merged #225 `0a126e1b` |
-| 4a | `feat(engine): custom dictionary page ops` | Feature (engine) | U10: `ListCustomEntries` (page + `total` + `matching_total`), `SaveCustomEntry` (add / edit), `DeleteCustomEntry`, `ImportCustomCsv` / `ExportCustomCsv` (bytes; the engine's one CSV codec — drift 3), user-facing outcomes as `CustomDictionaryRefusal` (Codex pre-review 2026-09-26); delete-all stays `ResetUserData` | Merged #226 `43dc7e65` |
-| 4b | `feat(engine): .taigi backup codec` | Feature (engine) | `.taigi` v2 export / import in the engine: lenient decode (missing fields default, unknown keys ignored, version ≥ 1), iOS-style encode (sorted keys, `lastUsed: ""`), custom rows through `batch_import` skipping empty Hanji and `origin == 1` (Android rule), frequency / association `MAX(count)` merges with `last_used` = now and POJ → TL readings, then capacity enforced (new: the phones never trimmed after an import) | Merged #227 `bced0d84` |
-| 5 | `refactor(desktop): Windows + Linux use engine user data` | Platform switch | the IME path: one `FetchAtPos` (the engine reads frequency, custom dictionary and learned phrases), picks through the new `UsageRecorder` seam (`EngineUsage` → `record_usage`; `NoUsage` with no data directory — superseded 2026-09-30: the engine counts the picks it resolves, maintainability R5 PR-c), `PhraseLearned` and associations persisted by the engine; the shells tell the engine to open the user data on the first key (`OpenUserData.in_background`: stores in use before the call returns, the takeover finished on the engine's own thread — nothing reported in the first seconds is lost); `ComposingSessionCoordinator::for_desktop` builds the manager for both shells; `dispatch/user-data` on in `taigi-windows-tsf` and `taigi-linux-core`. Kept: the learner's `AssociationSink` (production `NoStores`) so the desktop's own context rules stay testable — U9, removed in P9; the settings apps keep the in-process `userdata` API (U5) — the dictionary search pages need a search-key lookup no op offers (superseded 2026-09-30: `SearchCustomEntries` exists and the settings windows now use the ops, audit R3) | Merged #228 `cad683d9` |
-| 6 | `refactor(macos): use engine user data` | Platform switch | one `FetchAtPos` (`customDictionaryDisabled` carries the setting); picks through `UsageRecorder` (`EngineUsageRecorder` → `record_usage`; superseded 2026-09-30: the engine counts the picks it resolves, maintainability R5 PR-c); `PhraseLearned` a no-op; `NextWordLearner` hands bigrams to an `AssociationSink` (production `EngineOwnedAssociations`, U9 as on the desktop); `OpenUserData` at launch over `~/Library/Application Support/<bundle id>/`, `DELETE` journal (U3), `in_background`; the Custom Dictionary page and the unlisted Dictionary Search pane through `UserDataClient` (engine ops, off the main actor). Engine additions: `SearchCustomEntries` (the dictionary search's key-prefix lookup — Android needs it in P8), page requests wait for a background open to finish (settled once in `handle`; `RecordUsage` never waits), `ResetUserData` attempts every selected store and names each failure (`UserDataReset.failures`), `OpenUserData.directory` (the engine applies the shared file names; the desktop sends it too), `ListCustomEntries` pulls an offset past the end back to the last page and answers `offset`, refusals carry the engine's own `detail` line. swift-ffi `user-data` feature, on only in the macOS xcframework build (iOS stays SQLite-free until P7; CI guard). `Storage/` stores, CSV codecs and 70 store tests deleted (engine-covered) | Merged #229 `c34c35b4` |
-| S | iOS spike (no PR) | Spike | bundled rusqlite in the xcframework; open an App Group DB from the extension; binary size, extension memory, app + extension concurrent writes, suspension with no held lock | Passed 2026-09-26 (iPhone 12): Release extension +2.33 MB; app open 7 ms / extension 23 ms, +~1 MB each, extension footprint 23 MB of 64; both processes open the same files; no journal left idle |
-| 7a | `feat(engine): released iOS user-data shapes; takeover waits out the other process` | Feature (engine, `userdata` only) | takeover fixtures at iOS numbering — custom dictionary stamps 0 (no `roman_num`), 0 / 1 (no side table), 2, 3 (`mobile-3.6.8`) → 4, shared with Android's in one table; association v4 (with `idx_user_prev_word`) — all pass unchanged. The open and the custom dictionary's takeover wait up to 10 s for another process's lock (the iOS app and its keyboard both open the App Group files on a first launch; a failed open stays closed for the process), then back to 250 ms. U8 corrected (iOS released custom v3, not v6) | Merged #232 `da80c7e6` |
-| 7b | `refactor(ios): use engine user data` | Platform switch | `UserDataOpening.open(in:)` in both processes after `RustEngineBridge.install` — the keyboard only with Full Access (without it the container is read-only), the app never under XCTest (`TEST_HOST` = app); App Group directory, `DELETE`, `in_background`, then a waiting repeat open marks every file and `<file>.pre-engine` copy excluded from backup (§29); one `FetchAtPos` (`nowMs`, `customDictionaryDisabled`); picks → `UsageRecorder` (`EngineUsageRecorder`, skipped when this process has not opened); `PhraseLearned` + association effects no-op (U9); `PredictNext.roman` with the engine call off the main actor; Dictionary pages, search, backup, reset through `UserDataClient`; swift-ffi `default = ["user-data"]` (the macOS flag and the iOS CI guard go); native repositories / schemas / migrators / services / `SQLiteConnectionManager` / derive ops and their tests deleted | Merged #233 `3b213e25` |
-| 8a | `feat(engine): released Android user-data shapes` | Feature (engine, `userdata` only) | takeover fixtures from the DDL every Android release shipped — custom dictionary v3 (first release, no `roman_num`, no side table), v5, v7 (`mobile-3.6.8`), frequency v1 with its `metadata` table — all pass unchanged; the engine creates a file's directory on open (Android's `databases/` exists only once something wrote there) | Merged #230 `c046fc6b` |
-| 8b | `refactor(android): use engine user data` | Platform switch | `OpenUserData` first in `TaigiKeyboardApplication.onCreate` (`databases/` + `filesDir/user_association.db` override, `DELETE`, `in_background`); one `FetchAtPos` (`nowMs`, `customDictionaryDisabled`); picks → `UsageRecorder` (`EngineUsageRecorder` → `RecordUsage`, Hanji on the continuous path); `PhraseLearned` + association effects persisted by the engine (arms no-op, U9); `PredictNext.roman`, no user rows, lexicon wait moved into `NextWordController`; settings through `UserDataClient` on `Dispatchers.IO` — the list is one `ListCustomEntries` with `limit` 0 (every match — new engine rule; client-side filter kept), CSV import pre-read 5 MB check, backup via `ExportBackup` / `ImportBackup`, reset via `ResetUserData`; android-jni `default = ["user-data"]`, build script checks both ABIs + arm64 16 KB alignment; 10 services / helpers (~2.6k lines) and 6 SQL tests deleted | Merged #231 `004532dc` |
-| 9a | `refactor(engine): user rows are engine-internal` | Refactor (engine) | composing takes the user rows as Rust types (`composing::UserRows` on `Intent::FetchAtPos`, `EngineHandle::query`) and hands the phrase a final commit taught back beside the response (`Applied.learned`, `EngineHandle::handle_learning`) — no `Effect.PhraseLearned`; `decode_intent` ignores the wire rows; `ranking::build_frequency_map` (proto) gone, dispatch builds the `FrequencyMap` from the store rows; composing / lexicon / dispatch tests off the wire rows (test-side `Fetch`) | Merged #234 `452e94b5` |
-| 9b | `refactor(engine): association rows and records are engine-internal` | Refactor (engine + desktop / macOS learners) | `PredictNext` user rows passed as an argument into the `FilterPredictions` build (wire `user_rows` ignored); nextword hands the bigrams a decision records back beside the response (`nextword::Association`, `Handled`, `EngineHandle::handle_recording`) — no `RecordAssociation` / `RecordCompoundAssociations` effects; dispatch writes one decision's pairs in one transaction, drops them before the open. The desktop and macOS managers report handshakes through a `NextWordPort` (production `EngineNextWord`); `NextWordLearner`, `userdata::AssociationSink` / `NoStores`, macOS `AssociationSink` / `EngineOwnedAssociations` and the desktop / macOS effect decode go; manager tests assert the handshakes, the decisions stay the engine's (Codex F5; `a_comma_between_two_commits_keeps_the_pair`, `a_hanji_only_commit_pairs_with_an_empty_tl` added); iOS bridge record asserts dropped | Merged #235 `0cc15c0d` |
-| 9c | `chore: reserve the retired user-data wire fields` | Cleanup | `reserved` FetchAtPos 2/4/7, PredictNext 2, Effect 11, NextWordEffect 3/4; messages `FrequencyEntry` / `CustomDictEntry` / `LearnedEntry` / `PhraseLearned` / `AssociationPair` / `RecordAssociation` / `RecordCompoundAssociations` removed; the proto comments that described platform-side persistence rewritten (`nextword.proto` header / `PredictNext` / `FilterPredictions`, `composing.proto` `FetchAtPos`, `user_data.proto` `RecordUsage`); Swift / Java bindings regenerated (stale Java classes deleted); the dead decode cases and no-op arms go on iOS (`NextWordAssociationPair`, `phraseLearned`), Android, macOS, desktop, Linux, Windows; engine tests drop the retired effect names | Merged #236 `6486b9db` |
-| 9d | `docs: user data is the engine's` | Docs | `migration-inventory.csv` (user-data rows `rust_shipped`, `userdata` module rows), `data-artifacts-portability.md` (§4–8, D5 resolved), `system-overview.md`, `behavioral-invariants.md` (§2, §10, §24, §26–29, §40, §46, §50, §54), `nextword-engine-boundary.md`, `custom-dictionary.md`, `nextword.md`, `sort.md`, `keywords.md`, `docs/README.md`, `rust-core-proto.md`, `ffi-safety.md`, `ios-exemplar.md`, `macos-roadmap.md` (superseded notes), `ios-shared-core-candidates.md`; engine comments that said they mirror the retired platform stores now name them as the source they were ported from | Merged #237 `b80aae05` |
+All merged; one line per phase (labels are cited from code).
 
-Each platform switch carries a dogfood item (`docs/architecture/dogfood-checklist.md`) covering: existing data survives the upgrade (frequency ranking, predictions, custom entries, learned phrases), reset, CSV round-trip, `.taigi` round-trip.
+| Phase | Content |
+|---|---|
+| P1 | U1 extraction: the four stores move from `taigi-desktop-storage` into `engine/userdata` (Windows / Linux behaviour freeze) |
+| P2 | U3 journal parameter, per-file paths, U7 takeover marker, future-version guard, pre-takeover copy, U8 downgrade matrix |
+| P3a | `OpenUserData` / `ResetUserData` ops; process-wide handle in `dispatch` behind `user-data` (U11) |
+| P3b | The engine reads user data: `FetchAtPos` answered from the open stores |
+| P3c | The engine writes user data: learned phrases, associations, usage |
+| P4a | Custom-dictionary page ops (U10): list, save, delete, CSV import / export |
+| P4b | `.taigi` backup codec in the engine |
+| P5 | Windows + Linux switch: one `FetchAtPos`, picks through the `UsageRecorder` seam |
+| P6 | macOS switch |
+| S | iOS spike: bundled rusqlite in the extension, App Group DB, memory, concurrent writes, suspension |
+| P7a / P7b | Released iOS store shapes; iOS switch (both processes) |
+| P8a / P8b | Released Android store shapes; Android switch |
+| P9a | User rows are engine-internal (composing takes Rust types) |
+| P9b | Association rows and records are engine-internal |
+| P9c | Retired user-data wire fields `reserved` |
+| P9d | Docs: user data is the engine's |
 
-P9 merged 2026-09-26: new suggestion features land in the engine store only (§6).
+Each platform switch carried a dogfood item covering: existing data survives the upgrade (frequency ranking, predictions, custom entries, learned phrases), reset, CSV round-trip, `.taigi` round-trip. New suggestion features land in the engine store only (`rust-migration-policy.md` §6).
 
 ---
 
@@ -167,9 +108,3 @@ P9 merged 2026-09-26: new suggestion features land in the engine store only (§6
 - **Store-by-store migration across platforms**: rejected for U6 (dual owner, two SQLite copies on one file).
 - **Moving `.taigi` file UI into the engine**: file pickers are OS UI (U10).
 - **YAGNI**: no encryption layer, no sync, no new backup contents — none is asked for; add when a feature needs it.
-
----
-
-## Review record
-
-- 2026-09-26 Codex ANALYSIS-ONLY pre-review (design forks F1–F9): recommendations adopted as U1–U10. Changes from the draft: journal mode made a platform parameter (was "unify"); write classes split (was "reuse desktop queue"); version stamping replaced by shape detection + a downgrade matrix (was "one version above every namespace"); `.taigi` UI kept on the platform; frequency-recording setting preserved; engine MSRV not raised by assumption.

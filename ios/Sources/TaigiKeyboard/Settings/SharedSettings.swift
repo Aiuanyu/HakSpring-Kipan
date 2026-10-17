@@ -31,9 +31,10 @@ final class SharedSettings {
     // `enableDoubleTapOO/NN`) are deliberate; renaming them silently abandons
     // the user's existing preference.
 
-    private static let inputModeKey: SettingsKey<InputMode> = .rawRep("inputMode", default: .tl)
+    // Internal (not private): the Layout tab observes these two keys through `@AppStorage`.
+    static let inputModeKey: SettingsKey<InputMode> = .rawRep("inputMode", default: .tl)
     private static let inputModeBeforeTpsKey: SettingsKey<InputMode> = .rawRep("inputModeBeforeTps", default: .tl)
-    private static let keyboardLayoutTypeKey: SettingsKey<KeyboardLayoutType> = .rawRep("keyboardLayoutType", default: .phahTaigi)
+    static let keyboardLayoutTypeKey: SettingsKey<KeyboardLayoutType> = .rawRep("keyboardLayoutType", default: .phahTaigi)
     private static let layoutBeforeTpsKey: SettingsKey<KeyboardLayoutType> = .rawRep("layoutBeforeTps", default: .phahTaigi)
     private static let fontTypeKey: SettingsKey<FontType> = .rawRep("fontType", default: .keyboardDefault)
 
@@ -87,6 +88,7 @@ final class SharedSettings {
     private static let isKautianAccentSintikEnabledKey: SettingsKey<Bool> = .bool("kautianAccentSintikEnabled", default: true)
     private static let isKautianAccentTaichungEnabledKey: SettingsKey<Bool> = .bool("kautianAccentTaichungEnabled", default: true)
     private static let isKautianNameAppendixEnabledKey: SettingsKey<Bool> = .bool("kautianNameAppendixEnabled", default: true)
+    private static let isKautianAltReadingEnabledKey: SettingsKey<Bool> = .bool("kautianAltReadingEnabled", default: true)
 
     private static let isTpsOrMappedToERKey: SettingsKey<Bool> = .bool("tpsOrMapsToER", default: true)
     private static let isToolbarAutoCollapseKey: SettingsKey<Bool> = .bool("toolbarAutoCollapse", default: true)
@@ -112,6 +114,11 @@ final class SharedSettings {
     private static let selectedThemeIdKey: SettingsKey<String> = .string("selectedThemeId", default: ThemeId.default)
     private static let themeRevisionKey: SettingsKey<Int> = .int("themeRevision", default: 0)
 
+    // Custom layouts (`UserLayoutStore`): the selected one's UUID ("" while a built-in layout is
+    // selected) and a revision bumped on every store write. Internal: the Layout tab observes both.
+    static let selectedCustomLayoutIdKey: SettingsKey<String> = .string("selectedCustomLayoutId", default: "")
+    static let layoutRevisionKey: SettingsKey<Int> = .int("layoutRevision", default: 0)
+
     // App UI display-language tag (orthogonal to keyboard input mode) — see DisplayLanguage. Shared
     // host↔extension through the App Group; the extension picks up changes via didChangeNotification.
     // Defaults to system (Automatic), which follows the device locale on first launch. Key spelling is frozen.
@@ -119,7 +126,8 @@ final class SharedSettings {
 
     static let shared = SharedSettings()
 
-    /// Where `user_themes.json` lives: the App Group container, or a test's own directory.
+    /// Where `user_themes.json` and `user_layouts.json` live: the App Group container, or a test's
+    /// own directory.
     private let themesContainerURL: URL?
 
     private init() {
@@ -259,7 +267,14 @@ final class SharedSettings {
     /// HEAD~1 byte-for-byte; any future symmetrization belongs in a
     /// separate slice.
     func setKeyboardLayoutType(_ newLayout: KeyboardLayoutType) {
+        // Choosing a layout (a built-in card, the keyboard picker, reset) ends a custom selection;
+        // `applyCustomLayout(_:)` re-selects one afterwards. `setInputMode(_:)` leaves it alone.
+        if selectedCustomLayoutId != nil {
+            userDefaults.remove(Self.selectedCustomLayoutIdKey)
+        }
         let oldLayout = keyboardLayoutType
+        // Read before the layout write: while the layout is still TPS this is the backup.
+        let modeAfterLeavingTps = romanizationInputMode
         userDefaults.set(newLayout, for: Self.keyboardLayoutTypeKey)
 
         if newLayout == .tps, oldLayout != .tps {
@@ -269,8 +284,15 @@ final class SharedSettings {
                 userDefaults.set(.tps, for: Self.inputModeKey)
             }
         } else if newLayout != .tps, oldLayout == .tps {
-            userDefaults.set(inputModeBeforeTps, for: Self.inputModeKey)
+            userDefaults.set(modeAfterLeavingTps, for: Self.inputModeKey)
         }
+    }
+
+    /// The input mode after selecting a non-TPS layout: the live mode, or — while the layout is
+    /// TPS — the backup `setKeyboardLayoutType(_:)` restores (it writes this value). Any mode,
+    /// English included.
+    var romanizationInputMode: InputMode {
+        keyboardLayoutType == .tps ? inputModeBeforeTps : inputMode
     }
 
     /// Stores the inputMode before switching to TPS, so it can be restored when leaving TPS
@@ -463,6 +485,12 @@ final class SharedSettings {
         set { userDefaults.set(newValue, for: Self.isKautianNameAppendixEnabledKey) }
     }
 
+    // Alternative Readings (the 又唸作 sheet).
+    var isKautianAltReadingEnabled: Bool {
+        get { userDefaults.value(for: Self.isKautianAltReadingEnabledKey) }
+        set { userDefaults.set(newValue, for: Self.isKautianAltReadingEnabledKey) }
+    }
+
     // MARK: - Toolbar Settings
 
     /// Toolbar auto-collapse toggle (default: true = auto-collapse on composing/mode change)
@@ -643,6 +671,66 @@ final class SharedSettings {
         ThemeImageCache.shared.removeAll()
     }
 
+    // MARK: - Custom layouts
+
+    private lazy var userLayoutStore = UserLayoutStore(
+        containerURL: themesContainerURL,
+        onMutated: { [weak self] in self?.bumpLayoutRevision() },
+    )
+
+    private var customLayoutsCache: (revision: Int, layouts: [CustomLayout])?
+
+    private func bumpLayoutRevision() {
+        let next = userDefaults.value(for: Self.layoutRevisionKey) &+ 1
+        userDefaults.set(next, for: Self.layoutRevisionKey)
+    }
+
+    /// Saved custom layouts, cached by `layoutRevision` so a render never re-reads the file.
+    func loadCustomLayouts() -> [CustomLayout] {
+        let revision = userDefaults.value(for: Self.layoutRevisionKey)
+        if let cache = customLayoutsCache, cache.revision == revision {
+            return cache.layouts
+        }
+        let layouts = userLayoutStore.load()
+        customLayoutsCache = (revision, layouts)
+        return layouts
+    }
+
+    /// The selected custom layout's id; nil while a built-in layout is selected.
+    var selectedCustomLayoutId: UUID? {
+        UUID(uuidString: userDefaults.value(for: Self.selectedCustomLayoutIdKey))
+    }
+
+    /// The custom layout the keyboard shows (`CustomLayout.active`).
+    var activeCustomLayout: CustomLayout? {
+        CustomLayout.active(in: loadCustomLayouts(), selectedId: selectedCustomLayoutId, layoutType: keyboardLayoutType)
+    }
+
+    /// Selects `layout`: its base through the TPS-aware setter, then its id.
+    func applyCustomLayout(_ layout: CustomLayout) {
+        setKeyboardLayoutType(layout.base)
+        userDefaults.set(layout.id.uuidString, for: Self.selectedCustomLayoutIdKey)
+    }
+
+    /// Saves `layout` and applies it. Returns false, applying nothing, when the write fails or a
+    /// new layout would pass the cap.
+    func saveCustomLayout(_ layout: CustomLayout) -> Bool {
+        guard userLayoutStore.save(layout) else { return false }
+        applyCustomLayout(layout)
+        return true
+    }
+
+    /// Deletes the layout with `id`; deleting the selected one leaves its base selected as a
+    /// built-in layout.
+    @discardableResult
+    func deleteCustomLayout(id: UUID) -> Bool {
+        guard userLayoutStore.delete(id: id) else { return false }
+        if selectedCustomLayoutId == id {
+            userDefaults.remove(Self.selectedCustomLayoutIdKey)
+        }
+        return true
+    }
+
     /// Creates an immutable snapshot of render-relevant settings.
     /// Call once per render cycle to avoid repeated UserDefaults reads.
     func snapshot(for colorScheme: ColorScheme) -> SettingsSnapshot {
@@ -681,6 +769,10 @@ final class SharedSettings {
         fontType = .keyboardDefault
         isAutoSpaceEnabled = false
         keyboardLayoutType = .phahTaigi
+        // After the pair above: its setters run the TPS state machine, which reads these backups.
+        userDefaults.remove(Self.inputModeBeforeTpsKey)
+        userDefaults.remove(Self.layoutBeforeTpsKey)
+        isCustomDictEnabled = true
         // Dictionary toggles (iTaigi, TaiHua default off)
         isMoeDictEnabled = true
         isNewwordDictEnabled = true
@@ -695,7 +787,7 @@ final class SharedSettings {
         isKhiinEnabled = false
         isLkkDictEnabled = true
         isDevDictEnabled = true
-        // Kautian subcollections (10 accents default on; name appendix default off)
+        // Kautian subcollections (all default on)
         isKautianAccentLukangEnabled = true
         isKautianAccentSansiaEnabled = true
         isKautianAccentTaipakEnabled = true
@@ -707,6 +799,7 @@ final class SharedSettings {
         isKautianAccentSintikEnabled = true
         isKautianAccentTaichungEnabled = true
         isKautianNameAppendixEnabled = true
+        isKautianAltReadingEnabled = true
         // Toolbar
         isToolbarAutoCollapse = true
         oneHandedMode = .off

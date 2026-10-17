@@ -9,7 +9,7 @@ produces.
 
 iOS is unaffected — it continues to ship through App Store Connect.
 
-**Entry point for a desktop release is [`desktop-release.md`](desktop-release.md)** (one version, one draft GitHub release holding the macOS package and the Windows installer, `make desktop-release`); this file is the macOS-specific half it drives.
+**Entry point for a desktop release is [`desktop-release.md`](desktop-release.md)** (one version, one draft GitHub release holding every desktop platform's installers, `make desktop-release`); this file is the macOS-specific half it drives.
 
 ## Architectures
 
@@ -99,16 +99,9 @@ make macos-release
 ```
 
 `make macos-release` does not rebuild the engine itself, and the rebuild above
-is not optional. The xcframework this app links
-(`macos/RustEngine/RustTaigi.xcframework/`) is generated and gitignored, so
-**a clean tree says nothing about it** — it is not in the tree. A machine whose
-last build was on another branch, or before the newest engine commit, will
-package that silently: signed, notarized and shipped, with every gate passing.
-
-(That has not always been true. Until 2026-09-07 the engine binaries were
-committed, and "a release from a clean tree ships exactly what is committed" was
-a complete argument. The repository-slimming round stopped committing them, and
-the release flow's assumption outlived the fact.)
+is not optional: the xcframework this app links
+(`macos/RustEngine/RustTaigi.xcframework/`) is generated and gitignored, so a
+clean tree says nothing about it ([`build-artifacts.md` § A release rebuilds first](build-artifacts.md#a-release-rebuilds-first)).
 
 What the script does, in order:
 
@@ -132,8 +125,8 @@ What the script does, in order:
 6. **Name the output** — move the finished package to
    `macos/.build/distribution/TaigiKeyboard-<version>.pkg` only after every check
    passed, and print its SHA-256.
-7. **Publish** — hand the package to `macos/scripts/publish-release.sh` (see
-   *Publishing the package* below).
+7. **Stage** — hand the package to `macos/scripts/publish-release.sh`, which
+   puts it on the draft (*Publishing the package* below).
 
 Flags:
 
@@ -160,24 +153,11 @@ filename, so an unpublishable package cannot be confused for a release.
 
 ## Versioning
 
-`macos/App/Info.plist` is the single source of truth, and the release script
-only reads it:
-
-| Key | Role |
-|---|---|
-| `CFBundleShortVersionString` | marketing version; names the download |
-| `CFBundleVersion` | package version `pkgbuild --version` compares between releases |
-
-The Installer decides upgrade-versus-downgrade from `CFBundleVersion`, so it has
-to increase on every published package even when the marketing version does not.
-
-Neither moves on its own — release scope and timing are the maintainer's call —
-but neither is edited by hand either. `make version-desktop x.y.z` writes both
-keys here and the matching Windows version in the same pass, so the two desktop
-platforms cannot drift apart; `python3 tools/release_notes.py check-versions
---train desktop --version x.y.z` is the gate that proves they did not. iOS and
-Android are the separately numbered mobile train, and nothing compares the two
-trains.
+`macos/App/Info.plist` is the single source of truth and the release script
+only reads it: `CFBundleShortVersionString` names the download, and
+`CFBundleVersion` is what Installer compares between packages. Neither is
+edited by hand —
+[`manual-release-notes.md` § Set the version](manual-release-notes.md#set-the-version).
 
 ## Where it installs
 
@@ -218,22 +198,9 @@ simply upgrades it. No uninstall step is needed first.
 
 ## Publishing the package
 
-The flow — stage on a draft, test, publish, announce — is desktop-wide and lives
-in `desktop-release.md`, along with what staging and announcing each check. What
-is Apple's alone:
-
-- The package is staged only if it is **stapled**, passes **Gatekeeper**, and —
-  read out of its own `Distribution` — declares this bundle identifier at this
-  build version. `--pkg` can point at any file, and the tag and manifest version
-  both come from `Info.plist`, so a stale package would otherwise be staged under
-  the current version's name.
-- `_data/macos_release.json` in the website repository is what the landing page's
-  macOS download button reads, and `appcast/macos.json` is rendered from it. The
-  manifest URL is compiled into every shipped build (`UpdateChecker.publishedURL`)
-  and expects `version` / `downloadPageURL` / `packageURL` —
-  `macos/updates/README.md` is the wire format.
-- The `.pkg` and its `.sha256` are assets on the shared `desktop-<version>`
-  release in this repository, beside the Windows installer.
+The desktop-wide flow, what staging checks on the package (stapled, Gatekeeper,
+its declared identity) and why the release lives in this repository:
+[`desktop-release.md`](desktop-release.md).
 
 ## Notes
 
@@ -256,8 +223,9 @@ is Apple's alone:
   on the next keystroke, so nothing needs starting.
 - **Only the package is notarized.** It is the only artifact distributed, and
   stapling it is what lets Gatekeeper clear the install without network access.
-- **No auto-update.** Sparkle is not wired in, so users upgrade by downloading a
-  new package.
+- **No Sparkle.** The app's own update check fetches the manifest; from the
+  settings window it downloads `packageURL` and opens it in Installer
+  (`macos/updates/README.md`, `UpdateChecker.swift`).
 
 ## Alignment with other macOS input methods
 
@@ -294,5 +262,5 @@ Deliberately not adopted:
 | Separate notarization of the `.app` | `azooKey-Desktop/pkgbuild.sh` | the package is the only artifact distributed |
 | System-wide `/Library/Input Methods` | `azooKey-Desktop/pkgbuild.sh` | costs an administrator password for a per-user setting |
 | Localized installer welcome / licence / conclusion panes | `vChewing-macOS/BuildPKG.sh` | product copy, and none of it is written yet |
-| `onConclusionScript` re-login prompt | `MacishType/macos/Makefile:220` | the input-source cache note lives in the download page instead |
+| `onConclusionScript` re-login prompt | `MacishType/macos/Makefile:220` | the input-source cache note lives in the install instructions (`docs/INSTALL.md`) instead |
 | `codesign --deep` when signing | `vChewing-macOS/BuildPKG.sh` | the bundle has no nested code; see above |

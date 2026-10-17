@@ -107,6 +107,10 @@ pub struct KeyEventSnapshot {
     pub navigation_key: Option<NavigationKey>,
     /// Home or End, if this event is one of them.
     pub line_edge_key: Option<LineEdgeKey>,
+    /// Read in a layout the host does not type in (Windows: Dvorak / Colemak
+    /// over the US base, `layout_remap.rs`), so the input method writes its
+    /// text rather than passing it through. Always `false` on macOS / Linux.
+    pub is_remapped: bool,
 }
 
 impl KeyEventSnapshot {
@@ -143,7 +147,8 @@ impl KeyEventSnapshot {
     }
 
     /// Home or End.
-    pub fn line_edge(key: LineEdgeKey, modifiers: KeyModifiers) -> Self {
+    #[cfg(test)]
+    pub(crate) fn line_edge(key: LineEdgeKey, modifiers: KeyModifiers) -> Self {
         Self {
             modifiers,
             is_named_special_key: true,
@@ -153,7 +158,8 @@ impl KeyEventSnapshot {
     }
 
     /// A key the platform names that is not navigation (F5, Insert, …).
-    pub fn named_special(modifiers: KeyModifiers) -> Self {
+    #[cfg(test)]
+    pub(crate) fn named_special(modifiers: KeyModifiers) -> Self {
         Self {
             modifiers,
             is_named_special_key: true,

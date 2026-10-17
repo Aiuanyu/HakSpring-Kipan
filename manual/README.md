@@ -22,7 +22,7 @@ macOS、Windows、Linux 三个平台的用法差不多仝款，無仝的所在�
 |---|---|---|---|
 | 確定齒的名 | `Return` | `Enter` | `Enter` |
 | 切換、拍開（設定、符號選單……） | `⌃` `⌘` ＋ 字母 | `Ctrl` `Alt` ＋ 字母 | `Ctrl` `Alt` ＋ 字母 |
-| 修正當咧拍 ê 字 | `⌥` ＋ 方向齒 | `Ctrl` ＋ 方向齒 | `Ctrl` ＋ 方向齒 |
+| 修正拍的字 | `⌥` ＋ 方向齒 | `Ctrl` ＋ 方向齒 | `Ctrl` ＋ 方向齒 |
 | 跳去上頭前／上尾 | `⌥` `↑` ／ `⌥` `↓`<br>筆電無 Home／End 齒，用 `fn` `←` ／ `fn` `→` | `Ctrl` `↑` ／ `Ctrl` `↓`<br>`Home` ／ `End` | `Ctrl` `↑` ／ `Ctrl` `↓`<br>`Home` ／ `End` |
 | 標點換做全角／半角 | `⌃` ＋ 標點齒 | `Ctrl` ＋ 標點齒 | `Ctrl` ＋ 標點齒 |
 | 暫時拍英文 | 用系統的輸入法切換 | `Shift` 揤一下，閣揤一下切轉來 | 用系統的輸入法切換 |
@@ -46,7 +46,7 @@ macOS 的符號：`⌃` control、`⌥` option、`⌘` command、`⇧` shift。
 
 1. 佇電腦的輸入法選單，揀【台語齒盤】。
 2. 拍 `taigi`，選字窗就會出現。聲調免拍嘛會使。
-3. 揤確定齒輸出 `台語`，揤 `Space` 輸出 `tâi-gí`。
+3. 揤確定齒抑是 `Space` 輸出 `台語`；揤 `⇧` `q`（Windows、Linux：`Shift` `q`）輸出 `tâi-gí`。
 
 ![拍 taigi 了後出現的選字窗](shots/layout-vertical.png)
 
@@ -64,20 +64,20 @@ macOS 的符號：`⌃` control、`⌥` option、`⌘` command、`⇧` shift。
 
 | 功能 | macOS | Windows、Linux |
 |---|---|---|
-| 確定（輸出反白的候選詞） | `Return` | `Enter` |
-| 輸出對換 ê 文字（漢字／羅馬字） | `Space` | `Space` |
-| 輸出當咧拍 ê 字（照拍的輸出，`taigi`） | `⇧` `Return` | `Shift` `Enter` |
+| 確定（輸出反白的候選詞） | `Return`、`Space` | `Enter`、`Space` |
+| 輸出對換的文字（漢字／羅馬字） | 預設無設定，會當家己設 | 仝款 |
+| 輸出拍的字（照拍的輸出，`taigi`） | `⇧` `Return` | `Shift` `Enter` |
 | 後一个字 | `Tab` | `Tab` |
 | 頂一个字 | `⇧` `Tab` | `Shift` `Tab` |
 | 後一頁／頂一頁 | `]` ／ `[` | `]` ／ `[` |
 | 直接選字 | `q` `w` `d` `f` `z` `x` `v` `y` `;` | 仝款 |
-| 直接選字，輸出對換 ê 文字 | `⇧` ＋ 選字齒 | `Shift` ＋ 選字齒 |
+| 直接選字，輸出對換的文字 | `⇧` ＋ 選字齒 | `Shift` ＋ 選字齒 |
 | 徙動選字游標 | `←` `→` `↑` `↓` | 仝款 |
-| 修正當咧拍 ê 字 | `⌥` `←` ／ `⌥` `→` | `Ctrl` `←` ／ `Ctrl` `→` |
+| 修正拍的字 | `⌥` `←` ／ `⌥` `→` | `Ctrl` `←` ／ `Ctrl` `→` |
 | 跳去上頭前／上尾 | `⌥` `↑` ／ `⌥` `↓`，`fn` `←` ／ `fn` `→` | `Ctrl` `↑` ／ `Ctrl` `↓`，`Home` ／ `End` |
-| 刪除當咧拍 ê 字 | `Esc` | `Esc` |
+| 刪除拍的字 | `Esc` | `Esc` |
 
-選字、輸出的齒攏會當改：設定 → 快速齒。修正當咧拍 ê 字彼幾个齒是固定的。
+選字、輸出的齒攏會當改：設定 → 快速齒。修正拍的字彼幾个齒是固定的。
 
 ## 聲調
 
@@ -145,7 +145,8 @@ macOS 的符號：`⌃` control、`⌥` option、`⌘` command、`⇧` shift。
 | | 漢字排頭前（預設） | 羅馬字排頭前 |
 |---|---|---|
 | 確定齒 | 輸出漢字 | 輸出羅馬字 |
-| `Space` | 輸出羅馬字 | 輸出漢字 |
+| `Space` | 輸出漢字 | 輸出羅馬字 |
+| `⇧` ＋ 選字齒（Windows、Linux：`Shift`） | 輸出羅馬字 | 輸出漢字 |
 | 標點 | 全角 | 半角 |
 | | ![漢字排頭前的選字窗](shots/swap-hanji-first.png) | ![羅馬字排頭前的選字窗](shots/swap-roman-first.png) |
 
@@ -159,11 +160,11 @@ macOS 的符號：`⌃` control、`⌥` option、`⌘` command、`⇧` shift。
 | 漢羅濫 | 漢字佮羅馬字逐个家己一格，欲用佗一个就揀佗一个。 | ![漢羅濫](shots/display-combined.png) |
 | 羅馬字 | 選字窗干焦顯示羅馬字。聲調無拍，伊嘛會補起來。 | ![羅馬字](shots/display-roman.png) |
 
-### 當咧拍 ê 字囥第一个
+### 拍的羅馬字囥第一格
 
-設定 → 一般 → 當咧拍 ê 字囥第一个。拍開了後，你拍的羅馬字排第一格，揤確定齒就照你拍的輸出。無拍開的時，`⇧` `Return`（Windows、Linux：`Shift` `Enter`）嘛會當輸出當咧拍 ê 字。
+設定 → 一般 → 拍的羅馬字囥第一格。拍開了後，你拍的羅馬字排第一格，揤確定齒就照你拍的輸出。無拍開的時，`⇧` `Return`（Windows、Linux：`Shift` `Enter`）嘛會當輸出拍的字。
 
-![拍開「當咧拍 ê 字囥第一个」](shots/literal-on.png)
+![拍開「拍的羅馬字囥第一格」](shots/literal-on.png)
 
 ### 輸入文字
 
@@ -173,7 +174,7 @@ macOS 的符號：`⌃` control、`⌥` option、`⌘` command、`⇧` shift。
 |---|---|---|
 | 切換台羅／白話字 | `⌃` `⌘` `C` | `Ctrl` `Alt` `C` |
 | 切換方音符號 | `⌃` `⌘` `P` | `Ctrl` `Alt` `P` |
-| 拍開方音符號齒盤 | `⌃` `⌘` `J` | `Ctrl` `Alt` `J` |
+| 顯示方音符號小齒盤 | `⌃` `⌘` `J` | `Ctrl` `Alt` `J` |
 
 ![白話字：拍 peh8oe7ji7](shots/mode-poj.png)
 
@@ -202,12 +203,12 @@ macOS 的符號：`⌃` control、`⌥` option、`⌘` command、`⇧` shift。
 | 功能 | macOS | Windows、Linux |
 |---|---|---|
 | 切換漢字／羅馬字 | `` ` `` | `` ` `` |
-| 切換候選詞顯示 | `⌃` `⌘` `H` | `Ctrl` `Alt` `H` |
+| 切換羅馬字顯示 | `⌃` `⌘` `H` | `Ctrl` `Alt` `H` |
 | 切換台羅／白話字 | `⌃` `⌘` `C` | `Ctrl` `Alt` `C` |
 | 切換方音符號 | `⌃` `⌘` `P` | `Ctrl` `Alt` `P` |
 | 拍開符號選單 | `⌃` `⌘` `,` | `Ctrl` `Alt` `,` |
 | 拍開 Telex 說明 | `⌃` `⌘` `/` | `Ctrl` `Alt` `/` |
-| 拍開方音符號齒盤 | `⌃` `⌘` `J` | `Ctrl` `Alt` `J` |
+| 顯示方音符號小齒盤 | `⌃` `⌘` `J` | `Ctrl` `Alt` `J` |
 | 拍開設定選單 | `⌃` `⌘` `S` | `Ctrl` `Alt` `S` |
 
 ### 改做家己的齒
@@ -217,6 +218,8 @@ macOS 的符號：`⌃` control、`⌥` option、`⌘` command、`⇧` shift。
 1. 點欲改的彼格。
 2. 揤新的齒。若是別項功能已經咧用，舊的彼格會自動清掉。
 3. 無愛用的，揤 ⓧ 清掉。
+
+【輸出】彼三項逐項會當設兩个齒，兩个攏有效。
 
 ![設定的【快速齒】頁](shots/settings-shortcuts.png)
 
@@ -259,7 +262,7 @@ macOS 的符號：`⌃` control、`⌥` option、`⌘` command、`⇧` shift。
 
 ![設定的【辭典管理】頁](shots/settings-dictionarySources.png)
 
-輸入文字、聲調拍法、輸出文字、無連字符、自動閬一格、介面語言，攏佇【一般】。
+輸入文字、聲調拍法、輸出文字、無連字符、自動插入空白、介面語言，攏佇【一般】。
 
 ![設定的【一般】頁](shots/settings-general.png)
 

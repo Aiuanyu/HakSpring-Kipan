@@ -24,6 +24,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 from build import corpus_bigrams as cb
 from build.corpus_bigrams import Token
+from build.walker_lm import HELD_OUT_SOURCE, WalkerModel
 from common.romanization import to_numeric_tone
 
 TL_BY_WORD = {
@@ -44,11 +45,15 @@ TL_BY_WORD = {
     ("我", "gua2"): "guá",
     ("好", "ho2"): "hó",
 }
-LEXICON = cb.Lexicon(
-    tl_by_word=TL_BY_WORD,
-    frequency={("新聞", "sin1bun5"): 500, ("報導", "po3to7"): 400, ("新聞報", "sin1bun5po3"): 30, ("導", "to7"): 10},
-    hanji_by_romanized_reading={"ti7": "佇"},
-)
+LEXICON = cb.Lexicon(tl_by_word=TL_BY_WORD, hanji_by_romanized_reading={"ti7": "佇"})
+NEWS, REPORT, NEWSPAPER, GUIDE = ("新聞", "sin1bun5"), ("報導", "po3to7"), ("新聞報", "sin1bun5po3"), ("導", "to7")
+
+
+def model(counts: dict) -> WalkerModel:
+    return WalkerModel(counts=counts, tokens=sum(counts.values()), vocabulary=len(TL_BY_WORD), alpha=1.0)
+
+
+MODEL = model({NEWS: 500, REPORT: 400, NEWSPAPER: 30, GUIDE: 10})
 
 
 def kinds(tokens: list[Token]) -> list[str]:
@@ -119,16 +124,29 @@ class AlignerTests(unittest.TestCase):
 
 
 class SubsegmentTests(unittest.TestCase):
-    def test_fewest_pieces_then_frequency_not_greedy(self):
-        # greedy longest-match gives 新聞報 + 導; DP prefers 新聞 + 報導 (same piece count, higher freq)
-        pieces = cb.subsegment("新聞報導", ["sin1", "bun5", "po3", "to7"], LEXICON)
-        self.assertEqual(pieces, [("新聞", "sin1bun5"), ("報導", "po3to7")])
+    KEYS = ["sin1", "bun5", "po3", "to7"]
+
+    def test_fewest_pieces_then_lowest_model_cost(self):
+        # Both splits have two pieces; the pass-1 model's summed cost decides, in either direction.
+        self.assertEqual(cb.subsegment("新聞報導", self.KEYS, LEXICON, MODEL), [NEWS, REPORT])
+        flipped = model({NEWSPAPER: 500, GUIDE: 400, NEWS: 30, REPORT: 10})
+        self.assertEqual(cb.subsegment("新聞報導", self.KEYS, LEXICON, flipped), [NEWSPAPER, GUIDE])
+
+    def test_fewer_pieces_beat_cheaper_extra_pieces(self):
+        # trace (N = 3001, V = 16, α = 1): 新聞 + 報 + 導 = 3 × 1103 = 3309 milli-nats;
+        # 新聞 + 報導 = 1103 + 7319 = 8422 — one piece fewer, so it wins at the higher cost.
+        cheap_singles = model({NEWS: 1000, ("報", "po3"): 1000, GUIDE: 1000, REPORT: 1})
+        self.assertEqual(cb.subsegment("新聞報導", self.KEYS, LEXICON, cheap_singles), [NEWS, REPORT])
+
+    def test_exact_cost_tie_keeps_the_longest_last_piece(self):
+        # Empty model: every piece costs the same, so 新聞 + 報導 and 新聞報 + 導 tie exactly.
+        self.assertEqual(cb.subsegment("新聞報導", self.KEYS, LEXICON, model({})), [NEWS, REPORT])
 
     def test_returns_none_when_a_char_is_unknown(self):
-        self.assertIsNone(cb.subsegment("新聞報導X", ["sin1", "bun5", "po3", "to7", "x"], LEXICON))
+        self.assertIsNone(cb.subsegment("新聞報導X", [*self.KEYS, "x"], LEXICON, MODEL))
 
     def test_single_char_is_not_subsegmented(self):
-        self.assertIsNone(cb.subsegment("導", ["to7"], LEXICON))
+        self.assertIsNone(cb.subsegment("導", ["to7"], LEXICON, MODEL))
 
 
 class ClassifyTests(unittest.TestCase):
@@ -141,16 +159,22 @@ class ClassifyTests(unittest.TestCase):
             Token("break"),
         ]
         stat = Counter()
-        items = cb.classify(tokens, ["gua2", "ti7", "ka1ki7", "xyz1"], LEXICON, stat)
+        items = cb.classify(tokens, ["gua2", "ti7", "ka1ki7", "xyz1"], LEXICON, stat, MODEL)
         self.assertEqual(items, [("我", "gua2"), ("佇", "ti7"), ("家己", "ka1ki7"), None, None])
         self.assertEqual(stat["tok:romanized-mapped"], 1)
         self.assertEqual(stat["tok:romanized-oov"], 1)
 
     def test_oov_word_is_subsegmented_into_dictionary_words(self):
         stat = Counter()
-        items = cb.classify([Token("word", "sin1-bun5-po3-to7", "新聞報導")], ["sin1-bun5-po3-to7"], LEXICON, stat)
-        self.assertEqual(items, [("新聞", "sin1bun5"), ("報導", "po3to7")])
+        items = cb.classify([Token("word", "sin1-bun5-po3-to7", "新聞報導")], ["sin1-bun5-po3-to7"], LEXICON, stat, MODEL)
+        self.assertEqual(items, [NEWS, REPORT])
         self.assertEqual(stat["tok:subsegmented"], 1)
+
+    def test_pass_one_leaves_oov_words_unsplit(self):
+        stat = Counter()
+        items = cb.classify([Token("word", "sin1-bun5-po3-to7", "新聞報導")], ["sin1-bun5-po3-to7"], LEXICON, stat, None)
+        self.assertEqual(items, [None])
+        self.assertEqual(stat["tok:oov"], 1)
 
 
 class CountSourceTests(unittest.TestCase):
@@ -159,7 +183,7 @@ class CountSourceTests(unittest.TestCase):
     def test_chain_breaks_at_clause_and_sentence_end(self):
         # 我 好 | (clause) 人 | (sentence end) 好 — no pair crosses a break
         counts = cb.Counts()
-        cb.count_source("t", [cb.Unit("我好，人。好", "gua2 ho2, lang5. ho2", "tl")], LEXICON, counts)
+        cb.count_source("t", [cb.Unit("我好，人。好", "gua2 ho2, lang5. ho2", "tl")], LEXICON, counts, None)
         self.assertEqual(
             {pair: dict(sources) for pair, sources in counts.bigrams.items()},
             {(("我", "gua2"), ("好", "ho2")): {"t": 1}},
@@ -169,9 +193,38 @@ class CountSourceTests(unittest.TestCase):
 
     def test_identical_sentences_are_capped(self):
         counts = cb.Counts()
-        cb.count_source("t", [cb.Unit("好", "ho2", "tl")] * (cb.SENTENCE_CAP + 2), LEXICON, counts)
+        cb.count_source("t", [cb.Unit("好", "ho2", "tl")] * (cb.SENTENCE_CAP + 2), LEXICON, counts, None)
         self.assertEqual(counts.unigrams[("好", "ho2")]["t"], cb.SENTENCE_CAP)
         self.assertEqual(counts.stats["t"]["units:capped"], 2)
+
+    UNIT = cb.Unit("我新聞報導好", "gua2 sin1-bun5-po3-to7 ho2", "tl")
+
+    def test_pass_one_oov_breaks_the_chain(self):
+        counts = cb.Counts()
+        cb.count_source("t", [self.UNIT, cb.Unit("我佇", "gua2 ti7", "tl")], LEXICON, counts, None)
+        self.assertEqual(dict(counts.bigrams), {(("我", "gua2"), ("佇", "ti7")): Counter({"t": 1})})
+        self.assertEqual(counts.unigrams[("佇", "ti7")]["t"], 1)  # romanized reading still counted
+        self.assertNotIn(NEWS, counts.unigrams)
+
+    def test_pass_two_splits_with_the_model_and_leaves_it_unchanged(self):
+        frozen = dict(MODEL.counts)
+        counts = cb.Counts()
+        cb.count_source("t", [self.UNIT], LEXICON, counts, MODEL)
+        self.assertIn((("我", "gua2"), NEWS), counts.bigrams)
+        self.assertIn((REPORT, ("好", "ho2")), counts.bigrams)
+        self.assertEqual(MODEL.counts, frozen)
+
+
+class TiebreakModelTests(unittest.TestCase):
+    def test_held_out_source_left_out_and_counts_copied(self):
+        pass_one = cb.Counts()
+        pass_one.unigrams[NEWS].update({"s": 3, HELD_OUT_SOURCE: 5})
+        pass_one.unigrams[GUIDE][HELD_OUT_SOURCE] = 2
+        tiebreak = cb.tiebreak_model(pass_one, LEXICON)
+        self.assertEqual(tiebreak.counts, {NEWS: 3, GUIDE: 0})
+        self.assertEqual((tiebreak.tokens, tiebreak.vocabulary, tiebreak.alpha), (3, len(TL_BY_WORD), cb.SUBSEGMENT_ALPHA))
+        pass_one.unigrams[NEWS]["s"] += 10
+        self.assertEqual(tiebreak.counts[NEWS], 3)
 
 
 class OutputTests(unittest.TestCase):

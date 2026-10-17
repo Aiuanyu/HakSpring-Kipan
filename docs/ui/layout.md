@@ -1,98 +1,44 @@
 # Keyboard Layout
 
 > **Type**: Feature
-> **Keywords**: `Layout`, `KeyDef`, `LayoutConverter`, `CustomLayoutService`
-> **Related**: ../architecture/system-overview.md
+> **Keywords**: `Layout`, `KeyDef`, `LayoutConverter`, `CustomLayoutService`, `LayoutManager`
+> **Related**: ../architecture/system-overview.md, ../contributing/cross-platform-alignment.md §2
 
 ---
 
-## Summary
+## Where layouts live
 
-- Complete layout definitions with full visibility
-- Full-width/half-width specified directly in key definitions
-- Device variants: `_iPhone` vs `_withGlobe`
+| | iOS (`ios/Sources/TaigiKeyboard/Layout/`) | Android |
+|---|---|---|
+| Definitions | `TaigiLayouts.swift` — each layout is a full `[[KeyDef]]` | `android/app/src/main/assets/ime/text/<type>/<name>.json` |
+| Selection / loading | `CustomLayoutService.swift` → `LayoutConverter.swift` | `ime/text/layout/LayoutManager.kt` (merges main + modifier + extension layers) |
+| Key model | `KeyDef.swift` | `ime/text/key/KeyData.kt` |
 
----
+Concept → file map for both platforms: [cross-platform-alignment.md §2](../contributing/cross-platform-alignment.md#2-where-each-concept-lives).
 
-## File Structure
+## Alphabetic layouts
 
-| File | Description |
-|------|-------------|
-| `KeyDef.swift` | Key definition enum |
-| `TaigiLayouts.swift` | All keyboard layouts |
-| `LayoutConverter.swift` | Convert to KeyboardLayout |
-| `CustomLayoutService.swift` | Layout selection logic |
+| Layout | Notes |
+|---|---|
+| PhahTaigi | `!` `?` replace `q` `w`; `,` `.` replace `z` `x`; digit top row |
+| QWERTY | TL and POJ variants |
+| QWERTY English | used in English input mode |
+| TPS (方音符號) | always used in TPS input mode, whatever layout is selected |
+| MOE1 (教育部輸入法佈局1) | TL and POJ variants |
+| MOE2 (教育部輸入法佈局2) | TL and POJ variants |
 
----
+## Custom layouts
 
-## Design Principles
+A user rearranges a romanization layout in the Layout tab's editor — swaps keys (function keys within their row), trades one for a spare letter (multi-letter keys included) or symbol, removes one (the emoji key too) — and saves it under a name (up to 5). The record is base-relative — `CustomLayout { base, script, keys, functionKeys, hasEmojiKey }`: `keys` and `functionKeys` fill, in reading order, the character and function keys below the digit row of the `base` × `script` table (nil key = removed); the digit row stays the base's, and globe goes right after 123. Selecting one stores `keyboardLayoutType = base` plus `selectedCustomLayoutId`, so every behaviour keyed on the layout id and the key label follows the moved keys. Choosing any built-in layout clears the custom selection; TPS entered from the input mode suspends it. Design, selection contract and phases: [`custom-layouts-roadmap.md`](../architecture/custom-layouts-roadmap.md).
 
-1. **Complete layouts** - Each keyboard is a full `[[KeyDef]]`
-2. **Embedded full-width/half-width** - Specify `fullWidth` at key level
-3. **Explicit device variants** - iPhone without globe / with globe
-4. **No duplicate symbols** - Numeric and Symbolic separated
-5. **Ergonomic** - Common punctuation on row 4
+Non-alphabetic pages: **Numeric** (common punctuation, quotes, CJK brackets) and **Symbolic** (programming brackets, arrows, currency, math); they do not overlap.
 
----
+## Globe key (iOS)
 
-## Naming Convention
+Each iOS layout has an `_iPhone` form and a derived `_withGlobe` form (`.globe` inserted at bottom-row index 1). `CustomLayoutService.needsGlobeKey`: English mode → globe on iPad and Touch ID iPhones (`DeviceConfiguration`); TPS mode → never; otherwise the user's globe-key toggle.
 
-| Suffix | Description | Applies to |
-|--------|-------------|------------|
-| `_iPhone` | No globe key | Regular iPhone |
-| `_withGlobe` | Has globe key | iPhone SE, iPad |
+`ScreenSizeClass` (`DeviceConfiguration.swift`: < 375 pt compact, 375–413 regular, ≥ 414 large, iPad) only picks the per-device candidate font base in `CandidateTheme`.
 
----
+## Full-width / half-width punctuation
 
-## Layout Types
-
-### Alphabetic
-
-| Layout | Features |
-|--------|----------|
-| PhahTaigi | `!` `?` replace `q` `w`, `,` `.` replace `z` `x` |
-| QWERTY TL | Standard QWERTY |
-| QWERTY POJ | Extra `o͘` key |
-| TPS | Taiwanese Phonetic Symbols (方音符號) |
-| MOE1 | MOE Layout 1 (教育部輸入法佈局1) |
-| MOE2 | MOE Layout 2 (教育部輸入法佈局2), TL/POJ variants |
-
-### Numeric (Common Symbols)
-
-- Row 1: Numbers
-- Row 2: Quotes/brackets
-- Row 3: Punctuation
-- Row 4: Most common (finger position)
-
-### Symbolic (Advanced Symbols)
-
-- Row 1: Programming brackets
-- Row 2: Book title marks
-- Row 3: Currency/special
-- Row 4: Math symbols
-
----
-
-## Full-Width / Half-Width
-
-| Setting | Display | Use case |
-|---------|---------|----------|
-| Half-width (default) | `. , ? !` | Full romanization text |
-| Full-width | `。，？！` | Mixed Hanzi-romanization |
-
-### Always Half-Width
-
-- Programming: `[ ] { } ( ) < >`
-- Technical: `_ \ / @ = $ % # &`
-- Currency: `€ £ ¥ ¢`
-- Math: `± × ÷ ≠ ≈ ∞ √`
-
----
-
-## Platform Correspondence
-
-| Item | iOS | Android |
-|------|-----|---------|
-| Layout definitions | `TaigiLayouts.swift` | `LayoutData.kt` |
-| Converter | `LayoutConverter.swift` | `LayoutManager.kt` |
-| Key definitions | `KeyDef.swift` | `KeyData.kt` |
+Half-width by default; the full-width punctuation setting switches `。，？！` etc. iOS: a key declares both forms (`.char(half, fullWidth: full)`) and `LayoutConverter` picks one; TPS is always full-width. Android: separate `*_fullwidth` / `*_halfwidth` JSON files chosen by `LayoutManager`. Programming, currency and math symbols have no full-width form.

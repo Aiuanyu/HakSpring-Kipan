@@ -17,6 +17,7 @@ import com.siansiansu.taigikeyboard.i18n.generated.StringKey
 import com.siansiansu.taigikeyboard.ime.core.AppVersionTracker
 import com.siansiansu.taigikeyboard.ime.core.CompositionRoot
 import com.siansiansu.taigikeyboard.ime.core.logging.debug
+import com.siansiansu.taigikeyboard.ime.text.layout.CustomLayout
 import com.siansiansu.taigikeyboard.ime.theme.LegacyAppearance
 import com.siansiansu.taigikeyboard.ime.theme.ThemeAppearance
 import com.siansiansu.taigikeyboard.ime.theme.ThemeId
@@ -29,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
@@ -85,6 +87,8 @@ class PrefHelper(
         // Theme defaults (v3.6.2) — "default" = the factory appearance; empty user-theme list
         const val DEFAULT_SELECTED_THEME_ID = ThemeId.DEFAULT
         const val DEFAULT_USER_THEMES = "[]"
+        const val DEFAULT_USER_LAYOUTS = "[]"
+        private const val DEFAULT_KEYBOARD_LAYOUT_TYPE = "qwerty"
     }
 
     // Always resolve via the application context: `Context.preferencesDataStore`
@@ -375,7 +379,7 @@ class PrefHelper(
     // [applyKeyboardLayoutType]. See [TpsCascade] for asymmetry vs
     // [applyInputMode]. Cannot use the `preference` delegate.
     var keyboardLayoutType: String
-        get() = cached(PreferenceKeys.KEYBOARD_LAYOUT_TYPE, "qwerty")
+        get() = cached(PreferenceKeys.KEYBOARD_LAYOUT_TYPE, DEFAULT_KEYBOARD_LAYOUT_TYPE)
         set(value) = applyKeyboardLayoutType(value)
 
     // Single definition of "TPS is active" — [TpsCascade] keeps the two prefs
@@ -392,6 +396,12 @@ class PrefHelper(
     // writes that desync the in-memory cache from the persisted store.
     private val inputModeBeforeTps: String
         get() = cached(PreferenceKeys.INPUT_MODE_BEFORE_TPS, "tl")
+
+    // The input mode after selecting a non-TPS layout: the live mode, or — while the layout is
+    // TPS — the mode [applyKeyboardLayoutType] restores on leaving it. Any mode, English included.
+    // Mirrors iOS SharedSettings.romanizationInputMode.
+    val romanizationInputMode: String
+        get() = TpsCascade.inputModeAfterRomanizationLayout(keyboardLayoutType, inputMode, inputModeBeforeTps)
 
     // Stores the layout before switching to TPS, so it can be restored when leaving TPS.
     // Same delegate-free rationale as [inputModeBeforeTps] — written only via the unified batch.
@@ -438,12 +448,15 @@ class PrefHelper(
      * cleanup.
      */
     private fun applyKeyboardLayoutType(value: String) {
+        // Choosing a layout (a built-in card, the keyboard picker) ends a custom selection.
         val writes =
-            TpsCascade.forKeyboardLayoutType(
-                newValue = value,
-                oldValue = keyboardLayoutType,
-                currentInputMode = inputMode,
-                inputModeBeforeTps = inputModeBeforeTps,
+            CustomLayoutSelection.forBuiltIn(
+                TpsCascade.forKeyboardLayoutType(
+                    newValue = value,
+                    oldValue = keyboardLayoutType,
+                    currentInputMode = inputMode,
+                    inputModeBeforeTps = inputModeBeforeTps,
+                ),
             )
         // Logger fires on the IO coroutine after the batch commits.
         // HEAD~1 fired the same log inside the `dataStore.edit { }` transform
@@ -452,6 +465,87 @@ class PrefHelper(
         updateCacheBatchAndPersist(writes) {
             CompositionRoot.shared(context).logger.debug(TAG) { "[PREF] KeyboardLayoutType set to: $value" }
         }
+    }
+
+    /**
+     * Writes [layout] and then [inputMode] (cascades included) in a single DataStore transaction
+     * — see [TpsCascade.forLayoutAndInputMode] for why two setters are not enough.
+     */
+    fun setKeyboardLayoutAndInputMode(
+        layout: String,
+        inputMode: String,
+    ) {
+        val writes =
+            CustomLayoutSelection.forBuiltIn(
+                TpsCascade.forLayoutAndInputMode(
+                    newLayout = layout,
+                    newInputMode = inputMode,
+                    oldLayout = keyboardLayoutType,
+                    oldInputMode = this.inputMode,
+                    inputModeBeforeTps = inputModeBeforeTps,
+                    layoutBeforeTps = layoutBeforeTps,
+                ),
+            )
+        updateCacheBatchAndPersist(writes)
+    }
+
+    // Custom layouts: a JSON list (iOS `user_layouts.json`) and the selected one's id ("" while a
+    // built-in layout is selected). Selection = `keyboardLayoutType` (the base) + that id; the
+    // input-mode TPS cascade keeps the id, so leaving TPS resumes the layout. Mirrors iOS
+    // SharedSettings § Custom layouts.
+
+    private val userLayouts: String
+        get() = cached(PreferenceKeys.USER_LAYOUTS, DEFAULT_USER_LAYOUTS)
+
+    private val selectedCustomLayoutId: String
+        get() = cached(PreferenceKeys.SELECTED_CUSTOM_LAYOUT_ID, "")
+
+    // The last decoded list and the JSON it came from, so a layout compute never re-parses.
+    @Volatile
+    private var customLayoutsMemo: Pair<String, List<CustomLayout>>? = null
+
+    /** The saved custom layouts the keyboard can show ([CustomLayout.decodeList]). */
+    fun loadCustomLayouts(): List<CustomLayout> = decodeCustomLayouts(userLayouts)
+
+    /** The custom layout the keyboard shows ([CustomLayout.active]); null while a built-in one is selected. */
+    val activeCustomLayout: CustomLayout?
+        get() = activeCustomLayoutIn(userLayouts, selectedCustomLayoutId, keyboardLayoutType)
+
+    /** Selects [layout] ([CustomLayoutSelection.forApply]). */
+    fun applyCustomLayout(layout: CustomLayout) {
+        updateCacheBatchAndPersist(CustomLayoutSelection.forApply(layout, keyboardLayoutType, inputMode, inputModeBeforeTps))
+    }
+
+    /**
+     * Saves [layout] and applies it ([CustomLayoutSelection.forSave]). False, writing nothing, when a
+     * new layout would pass [CustomLayout.MAX_CUSTOM_LAYOUTS].
+     */
+    fun saveCustomLayout(layout: CustomLayout): Boolean {
+        val writes =
+            CustomLayoutSelection.forSave(loadCustomLayouts(), layout, keyboardLayoutType, inputMode, inputModeBeforeTps)
+                ?: return false
+        updateCacheBatchAndPersist(writes)
+        return true
+    }
+
+    /** Deletes the layout with [id] ([CustomLayoutSelection.forDelete]). */
+    fun deleteCustomLayout(id: String) {
+        updateCacheBatchAndPersist(CustomLayoutSelection.forDelete(loadCustomLayouts(), id, selectedCustomLayoutId))
+    }
+
+    // No selection reads no list, so a user without custom layouts never parses the layout tables.
+    private fun activeCustomLayoutIn(
+        json: String,
+        selectedId: String,
+        layoutType: String,
+    ): CustomLayout? = if (selectedId.isEmpty()) null else CustomLayout.active(decodeCustomLayouts(json), selectedId, layoutType)
+
+    private fun decodeCustomLayouts(json: String): List<CustomLayout> {
+        if (json == DEFAULT_USER_LAYOUTS) return emptyList()
+        customLayoutsMemo?.let { (memoJson, layouts) -> if (memoJson == json) return layouts }
+        val layouts = CustomLayout.decodeList(json, CompositionRoot.shared(context).customLayoutTables)
+        customLayoutsMemo = json to layouts
+        return layouts
     }
 
     // TPS settings
@@ -516,6 +610,9 @@ class PrefHelper(
 
     // Name appendix defaults on (opt-out; CROSS-PLATFORM mirrors iOS SharedSettings.swift isKautianNameAppendixEnabledKey)
     var kautianNameAppendixEnabled: Boolean by preference(PreferenceKeys.KAUTIAN_NAME_APPENDIX_ENABLED, true)
+
+    // Alternative Readings (又唸作) defaults on (CROSS-PLATFORM mirrors iOS SharedSettings.swift isKautianAltReadingEnabledKey)
+    var kautianAltReadingEnabled: Boolean by preference(PreferenceKeys.KAUTIAN_ALT_READING_ENABLED, true)
 
     // Theme settings (v3.6.2)
     var selectedThemeId: String by preference(PreferenceKeys.SELECTED_THEME_ID, DEFAULT_SELECTED_THEME_ID)
@@ -657,6 +754,9 @@ class PrefHelper(
     override val isKautianNameAppendixEnabled: Boolean
         get() = kautianNameAppendixEnabled
 
+    override val isKautianAltReadingEnabled: Boolean
+        get() = kautianAltReadingEnabled
+
     /**
      * Returns `this` as [EngineSettings]. Each property access on the
      * returned value re-reads the DataStore cache, so the engine always
@@ -685,7 +785,7 @@ class PrefHelper(
     fun observeKeyboardLayoutType(): Flow<String> =
         dataStore.data
             .map { prefs ->
-                prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] ?: "qwerty"
+                prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] ?: DEFAULT_KEYBOARD_LAYOUT_TYPE
             }.distinctUntilChanged()
 
     /**
@@ -738,6 +838,36 @@ class PrefHelper(
                 prefs[PreferenceKeys.USER_THEMES] ?: DEFAULT_USER_THEMES
             }.distinctUntilChanged()
             .map { UserTheme.decodeList(it) }
+
+    /** Observes the saved custom layouts; dedupes on the raw JSON before decoding. */
+    fun observeCustomLayouts(): Flow<List<CustomLayout>> =
+        dataStore.data
+            .map { prefs -> prefs[PreferenceKeys.USER_LAYOUTS] ?: DEFAULT_USER_LAYOUTS }
+            .distinctUntilChanged()
+            .map(::decodeCustomLayouts)
+            .flowOn(Dispatchers.Default)
+
+    /**
+     * Observes what the letter layout is built from: the stored layout and the custom layout on it
+     * (whole record), from one emission. A layout switch, a custom switch, an edit of the active
+     * layout, a TPS suspend / resume or a delete emits once.
+     */
+    fun observeLetterLayout(): Flow<Pair<String, CustomLayout?>> =
+        dataStore.data
+            .map { prefs ->
+                Triple(
+                    prefs[PreferenceKeys.USER_LAYOUTS] ?: DEFAULT_USER_LAYOUTS,
+                    prefs[PreferenceKeys.SELECTED_CUSTOM_LAYOUT_ID] ?: "",
+                    prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] ?: DEFAULT_KEYBOARD_LAYOUT_TYPE,
+                )
+            }.distinctUntilChanged()
+            .map { (json, selectedId, layoutType) -> layoutType to activeCustomLayoutIn(json, selectedId, layoutType) }
+            .distinctUntilChanged()
+            // The first decode parses the layout assets (CustomLayoutTables): off the main thread.
+            .flowOn(Dispatchers.Default)
+
+    /** Observes the custom layout the keyboard shows ([observeLetterLayout]). */
+    fun observeActiveCustomLayout(): Flow<CustomLayout?> = observeLetterLayout().map { it.second }.distinctUntilChanged()
 
     /**
      * Migrates data from SharedPreferences to DataStore — the copy runs only
@@ -811,12 +941,15 @@ class PrefHelper(
             val versionLastUse = prefs[PreferenceKeys.VERSION_LAST_USE]
             // User-created themes are user content (like the SQLite user DBs) — preserved across a full settings reset.
             val userThemes = prefs[PreferenceKeys.USER_THEMES]
+            // So are custom layouts; the selection goes with the rest.
+            val userLayouts = prefs[PreferenceKeys.USER_LAYOUTS]
 
             prefs.clear()
 
             versionOnInstall?.let { prefs[PreferenceKeys.VERSION_ON_INSTALL] = it }
             versionLastUse?.let { prefs[PreferenceKeys.VERSION_LAST_USE] = it }
             userThemes?.let { prefs[PreferenceKeys.USER_THEMES] = it }
+            userLayouts?.let { prefs[PreferenceKeys.USER_LAYOUTS] = it }
 
             prefs[PreferenceKeys.INPUT_MODE] = "tl"
             prefs[PreferenceKeys.IS_HANJI_FIRST] = true
@@ -827,10 +960,9 @@ class PrefHelper(
             prefs[PreferenceKeys.AUTO_CAPITALIZATION_ENABLED] = true
             prefs[PreferenceKeys.AUTO_SPACE_ENABLED] = false
             prefs[PreferenceKeys.FONT_TYPE] = DEFAULT_FONT_TYPE
-            prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] = "qwerty"
+            prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] = DEFAULT_KEYBOARD_LAYOUT_TYPE
             prefs[PreferenceKeys.TPS_OR_MAPS_TO_ER] = true
             prefs[PreferenceKeys.TOOLBAR_AUTO_COLLAPSE] = true
-            prefs[PreferenceKeys.GLOBE_KEY_ENABLED] = true
             prefs[PreferenceKeys.SOUND_FEEDBACK_ENABLED] = true
             prefs[PreferenceKeys.VIBRATION_FEEDBACK_ENABLED] = true
             prefs[PreferenceKeys.CUSTOM_DICT_ENABLED] = true

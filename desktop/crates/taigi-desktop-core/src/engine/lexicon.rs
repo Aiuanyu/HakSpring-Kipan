@@ -206,6 +206,7 @@ pub(crate) fn dictionary_toggles(toggles: &DictionarySourceToggles) -> WireDicti
             accent_sintik: subcollections.accent_sintik,
             accent_taichung: subcollections.accent_taichung,
             name_appendix: subcollections.name_appendix,
+            alt_reading: subcollections.alt_reading,
         }),
     }
 }
@@ -216,7 +217,6 @@ pub struct LexiconRow {
     pub id: i64,
     pub roman: String,
     pub hanji: Option<String>,
-    pub length_score: Option<i32>,
     /// The dictionaries the record belongs to, in the engine's (source-bit)
     /// order — the order the badges are drawn in.
     pub sources: Vec<DictionarySource>,
@@ -228,33 +228,12 @@ impl LexiconRow {
             id: word.id,
             roman: word.roman,
             hanji: word.hanji,
-            length_score: word.length_score,
             sources: word
                 .sources
                 .into_iter()
                 .filter_map(DictionarySource::from_code)
                 .collect(),
         }
-    }
-
-    /// The search page's order (`DictionarySearchService.Ordering`): MOE dictionary
-    /// records first, then by length score descending, then as the engine
-    /// listed them.
-    pub fn sorted_for_search(rows: Vec<LexiconRow>) -> Vec<LexiconRow> {
-        let is_kautian = |row: &LexiconRow| row.sources.contains(&DictionarySource::Kautian);
-        let mut indexed: Vec<(usize, LexiconRow)> = rows.into_iter().enumerate().collect();
-        indexed.sort_by(|(first_index, first), (second_index, second)| {
-            is_kautian(second)
-                .cmp(&is_kautian(first))
-                .then_with(|| {
-                    second
-                        .length_score
-                        .unwrap_or(0)
-                        .cmp(&first.length_score.unwrap_or(0))
-                })
-                .then_with(|| first_index.cmp(second_index))
-        });
-        indexed.into_iter().map(|(_, row)| row).collect()
     }
 }
 
@@ -359,16 +338,6 @@ fn lexicon_response(method: lexicon_request::Method, op: &str) -> Option<Lexicon
 mod tests {
     use super::*;
 
-    fn row(index: i64, score: Option<i32>, source: DictionarySource) -> LexiconRow {
-        LexiconRow {
-            id: index,
-            roman: format!("r{index}"),
-            hanji: None,
-            length_score: score,
-            sources: vec![source],
-        }
-    }
-
     /// One toggle: its name, reading it, flipping it, and reading its wire
     /// field.
     type ToggleField = (
@@ -436,6 +405,7 @@ mod tests {
                     accent_sintik: _,
                     accent_taichung: _,
                     name_appendix: _,
+                    alt_reading: _,
                 },
         } = DictionarySourceToggles::DEFAULT;
         vec![
@@ -463,10 +433,11 @@ mod tests {
             subcollection!(accent_sintik),
             subcollection!(accent_taichung),
             subcollection!(name_appendix),
+            subcollection!(alt_reading),
         ]
     }
 
-    /// The 24 flags are copied field by field, and a swapped or inverted
+    /// The 25 flags are copied field by field, and a swapped or inverted
     /// pair compiles and filters the wrong dictionary: every wire field
     /// carries its own toggle's value, at the defaults and with any one
     /// toggle flipped. A subcollection read from an absent message is off,
@@ -509,24 +480,6 @@ mod tests {
                 DictionarySource::Lkk
             ]
         );
-    }
-
-    #[test]
-    fn search_order_puts_kautian_first_then_length_score_then_engine_order() {
-        // trace: DictionarySearchService.Ordering — kautian beats a higher
-        // score; among kautian rows the higher score wins; ties keep order.
-        let rows = vec![
-            row(0, Some(9), DictionarySource::Taigitv),
-            row(1, Some(2), DictionarySource::Kautian),
-            row(2, Some(5), DictionarySource::Kautian),
-            row(3, Some(5), DictionarySource::Kautian),
-            row(4, None, DictionarySource::Itaigi),
-        ];
-        let ids: Vec<i64> = LexiconRow::sorted_for_search(rows)
-            .into_iter()
-            .map(|row| row.id)
-            .collect();
-        assert_eq!(ids, vec![2, 3, 1, 0, 4]);
     }
 
     #[test]

@@ -1,0 +1,7 @@
+New: Custom Layouts: swap keys, add spare letters, finals or symbols, remove keys, and save up to five layouts.
+New: Swipe across Space to move the cursor.
+Improved: In Send or Search fields, Enter first confirms the typed word.
+Improved: Double-tap Space types a period in Taigi and English.
+Updated: Contracted readings added: lueh gives 落去.
+Changed: The globe key sits next to the symbols key.
+Changed: The typing guide is rewritten with new pictures.

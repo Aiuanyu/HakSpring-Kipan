@@ -2,185 +2,159 @@ import SwiftUI
 
 /// Layout tab.
 ///
-/// Keyboard layout selection (PhahTaigi, QWERTY, MOE, TPS) with horizontal swipe cards.
+/// A gallery of horizontal shelves (`GalleryShelf`, shared with the Theme tab): Custom Layouts
+/// (the user's layouts after a create card that opens `LayoutEditorView`), Universal (layouts
+/// with one key table for both scripts), Tâi-lô and Pe̍h-ōe-jī (the layouts whose POJ keys
+/// differ, once per script), and Phonetic Symbols. A Tâi-lô / Pe̍h-ōe-jī card applies its layout
+/// and switches the input mode to that script.
 struct LayoutTab: View {
     @Environment(DisplayLanguageStore.self) private var lang
-    @State private var selectedLayout: KeyboardLayoutType
 
-    private let settings = SharedSettings.shared
+    // Read-only observers of the App Group store, so a mode change on the Settings tab (or in the
+    // keyboard) moves the checkmark; every write goes through `SharedSettings`.
+    @AppStorage(SharedSettings.keyboardLayoutTypeKey.key, store: SharedSettings.sharedUserDefaults)
+    private var keyboardLayoutType = SharedSettings.keyboardLayoutTypeKey.defaultValue
+    @AppStorage(SharedSettings.inputModeKey.key, store: SharedSettings.sharedUserDefaults)
+    private var inputMode = SharedSettings.inputModeKey.defaultValue
+    @AppStorage(SharedSettings.selectedCustomLayoutIdKey.key, store: SharedSettings.sharedUserDefaults)
+    private var selectedCustomLayoutId = SharedSettings.selectedCustomLayoutIdKey.defaultValue
+    @AppStorage(SharedSettings.layoutRevisionKey.key, store: SharedSettings.sharedUserDefaults)
+    private var layoutRevision = SharedSettings.layoutRevisionKey.defaultValue
 
-    // Title element is a StringKey, resolved at render via `lang` so the layout name live-switches.
-    private static let tpsEntry: (KeyboardLayoutType, StringKey, String, String?, Bool) =
-        (.tps, .layoutTpsLayout, "layout_tps_preview", nil, false)
-
-    init() {
-        _selectedLayout = State(initialValue: SharedSettings.shared.keyboardLayoutType)
-    }
+    @State private var customLayouts: [CustomLayout] = []
+    @State private var editorRoute: LayoutEditorRoute?
 
     var body: some View {
+        let activeCustomLayoutId = CustomLayout.active(
+            in: customLayouts, selectedId: UUID(uuidString: selectedCustomLayoutId), layoutType: keyboardLayoutType,
+        )?.id
         NavigationStack {
-            ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Section 1: Romanization keyboards
-                    layoutSection(
-                        header: .layoutRomanizationKeyboard,
-                        layouts: [
-                            (.phahTaigi, .layoutPhahTaigiLayout, "layout_phahtaigi_preview", nil, false),
-                            (.qwerty, .layoutStandardLayout, "layout_standard_preview", nil, false),
-                            (.moe1, .layoutMoe1Layout, "layout_moe1_preview", nil, false),
-                            (.moe2, .layoutMoe2Layout, "layout_moe2_preview", nil, false),
-                        ],
-                    )
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: GalleryCardMetrics.shelfSpacing) {
+                    GalleryShelf(title: lang.string(.layoutCustomLayoutsSection)) {
+                        if customLayouts.count < UserLayoutStore.maxLayouts {
+                            GalleryCreateCard(title: lang.string(.layoutCreateNewLayout)) { editorRoute = .create }
+                        }
+                        ForEach(customLayouts) { layout in
+                            customLayoutCard(layout, isSelected: activeCustomLayoutId == layout.id)
+                        }
+                    }
 
-                    // Section 2: Taigi phonetic
-                    layoutSection(
-                        header: .settingsTpsMode,
-                        layouts: [Self.tpsEntry],
-                    )
+                    ForEach(LayoutChoice.shelves, id: \.titleKey) { shelf in
+                        GalleryShelf(title: lang.string(shelf.titleKey)) {
+                            ForEach(shelf.choices, id: \.self) { choice in
+                                let title = lang.string(choice.layout.displayNameKey)
+                                GalleryCard(
+                                    title: title,
+                                    isSelected: activeCustomLayoutId == nil
+                                        && choice.isSelected(layout: keyboardLayoutType, inputMode: inputMode),
+                                    onTap: { select(choice) },
+                                ) {
+                                    GalleryScreenshot(imageName: choice.previewImageName, title: title)
+                                }
+                            }
+                        }
+                    }
                 }
-                .padding(.top, 20)
-                .padding(.bottom)
+                .padding(.vertical, AppStyle.horizontalPadding)
             }
+            // Matches the Form-backed tabs (systemGroupedBackground); a bare ScrollView defaults to systemBackground.
             .background(Color(.systemGroupedBackground))
             .navigationTitle(lang.string(TabType.layout.titleKey))
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(item: $editorRoute) { route in
+                switch route {
+                case .create: LayoutEditorView()
+                case let .edit(layout): LayoutEditorView(editing: layout)
+                }
+            }
+            // Every store write bumps layoutRevision; onAppear covers popping back from the editor.
+            .onAppear(perform: reloadCustomLayouts)
+            .onChange(of: layoutRevision) { _, _ in reloadCustomLayouts() }
         }
     }
 
-    // MARK: - Section builder
-
-    private func layoutSection(
-        header: StringKey,
-        layouts: [(KeyboardLayoutType, StringKey, String, String?, Bool)],
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(lang.string(header))
-                .font(AppStyle.sectionHeaderFont)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(layouts, id: \.0) { layoutType, titleKey, imageName, subtitleText, isDisabled in
-                        LayoutOptionCard(
-                            title: lang.string(titleKey),
-                            subtitle: subtitleText.map(\.self),
-                            previewImageName: imageName,
-                            isSelected: selectedLayout == layoutType,
-                            isDisabled: isDisabled,
-                            action: {
-                                selectLayout(layoutType)
-                            },
-                        )
-                    }
+    private func customLayoutCard(_ layout: CustomLayout, isSelected: Bool) -> some View {
+        GalleryCard(title: layout.name, isSelected: isSelected, onTap: { apply(layout) }) {
+            LayoutKeyGrid(rows: layout.rows(withGlobe: false))
+        } accessory: {
+            GalleryCardMenu(title: layout.name) {
+                Button(lang.string(.themeCardMenuApply)) { apply(layout) }
+                Button(lang.string(.commonEdit)) { editorRoute = .edit(layout) }
+                Button(lang.string(.commonDelete), role: .destructive) {
+                    SharedSettings.shared.deleteCustomLayout(id: layout.id)
                 }
-                .padding(.horizontal)
             }
         }
     }
 
-    private func selectLayout(_ layout: KeyboardLayoutType) {
+    private func select(_ choice: LayoutChoice) {
         withAnimation(.easeInOut(duration: 0.15)) {
-            selectedLayout = layout
-            settings.keyboardLayoutType = layout
+            choice.apply(to: SharedSettings.shared)
         }
+    }
+
+    private func apply(_ layout: CustomLayout) {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            SharedSettings.shared.applyCustomLayout(layout)
+        }
+    }
+
+    private func reloadCustomLayouts() {
+        customLayouts = SharedSettings.shared.loadCustomLayouts()
     }
 }
 
-// MARK: - Layout option card for horizontal swipe shelf
+// MARK: - Editor route
 
-private struct LayoutOptionCard: View {
-    let title: String
-    var subtitle: String?
-    let previewImageName: String
-    let isSelected: Bool
-    var isDisabled: Bool = false
-    let action: () -> Void
+/// Navigation route for the layout editor: a new layout, or an edit of a saved one.
+enum LayoutEditorRoute: Hashable {
+    case create
+    case edit(CustomLayout)
+}
 
-    /// Fixed card width for horizontal scrolling.
-    /// CROSS-PAGE: matches `ThemeCardMetrics.width` (ThemePickerView.swift) so the
-    /// Theme and Layout keyboard previews render at the identical size. Change both.
-    private let cardWidth: CGFloat = 240
+// MARK: - Layout choice
 
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                // Preview image with rounded corners (KeyboardKit theme style)
-                ZStack {
-                    previewImage
-                        .clipShape(RoundedRectangle(cornerRadius: AppStyle.previewCornerRadius))
-
-                    if isDisabled {
-                        RoundedRectangle(cornerRadius: AppStyle.previewCornerRadius)
-                            .fill(Color.black.opacity(0.5))
-
-                        Text(subtitle ?? "")
-                            .font(AppStyle.captionFont)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.black.opacity(0.7), in: Capsule())
-                    } else if isSelected {
-                        RoundedRectangle(cornerRadius: AppStyle.previewCornerRadius)
-                            .fill(Color.black.opacity(0.25))
-
-                        Circle()
-                            .fill(AppStyle.accentBlue)
-                            .frame(width: 36, height: 36)
-                            .overlay(
-                                Image(latinSystemName: "checkmark")
-                                    .font(AppStyle.appFont(size: 16).bold())
-                                    .foregroundColor(.white),
-                            )
-                    }
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppStyle.previewCornerRadius)
-                        .stroke(isSelected && !isDisabled ? AppStyle.accentBlue : Color.clear, lineWidth: 2.5),
-                )
-                .frame(width: cardWidth)
-
-                // Title label
-                VStack(spacing: 2) {
-                    Text(title)
-                        .font(AppStyle.captionFont)
-                        .fontWeight(.semibold)
-                        .foregroundColor(isDisabled ? .secondary : .primary)
-                        .lineLimit(1)
-                    if let subtitle, !isDisabled {
-                        Text(subtitle)
-                            .font(AppStyle.captionFont)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .disabled(isDisabled)
+/// One Layout-tab card: a layout plus, on the Tâi-lô / Pe̍h-ōe-jī shelves, the script it applies.
+struct LayoutChoice: Hashable {
+    struct Shelf {
+        let titleKey: StringKey
+        let choices: [LayoutChoice]
     }
 
-    /// Preview image (maintains aspect ratio within card bounds)
-    @ViewBuilder
-    private var previewImage: some View {
-        if let uiImage = UIImage(named: previewImageName) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-        } else {
-            Rectangle()
-                .fill(Color(.tertiarySystemBackground))
-                .overlay(
-                    VStack(spacing: 6) {
-                        Image(latinSystemName: "keyboard")
-                            .font(AppStyle.appFont(size: 28))
-                            .foregroundColor(.secondary)
-                        Text(title)
-                            .font(AppStyle.captionFont)
-                            .foregroundColor(.secondary)
-                    },
-                )
+    let layout: KeyboardLayoutType
+    /// nil on the Universal / Phonetic Symbols shelves: the card writes the layout only.
+    let script: LayoutScript?
+
+    static let shelves: [Shelf] = {
+        let universal = KeyboardLayoutType.romanizationLayouts.filter { $0.pojPreviewImageName == nil }
+        let perScript = KeyboardLayoutType.romanizationLayouts.filter { $0.pojPreviewImageName != nil }
+        return [
+            Shelf(titleKey: .layoutCommonLayoutsSection, choices: universal.map { LayoutChoice(layout: $0, script: nil) }),
+            Shelf(titleKey: .settingsTlMode, choices: perScript.map { LayoutChoice(layout: $0, script: .tl) }),
+            Shelf(titleKey: .settingsPojMode, choices: perScript.map { LayoutChoice(layout: $0, script: .poj) }),
+            Shelf(titleKey: .settingsTpsMode, choices: [LayoutChoice(layout: .tps, script: nil)]),
+        ]
+    }()
+
+    var previewImageName: String {
+        layout.previewImageName(for: script?.inputMode ?? .tl)
+    }
+
+    /// A script card is selected only in its own input mode (English or TPS selects neither);
+    /// a layout-only card follows the stored layout.
+    func isSelected(layout selectedLayout: KeyboardLayoutType, inputMode: InputMode) -> Bool {
+        guard selectedLayout == layout else { return false }
+        guard let script else { return true }
+        return inputMode == script.inputMode
+    }
+
+    /// Writes the layout, then the script's input mode: leaving TPS restores the pre-TPS mode,
+    /// which the card's script then overrides.
+    func apply(to settings: SharedSettings) {
+        settings.keyboardLayoutType = layout
+        if let script {
+            settings.inputMode = script.inputMode
         }
     }
 }

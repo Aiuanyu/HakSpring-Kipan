@@ -53,17 +53,6 @@ public interface AppConfigOrBuilder extends
   boolean getIsHanjiFirst();
 
   /**
-   * <code>.taigi.engine.Platform platform_id = 7;</code>
-   * @return The enum numeric value on the wire for platformId.
-   */
-  int getPlatformIdValue();
-  /**
-   * <code>.taigi.engine.Platform platform_id = 7;</code>
-   * @return The platformId.
-   */
-  com.siansiansu.taigikeyboard.engine.proto.Platform getPlatformId();
-
-  /**
    * <code>bool output_both_scripts = 8;</code>
    * @return The outputBothScripts.
    */
@@ -88,7 +77,8 @@ public interface AppConfigOrBuilder extends
 
   /**
    * <pre>
-   * TPS or→er dialect switch; no engine reader yet.
+   * TPS or→er dialect switch; read by the TPS commit rendering
+   * (`engine/composing/src/commit_text.rs`).
    * </pre>
    *
    * <code>bool tps_or_maps_to_er = 12;</code>
@@ -99,7 +89,9 @@ public interface AppConfigOrBuilder extends
   /**
    * <pre>
    * Present = the preedit of a TPS buffer shows the converted Hanji
-   * (`HanjiConversion`). Absent on every platform today.
+   * (`HanjiConversion`). Desktop-core sets it
+   * (`desktop/crates/taigi-desktop-core/src/engine/bridge.rs`); read by
+   * `engine/composing/src/conversion.rs`.
    * </pre>
    *
    * <code>.taigi.engine.HanjiConversion hanji_conversion = 13;</code>
@@ -109,7 +101,9 @@ public interface AppConfigOrBuilder extends
   /**
    * <pre>
    * Present = the preedit of a TPS buffer shows the converted Hanji
-   * (`HanjiConversion`). Absent on every platform today.
+   * (`HanjiConversion`). Desktop-core sets it
+   * (`desktop/crates/taigi-desktop-core/src/engine/bridge.rs`); read by
+   * `engine/composing/src/conversion.rs`.
    * </pre>
    *
    * <code>.taigi.engine.HanjiConversion hanji_conversion = 13;</code>

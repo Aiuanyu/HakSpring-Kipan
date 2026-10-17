@@ -154,7 +154,6 @@ Both extern fns wrap their bodies in `catch_unwind` per §1.2. Every `unsafe` bl
 
 Rust core never sees platform-only surfaces. The authoritative exclude lists live in:
 
-- `docs/architecture/ios-exemplar.md` §1 (layer map), §9.2–§9.4 (Android deviations: live-read, coroutines, InputConnection)
 - `docs/contributing/ios-architecture.md` § Shared-core candidates (criteria + exclusions)
 - `docs/contributing/android-guidelines.md` §1
 - `docs/contributing/cross-platform-alignment.md` §1c

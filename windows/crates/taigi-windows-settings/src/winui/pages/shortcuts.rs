@@ -1,7 +1,8 @@
-//! The Shortcuts pane: every key the user can put an action on, in three titled
+//! The Shortcuts pane: every key the user can put an action on, in five titled
 //! blocks (`ShortcutSettingsView.swift`) — Candidate Selection, the keys that move through
 //! the candidates; Output, the keys that end the composition into the document;
-//! Other, the switches and the windows a key raises — plus the reset card.
+//! then the switches and the windows a key raises, as Romanization, Phonetic
+//! Symbols and Other — plus the reset card.
 //! Which keys pick a candidate is not chosen here: it follows from Tone Keys
 //! on the General pane (`ToneInputScheme`). Every row is the same recorder;
 //! which registry it writes to and what it refuses on top of the shared gate
@@ -11,12 +12,9 @@
 use super::reset_row;
 use crate::winui::cards;
 use crate::winui::window::{Message, ResetScope, SettingsWindow};
-use taigi_desktop_core::keys::shortcut_labels::{
-    cancel_key_label, caret_chords_label, navigation_keys_label, shifted_slot_keys_label,
-    slot_keys_label, width_flip_chords_label,
-};
+use taigi_desktop_core::keys::shortcut_labels::{caret_chords_label, fixed_keys_label};
 use taigi_desktop_core::keys::{
-    rejection_message_key, ComposingAction, ComposingKeyBindings, ComposingKeyChord,
+    rejection_message_key, ChordField, ComposingAction, ComposingKeyBindings, ComposingKeyChord,
     RecorderTarget, ShortcutAction,
 };
 use taigi_desktop_core::strings::{StringKey, StringResolver};
@@ -51,32 +49,19 @@ pub fn view(
             &bindings,
             ComposingAction::GROUPS[0],
         ),
-        // Shown, not recordable (USER 2026-09-20): the bare slot keys pick a
-        // candidate off the visible page, and which keys they are follows
-        // the Tone Keys picker (`ToneInputScheme`) — so the row follows it too.
-        // First of the fixed rows because it is the main way through the
-        // bar; its Shift twin sits with the commit rows below.
-        fixed_row(
-            strings.resolve(StringKey::DesktopShortcutSelectCandidateSlot),
-            slot_keys_label(bindings.slot_key_set(), DESKTOP_PLATFORM),
-        ),
-        // Shown, not recordable: the fixed navigation tier
-        // (`ComposingKeyIntent::intent`), read before any binding so a user
-        // who has mis-bound everything else still has a way through the
-        // candidates.
-        fixed_row(
-            strings.resolve(StringKey::DesktopShortcutNavigateCandidates),
-            navigation_keys_label(DESKTOP_PLATFORM).to_owned(),
-        ),
         // Shown, not recordable (USER 2026-09-09): the caret inside the
         // composition rides the host's own word-jump chord, and the
         // classifier reads it before any binding (`ComposingKeyIntent`). With
-        // the candidate movers, because moving the caret is what it is.
+        // the candidate movers, because moving the caret is what it is. The
+        // bare slot keys have no row (USER 2026-10-16): the candidate window
+        // labels each cell with its key.
         fixed_row(
             strings.resolve(StringKey::DesktopShortcutMoveComposingCaret),
             caret_chords_label(DESKTOP_PLATFORM),
         ),
-        // Block two: out of the composition and into the document.
+        // Block two: out of the composition and into the document. Shift on
+        // a slot key is no row of its own (USER 2026-10-16): it is the
+        // description of the row it shares a label with (`fixed_keys_label`).
         cards::section_title(strings.resolve(StringKey::DesktopShortcutSectionOutput)),
         composing_rows(
             window,
@@ -85,48 +70,21 @@ pub fn view(
             &bindings,
             ComposingAction::GROUPS[1],
         ),
-        // Shown, not recordable (USER 2026-09-10): Shift on a slot key is
-        // the Hanji/romanization commit aimed at that slot, and the slot keys follow the
-        // tone scheme — so the row follows it too, and there is nothing to
-        // record. After the commit rows, because it is one. Not drawn under
-        // TPS, where a commit is always the Hanji.
-        shifted_slot_keys_label(bindings.slot_key_set(), DESKTOP_PLATFORM).map_or_else(
-            View::empty,
-            |keys| {
-                fixed_row(
-                    strings.resolve(StringKey::DesktopActionCommitAlternateScript),
-                    keys,
-                )
-            },
-        ),
-        // Shown, not recordable (USER 2026-09-20): Ctrl on a punctuation key
-        // types it in the other width once, whatever the Hanji/romanization mode would have
-        // typed (`ComposingKeyIntent::width_flip_character`). Here because it
-        // writes into the document; three sample chords, since the row stands
-        // for every key of the map.
-        fixed_row(
-            strings.resolve(StringKey::DesktopShortcutFlipPunctuationWidth),
-            width_flip_chords_label(DESKTOP_PLATFORM),
-        ),
-        // Shown, not recordable: Escape drops the composition without
-        // writing to the document (`ComposingKeyIntent::intent`). Last in
-        // the block (USER 2026-09-21): every row above it writes something;
-        // this is the one way out that writes nothing.
-        fixed_row(
-            strings.resolve(StringKey::DesktopShortcutCancelComposing),
-            cancel_key_label(DESKTOP_PLATFORM).to_owned(),
-        ),
-        // Block three: the switches, and the windows a key raises. What these
-        // have in common is that none of them needs a composition running —
-        // which is also why they are the roster that holds a chord in the
-        // global registry, though the block is drawn on what they DO. Not on
-        // their modifiers: Hanji/Romanization Swap ships on a bare backtick, so Ctrl+Alt
-        // names no boundary here.
+        // Blocks three to five: the switches, and the windows a key raises.
+        // What these have in common is that none of them needs a composition
+        // running — which is also why they are the roster that holds a chord
+        // in the global registry, though the blocks are drawn on what they DO.
+        // Not on their modifiers: Hanji/Romanization Swap ships on a bare
+        // backtick, so Ctrl+Alt names no boundary here.
         //
-        // One block (2026-08-25, +1 on 2026-09-02, +1 on 2026-09-09): three
-        // switches, the symbol picker, the Telex guide and one doorway.
-        cards::section_title(strings.resolve(StringKey::CommonOther)),
-        global_rows(window, strings, context, &ShortcutAction::ALL),
+        // Three blocks since 2026-10-16 (USER), by what each action is about:
+        // Romanization, Phonetic Symbols, Other (`ShortcutAction::GROUPS`).
+        cards::section_title(strings.resolve(ShortcutAction::GROUP_TITLES[0])),
+        global_rows(window, strings, context, ShortcutAction::GROUPS[0]),
+        cards::section_title(strings.resolve(ShortcutAction::GROUP_TITLES[1])),
+        global_rows(window, strings, context, ShortcutAction::GROUPS[1]),
+        cards::section_title(strings.resolve(ShortcutAction::GROUP_TITLES[2])),
+        global_rows(window, strings, context, ShortcutAction::GROUPS[2]),
         // Both registries at once, and no conflict pass afterwards: the
         // shipped defaults hold no chord in common
         // (`ShortcutSettingsView.swift` `restoreDefaults`).
@@ -158,21 +116,25 @@ fn global_rows(
         actions
             .iter()
             .map(|action| {
+                let target = RecorderTarget::Global(*action);
+                let field = recorder_field(
+                    window,
+                    strings,
+                    context,
+                    target,
+                    action.chord_in(document, DESKTOP_PLATFORM),
+                );
                 (
                     action.raw(),
-                    recorder_row(
-                        window,
-                        strings,
-                        context,
-                        RecorderTarget::Global(*action),
-                        action.chord_in(document, DESKTOP_PLATFORM),
-                    ),
+                    recorder_row(strings, action.label_key(), None, [field]),
                 )
             })
             .collect::<Vec<_>>(),
     )
 }
 
+/// One row per composing action, each with its fields — either fires the
+/// action.
 fn composing_rows(
     window: &SettingsWindow,
     strings: &StringResolver,
@@ -184,26 +146,54 @@ fn composing_rows(
         actions
             .iter()
             .map(|action| {
-                let target = RecorderTarget::Composing(*action);
-                (
-                    action.raw(),
-                    recorder_row(
+                // Two fields on the commit actions (`ComposingAction::fields`);
+                // an absent one is an empty fragment in the panel's collection.
+                let fields = ChordField::ALL.map(|field| {
+                    if !action.fields().contains(&field) {
+                        return View::empty();
+                    }
+                    recorder_field(
                         window,
                         strings,
                         context,
-                        target,
-                        bindings.chord(*action).cloned(),
-                    ),
+                        RecorderTarget::Composing(*action, field),
+                        bindings.chord(*action, field).cloned(),
+                    )
+                });
+                let fixed_keys =
+                    fixed_keys_label(*action, bindings.slot_key_set(), DESKTOP_PLATFORM);
+                (
+                    action.raw(),
+                    recorder_row(strings, action.label_key(), fixed_keys.as_deref(), fields),
                 )
             })
             .collect::<Vec<_>>(),
     )
 }
 
-/// One recorder row: the field, and a × beside a bound one. The field
-/// shows the chord, or the prompt — or why the last press was refused —
-/// while this row is the one recording.
+/// One recorder row: its label, the fixed keys that also fire it under the
+/// label, and its fields side by side.
 fn recorder_row(
+    strings: &StringResolver,
+    label: StringKey,
+    fixed_keys: Option<&str>,
+    fields: impl IntoViews,
+) -> View {
+    let fields = StackPanel::new()
+        .orientation(Orientation::Horizontal)
+        .spacing(FIELD_GAP)
+        .children(fields);
+    match fixed_keys {
+        Some(keys) => cards::described_row(strings.resolve(label), keys, fields),
+        None => cards::row(strings.resolve(label), fields),
+    }
+}
+
+/// One field and its × beside it. The field shows the chord, or the prompt
+/// — or why the last press was refused — while this field is the one
+/// recording. The × stays in place, disabled, while there is nothing to
+/// clear, so a row's fields line up with the rows above and below it.
+fn recorder_field(
     window: &SettingsWindow,
     strings: &StringResolver,
     context: &mut ViewContext<SettingsWindow>,
@@ -240,22 +230,19 @@ fn recorder_row(
             ButtonStyle::Default
         })
         .on_click(context.callback(move |()| Message::StartRecording(target)))
+        // Two fields can share a row, so each is named apart for Narrator.
+        .automation_name(target.field_accessible_name(strings, &label))
         .content(label);
-    let clear = if chord.is_some() && !is_recording {
-        Button::new()
-            .on_click(context.callback(move |()| Message::ClearShortcut(target)))
-            .content(FontIcon::new().glyph(CLEAR_GLYPH))
-            .tooltip(strings.resolve(StringKey::CommonDelete))
-    } else {
-        View::empty()
-    };
-    cards::row(
-        strings.resolve(target.label_key()),
-        StackPanel::new()
-            .orientation(Orientation::Horizontal)
-            .spacing(FIELD_GAP)
-            .children((field, clear)),
-    )
+    let clear = Button::new()
+        .is_enabled(chord.is_some() && !is_recording)
+        .automation_name(target.clear_accessible_name(strings))
+        .on_click(context.callback(move |()| Message::ClearShortcut(target)))
+        .content(FontIcon::new().glyph(CLEAR_GLYPH))
+        .tooltip(strings.resolve(StringKey::CommonDelete));
+    StackPanel::new()
+        .orientation(Orientation::Horizontal)
+        .spacing(FIELD_GAP)
+        .children((field, clear))
 }
 
 /// Segoe Fluent Icons' `ChromeClose`, the × the egui field drew.

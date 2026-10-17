@@ -58,7 +58,8 @@ pub fn pending_update(
     }
 }
 
-pub fn has_stored_pending(document: &SettingsDocument) -> bool {
+#[cfg(test)]
+pub(crate) fn has_stored_pending(document: &SettingsDocument) -> bool {
     !document.string(&keys::UPDATE_PENDING_MANIFEST).is_empty()
 }
 

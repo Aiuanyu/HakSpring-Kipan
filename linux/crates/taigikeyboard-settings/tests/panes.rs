@@ -2,7 +2,7 @@
 //! regression net for the pages (roadmap L12, the Windows `pane_planning`):
 //! every built pane is in the stack; a row's switch writes its key; an
 //! outside write shows on the next tick without bumping the revision; a
-//! display language picked in the window rebuilds the sidebar; Manage Typefaces and
+//! display language picked in the window rebuilds the sidebar; Manage Fonts and
 //! About are not listed; the read-only window writes nothing; a reset
 //! keeps the display language.
 //!
@@ -16,7 +16,7 @@ use std::process::ExitCode;
 use std::rc::Rc;
 use taigi_desktop_core::engine::user_data;
 use taigi_desktop_core::keys::{
-    ComposingAction, ComposingKeyBindings, KeyModifiers, RecorderTarget, ShortcutAction,
+    ChordField, ComposingAction, ComposingKeyBindings, KeyModifiers, RecorderTarget, ShortcutAction,
 };
 use taigi_desktop_core::settings::{keys, InputMode, SettingChoice, SettingsPane};
 use taigi_desktop_core::strings::{DisplayLanguage, StringKey, StringResolver};
@@ -149,8 +149,8 @@ fn a_language_picked_here_rebuilds_the_sidebar(window: &Rc<SettingsWindow>) {
     eprintln!("panes: language rebuild");
 }
 
-/// Manage Typefaces has no page on Linux (the panel's font is the framework's), so
-/// a stored Manage Typefaces lands on General; About is shown without a sidebar row.
+/// Manage Fonts has no page on Linux (the panel's font is the framework's), so
+/// a stored Manage Fonts lands on General; About is shown without a sidebar row.
 fn the_font_pane_routes_to_general_and_about_is_unlisted(window: &Rc<SettingsWindow>) {
     assert!(!SIDEBAR.contains(&SettingsPane::FontManagement));
     assert_eq!(
@@ -189,7 +189,7 @@ fn a_reset_keeps_the_display_language(window: &Rc<SettingsWindow>) {
 /// (keysym 0x61, keycode 38, no modifiers) is refused and recording
 /// continues; a pane switch or any other row's write ends it; then
 /// Ctrl+Alt+K (0x6b, keycode 45, CONTROL 1<<2 | MOD1 1<<3) is recorded and
-/// stored as the row's chord; the × clears it; a composing row recorded on
+/// stored as the row's chord; the × clears it; a composing row's second field recorded on
 /// a global default empties that global row (last writer wins).
 fn a_recorded_press_binds_the_row(window: &Rc<SettingsWindow>) {
     let target = RecorderTarget::Global(ShortcutAction::ShowTelexGuide);
@@ -230,7 +230,8 @@ fn a_recorded_press_binds_the_row(window: &Rc<SettingsWindow>) {
     assert!(ShortcutAction::ShowTelexGuide
         .chord_in(window.writer().borrow().document(), DESKTOP_PLATFORM)
         .is_none());
-    let composing = RecorderTarget::Composing(ComposingAction::NextCandidate);
+    let composing =
+        RecorderTarget::Composing(ComposingAction::ConfirmHighlighted, ChordField::Second);
     window.start_recording(composing, None);
     window.record_press(0x63, 54, (1 << 2) | (1 << 3));
     {
@@ -239,9 +240,16 @@ fn a_recorded_press_binds_the_row(window: &Rc<SettingsWindow>) {
         let bindings = ComposingKeyBindings::from_document(document.document(), DESKTOP_PLATFORM);
         assert_eq!(
             bindings
-                .chord(ComposingAction::NextCandidate)
+                .chord(ComposingAction::ConfirmHighlighted, ChordField::Second)
                 .map(|c| c.key.clone()),
             Some("c".to_owned())
+        );
+        assert_eq!(
+            bindings
+                .chord(ComposingAction::ConfirmHighlighted, ChordField::First)
+                .map(|c| c.key.clone()),
+            Some("\r".to_owned()),
+            "the first field keeps its default"
         );
         assert!(
             ShortcutAction::ToggleRomanization
@@ -258,7 +266,7 @@ fn a_recorded_press_binds_the_row(window: &Rc<SettingsWindow>) {
 }
 
 /// trace: the MOE dictionary row is the first switch on Dictionary Sources (`IS_KAUTIAN_ENABLED`,
-/// default true); the eleven accent rows after it grey out while it is off
+/// default true); the subcollection rows after it grey out while it is off
 /// and come back, still set, when it is on.
 fn the_kautian_expander_switch_writes_its_key(window: &Rc<SettingsWindow>) {
     let page = window
@@ -266,7 +274,7 @@ fn the_kautian_expander_switch_writes_its_key(window: &Rc<SettingsWindow>) {
         .expect("dictionary sources");
     let switches = find_all::<adw::SwitchRow>(&page);
     let kautian = &switches[0];
-    let lukang = &switches[1];
+    let lukang = &switches[2]; // switches[1] is Alternative Readings
     assert!(kautian.is_active() && lukang.is_sensitive());
     kautian.set_active(false);
     assert!(!window
@@ -359,7 +367,6 @@ fn record_pick(word: &str, tl: &str) {
             method: Some(user_data_request::Method::RecordUsage(RecordUsage {
                 display_text: word.to_owned(),
                 canonical_tl: tl.to_owned(),
-                hanji: Some(word.to_owned()),
             })),
         })),
         ..Request::default()

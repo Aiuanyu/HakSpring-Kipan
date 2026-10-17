@@ -28,7 +28,7 @@
 
 use crate::common::Fetch;
 use crate::common::{
-    build_dictionary_fst_tps, build_syllables_fst_tps, build_tkdb_v3, config,
+    build_dictionary_fst_tps, build_syllables_fst_tps, build_tkdb_v4, config,
     empty_association_bin, fetch_at_pos_response, install_lexicon, Row,
 };
 use lexicon::CustomEntry;
@@ -118,7 +118,7 @@ fn fixture_rows() -> Vec<Row> {
 
 fn install_fixture_tps() {
     let rows = fixture_rows();
-    let dict_path = write_temp("dictionary-tps.bin", &build_tkdb_v3(&rows));
+    let dict_path = write_temp("dictionary-tps.bin", &build_tkdb_v4(&rows));
     let fst_path = build_dictionary_fst_tps(&rows);
     let association_path = write_temp("association-tps.bin", &empty_association_bin());
     let syllables_path = build_syllables_fst_tps(&rows);
@@ -133,7 +133,7 @@ fn fetch_hanji(raw: &str) -> Vec<String> {
 
 /// [`fetch_hanji`] with `custom_dictionary.db` entries attached — the
 /// lexicon whole-buffer merge, which the empty-list helper never exercises.
-/// (The walker's per-edge custom override is NOT reached in TPS mode:
+/// (The walker's per-edge custom rows are NOT reached in TPS mode:
 /// `custom_toneless_key` rejects a non-Bopomofo body, and custom romans are
 /// TL / POJ. Its pin gate is symmetry for the day that changes; see the
 /// comment at that call site.)

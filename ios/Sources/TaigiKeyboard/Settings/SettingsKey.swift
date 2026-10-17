@@ -13,7 +13,7 @@ import Foundation
 /// - `write` — encodes `T` into `UserDefaults`.
 ///
 /// Construct descriptors via the typed factories (`.bool(_:default:)`,
-/// `.rawRep(_:default:)`, `.double(_:default:)`, `.cgFloat(_:default:)`,
+/// `.rawRep(_:default:)`, `.cgFloat(_:default:)`,
 /// `.codable(_:default:)`) so each codec lives in one place.
 struct SettingsKey<T> {
     let key: String
@@ -74,19 +74,6 @@ extension SettingsKey where T == String {
             key: key,
             defaultValue: defaultValue,
             read: { $0.string(forKey: key) },
-            write: { $0.set($1, forKey: key) },
-        )
-    }
-}
-
-extension SettingsKey where T == Double {
-    /// `UserDefaults`-backed `Double` with "missing-or-non-Double → default"
-    /// semantics.
-    static func double(_ key: String, default defaultValue: Double) -> Self {
-        Self(
-            key: key,
-            defaultValue: defaultValue,
-            read: { $0.object(forKey: key) as? Double },
             write: { $0.set($1, forKey: key) },
         )
     }

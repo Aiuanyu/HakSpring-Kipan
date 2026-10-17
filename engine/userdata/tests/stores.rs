@@ -98,7 +98,7 @@ fn recording_counts_the_pair_and_reads_back_by_word() {
         .unwrap();
     assert_eq!(by_word.len(), 2);
     assert_eq!(store.rows_for_words(&[]).unwrap().len(), 0);
-    assert_eq!(store.delete_all().unwrap(), 2);
+    store.delete_all().unwrap();
     assert!(store.all_rows().unwrap().is_empty());
 }
 
@@ -194,7 +194,8 @@ fn bigrams_are_keyed_on_both_readings_and_written_in_order() {
     );
     assert_eq!(rows[0].pair.previous_tl, "tîng");
     assert_eq!(rows[0].count, 2);
-    assert_eq!(store.delete_all().unwrap(), 2);
+    store.delete_all().unwrap();
+    assert!(store.all_rows().unwrap().is_empty());
 }
 
 #[test]
@@ -244,13 +245,49 @@ fn an_added_entry_is_found_by_its_key_from_another_romanization_and_by_prefix() 
         hanji_of(&store.rows_matching(&query_key("tai", "tl"), 20)),
         ["台語"]
     );
-    let keystroke = store.rows_matching(
+    let keystroke = store.keystroke_rows(
         &query_key("ta", "tl"),
         CustomDictionaryStore::KEYSTROKE_LIMIT,
     );
     assert_eq!(keystroke.len(), 1);
     assert_eq!(keystroke[0].roman, "taigi");
     assert_eq!(store.count().unwrap(), 2);
+}
+
+#[test]
+fn keystroke_rows_match_an_abbreviation_whole_and_the_shortest_key_first() {
+    // trace: `derive_custom_search_keys` — 陳建中 `tân kiàn-tiong` stores
+    // tl notone `tankiantiong`, tl abbrev `tkt`; 陳 `tân` stores `tan` and no
+    // abbreviation (one syllable).
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        Arc::new(derive_custom_search_keys),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    store
+        .upsert(&CustomDictionaryRow::new("tân kiàn-tiong", "陳建中"))
+        .unwrap();
+    store
+        .upsert(&CustomDictionaryRow::new("tân", "陳"))
+        .unwrap();
+    let keystroke = |key: &str| {
+        store.keystroke_rows(
+            &query_key(key, "tl"),
+            CustomDictionaryStore::KEYSTROKE_LIMIT,
+        )
+    };
+    // `tankiantiong` (12) sorts after `tan` (3), though `tân kiàn…` sorts
+    // first by roman.
+    assert_eq!(hanji_of(&keystroke("t")), ["陳", "陳建中"]);
+    assert_eq!(hanji_of(&keystroke("tkt")), ["陳建中"]);
+    assert!(keystroke("tk").is_empty(), "an abbreviation matches whole");
+    // The search page keeps prefix-matching the abbreviation, as the system
+    // dictionary search does.
+    assert_eq!(
+        hanji_of(&store.rows_matching(&query_key("tk", "tl"), 20)),
+        ["陳建中"]
+    );
 }
 
 #[test]
@@ -381,7 +418,7 @@ fn listing_pages_filters_and_counts_with_one_predicate() {
         "blank filter = everything"
     );
     assert_eq!(store.all_rows().unwrap().len(), 4);
-    assert_eq!(store.delete_all().unwrap(), 4);
+    store.delete_all().unwrap();
     assert_eq!(store.count().unwrap(), 0);
 }
 
@@ -611,7 +648,8 @@ fn clearing_one_learning_store_leaves_the_others_alone() {
         .upsert(&CustomDictionaryRow::new("gâu-tsá", "𠢕早"))
         .unwrap();
     stores.learned_phrases.learn_phrase("記起來", "kì--khí-lâi");
-    assert_eq!(stores.association.delete_all().unwrap(), 1);
+    stores.association.delete_all().unwrap();
+    assert!(stores.association.all_rows().unwrap().is_empty());
     assert_eq!(stores.frequency.all_rows().unwrap().len(), 1);
     assert_eq!(stores.custom_dictionary.count().unwrap(), 1);
     assert_eq!(stores.learned_phrases.all_rows().unwrap().len(), 1);
@@ -724,7 +762,7 @@ fn wiping_learned_phrases_clears_rows_and_keys_and_the_store_learns_again() {
     let directory = scratch();
     let store = learned_store(&directory, LearnedPhraseStore::MAX_ENTRIES);
     store.learn_phrase("記起來", "kì--khí-lâi");
-    assert_eq!(store.delete_all().unwrap(), 1);
+    store.delete_all().unwrap();
     assert!(store.all_rows().unwrap().is_empty());
     assert!(learned_matches(&store, "kikhilai", "tl").is_empty());
     store.learn_phrase("記起來", "kì--khí-lâi");
@@ -921,4 +959,319 @@ fn a_restore_fills_the_room_left_past_duplicates() {
         ),
         "a CSV over the cap is still refused whole"
     );
+}
+
+// Unicode form of the stored roman (2026-10-07: an imported dictionary held
+// `li` + U+0301 while `dictionary.bin` holds `lí`, and 李 listed twice).
+
+const DECOMPOSED_LI: &str = "li\u{301}";
+const PRECOMPOSED_LI: &str = "l\u{ed}";
+
+/// Writes a row the way a build before the NFC boundary did: straight into
+/// the table, bypassing the store.
+fn insert_raw_row(directory: &tempfile::TempDir, id: &str, roman: &str, hanji: &str) {
+    let connection =
+        rusqlite::Connection::open(directory.path().join("custom_dictionary.db")).unwrap();
+    connection
+        .execute(
+            "INSERT INTO custom_dictionary (id, roman, hanzi, created_at, updated_at) VALUES (?, ?, ?, '2026-08-26 07:28:12', '2026-08-26 07:28:12');",
+            rusqlite::params![id, roman, hanji],
+        )
+        .unwrap();
+}
+
+fn stored_row(store: &CustomDictionaryStore, id: &str) -> CustomDictionaryRow {
+    store.row(id).unwrap().expect("row is stored")
+}
+
+#[test]
+fn every_write_path_stores_the_roman_in_nfc() {
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    let upserted = CustomDictionaryRow::new(DECOMPOSED_LI, "李");
+    store.upsert(&upserted).unwrap();
+    assert_eq!(stored_row(&store, &upserted.id).roman, PRECOMPOSED_LI);
+    // The keys come from the NFC roman too.
+    assert_eq!(
+        hanji_of(&store.rows_matching(&query_key(PRECOMPOSED_LI, "tl"), 20)),
+        ["李"]
+    );
+
+    let added = CustomDictionaryRow::new("ta\u{302}i", "台");
+    store.add_unless_stored(&added).unwrap();
+    assert_eq!(stored_row(&store, &added.id).roman, "t\u{e2}i");
+
+    // In one file, the NFD and NFC spellings of one word are one row.
+    let result = store
+        .batch_import(&[
+            CustomDictionaryRow::new("gi\u{301}", "語"),
+            CustomDictionaryRow::new("g\u{ed}", "語"),
+        ])
+        .unwrap();
+    assert_eq!((result.imported, result.skipped), (1, 1));
+    // And a file row that matches a stored word once normalised is skipped.
+    let result = store
+        .batch_import(&[CustomDictionaryRow::new(DECOMPOSED_LI, "李")])
+        .unwrap();
+    assert_eq!((result.imported, result.skipped), (0, 1));
+    assert_eq!(store.count().unwrap(), 3);
+}
+
+#[test]
+fn the_hanji_keeps_a_compatibility_ideograph() {
+    // NFC would fold U+F900 豈 onto U+8C48 豈; the Hanji is stored as chosen.
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    let row = CustomDictionaryRow::new("khi\u{301}", "\u{f900}");
+    store.upsert(&row).unwrap();
+    let stored = stored_row(&store, &row.id);
+    assert_eq!(stored.hanji, "\u{f900}");
+    assert_eq!(stored.roman, "kh\u{ed}");
+}
+
+#[test]
+fn the_list_filter_finds_a_word_typed_in_either_form() {
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    store
+        .upsert(&CustomDictionaryRow::new(PRECOMPOSED_LI, "李"))
+        .unwrap();
+    for filter in [PRECOMPOSED_LI, DECOMPOSED_LI] {
+        assert_eq!(store.count_matching(filter).unwrap(), 1, "{filter:?}");
+        assert_eq!(hanji_of(&store.rows(filter, 10, 0).unwrap()), ["李"]);
+    }
+}
+
+#[test]
+fn a_launch_rewrites_stored_nfd_romans_and_keeps_everything_else() {
+    // trace: `CustomDictionaryStore::normalize_stored_romans_if_needed`,
+    // driven through the launch entry point.
+    let directory = scratch();
+    drop(custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    ));
+    insert_raw_row(&directory, "A", DECOMPOSED_LI, "李");
+    // Becomes identical to "C" once normalised: both stay.
+    insert_raw_row(&directory, "B", DECOMPOSED_LI, "你");
+    insert_raw_row(&directory, "C", PRECOMPOSED_LI, "你");
+    // Already NFC although it carries combining marks (U+030D, U+0358 have
+    // no precomposed form): never rewritten.
+    insert_raw_row(&directory, "D", "a\u{30d}-o\u{358}", "鴨烏");
+    let store = custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    store.finish_takeover();
+
+    let a = stored_row(&store, "A");
+    assert_eq!(a.roman, PRECOMPOSED_LI);
+    assert_eq!(a.hanji, "李");
+    assert_eq!(
+        (a.created_at.as_str(), a.updated_at.as_str()),
+        ("2026-08-26 07:28:12", "2026-08-26 07:28:12"),
+        "a repair is not an edit"
+    );
+    assert_eq!(stored_row(&store, "B").roman, PRECOMPOSED_LI);
+    assert_eq!(stored_row(&store, "D").roman, "a\u{30d}-o\u{358}");
+    assert_eq!(store.count().unwrap(), 4, "no row is deleted");
+}
+
+#[test]
+fn two_processes_repairing_one_file_leave_it_normalised_once() {
+    let directory = scratch();
+    drop(custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    ));
+    insert_raw_row(&directory, "A", DECOMPOSED_LI, "李");
+    insert_raw_row(&directory, "B", "gi\u{301}", "語");
+    let ime = custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    let settings = custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    std::thread::scope(|scope| {
+        scope.spawn(|| ime.finish_takeover());
+        scope.spawn(|| settings.finish_takeover());
+    });
+    for store in [&ime, &settings] {
+        assert_eq!(stored_row(store, "A").roman, PRECOMPOSED_LI);
+        assert_eq!(stored_row(store, "B").roman, "g\u{ed}");
+        assert_eq!(store.count().unwrap(), 2);
+    }
+}
+
+#[test]
+fn the_search_keys_of_a_roman_do_not_depend_on_its_unicode_form() {
+    // The keys an NFD row was stored under are the keys of its NFC form, so
+    // a row written by a build before the NFC boundary stays findable until
+    // the launch repair re-derives them.
+    use unicode_normalization::UnicodeNormalization;
+    for roman in [
+        "lí",
+        "tâi-gí",
+        "sió-bē",
+        "hô͘",
+        "a̍h-á",
+        "tsiūⁿ",
+        "tshiū-á",
+        "ńg",
+        "m̄-bat",
+        "khòng-sî",
+        "só-sî",
+        "Tâi-uân",
+    ] {
+        let nfc: String = roman.nfc().collect();
+        let nfd: String = roman.nfd().collect();
+        let keys = |text: &str| {
+            derive_custom_search_keys(text).map(|keys| {
+                keys.into_iter()
+                    .map(|key| (key.family, key.form, key.key))
+                    .collect::<Vec<_>>()
+            })
+        };
+        assert!(keys(&nfc).is_some(), "{roman} derives keys");
+        assert_eq!(keys(&nfd), keys(&nfc), "{roman}");
+    }
+}
+
+// A roman saved with tone digits (`tsui2-ong5-tshut`) is stored with the
+// marks the digits name: the candidate window shows the stored roman
+// (2026-10-08 Linux sim: the digits reached the screen while the learning
+// record held `tsuí-ông-tshut`).
+
+#[test]
+fn every_write_path_stores_tone_digits_as_marks() {
+    // trace: tone_digits_to_marks — `tsui`+2 → TL `ui` marks `i` (`tsuí`),
+    // `ong`+5 → `ông`, `tshut` has no digit; `goa`+2 is POJ-spelled (`oa`),
+    // open syllable → mark on `o` (`góa`).
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        Arc::new(derive_custom_search_keys),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    let upserted = CustomDictionaryRow::new("tsui2-ong5-tshut", "水旺出");
+    store.upsert(&upserted).unwrap();
+    assert_eq!(stored_row(&store, &upserted.id).roman, "tsuí-ông-tshut");
+
+    let added = CustomDictionaryRow::new("goa2", "我");
+    store.add_unless_stored(&added).unwrap();
+    assert_eq!(stored_row(&store, &added.id).roman, "góa");
+
+    // In one file, the digit and the marked spelling of one word are one row.
+    let result = store
+        .batch_import(&[
+            CustomDictionaryRow::new("tai5-gi2", "台語"),
+            CustomDictionaryRow::new("tâi-gí", "台語"),
+        ])
+        .unwrap();
+    assert_eq!((result.imported, result.skipped), (1, 1));
+    assert_eq!(store.count().unwrap(), 3);
+}
+
+#[test]
+fn the_list_filter_finds_a_marked_word_typed_with_digits() {
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        stub_deriver(""),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    store
+        .upsert(&CustomDictionaryRow::new("tsuí-ông-tshut", "水旺出"))
+        .unwrap();
+    for filter in ["tsui2", "tsuí", "ong5-tshut"] {
+        assert_eq!(store.count_matching(filter).unwrap(), 1, "{filter:?}");
+    }
+}
+
+#[test]
+fn a_launch_rewrites_stored_tone_digit_romans_and_rederives_their_keys() {
+    let directory = scratch();
+    let stores = UserDataStores::new(directory.path().to_path_buf());
+    stores.custom_dictionary.open_blocking();
+    drop(stores);
+    insert_raw_row(&directory, "A", "tsui2-ong5-tshut", "水旺出");
+    // A fused digit run is kept as written: splitting it would invent
+    // syllable boundaries.
+    insert_raw_row(&directory, "B", "tsui2ong5tshut", "水旺出");
+    let store = custom_store(
+        &directory,
+        Arc::new(derive_custom_search_keys),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    store.finish_takeover();
+
+    let a = stored_row(&store, "A");
+    assert_eq!(a.roman, "tsuí-ông-tshut");
+    assert_eq!(
+        (a.created_at.as_str(), a.updated_at.as_str()),
+        ("2026-08-26 07:28:12", "2026-08-26 07:28:12"),
+        "a repair is not an edit"
+    );
+    assert_eq!(stored_row(&store, "B").roman, "tsui2ong5tshut");
+    // A's keys are the marked roman's, as a fresh save would store them.
+    let connection =
+        rusqlite::Connection::open(directory.path().join("custom_dictionary.db")).unwrap();
+    let mut statement = connection
+        .prepare(
+            "SELECT family, form, key FROM custom_search_key WHERE entry_id = 'A' ORDER BY family, form, key;",
+        )
+        .unwrap();
+    let stored_keys: Vec<(String, String, String)> = statement
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    let mut fresh_keys: Vec<(String, String, String)> = derive_custom_search_keys("tsuí-ông-tshut")
+        .expect("keys")
+        .into_iter()
+        .map(|key| (key.family.to_string(), key.form.to_string(), key.key))
+        .collect();
+    fresh_keys.sort();
+    fresh_keys.dedup();
+    assert_eq!(stored_keys, fresh_keys);
+}
+
+#[test]
+fn a_repaired_poj_roman_with_reordered_marks_stays_findable() {
+    // `so` + U+0358 + U+030D (tone 8 typed after the dot) is not NFC — NFC
+    // puts U+030D (class 230) before U+0358 (class 232). The repair keeps the
+    // keys the row was stored under; the real derivation finds it after.
+    let directory = scratch();
+    let stores = UserDataStores::new(directory.path().to_path_buf());
+    stores.custom_dictionary.open_blocking();
+    drop(stores);
+    insert_raw_row(&directory, "A", "so\u{358}\u{30d}", "嗽");
+    let store = custom_store(
+        &directory,
+        Arc::new(derive_custom_search_keys),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    store.finish_takeover();
+    assert_eq!(stored_row(&store, "A").roman, "so\u{30d}\u{358}");
+    let query = derive_custom_query_key("soo", "tl").expect("a query key");
+    assert_eq!(hanji_of(&store.rows_matching(&query, 20)), ["嗽"]);
 }

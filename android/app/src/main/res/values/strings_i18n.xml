@@ -33,7 +33,6 @@
     <string name="i18n_common_fontGenYoGothic">源樣烏體</string>
     <string name="i18n_desktop_telexGuideHyphen">連字符</string>
     <string name="i18n_desktop_dictionarySourcesLink">辭典管理</string>
-    <string name="i18n_dictionary_clear">清除</string>
     <string name="i18n_dictionary_customDictionary">自訂詞庫</string>
     <string name="i18n_dictionary_customDictEnabled">啟用自訂詞庫</string>
     <string name="i18n_dictionary_customDictEnabledInfo">打開了後，自訂詞會出現在候選詞內底。</string>
@@ -48,7 +47,6 @@
     <string name="i18n_dictionary_hanziLabel">尋</string>
     <string name="i18n_dictionary_hanziPlaceholder">見本：𠢕早</string>
     <string name="i18n_dictionary_deleteAll">刪除全部自訂詞</string>
-    <string name="i18n_dictionary_deleteAllMessage">確定愛刪除所有自訂詞？</string>
     <string name="i18n_dictionary_customDictPrivacyWarning">自訂詞庫毋通放身分證字號、密碼、信用卡號碼抑是其他敏感資料。</string>
     <string name="i18n_dictionary_importCSV">匯入自訂詞</string>
     <string name="i18n_dictionary_exportCSV">匯出自訂詞</string>
@@ -74,6 +72,7 @@
     <string name="i18n_dictionary_kautianAccentSintik">新竹偏泉腔</string>
     <string name="i18n_dictionary_kautianAccentTaichung">臺中偏漳腔</string>
     <string name="i18n_dictionary_kautianNameAppendix">姓名附錄</string>
+    <string name="i18n_dictionary_kautianAltReading">又讀</string>
     <string name="i18n_dictionary_searchPlaceholder">尋字</string>
     <string name="i18n_dictionary_noResults">尋無結果</string>
     <string name="i18n_dictionary_lookupChhoe">ChhoeTaigi 辭典</string>
@@ -107,8 +106,6 @@
     <string name="i18n_dictionary_sttiTag">學科術語</string>
     <string name="i18n_dictionary_lkkTag">漢羅合用</string>
     <string name="i18n_dictionary_clearLearningRecords">刪除學習紀錄</string>
-    <string name="i18n_dictionary_clearLearningRecordsMessage">確定愛刪除所有學習紀錄？毋會影響自訂詞。</string>
-    <string name="i18n_dictionary_clearLearningRecordsDone">學習紀錄已經刪掉</string>
     <string name="i18n_dictionary_clearLearningRecordsFailed">學習紀錄刪失敗</string>
     <string name="i18n_dictionary_learningRecords">學習紀錄</string>
     <string name="i18n_dictionary_learningRecordsFrequency">詞頻紀錄</string>
@@ -131,12 +128,12 @@
     <string name="i18n_home_newFeatures">功能設定</string>
     <string name="i18n_home_setupGuide">啟用方法</string>
     <string name="i18n_home_setupGuideDescription">第三方企盤愛手動啟用，請照下跤 个 步驟設定。</string>
-    <string name="i18n_home_setupInfoMessage">「允准完整取用」分企盤會當摎 App 共用設定摎使用資料。客源翠企盤毋會共你拍 个 內容送去網路。</string>
+    <string name="i18n_home_setupPrivacyNote">客源翠企盤毋會摎你打个字送去網路。</string>
     <string name="i18n_home_setupBrandWarning">無共樣牌子 个 手機仔，設定方式可能淡薄仔無共樣。</string>
-    <string name="i18n_home_setupGuideCompletedMessage">完成了後，重開你目前使用 个 App。紲落來，在會當打字 个 所在撳牢地球圖示，切去客源翠企盤。</string>
+    <string name="i18n_home_setupGuideCompletedSwitch">打字个時節，摎企盤切換做客源翠企盤。</string>
     <string name="i18n_home_setupGuideGoToSettings">去設定頁</string>
     <string name="i18n_home_setupGuideStep1Settings">點撳「企盤」</string>
-    <string name="i18n_home_setupGuideStep2AddKeyboard">點撳「增加企盤」、「允准完整取用」</string>
+    <string name="i18n_home_setupGuideStep2TurnOn">開啟客源翠企盤</string>
     <string name="i18n_home_rateUs">為阮評分</string>
     <string name="i18n_home_aboutKeyboard">關於企盤</string>
     <string name="i18n_home_aboutIntroProject">客源翠企盤是一个自由、開源 个 客話打字家私，永遠免費、無廣告，嘛毋會推出付費功能。毋管是一般使用者、先生、學校抑是客話教育團體，攏會當自由使用。希望分逐家用客話、教客話 个 時，免有額外 个 負擔。</string>
@@ -177,6 +174,11 @@
     <string name="i18n_keyboard_oneHandedOff">一般</string>
     <string name="i18n_keyboard_oneHandedSwapSide">換邊</string>
     <string name="i18n_layout_romanizationKeyboard">羅馬字企盤</string>
+    <string name="i18n_layout_customLayoutsSection">自訂排列</string>
+    <string name="i18n_layout_createNewLayout">新排列…</string>
+    <string name="i18n_layout_editorTitleNew">新排列</string>
+    <string name="i18n_layout_nameHeader">排列名稱</string>
+    <string name="i18n_layout_commonLayoutsSection">通用</string>
     <string name="i18n_layout_standardLayout">Lohankha</string>
     <string name="i18n_layout_phahTaigiLayout">PhahTaigi</string>
     <string name="i18n_layout_tpsLayout">方音符號企盤</string>
@@ -224,8 +226,6 @@
     <string name="i18n_settings_tpsOrMapsToER">or 對應 ㄜ</string>
     <string name="i18n_settings_tpsOrMapsToERInfo">開啟時 or 顯示做 ㄜ，關閉時顯示做 ㄛ。毋會影響尋詞結果。</string>
     <string name="i18n_settings_resetSettings">恢復設定</string>
-    <string name="i18n_settings_resetSettingsMessage">這會恢復所有設定。學習紀錄摎自訂詞攏會保留。敢愛繼續？</string>
-    <string name="i18n_settings_resetSuccess">設定已恢復</string>
     <string name="i18n_settings_resetFailed">恢復設定失敗，請重試</string>
     <string name="i18n_settings_noEmailApp">尋無 Email App</string>
     <string name="i18n_settings_diagnosticSectionTitle">裝置資訊</string>

@@ -1229,6 +1229,14 @@ public nonisolated struct Taigi_DesktopShell_Effect: Sendable {
     set {effect = .navigate(newValue)}
   }
 
+  public var tpsKeyboardKeyTyped: Taigi_DesktopShell_TpsKeyboardKeyTyped {
+    get {
+      if case .tpsKeyboardKeyTyped(let v)? = effect {return v}
+      return Taigi_DesktopShell_TpsKeyboardKeyTyped()
+    }
+    set {effect = .tpsKeyboardKeyTyped(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public nonisolated enum OneOf_Effect: Equatable, Sendable {
@@ -1240,6 +1248,7 @@ public nonisolated struct Taigi_DesktopShell_Effect: Sendable {
     case candidatesChanged(Taigi_DesktopShell_CandidatesChanged)
     case candidatesClosed(Taigi_DesktopShell_CandidatesClosed)
     case navigate(Taigi_DesktopShell_Navigate)
+    case tpsKeyboardKeyTyped(Taigi_DesktopShell_TpsKeyboardKeyTyped)
 
   }
 
@@ -1374,6 +1383,23 @@ public nonisolated struct Taigi_DesktopShell_Navigate: Sendable {
   // methods supported on all messages.
 
   public var direction: Taigi_DesktopShell_CandidateNavigation = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// The engine took a TPS key: the on-screen key panel flashes the cap that
+/// types it (desktop TPS roadmap D6). Both counted from 0, as
+/// `TpsKeyboardRowsReply` lists the rows and their caps.
+public nonisolated struct Taigi_DesktopShell_TpsKeyboardKeyTyped: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var row: UInt32 = 0
+
+  public var cap: UInt32 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1557,19 +1583,12 @@ public nonisolated struct Taigi_DesktopShell_ComposingShortcutsReply: Sendable {
   public var actions: [Taigi_DesktopShell_ComposingShortcut] = []
 
   /// The fixed rows, as the pane prints them (`shortcut_labels`): the live
-  /// slot keys bare and behind ⇧, the navigation keys, the caret and
-  /// width-flip chords, the cancel key.
+  /// slot keys, the navigation keys, the caret chords.
   public var slotKeys: String = String()
-
-  public var shiftedSlotKeys: String = String()
 
   public var navigationKeys: String = String()
 
   public var caretChords: String = String()
-
-  public var widthFlipChords: String = String()
-
-  public var cancelKey: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1584,9 +1603,6 @@ public nonisolated struct Taigi_DesktopShell_ComposingShortcut: Sendable {
   /// `ComposingAction::raw`: `nextCandidate`.
   public var name: String = String()
 
-  /// Where its chord is stored: `composingShortcut.<name>`.
-  public var settingsKey: String = String()
-
   /// Its label, as an i18n key (`i18n_desktop_actionNextCandidate`).
   public var labelKey: String = String()
 
@@ -1594,7 +1610,29 @@ public nonisolated struct Taigi_DesktopShell_ComposingShortcut: Sendable {
   /// candidates, 1 out of the composition.
   public var group: UInt32 = 0
 
-  /// The resolved chord; unset = the row is empty.
+  /// Its fields (`ComposingAction::fields`), first then — on the
+  /// commit actions — second; either fires the action.
+  public var fields: [Taigi_DesktopShell_ComposingShortcutField] = []
+
+  /// The fixed keys that also fire it, drawn as the row's subtitle
+  /// (`shortcut_labels::fixed_keys_label`); empty for most actions.
+  public var fixedKeys: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Taigi_DesktopShell_ComposingShortcutField: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Where its chord is stored: `composingShortcut.<name>`, or
+  /// `composingShortcut.<name>.second` for the second field.
+  public var settingsKey: String = String()
+
+  /// The resolved chord; unset = the field is empty.
   public var chord: Taigi_DesktopShell_Chord {
     get {_chord ?? Taigi_DesktopShell_Chord()}
     set {_chord = newValue}
@@ -1604,22 +1642,37 @@ public nonisolated struct Taigi_DesktopShell_ComposingShortcut: Sendable {
   /// Clears the value of `chord`. Subsequent reads from it will return its default value.
   public mutating func clearChord() {self._chord = nil}
 
-  /// What a fresh install has on it.
-  public var defaultChord: Taigi_DesktopShell_Chord {
-    get {_defaultChord ?? Taigi_DesktopShell_Chord()}
-    set {_defaultChord = newValue}
+  /// What a fresh install has on it; unset on the second field, which ships
+  /// empty.
+  public var shippedChord: Taigi_DesktopShell_Chord {
+    get {_shippedChord ?? Taigi_DesktopShell_Chord()}
+    set {_shippedChord = newValue}
   }
-  /// Returns true if `defaultChord` has been explicitly set.
-  public var hasDefaultChord: Bool {self._defaultChord != nil}
-  /// Clears the value of `defaultChord`. Subsequent reads from it will return its default value.
-  public mutating func clearDefaultChord() {self._defaultChord = nil}
+  /// Returns true if `shippedChord` has been explicitly set.
+  public var hasShippedChord: Bool {self._shippedChord != nil}
+  /// Clears the value of `shippedChord`. Subsequent reads from it will return its default value.
+  public mutating func clearShippedChord() {self._shippedChord = nil}
+
+  /// What the store holds, parsed; unset when absent, cleared or unparsable.
+  /// A chord stored here that the resolver hid behind another field is still
+  /// a holder a recording must clear
+  /// (`ShortcutConflicts::composing_fields_holding`).
+  public var storedChord: Taigi_DesktopShell_Chord {
+    get {_storedChord ?? Taigi_DesktopShell_Chord()}
+    set {_storedChord = newValue}
+  }
+  /// Returns true if `storedChord` has been explicitly set.
+  public var hasStoredChord: Bool {self._storedChord != nil}
+  /// Clears the value of `storedChord`. Subsequent reads from it will return its default value.
+  public mutating func clearStoredChord() {self._storedChord = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _chord: Taigi_DesktopShell_Chord? = nil
-  fileprivate var _defaultChord: Taigi_DesktopShell_Chord? = nil
+  fileprivate var _shippedChord: Taigi_DesktopShell_Chord? = nil
+  fileprivate var _storedChord: Taigi_DesktopShell_Chord? = nil
 }
 
 /// The core's one input-mode writer (`SettingsDocument::switch_input_mode`,
@@ -3314,7 +3367,7 @@ nonisolated extension Taigi_DesktopShell_SessionReply: SwiftProtobuf.Message, Sw
 
 nonisolated extension Taigi_DesktopShell_Effect: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Effect"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}set_marked_text\0\u{3}clear_marked_text\0\u{3}insert_text\0\u{3}swap_preceding_space\0\u{3}arm_swap\0\u{3}candidates_changed\0\u{3}candidates_closed\0\u{1}navigate\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}set_marked_text\0\u{3}clear_marked_text\0\u{3}insert_text\0\u{3}swap_preceding_space\0\u{3}arm_swap\0\u{3}candidates_changed\0\u{3}candidates_closed\0\u{1}navigate\0\u{3}tps_keyboard_key_typed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3426,6 +3479,19 @@ nonisolated extension Taigi_DesktopShell_Effect: SwiftProtobuf.Message, SwiftPro
           self.effect = .navigate(v)
         }
       }()
+      case 9: try {
+        var v: Taigi_DesktopShell_TpsKeyboardKeyTyped?
+        var hadOneofValue = false
+        if let current = self.effect {
+          hadOneofValue = true
+          if case .tpsKeyboardKeyTyped(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.effect = .tpsKeyboardKeyTyped(v)
+        }
+      }()
       default: break
       }
     }
@@ -3468,6 +3534,10 @@ nonisolated extension Taigi_DesktopShell_Effect: SwiftProtobuf.Message, SwiftPro
     case .navigate?: try {
       guard case .navigate(let v)? = self.effect else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
+    }()
+    case .tpsKeyboardKeyTyped?: try {
+      guard case .tpsKeyboardKeyTyped(let v)? = self.effect else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
     }()
     case nil: break
     }
@@ -3742,6 +3812,41 @@ nonisolated extension Taigi_DesktopShell_Navigate: SwiftProtobuf.Message, SwiftP
   }
 }
 
+nonisolated extension Taigi_DesktopShell_TpsKeyboardKeyTyped: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".TpsKeyboardKeyTyped"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}row\0\u{1}cap\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.row) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.cap) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.row != 0 {
+      try visitor.visitSingularUInt32Field(value: self.row, fieldNumber: 1)
+    }
+    if self.cap != 0 {
+      try visitor.visitSingularUInt32Field(value: self.cap, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_DesktopShell_TpsKeyboardKeyTyped, rhs: Taigi_DesktopShell_TpsKeyboardKeyTyped) -> Bool {
+    if lhs.row != rhs.row {return false}
+    if lhs.cap != rhs.cap {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 nonisolated extension Taigi_DesktopShell_PressRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".PressRequest"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}event\0")
@@ -4007,7 +4112,7 @@ nonisolated extension Taigi_DesktopShell_ComposingShortcutsRequest: SwiftProtobu
 
 nonisolated extension Taigi_DesktopShell_ComposingShortcutsReply: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ComposingShortcutsReply"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}actions\0\u{3}slot_keys\0\u{3}shifted_slot_keys\0\u{3}navigation_keys\0\u{3}caret_chords\0\u{3}width_flip_chords\0\u{3}cancel_key\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}actions\0\u{3}slot_keys\0\u{4}\u{2}navigation_keys\0\u{3}caret_chords\0\u{b}shifted_slot_keys\0\u{b}width_flip_chords\0\u{b}cancel_key\0\u{c}\u{3}\u{1}\u{c}\u{6}\u{1}\u{c}\u{7}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -4017,11 +4122,8 @@ nonisolated extension Taigi_DesktopShell_ComposingShortcutsReply: SwiftProtobuf.
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedMessageField(value: &self.actions) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.slotKeys) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self.shiftedSlotKeys) }()
       case 4: try { try decoder.decodeSingularStringField(value: &self.navigationKeys) }()
       case 5: try { try decoder.decodeSingularStringField(value: &self.caretChords) }()
-      case 6: try { try decoder.decodeSingularStringField(value: &self.widthFlipChords) }()
-      case 7: try { try decoder.decodeSingularStringField(value: &self.cancelKey) }()
       default: break
       }
     }
@@ -4034,20 +4136,11 @@ nonisolated extension Taigi_DesktopShell_ComposingShortcutsReply: SwiftProtobuf.
     if !self.slotKeys.isEmpty {
       try visitor.visitSingularStringField(value: self.slotKeys, fieldNumber: 2)
     }
-    if !self.shiftedSlotKeys.isEmpty {
-      try visitor.visitSingularStringField(value: self.shiftedSlotKeys, fieldNumber: 3)
-    }
     if !self.navigationKeys.isEmpty {
       try visitor.visitSingularStringField(value: self.navigationKeys, fieldNumber: 4)
     }
     if !self.caretChords.isEmpty {
       try visitor.visitSingularStringField(value: self.caretChords, fieldNumber: 5)
-    }
-    if !self.widthFlipChords.isEmpty {
-      try visitor.visitSingularStringField(value: self.widthFlipChords, fieldNumber: 6)
-    }
-    if !self.cancelKey.isEmpty {
-      try visitor.visitSingularStringField(value: self.cancelKey, fieldNumber: 7)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -4055,11 +4148,8 @@ nonisolated extension Taigi_DesktopShell_ComposingShortcutsReply: SwiftProtobuf.
   public static func ==(lhs: Taigi_DesktopShell_ComposingShortcutsReply, rhs: Taigi_DesktopShell_ComposingShortcutsReply) -> Bool {
     if lhs.actions != rhs.actions {return false}
     if lhs.slotKeys != rhs.slotKeys {return false}
-    if lhs.shiftedSlotKeys != rhs.shiftedSlotKeys {return false}
     if lhs.navigationKeys != rhs.navigationKeys {return false}
     if lhs.caretChords != rhs.caretChords {return false}
-    if lhs.widthFlipChords != rhs.widthFlipChords {return false}
-    if lhs.cancelKey != rhs.cancelKey {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -4067,7 +4157,7 @@ nonisolated extension Taigi_DesktopShell_ComposingShortcutsReply: SwiftProtobuf.
 
 nonisolated extension Taigi_DesktopShell_ComposingShortcut: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ComposingShortcut"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{3}settings_key\0\u{3}label_key\0\u{1}group\0\u{1}chord\0\u{3}default_chord\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{4}\u{2}label_key\0\u{1}group\0\u{2}\u{3}fields\0\u{3}fixed_keys\0\u{b}settings_key\0\u{b}chord\0\u{b}default_chord\0\u{c}\u{2}\u{1}\u{c}\u{5}\u{1}\u{c}\u{6}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -4076,11 +4166,59 @@ nonisolated extension Taigi_DesktopShell_ComposingShortcut: SwiftProtobuf.Messag
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.settingsKey) }()
       case 3: try { try decoder.decodeSingularStringField(value: &self.labelKey) }()
       case 4: try { try decoder.decodeSingularUInt32Field(value: &self.group) }()
-      case 5: try { try decoder.decodeSingularMessageField(value: &self._chord) }()
-      case 6: try { try decoder.decodeSingularMessageField(value: &self._defaultChord) }()
+      case 7: try { try decoder.decodeRepeatedMessageField(value: &self.fields) }()
+      case 8: try { try decoder.decodeSingularStringField(value: &self.fixedKeys) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
+    }
+    if !self.labelKey.isEmpty {
+      try visitor.visitSingularStringField(value: self.labelKey, fieldNumber: 3)
+    }
+    if self.group != 0 {
+      try visitor.visitSingularUInt32Field(value: self.group, fieldNumber: 4)
+    }
+    if !self.fields.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.fields, fieldNumber: 7)
+    }
+    if !self.fixedKeys.isEmpty {
+      try visitor.visitSingularStringField(value: self.fixedKeys, fieldNumber: 8)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_DesktopShell_ComposingShortcut, rhs: Taigi_DesktopShell_ComposingShortcut) -> Bool {
+    if lhs.name != rhs.name {return false}
+    if lhs.labelKey != rhs.labelKey {return false}
+    if lhs.group != rhs.group {return false}
+    if lhs.fields != rhs.fields {return false}
+    if lhs.fixedKeys != rhs.fixedKeys {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_DesktopShell_ComposingShortcutField: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ComposingShortcutField"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}settings_key\0\u{1}chord\0\u{3}shipped_chord\0\u{3}stored_chord\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.settingsKey) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._chord) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._shippedChord) }()
+      case 4: try { try decoder.decodeSingularMessageField(value: &self._storedChord) }()
       default: break
       }
     }
@@ -4091,34 +4229,26 @@ nonisolated extension Taigi_DesktopShell_ComposingShortcut: SwiftProtobuf.Messag
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.name.isEmpty {
-      try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
-    }
     if !self.settingsKey.isEmpty {
-      try visitor.visitSingularStringField(value: self.settingsKey, fieldNumber: 2)
-    }
-    if !self.labelKey.isEmpty {
-      try visitor.visitSingularStringField(value: self.labelKey, fieldNumber: 3)
-    }
-    if self.group != 0 {
-      try visitor.visitSingularUInt32Field(value: self.group, fieldNumber: 4)
+      try visitor.visitSingularStringField(value: self.settingsKey, fieldNumber: 1)
     }
     try { if let v = self._chord {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
-    try { if let v = self._defaultChord {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    try { if let v = self._shippedChord {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    try { if let v = self._storedChord {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
     } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Taigi_DesktopShell_ComposingShortcut, rhs: Taigi_DesktopShell_ComposingShortcut) -> Bool {
-    if lhs.name != rhs.name {return false}
+  public static func ==(lhs: Taigi_DesktopShell_ComposingShortcutField, rhs: Taigi_DesktopShell_ComposingShortcutField) -> Bool {
     if lhs.settingsKey != rhs.settingsKey {return false}
-    if lhs.labelKey != rhs.labelKey {return false}
-    if lhs.group != rhs.group {return false}
     if lhs._chord != rhs._chord {return false}
-    if lhs._defaultChord != rhs._defaultChord {return false}
+    if lhs._shippedChord != rhs._shippedChord {return false}
+    if lhs._storedChord != rhs._storedChord {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

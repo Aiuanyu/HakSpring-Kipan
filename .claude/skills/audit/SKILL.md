@@ -10,7 +10,7 @@ Answer one question: **what in the tree costs maintenance without paying for it,
 
 Output is a report; the maintainer decides which rounds open. Never write "deferred", "post-vX" or "known limitation".
 
-Worked example of the finished product: `docs/reports/2026-09-24-mobile-smart-suggestions-brainstorm.md` §3.
+Earlier `docs/reports/*-audit-*.md` reports illustrate the § 4 shape; their findings, length and round order belong to that run.
 
 ## 1. Scope → surfaces
 
@@ -21,7 +21,7 @@ Worked example of the finished product: `docs/reports/2026-09-24-mobile-smart-su
 | `desktop` | `macos/Sources`, `macos/crates`, `desktop/crates`, `windows/`, `linux/` |
 | `all` | all of the above + `docs/architecture/*` for drift |
 
-Always exclude generated code from every count and every "caller" match: `*.pb.swift`, `android/.../engine/proto/*.java`, `Strings/Generated/`, `android/.../i18n/generated/`, `desktop/crates/taigi-desktop-core/src/strings/generated.rs`, `target/`, `build/`.
+Exclude generated code from every count and every "caller" match: `*.pb.swift`, `android/.../engine/proto/*.java`, `Strings/Generated/`, `android/.../i18n/generated/`, `desktop/crates/taigi-desktop-core/src/strings/generated.rs`, `target/`, `build/`.
 
 ## 2. Recipes — one read-only agent per recipe, launched in one message
 
@@ -31,7 +31,7 @@ Give each agent the scope, its recipe and the § 3 verification rules; ask for `
 
 **R-twin · platform twins.** Diff the same responsibility across twins: iOS↔Android by file name (`ComposingManager`, `NextWordController`, `*Bridge`), the `UserDataClient` twins (iOS / macOS / Android) over `engine/userdata`, the three desktops over `desktop/crates`, and the areas macOS keeps in Swift beside desktop-core (candidate-window geometry, settings storage, global shortcuts, update flow) ↔ their Windows / Linux twins. Flag (a) logic both sides implement that could live once in the engine, (b) twins that already drifted. For every drift, record **whether a user can observe it** (§ 3.2).
 
-**R-fallback · redundant paths.** `AGENTS.md` § Design principles (no redundant fallback): a second path that re-implements the primary (e.g. a platform mirror of engine bit math), "A fails → B" in data flow, legacy code kept for a caller that no longer exists.
+**R-fallback · redundant paths.** Per `AGENTS.md` § Design principles: a second path that re-implements the primary (e.g. a platform mirror of engine bit math), "A fails → B" in data flow, legacy code kept for a caller that no longer exists.
 
 **R-shape · layering + over-design.** Crate edges against `rust-best-practices.md` §1a; iOS layer imports against `docs/contributing/ios-architecture.md` §2; concrete over-design only: a protocol / trait / wrapper with one implementation and no test seam, a parameter every caller passes the same value, a config flag never flipped, two FFI hops where one would do. Size alone is not a finding — a large file is flagged only when it holds more than one concern (`rust-migration-policy.md` §1.4).
 
@@ -43,7 +43,7 @@ Give each agent the scope, its recipe and the § 3 verification rules; ask for `
 2. **Drift is only a finding when observable.** Trace each "iOS does X, Android does Y" to an input a user can type. Most alleged drifts turn out unreachable (the dictionary has no such word, the engine never emits the value, the branch is dead). Unreachable drift = dead-code cleanup, not a parity round.
 3. **High-severity rows are verified by hand** (grep / Read in the main session) and marked **verified**; the rest carry the agent's `file:line` and "re-grep before quoting".
 4. **LOC estimates exclude generated code** and are marked `~`.
-5. Follow `docs/contributing/cross-platform-alignment.md` §3b: an inline `// matches iOS` / `CROSS-PLATFORM INVARIANT` comment means intended parity — divergence there is a bug candidate, reported as such.
+5. Follow `docs/contributing/cross-platform-alignment.md` §3b: an inline `Mirrors iOS` / `matches Android` / `CROSS-PLATFORM INVARIANT` comment means intended parity — divergence there is a bug candidate, reported as such.
 
 ## 4. Report
 
@@ -57,6 +57,6 @@ Write `docs/reports/<YYYY-MM-DD>-audit-<scope>.md` (English, dated snapshot — 
 
 Then reply in chat with the summary, the top 3 rows, and one next action. Update the matching project memory file with the report path.
 
-## 5. Never
+## 5. Scope of this skill
 
-Edit source, create a branch, run a build, open a PR, or start a round from this skill. Merge findings into an existing report only when the USER asks.
+The report is the only file it writes; a fix is a separate round. Merge findings into an existing report only when the USER asks.

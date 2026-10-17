@@ -6,7 +6,7 @@
 // Public façade modules — the only externally-supported entry points.
 // Tests and other engine crates depend on these paths; everything else
 // stays mod-private per the domain↔proto boundary rule in
-// docs/contributing/rust-best-practices.md §3a.
+// docs/contributing/rust-ffi-safety.md §2.
 pub mod api;
 pub mod requests;
 
@@ -18,6 +18,7 @@ mod external_lookup;
 mod hanji;
 mod key_family;
 mod normalization;
+mod permissive_tone;
 mod poj;
 mod punctuation;
 mod syllable;
@@ -39,7 +40,7 @@ pub use api::{
 };
 pub use derivation::{derive_abbrev, poj_abbrev_from_tl};
 pub use hakfa_tables::is_valid_hakfa_syllable;
-pub use key_family::{abbrev_family_key, KeyFamily, HANJI_KEY_PREFIX};
+pub use key_family::{abbrev_family_key, split_abbrev_family_key, KeyFamily, HANJI_KEY_PREFIX};
 pub use normalization::{
     has_tone_marks, is_combining_tone_mark, normalize_input, taigi_unicode_base_form,
 };
@@ -53,11 +54,11 @@ pub use syllable::{
 };
 pub use tl::to_tl;
 pub use tps::{
-    canonicalize_tps_syllable, from_zhuyin as tps_to_tl, is_tps_char, is_tps_initial,
-    is_tps_tone_mark, is_tps_vowel_material, normalize_tps_tone8_scalar,
-    to_zhuyin as tl_numeric_token_to_tps, tps_abbrev_from_tl, tps_notone_from_tl,
-    tps_notone_or_variant, tps_notone_prefix_boundary_tone, tps_notone_syllable_ends_from_tl,
-    tps_num_from_tl, tps_num_syllable_ends_from_tl,
+    canonicalize_tps_syllable, fold_tps_glyph_alias, from_zhuyin as tps_to_tl, is_tps_char,
+    is_tps_tone_mark, normalize_tps_lookup_scalar, to_zhuyin as tl_numeric_token_to_tps,
+    tps_abbrev_from_tl, tps_notone_boundary_tones, tps_notone_from_tl, tps_notone_or_variant,
+    tps_notone_prefix_boundary_tone, tps_notone_syllable_ends_from_tl, tps_num_from_tl,
+    tps_num_syllable_ends_from_tl, tps_tone_mark_number,
 };
-pub use tps_adjust::{adjust as tps_input_adjust, defold_coda_to_initial};
+pub use tps_adjust::adjust as tps_input_adjust;
 pub use tps_ambiguity::{tps_ambiguity_family, TpsFamilyMember, TpsGlyphRole};

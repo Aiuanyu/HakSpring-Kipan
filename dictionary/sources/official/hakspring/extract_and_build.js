@@ -6,12 +6,13 @@
  * 2. 調用客源翠 js/variant-parser.js (getLineVariants) 展開所有區域音字變體
  * 3. 展開同義詞括號，剔除所有【】污染，確保（諸夏字, 讀音）一對一精確對應
  * 4. 進行零聲母簡拼與無調轉換
- * 5. 輸出 hakspring.csv、dictionary.bin (TKDB v3)、dictionary.fst、syllables.fst
+ * 5. 輸出 hakspring.csv、dictionary.bin (TKDB v4)、dictionary.fst、syllables.fst
  */
 
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { walkerCost } = require('./tkdb_v4');
 
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
 const HAKSPRING_ROOT = '/Users/gjrobert/NAS/projects/HakSpring';
@@ -300,9 +301,9 @@ fs.writeFileSync(csvPath, csvLines.join('\n'), 'utf8');
 console.log(`  ✓ 已輸出 CSV 至 ${csvPath}`);
 
 // -------------------------------------------------------------
-// [2/4] 建置 dictionary.bin (TKDB v3)
+// [2/4] 建置 dictionary.bin (TKDB v4)
 // -------------------------------------------------------------
-console.log('\n▶ [2/4] 建置 dictionary.bin (TKDB v3)...');
+console.log('\n▶ [2/4] 建置 dictionary.bin (TKDB v4)...');
 const outDirs = [
   path.join(REPO_ROOT, 'output/hakfa'),
   path.join(REPO_ROOT, 'dictionary/output/hakfa'),
@@ -344,7 +345,7 @@ for (let i = 0; i < records.length; i++) {
   // 二進位打包
   const hanziBuf = Buffer.from(r.word, 'utf8');
   const tlBuf = Buffer.from(r.tl, 'utf8');
-  const recBuf = Buffer.alloc(11 + hanziBuf.length + tlBuf.length);
+  const recBuf = Buffer.alloc(13 + hanziBuf.length + tlBuf.length);
 
   recBuf.writeUInt16LE(1, 0);              // bitmask: 1 (official)
   recBuf.writeUInt32LE(r.freq, 2);          // frequency
@@ -352,8 +353,9 @@ for (let i = 0; i < records.length; i++) {
   recBuf.writeUInt8(tlBuf.length, 7);       // tl_len
   recBuf.writeUInt8(r.syllable_count, 8);   // syllable_count
   recBuf.writeUInt16LE(1, 9);              // kautian_subtag: 1 (KAUTIAN_SUBTAG_MAIN_BIT: has_main = true)
-  hanziBuf.copy(recBuf, 11);
-  tlBuf.copy(recBuf, 11 + hanziBuf.length);
+  recBuf.writeUInt16LE(walkerCost(r.freq), 11); // walker_cost (v4), see tkdb_v4.js
+  hanziBuf.copy(recBuf, 13);
+  tlBuf.copy(recBuf, 13 + hanziBuf.length);
 
   encodedRecords.push(recBuf);
 }
@@ -371,7 +373,7 @@ for (const rec of encodedRecords) {
 
 const binBuf = Buffer.alloc(currentOffset);
 binBuf.write('TKDB', 0, 4, 'ascii');
-binBuf.writeUInt32LE(3, 4);         // version 3
+binBuf.writeUInt32LE(4, 4);         // version 4
 binBuf.writeUInt32LE(count, 8);     // count
 binBuf.writeUInt32LE(20261007, 12); // build_ts
 

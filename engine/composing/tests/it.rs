@@ -10,12 +10,16 @@ mod common;
 
 mod composing_caret;
 mod continuous_abbrev;
+mod continuous_custom_priority;
+mod continuous_custom_reach;
+mod continuous_custom_unicode_form;
 mod continuous_explicit_tone;
 mod continuous_keys_tl_hyphen;
 mod continuous_keys_tl_lattice;
 mod continuous_keys_tl_poj_diacritic;
 mod continuous_keys_tps;
 mod continuous_learned_phrase;
+mod continuous_one_syllable_segment;
 mod continuous_partial_tone;
 mod continuous_phase;
 mod continuous_slot0_dict_roman;
@@ -26,6 +30,7 @@ mod golden_fetch_at_pos;
 mod intent_coverage;
 mod invariants;
 mod nasal_marker_case;
+mod prediction_commit_resolution;
 mod proptest_sequences;
 mod raw_input_pending_tail;
 mod roman_only_display_dedup;
@@ -37,6 +42,7 @@ mod tps_hanji_conversion_caret;
 mod tps_hanji_conversion_pick;
 mod tps_key;
 mod tps_space_pinned_tone;
+mod tps_typed_tone;
 
 /// Every `tests/*.rs` is a `[[test]]` root in `Cargo.toml` or a `mod` of one,
 /// so a new test file cannot silently stop running under `autotests = false`.

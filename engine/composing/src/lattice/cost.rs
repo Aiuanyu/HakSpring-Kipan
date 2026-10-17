@@ -24,26 +24,33 @@
 //! `taiuan` surfaced `乾伊有俺` instead of `台灣` (dogfood-confirmed
 //! 2026-05-17; `docs/releases/v3.5.8/plan.md` §整句 lattice + walker S5).
 //!
-//! ## The model (khiin `segmenter.rs:82-92`)
+//! ## The model (khiin `segmenter.rs:82-92`, E1 unified word frequency)
 //!
 //! ```text
-//! p          = (1 + freq) / CORPUS_TOTAL_FREQ          // Laplace-smoothed corpus probability
-//! cost       = ln(1 / p)                               // = ln(CORPUS) − ln(1 + freq) ≥ 0
-//! cost       = cost / toneless_len^LETTER_COUNT_BIAS   // longer spelling → cheaper
+//! base       = walker_cost / 1000                      // −ln p of the word, dictionary.bin v4
+//! base       = min(base, user_entry_cost_cap(s))       // multi-syllable selected word only
+//! cost       = base / toneless_len^LETTER_COUNT_BIAS   // longer spelling → cheaper
 //!                   × syllable_count^SYLLABLE_COUNT_BIAS
 //! applied_δ  = syll <= 1 ? user_weight_delta × SINGLE_SYLLABLE_SCALE
 //!                        : user_weight_delta
 //! cost      −= ln(1 + applied_δ)                       // user preference = log-space discount
 //! ```
 //!
-//! `CORPUS_TOTAL_FREQ > 1 + max(freq)`, so `p ∈ (0, 1)` and
-//! `ln(1/p) > 0` for every **dict** edge (a freq-0 dict record is
-//! still dict-priced — the branch is gated on `dict_hit`, never
-//! `frequency == 0`). The decisive structural property the old
-//! max-Σ model lacked: **every dict edge pays the
-//! ~`ln(CORPUS_TOTAL_FREQ)` corpus-normalization toll**, so a finer
-//! segmentation accumulates strictly more cost and a real phrase
-//! out-competes its single-character decomposition. An OOV
+//! `walker_cost` is one corpus probability per `(hanji, TL)` word, built
+//! from the segmented corpus (`dictionary/build/walker_lm.py`, Lidstone
+//! add-α over the dictionary vocabulary, stored as milli-nats), so a
+//! single character and a phrase are priced on the same scale
+//! (`docs/architecture/unified-word-frequency-roadmap.md` §3). Before E1
+//! the edge was priced on `DictionaryRecord.frequency`, which mixes
+//! character counts (including occurrences inside other words) with word
+//! counts — `kau3siu7` composed 到受 over 教授.
+//!
+//! `p < 1`, so `−ln p > 0` for every **dict** edge (the branch is gated
+//! on `dict_hit`, never on the cost value). The decisive structural
+//! property the old max-Σ model lacked: **every dict edge pays its own
+//! `−ln p` corpus-normalization toll**, so a finer segmentation
+//! accumulates strictly more cost and a real phrase out-competes its
+//! single-character decomposition. An OOV
 //! (no-dict-hit) edge does NOT take this probability path at all —
 //! RC0 prices it as khiin's per-char `BIG` (`OOV_PER_CHAR_PENALTY *
 //! toneless_len`); see the OOV section below.
@@ -88,54 +95,23 @@
 
 // Walker model parameters — engine-only, no platform mirror.
 //
-// The `pub(crate) const` below (`CORPUS_TOTAL_FREQ`, `LETTER_COUNT_BIAS`,
-// `SYLLABLE_COUNT_BIAS`, `OOV_PER_CHAR_PENALTY`,
-// `WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE`, `CUSTOM_EFFECTIVE_FREQ`)
-// parameterize `edge_cost` (dictionary branch + OOV pricing branch). All are
+// The `pub(crate) const` below (`LETTER_COUNT_BIAS`, `SYLLABLE_COUNT_BIAS`,
+// `OOV_PER_CHAR_PENALTY`, `WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE`,
+// `CUSTOM_EDGE_COST`, `USER_ENTRY_EFFECTIVE_COUNT`) parameterize `edge_cost` (dictionary branch + OOV pricing branch). All are
 // named, cited constants — not runtime tunables nor magic literals.
 //
 // **Do not consolidate with the Cluster 1 ranking constants** in
 // `engine/ranking/src/score.rs` (`BOOST_ALPHA`, `MAX_BOOST`,
-// `RECENCY_WINDOW_MS`, `CONTINUOUS_DEFAULT_SOURCE_RANK`,
+// `CONTINUOUS_DEFAULT_SOURCE_RANK`,
 // `USER_WEIGHT_DECAY_TAU_MS`). Those are `pub` cross-platform invariants per
 // `docs/contributing/cross-platform-alignment.md` §3a — platforms mirror them and the
 // `pub` surface is part of the contract. The walker constants here are
 // `pub(crate)`, engine-only (no platform sees them), and stay with the cost
 // model they parameterize (v3.5.9 A3 reframe).
 
-/// Total corpus frequency mass — the denominator that turns a raw
-/// `DictionaryRecord.frequency` into a corpus probability
-/// (khiin `segmenter.rs:82-86`, where `p = occurrences / total`).
-///
-/// **Provenance**: `Σ frequency` over every row of
-/// `dictionary/output/dictionary.csv` (168 958 entries) =
-/// `13_056_588`, measured 2026-09-26. `dict.bin` v2 carries only
-/// per-record frequency, no corpus-total metadata
-/// (`dictionary/build/create_dictionary_bin.py`), so this is baked as a
-/// constant rather than summed at lexicon init (Codex pre-impl S5 Q4 =
-/// option a, 2026-05-17): the exact value is not highly sensitive
-/// (khiin itself notes "experiment with different models") and a
-/// checked-in artifact + checked const is simpler and audit-friendlier
-/// than new lexicon plumbing + a startup scan.
-///
-/// **Regeneration guard (v3.5.9 A4)**: the dictionary build pipeline
-/// emits `dictionary/output/corpus_total_freq.txt` (a small key=value
-/// artifact, see
-/// `dictionary/build/create_dictionary_bin.py::write_corpus_stats`)
-/// and the `corpus_total_freq_matches_dictionary_csv` test below reads
-/// it and asserts `CORPUS_TOTAL_FREQ == Σ frequency`. A dictionary
-/// rebuild that changes the sum and forgets to update this constant
-/// fails `cargo test --workspace`, not silent drift. **Recompute and
-/// update this constant whenever the dictionary is rebuilt** — the
-/// artifact will print the expected value in the failure message.
-pub(crate) const CORPUS_TOTAL_FREQ: f64 = 13_056_588.0;
-
-/// Compile-time invariant: `CORPUS_TOTAL_FREQ` must exceed
-/// `1 + max(freq)` (的 = 184_693) so every `ln(1/p)` is strictly
-/// positive — no zero/negative edge cost, no `ln` of a non-positive
-/// number. A dictionary rebuild that pushes a single entry past this
-/// (or a mistyped constant) fails the **build**, not just a test.
-const _: () = assert!(CORPUS_TOTAL_FREQ > 184_694.0);
+/// `DictionaryRecord::walker_cost` unit: milli-nats (`dictionary.bin` v4,
+/// `docs/engine/binary-format.md`).
+const MILLI_NATS_PER_NAT: f64 = 1000.0;
 
 /// khiin `LETTER_COUNT_BIAS` (`segmenter.rs:20`, default `0.2`):
 /// `cost / toneless_len^0.2` — a longer spelling is a (mildly) cheaper
@@ -201,9 +177,10 @@ const _: () = assert!(LETTER_COUNT_BIAS > 0.0 && SYLLABLE_COUNT_BIAS > 0.0);
 pub(crate) const OOV_PER_CHAR_PENALTY: f64 = 1e10;
 
 /// Compile-time invariant: the OOV per-char penalty must dominate any
-/// realistic dict-coverable path sum. A single dict edge's `ln(1/p)`
-/// is at most `ln(CORPUS_TOTAL_FREQ) ≈ 16.4`, scaled by the khiin
-/// biases to `O(50)`; even a thousand-edge sentence stays `O(1e5)`.
+/// realistic dict-coverable path sum. A single dict edge's `−ln p`
+/// is at most `u16::MAX` milli-nats ≈ 65.5 (13.2 for an unseen word
+/// today), scaled by the khiin biases to `O(100)`; even a thousand-edge
+/// sentence stays `O(1e5)`.
 /// `1e10` per OOV char is `>= 1e5` orders clear of that, so a
 /// dict-coverable buffer can never collapse to an OOV blob (RC0). The
 /// guard also keeps the penalty strictly positive (finite f64 at the
@@ -227,47 +204,60 @@ const _: () = assert!(OOV_PER_CHAR_PENALTY >= 1e5);
 /// single-syllable user preference is under-weighted in segmentation.
 pub(crate) const WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE: f64 = 0.0;
 
-/// v3.5.8 S6 (Codex pre-impl S6 Q1, 2026-05-17, BLOCK condition) —
-/// the **effective corpus frequency** a `custom_dictionary.db` edge is
-/// scored with in the S5 min-cost model — and, since 2026-09-14, the
-/// ceiling of the user-dict floor a multi-syllable edge whose word the
-/// user has SELECTED is priced at (librime records committed phrases
-/// into the same user dictionary; a selection is user-dict evidence
-/// like a custom row). The floor scales with the selection weight —
-/// one fresh pick reaches the full tier, and fades with
-/// `USER_WEIGHT_DECAY_TAU_MS` unless re-selected (see [`edge_cost`]).
-/// Without it a selected rare phrase (更新, freq 1) stays costlier than
-/// the 經+身 single-syllable split until ~18 picks (the `ln(1+δ)`
-/// discount alone covers ≤ ln 5).
+/// The corpus count a user entry stands for: a `custom_dictionary.db`
+/// row, a learned phrase, or a multi-syllable word the user selected is
+/// priced like a word seen this often (librime records committed phrases
+/// into the same user dictionary as the corpus words,
+/// `references/librime/src/rime/dict/user_dictionary.cc`). It fixes
+/// [`CUSTOM_EDGE_COST`] and the shape of the selection fade in
+/// [`user_entry_cost_cap`].
 ///
-/// A custom entry carries no corpus frequency. Rather than an explicit
-/// cost floor / discount — which would bypass the "every edge pays the
-/// `ln(CORPUS_TOTAL_FREQ)` normalization toll" invariant that S5 added
-/// to kill over-segmentation (Codex S6 Q1 **BLOCK**ed a floor) — a
-/// custom edge enters [`edge_cost`] with this *effective* frequency, so
-/// it competes inside the same probability-shaped objective as a
-/// dictionary phrase (librime user-dict-as-frequency semantics,
-/// `references/librime/src/rime/dict/user_dictionary.cc`).
-///
-/// **Value provenance** (Codex pre-impl S6 Q1 gate, measured on the
-/// 2026-05-17 `dictionary/output/dictionary.csv`): multi-syllable max
-/// frequency ≈ 1_562, single-syllable p95 ≈ 1_461, single-syllable
-/// p99 ≈ 7_721. `2_000` makes a custom entry a strong **multi-syllable
-/// phrase** competitor (beats a top single-character split) without
-/// elevating it to a top-frequency single character (a single-syllable
-/// custom edge still loses badly to a real phrase path — pinned by
-/// [`tests`]). **Dogfood-tunable**; a named cited constant, not a
-/// runtime tunable nor a magic literal.
-pub(crate) const CUSTOM_EFFECTIVE_FREQ: u32 = 2_000;
+/// **Value provenance** (Codex pre-impl S6 Q1, 2026-05-17, kept through
+/// E1 P3): `2_000` made a custom entry a strong **multi-syllable phrase**
+/// competitor — it beats a split into the two cheapest single characters
+/// — without elevating it to a top single character. The rule tests in
+/// [`tests`] pin both sides on today's costs. **Dogfood-tunable**; E1 P4
+/// kept it — the gold set has no user entries to calibrate it on.
+pub(crate) const USER_ENTRY_EFFECTIVE_COUNT: f64 = 2_000.0;
+
+/// `walker_cost` (milli-nats) of a user entry: the walker model's price
+/// of a word seen [`USER_ENTRY_EFFECTIVE_COUNT`] times —
+/// `round(−ln((2_000 + α) / (N + α·V)) × 1000)` with the
+/// `dictionary/output/walker_lm_stats.txt` of 2026-10-08 (α 10,
+/// N 3,627,713, V 167,446 → 7,877.7). An edge with a custom or learned
+/// row is capped at this cost in [`edge_cost`], so both compete
+/// inside the same probability-shaped objective as a dictionary word
+/// (Codex S6 Q1 **BLOCK**ed a cost special-case outside it). Re-derive it
+/// when α or the corpus changes (E1 P4).
+pub(crate) const CUSTOM_EDGE_COST: u16 = 7_878;
+
+/// The cost cap (nats, before the length terms) a multi-syllable edge
+/// whose word the user selected is priced at:
+/// `CUSTOM_EDGE_COST + ln((1 + F) / (1 + F·s))`, `F` =
+/// [`USER_ENTRY_EFFECTIVE_COUNT`], `s` = `user_weight_delta /
+/// BOOST_ALPHA` clamped to `0..=1` — the exact cost-domain translation of
+/// the pre-E1 frequency floor `F·s` (E1 roadmap D2). One fresh selection
+/// (`s = 1`) is the full custom tier; the cap rises as the selection
+/// decays, so a single stale pick stops overriding the corpus, while
+/// repeated picks (δ saturates at 4) keep it at the tier. At `s = 0` the
+/// cap is `CUSTOM_EDGE_COST + ln(1 + F)` ≈ 15.5 nats, above an unseen
+/// word's cost — no lift, finite.
+fn user_entry_cost_cap(user_weight_delta: f64) -> f64 {
+    let selection = (user_weight_delta / f64::from(ranking::BOOST_ALPHA)).clamp(0.0, 1.0);
+    f64::from(CUSTOM_EDGE_COST) / MILLI_NATS_PER_NAT
+        + ((1.0 + USER_ENTRY_EFFECTIVE_COUNT) / (1.0 + USER_ENTRY_EFFECTIVE_COUNT * selection)).ln()
+}
 
 /// Min-cost for one lattice edge (**lower = better**).
 ///
-/// - `frequency` — the edge key's max raw `DictionaryRecord.frequency`
-///   across its homophones (`lexicon::EdgeBest::span_frequency`);
-///   **unused when `dict_hit == false`**.
-///   Raw frequency, never a ranked `score` (Codex pre-impl S5 Q3:
-///   `c.score` must not feed the walker cost — that double-counts the
-///   record-selection signal).
+/// - `walker_cost` — the edge key's lowest `DictionaryRecord::walker_cost`
+///   (milli-nats) across its homophones
+///   (`lexicon::EdgeBest::span_walker_cost`, E1 D3), or
+///   at most [`CUSTOM_EDGE_COST`] for an edge with a custom or learned
+///   row; **unused when `dict_hit == false`**. A corpus
+///   price, never a ranked `score` (Codex pre-impl S5 Q3: `c.score` must
+///   not feed the walker cost — that double-counts the record-selection
+///   signal).
 /// - `syllable_count` — the dict candidate's syllable count (`>= 1`;
 ///   clamped, defends against a leaked `0`); drives the khiin
 ///   `n_syls^0.2` bias. For an OOV edge it is **metadata only** (the
@@ -283,18 +273,15 @@ pub(crate) const CUSTOM_EFFECTIVE_FREQ: u32 = 2_000;
 ///   no user history / never selected / bad clock = neutral). Computed
 ///   caller-side (`continuous::fetch_walker_slot0_inner`). OOV edges always
 ///   carry `0.0` and take no discount. On a multi-syllable edge it
-///   also raises `frequency` to a user-dict floor of
-///   `CUSTOM_EFFECTIVE_FREQ × min(1, δ / BOOST_ALPHA)` — one fresh
-///   selection is the full tier, so a selected phrase beats any
-///   single-syllable split of its span; the floor fades with the
-///   selection's decay and a stale single pick eventually stops
-///   overriding the corpus.
+///   also caps the base cost at [`user_entry_cost_cap`] — one fresh
+///   selection is the custom tier, so a selected phrase beats a
+///   single-syllable split of its span; the cap fades with the
+///   selection's decay.
 /// - `dict_hit` — `true` iff this edge is a lexicon-backed hit
 ///   (`dict.bin` record OR a `custom_dictionary.db` entry). The OOV
 ///   branch is selected solely from this flag, **never** inferred from
-///   `frequency == 0`: a real dictionary record may legitimately have
-///   frequency 0, and a custom edge is scored at the
-///   `CUSTOM_EFFECTIVE_FREQ` proxy — both must use the dictionary
+///   the cost value: a custom edge carries no corpus probability and is
+///   priced at [`CUSTOM_EDGE_COST`] — it must use the dictionary
 ///   formula, not the OOV penalty (Codex pre-impl Q2; "never infer
 ///   no-dict from freq" invariant, `cost.rs` head + `requests.rs`
 ///   no-dict branch).
@@ -302,12 +289,11 @@ pub(crate) const CUSTOM_EFFECTIVE_FREQ: u32 = 2_000;
 /// Two khiin mechanisms, de-conflated by RC0 (see
 /// [`OOV_PER_CHAR_PENALTY`]):
 /// - **dict** (`dict_hit`): khiin `segmenter.rs:82-92` —
-///   `cost = ln(1 / p) / toneless_len^0.2 × syllable_count^0.2
-///   − ln(1 + applied_delta)`, `p = (1 + frequency) /
-///   CORPUS_TOTAL_FREQ`. `> 0` before the discount
-///   (`CORPUS_TOTAL_FREQ > 1 + max(freq)`); the `ln(1 + δ) >= 0`
-///   subtraction (δ clamped `>= 0`) only ever *lowers* cost (Codex
-///   pre-impl S5 Q3 — log-space sign).
+///   `cost = base / toneless_len^0.2 × syllable_count^0.2
+///   − ln(1 + applied_delta)`, `base = walker_cost / 1000` (capped for a
+///   selected multi-syllable word). `>= 0` before the discount; the
+///   `ln(1 + δ) >= 0` subtraction (δ clamped `>= 0`) only ever *lowers*
+///   cost (Codex pre-impl S5 Q3 — log-space sign).
 /// - **OOV** (`!dict_hit`): khiin `segment_min_cost:198-206` —
 ///   `cost = OOV_PER_CHAR_PENALTY × toneless_len` (khiin's `BIG` per
 ///   advanced char), unbiased, no user discount. `>= 1e10` per char
@@ -316,9 +302,9 @@ pub(crate) const CUSTOM_EFFECTIVE_FREQ: u32 = 2_000;
 ///   length (RC0) — a **cost property**, not a lexicographic
 ///   `dict_hit` rule (Codex pre-impl S7 Q1 / RC0 Q2).
 ///
-/// Always finite and `> 0`.
+/// Always finite.
 pub(crate) fn edge_cost(
-    frequency: u32,
+    walker_cost: u16,
     syllable_count: u8,
     toneless_len: usize,
     user_weight_delta: f64,
@@ -330,36 +316,23 @@ pub(crate) fn edge_cost(
         // per advanced char. `toneless_len` = the span's char count =
         // khiin `word_len`. Unbiased, no user discount (khiin's `BIG`
         // is raw; an OOV edge always carries `user_weight_delta = 0`).
-        // `frequency` / `syllable_count` are intentionally unused here:
+        // `walker_cost` / `syllable_count` are intentionally unused here:
         // they are OOV metadata for the synthesized candidate, not cost
         // inputs (Codex pre-impl RC0 Q3).
         return OOV_PER_CHAR_PENALTY * toneless_len.max(1) as f64;
     }
-    // khiin segmenter.rs:82-89 — Laplace-smoothed corpus probability.
-    // A dict record with frequency 0 is still dict-priced (Codex
-    // pre-impl Q2): the OOV branch is gated on `dict_hit`, never
-    // `frequency == 0`.
-    // A user-selected multi-syllable word is user-dict evidence: price
-    // it at least at the custom-entry tier so its span is not split
-    // into higher-frequency singles. One fresh selection (δ =
-    // BOOST_ALPHA) is the full tier; the floor decays with δ so a
-    // single stale pick stops overriding the corpus after months,
-    // while repeated picks (δ saturates at 4) keep it pinned. Single-
-    // syllable edges keep the S3 damping policy below (no user lift in
-    // segmentation).
-    let user_dict_floor = if syllable_count > 1 {
-        f64::from(CUSTOM_EFFECTIVE_FREQ)
-            * (user_weight_delta / f64::from(ranking::BOOST_ALPHA)).clamp(0.0, 1.0)
-    } else {
-        0.0
-    };
-    let effective_frequency = f64::from(frequency).max(user_dict_floor);
-    let p = (1.0 + effective_frequency) / CORPUS_TOTAL_FREQ;
-    let mut cost = (1.0 / p).ln();
+    let mut base = f64::from(walker_cost) / MILLI_NATS_PER_NAT;
+    // A user-selected multi-syllable word is user-dict evidence: price it
+    // at most at the user-entry tier so its span is not split into
+    // cheaper singles. Single-syllable edges keep the S3 damping policy
+    // below (no user lift in segmentation).
+    if syllable_count > 1 {
+        base = base.min(user_entry_cost_cap(user_weight_delta));
+    }
     // khiin segmenter.rs:90-92 — `cost / word_len^0.2 * n_syls^0.2`.
     let len_bias = (toneless_len.max(1) as f64).powf(LETTER_COUNT_BIAS);
     let syll_bias = f64::from(syllable_count.max(1)).powf(SYLLABLE_COUNT_BIAS);
-    cost = cost / len_bias * syll_bias;
+    let cost = base / len_bias * syll_bias;
     // S5 (Codex pre-impl Q3): the S3 user preference becomes a
     // log-space cost discount. Syllable-aware — a 1-syllable edge gets
     // only SCALE (=0.0) of the decayed delta so a hot single char
@@ -378,188 +351,48 @@ pub(crate) fn edge_cost(
 #[cfg(test)]
 mod tests {
     use super::{
-        edge_cost, CORPUS_TOTAL_FREQ, CUSTOM_EFFECTIVE_FREQ, LETTER_COUNT_BIAS,
-        OOV_PER_CHAR_PENALTY, SYLLABLE_COUNT_BIAS, WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE,
+        edge_cost, user_entry_cost_cap, CUSTOM_EDGE_COST, OOV_PER_CHAR_PENALTY,
+        USER_ENTRY_EFFECTIVE_COUNT, WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE,
     };
 
+    // Production `walker_cost` values (milli-nats) from
+    // `assets/dictionaries/dictionary.bin` (E1 P2b, 2026-10-08), with the
+    // toneless key length the walker sees.
+    const E_THE: u16 = 4_173; // 的 ê, len 1
+    const I_HE: u16 = 4_400; // 伊 i, len 1
+    const U_HAVE: u16 = 4_496; // 有 ū, len 1
+    const TA_DRY: u16 = 10_647; // 乾 ta, len 2
+    const AN_I: u16 = 11_166; // 俺 án, len 2
+    const TA_SCORCH: u16 = 10_453; // 焦 ta, len 2
+    const TAI_UAN: u16 = 7_166; // 台灣 tâi-uân, len 6
+    const KAU_ARRIVE: u16 = 5_636; // 到 kàu, len 3
+    const SIU_RECEIVE: u16 = 6_856; // 受 siū, len 3
+    const KAU_SIU: u16 = 9_938; // 教授 kàu-siū, len 6
+    const TAI: u16 = 8_561; // 台 tâi, len 3
+    const GI_LANGUAGE: u16 = 10_571; // 語 gí, len 2
+    /// An unseen dictionary word: `round(ln((N + α·V) / α) × 1000)`
+    /// (`walker_lm_stats.txt` `unseen_cost`).
+    const UNSEEN: u16 = 13_181;
+
     /// Neutral-user-weight **dict-hit** edge cost — no user history
-    /// (`user_weight_delta = 0.0`, `dict_hit = true`). The dictionary
-    /// model invariants are expressed through this; a real dictionary
-    /// record always uses dict pricing even at frequency 0 (Codex
-    /// pre-impl Q2).
-    fn ec(freq: u32, syll: u8, len: usize) -> f64 {
-        edge_cost(freq, syll, len, 0.0, true)
+    /// (`user_weight_delta = 0.0`, `dict_hit = true`).
+    fn ec(walker_cost: u16, syll: u8, len: usize) -> f64 {
+        edge_cost(walker_cost, syll, len, 0.0, true)
     }
 
     /// Neutral-user-weight **OOV** (no-dict-hit) edge cost. RC0:
-    /// `frequency` AND `syll` are both irrelevant in this branch — an
+    /// `walker_cost` AND `syll` are both irrelevant in this branch — an
     /// OOV edge is priced solely `OOV_PER_CHAR_PENALTY * len` (khiin's
-    /// per-char `BIG`), so `freq` is fixed at 0 and `syll` is metadata.
+    /// per-char `BIG`).
     fn oov(syll: u8, len: usize) -> f64 {
         edge_cost(0, syll, len, 0.0, false)
     }
 
-    /// Resolve `dictionary/output/corpus_total_freq.txt` relative to
-    /// this crate's manifest, regardless of test CWD. The path is
-    /// `<repo>/engine/composing/../../dictionary/output/...`.
-    fn corpus_total_freq_artifact_path() -> std::path::PathBuf {
-        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("..")
-            .join("dictionary")
-            .join("output")
-            .join("corpus_total_freq.txt")
-    }
-
-    /// Parse the v3.5.9 A4 regeneration-guard artifact. Format:
-    /// ```text
-    /// total_frequency=<u64>
-    /// entries=<u32>
-    /// ```
-    /// Order-insensitive; blank lines tolerated; both keys required.
-    fn parse_corpus_stats(contents: &str) -> (u64, u32) {
-        let mut total: Option<u64> = None;
-        let mut entries: Option<u32> = None;
-        for (lineno, raw) in contents.lines().enumerate() {
-            let line = raw.trim();
-            if line.is_empty() {
-                continue;
-            }
-            let (key, value) = line.split_once('=').unwrap_or_else(|| {
-                panic!(
-                    "corpus_total_freq.txt line {}: missing '=': {raw:?}",
-                    lineno + 1
-                )
-            });
-            match key.trim() {
-                "total_frequency" => {
-                    if total.is_some() {
-                        panic!(
-                            "corpus_total_freq.txt line {}: duplicate `total_frequency=`",
-                            lineno + 1
-                        );
-                    }
-                    total = Some(value.trim().parse().unwrap_or_else(|e| {
-                        panic!(
-                            "corpus_total_freq.txt line {}: bad u64 {value:?}: {e}",
-                            lineno + 1
-                        )
-                    }));
-                }
-                "entries" => {
-                    if entries.is_some() {
-                        panic!(
-                            "corpus_total_freq.txt line {}: duplicate `entries=`",
-                            lineno + 1
-                        );
-                    }
-                    entries = Some(value.trim().parse().unwrap_or_else(|e| {
-                        panic!(
-                            "corpus_total_freq.txt line {}: bad u32 {value:?}: {e}",
-                            lineno + 1
-                        )
-                    }));
-                }
-                other => {
-                    panic!(
-                        "corpus_total_freq.txt line {}: unknown key {other:?}",
-                        lineno + 1
-                    )
-                }
-            }
-        }
-        let total = total.expect("corpus_total_freq.txt missing `total_frequency=`");
-        let entries = entries.expect("corpus_total_freq.txt missing `entries=`");
-        (total, entries)
-    }
-
     #[test]
-    fn corpus_total_freq_matches_dictionary_csv() {
-        // v3.5.9 A4 regeneration guard. `CORPUS_TOTAL_FREQ` is the
-        // baked literal consumed by `edge_cost`; this test cross-checks
-        // it against `Σ frequency` over `dictionary/output/dictionary.csv`
-        // as emitted by `create_dictionary_bin.py::write_corpus_stats`.
-        // A4 only adds the verifier — `edge_cost` still reads the
-        // literal at runtime (Codex pre-impl S5 Q4 = option a).
-        //
-        // Skip semantics (Codex pre-impl A4 B2): artifact-NotFound +
-        // dictionary.csv-NotFound = minimal checkout (no dictionary
-        // submodule), skip with clear message. Artifact-NotFound while
-        // dictionary.csv is present = pipeline failed to emit; FAIL
-        // loudly, never silent. Any other IO/parse error also FAILs.
-        //
-        // Entries assertion is secondary (Codex Q4 SHOULD): catches
-        // "same Σ, different record universe" drift. Hand-typed
-        // `EXPECTED_DICT_ENTRIES` matches the constant doc-comment
-        // (168 958 @ 2026-09-26); update alongside the constant on
-        // dictionary rebuild.
-        const EXPECTED_DICT_ENTRIES: u32 = 168_958;
-
-        let artifact = corpus_total_freq_artifact_path();
-        let csv = artifact.parent().unwrap().join("dictionary.csv");
-
-        let contents = match std::fs::read_to_string(&artifact) {
-            Ok(s) => s,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                // Use `metadata()` not `exists()` so a non-NotFound CSV
-                // error (permissions, …) is NOT collapsed to "absent"
-                // and silently routed into the skip branch (Codex post-
-                // impl A4 nit).
-                match std::fs::metadata(&csv) {
-                    Ok(_) => panic!(
-                        "{} is missing but {} exists — the dictionary pipeline \
-                         did not emit the regeneration guard. Re-run \
-                         `bash dictionary/build.sh` (or `make dict`).",
-                        artifact.display(),
-                        csv.display(),
-                    ),
-                    Err(csv_err) if csv_err.kind() == std::io::ErrorKind::NotFound => {
-                        eprintln!(
-                            "skip corpus_total_freq_matches_dictionary_csv: {} and {} \
-                             both absent (minimal build context without the dictionary \
-                             submodule). Run `make dict` to enable the \
-                             CORPUS_TOTAL_FREQ regeneration guard.",
-                            artifact.display(),
-                            csv.display(),
-                        );
-                        return;
-                    }
-                    Err(csv_err) => panic!(
-                        "{} is missing and probing {} failed: {csv_err}",
-                        artifact.display(),
-                        csv.display(),
-                    ),
-                }
-            }
-            Err(e) => panic!("failed to read {}: {e}", artifact.display()),
-        };
-
-        let (measured_sum, measured_entries) = parse_corpus_stats(&contents);
-
-        // Compare in f64 — `measured_sum as f64` is exact for sums far
-        // below 2^53 (current corpus ≈ 1.29e7). NEVER cast the const
-        // down to u64; a mistyped `12_910_574.5` would truncate and
-        // pass silently (Codex pre-impl A4 B1).
-        assert_eq!(
-            CORPUS_TOTAL_FREQ, measured_sum as f64,
-            "CORPUS_TOTAL_FREQ ({CORPUS_TOTAL_FREQ}) drifted from \
-             dictionary/output/dictionary.csv Σfrequency={measured_sum} \
-             over {measured_entries} entries — update the constant in \
-             engine/composing/src/lattice/cost.rs."
-        );
-
-        assert_eq!(
-            measured_entries, EXPECTED_DICT_ENTRIES,
-            "dictionary.csv entry count drifted: artifact reports \
-             {measured_entries}, EXPECTED_DICT_ENTRIES (test-local) is \
-             {EXPECTED_DICT_ENTRIES}. Update EXPECTED_DICT_ENTRIES and the \
-             CORPUS_TOTAL_FREQ doc comment (provenance line) alongside \
-             the constant after a dictionary rebuild."
-        );
-
-        // The `> 1 + max(freq)` strict-positivity invariant is a
-        // compile-time guard (`const _: () = assert!(…)` next to the
-        // constant), not a runtime assertion here.
+    fn dict_edge_is_its_walker_cost_with_khiin_length_terms() {
+        // trace: 台灣 7.166 / 6^0.2 × 2^0.2 = 7.166 / 1.43097 × 1.14870 = 5.7524
+        let cost = ec(TAI_UAN, 2, 6);
+        assert!((cost - 5.7524).abs() < 1e-3, "{cost}");
     }
 
     #[test]
@@ -574,43 +407,31 @@ mod tests {
     }
 
     #[test]
-    fn freq_zero_dict_record_uses_dict_pricing_not_oov() {
-        // Codex pre-impl Q2 BLOCK guard: a real `dict.bin` record may
-        // legitimately have frequency 0. It must be priced on the
-        // dictionary branch (`ln(CORPUS/1)`), NEVER the OOV per-char
-        // penalty — the OOV branch is gated on `dict_hit`, not
-        // `frequency == 0`.
-        let dict_freq0 = ec(0, 2, 6); // dict_hit = true
-        let expected =
-            CORPUS_TOTAL_FREQ.ln() / 6f64.powf(LETTER_COUNT_BIAS) * 2f64.powf(SYLLABLE_COUNT_BIAS);
-        assert!(
-            (dict_freq0 - expected).abs() < 1e-9,
-            "freq-0 dict edge must use dict pricing: {dict_freq0} vs {expected}"
-        );
-        // …and is strictly cheaper than the same-shape OOV edge.
-        assert!(
-            dict_freq0 < oov(2, 6),
-            "freq-0 dict {dict_freq0} must be < OOV {}",
-            oov(2, 6)
-        );
+    fn unseen_dict_record_uses_dict_pricing_not_oov() {
+        // Codex pre-impl Q2 BLOCK guard: a dictionary word the corpus
+        // never saw is priced on the dictionary branch at the model's
+        // smoothed cost, NEVER the OOV per-char penalty — the OOV branch
+        // is gated on `dict_hit`.
+        // trace: 13.181 / 6^0.2 × 2^0.2 = 10.5809
+        let unseen = ec(UNSEEN, 2, 6);
+        assert!((unseen - 10.5809).abs() < 1e-3, "{unseen}");
+        assert!(unseen < oov(2, 6), "unseen dict {unseen} must be < OOV");
     }
 
     #[test]
-    fn higher_frequency_costs_less() {
-        // Min-cost: a more frequent edge is cheaper (better).
-        assert!(ec(1000, 1, 3) < ec(10, 1, 3));
-        assert!(ec(10, 1, 3) < ec(0, 1, 3));
+    fn cheaper_walker_cost_costs_less() {
+        assert!(ec(E_THE, 1, 3) < ec(TAI, 1, 3));
+        assert!(ec(TAI, 1, 3) < ec(UNSEEN, 1, 3));
     }
 
     #[test]
     fn real_phrase_beats_its_single_char_decomposition() {
-        // The motivating bug, with real dictionary frequencies.
-        // `taiuan` → 台灣 (freq 1379, 2 syll, toneless "taiuan" len 6)
-        // as ONE edge must cost strictly less than the 4 single-char
-        // path 乾(2145,len2) 伊(63255,len1) 有(53685,len1) 俺(10635,len2)
-        // — the path the broken S2/S3 max-Σ objective produced.
-        let phrase = ec(1379, 2, 6);
-        let four_singles = ec(2145, 1, 2) + ec(63255, 1, 1) + ec(53685, 1, 1) + ec(10635, 1, 2);
+        // `taiuan` → 台灣 (2 syll, len 6) as ONE edge must cost less than
+        // the 4 single-char path 乾(len2) 伊(len1) 有(len1) 俺(len2) — the
+        // path the broken S2/S3 max-Σ objective produced.
+        // trace: 5.752 vs 9.269 + 4.400 + 4.496 + 9.721 = 27.886
+        let phrase = ec(TAI_UAN, 2, 6);
+        let four_singles = ec(TA_DRY, 1, 2) + ec(I_HE, 1, 1) + ec(U_HAVE, 1, 1) + ec(AN_I, 1, 2);
         assert!(
             phrase < four_singles,
             "phrase={phrase} four_singles={four_singles}"
@@ -618,35 +439,73 @@ mod tests {
     }
 
     #[test]
-    fn custom_two_syllable_beats_top_single_char_split() {
+    fn kau3siu7_word_beats_the_character_composition() {
+        // E1 motivating bug: before E1, 到 + 受 (character counts) cost
+        // 11.1636 < 教授 11.2279. On one corpus scale the word wins.
+        // trace: 教授 9.938 / 6^0.2 × 2^0.2 = 7.978;
+        //        到 5.636 / 3^0.2 + 受 6.856 / 3^0.2 = 4.524 + 5.504 = 10.028
+        let word = ec(KAU_SIU, 2, 6);
+        let composition = ec(KAU_ARRIVE, 1, 3) + ec(SIU_RECEIVE, 1, 3);
+        assert!(word < composition, "word={word} composition={composition}");
+    }
+
+    /// `key=value` lines of the tracked `dictionary/output/walker_lm_stats.txt`.
+    fn walker_lm_stat(key: &str) -> f64 {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../dictionary/output/walker_lm_stats.txt");
+        let stats = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        stats
+            .lines()
+            .find_map(|line| line.strip_prefix(key)?.strip_prefix('='))
+            .unwrap_or_else(|| panic!("{key}= missing in {}", path.display()))
+            .parse()
+            .unwrap_or_else(|e| panic!("{key} in {}: {e}", path.display()))
+    }
+
+    #[test]
+    fn custom_edge_cost_is_the_model_price_of_the_effective_count() {
+        // Fails when the walker model changes (α, corpus) until
+        // `CUSTOM_EDGE_COST` is re-derived — the drift `CORPUS_TOTAL_FREQ` had.
+        // trace (2026-10-08): ln((3,627,713 + 10 × 167,446) / (2,000 + 10)) × 1000
+        //      = 7,877.74 → 7,878
+        let alpha = walker_lm_stat("alpha");
+        let denominator = walker_lm_stat("tokens_N") + alpha * walker_lm_stat("vocabulary_V");
+        let model_cost = (denominator / (USER_ENTRY_EFFECTIVE_COUNT + alpha)).ln() * 1000.0;
+        assert_eq!(CUSTOM_EDGE_COST, model_cost.round() as u16);
+    }
+
+    #[test]
+    fn custom_two_syllable_beats_the_cheapest_single_char_split() {
         // S6 Codex pre-impl Q1 regression guard #1: a 2-syllable custom
-        // entry scored at CUSTOM_EFFECTIVE_FREQ with a short toneless
-        // roman must out-compete the path through the two highest-
-        // frequency single characters that cover the same span. Real
-        // dictionary singles for the motivating `taigi` case:
-        // 台(31281,len3) + 語(21976,len2). The custom 2-syll edge
-        // (effective freq 2000, toneless "taigi" len 5) must cost less.
-        // Custom edges are `dict_hit: true` (lexicon-backed, S6).
-        let custom = edge_cost(CUSTOM_EFFECTIVE_FREQ, 2, 5, 0.0, true);
-        let top_single_split =
-            edge_cost(31_281, 1, 3, 0.0, true) + edge_cost(21_976, 1, 2, 0.0, true);
+        // entry beats the split into the two cheapest single characters
+        // even at the shortest spelling (len 2, no letter discount).
+        // trace: custom 7.878 / 2^0.2 × 2^0.2 = 7.878 < 的 4.173 + 伊 4.400 = 8.573
+        let custom = ec(CUSTOM_EDGE_COST, 2, 2);
+        let cheapest_split = ec(E_THE, 1, 1) + ec(I_HE, 1, 1);
         assert!(
-            custom < top_single_split,
-            "custom={custom} top_single_split={top_single_split}"
+            custom < cheapest_split,
+            "custom={custom} cheapest_split={cheapest_split}"
         );
+        // `taigi`: the custom 台語 beats the real 台 + 語 split.
+        // trace: 7.878 / 5^0.2 × 2^0.2 = 6.559 < 8.561 / 3^0.2 + 10.571 / 2^0.2 = 6.872 + 9.203
+        let taigi = ec(CUSTOM_EDGE_COST, 2, 5);
+        assert!(taigi < ec(TAI, 1, 3) + ec(GI_LANGUAGE, 1, 2));
+    }
+
+    #[test]
+    fn single_syllable_custom_never_undercuts_the_top_single_char() {
+        // S6 Codex pre-impl Q1 regression guard #2: a custom entry is not
+        // elevated to a top single character. trace: 7.878 / 1 > 的 4.173
+        assert!(ec(CUSTOM_EDGE_COST, 1, 1) > ec(E_THE, 1, 1));
     }
 
     #[test]
     fn two_single_syllable_custom_lose_to_a_real_phrase_path() {
-        // S6 Codex pre-impl Q1 regression guard #2: CUSTOM_EFFECTIVE_FREQ
-        // must NOT elevate custom to a top-frequency single character —
-        // a path of two single-syllable custom edges still loses badly
-        // to one real multi-syllable dictionary phrase covering the same
-        // buffer. 台灣 (freq 1379, 2 syll, toneless "taiuan" len 6) as
-        // ONE edge must cost strictly less than two atomic custom edges.
-        let two_single_custom = edge_cost(CUSTOM_EFFECTIVE_FREQ, 1, 3, 0.0, true)
-            + edge_cost(CUSTOM_EFFECTIVE_FREQ, 1, 3, 0.0, true);
-        let real_phrase = edge_cost(1_379, 2, 6, 0.0, true);
+        // 台灣 (2 syll, len 6) as ONE edge must cost less than two atomic
+        // custom edges. trace: 5.752 < 2 × 7.878 / 3^0.2 = 12.648
+        let two_single_custom = ec(CUSTOM_EDGE_COST, 1, 3) + ec(CUSTOM_EDGE_COST, 1, 3);
+        let real_phrase = ec(TAI_UAN, 2, 6);
         assert!(
             real_phrase < two_single_custom,
             "real_phrase={real_phrase} two_single_custom={two_single_custom}"
@@ -660,7 +519,10 @@ mod tests {
         // single-syllable user-scale branch identical to syll = 1).
         // The OOV branch ignores syllable_count entirely (RC0:
         // char-keyed penalty), so 0 vs 1 is trivially equal there.
-        assert_eq!(edge_cost(0, 0, 3, 3.5, true), edge_cost(0, 1, 3, 3.5, true));
+        assert_eq!(
+            edge_cost(UNSEEN, 0, 3, 3.5, true),
+            edge_cost(UNSEEN, 1, 3, 3.5, true)
+        );
         assert_eq!(
             edge_cost(0, 0, 3, 0.0, false),
             edge_cost(0, 1, 3, 0.0, false)
@@ -669,18 +531,13 @@ mod tests {
 
     #[test]
     fn oov_blob_loses_to_intended_best_dict_path() {
-        // Earlier dogfood bug (`taiuanta`), real frequencies.
-        // `taiuanta` (len 8) with no whole-buffer dict word: the single
-        // OOV blob edge (0,8) must cost strictly MORE than the
-        // dict-covering path 台灣(0,6, freq 1379, "taiuan" len 6) +
-        // 焦(6,8, freq 2145, "ta" len 2). RC0: the blob is now khiin's
-        // `BIG`-per-char (`8 * OOV_PER_CHAR_PENALTY ≈ 8e10`) so it
-        // dominates the `ln`-scale dict path by ~9 orders — it is a
-        // **cost property** (khiin's `BIG` constant), not a
-        // lexicographic `dict_hit` rule (Codex pre-impl S7 Q1 / RC0
-        // Q2).
+        // Earlier dogfood bug (`taiuanta`): the single OOV blob edge (0,8)
+        // must cost strictly MORE than the dict-covering path 台灣(0,6) +
+        // 焦(6,8). RC0: the blob is khiin's `BIG`-per-char
+        // (`8 * OOV_PER_CHAR_PENALTY ≈ 8e10`) — a **cost property**, not a
+        // lexicographic `dict_hit` rule (Codex pre-impl S7 Q1 / RC0 Q2).
         let oov_blob = oov(3, 8);
-        let dict_path = ec(1379, 2, 6) + ec(2145, 1, 2);
+        let dict_path = ec(TAI_UAN, 2, 6) + ec(TA_SCORCH, 1, 2);
         assert!(
             oov_blob > dict_path,
             "oov_blob={oov_blob} must exceed dict_path={dict_path}"
@@ -688,18 +545,12 @@ mod tests {
     }
 
     #[test]
-    fn oov_costs_more_than_freq_zero_dict_for_multi_syllable() {
-        // A multi-char OOV span must cost strictly more than a freq-0
-        // *dict* edge of the same shape — `dict_hit` selects the
-        // branch, never `frequency == 0` (Codex pre-impl Q2). RC0: the
-        // OOV side is `8 * OOV_PER_CHAR_PENALTY`, the dict side is
-        // `ln`-scale.
-        assert!(
-            oov(3, 8) > ec(0, 3, 8),
-            "OOV {} must exceed freq-0 dict pricing {}",
-            oov(3, 8),
-            ec(0, 3, 8)
-        );
+    fn oov_costs_more_than_unseen_dict_for_multi_syllable() {
+        // A multi-char OOV span must cost strictly more than an unseen
+        // *dict* edge of the same shape — `dict_hit` selects the branch
+        // (Codex pre-impl Q2).
+        assert!(oov(3, 8) > ec(UNSEEN, 3, 8));
+        assert!(oov(3, 8) > ec(u16::MAX, 3, 8));
     }
 
     #[test]
@@ -707,10 +558,9 @@ mod tests {
         // RC0: khiin `segment_min_cost:198-206` prices an uncovered
         // span as `BIG` per advanced char. So OOV cost is exactly
         // `OOV_PER_CHAR_PENALTY * toneless_len`, strictly increasing in
-        // char length and INDEPENDENT of syllable count (the S7
-        // `10^syllable_count` decay is gone — syllable_count is OOV
-        // metadata only). This is what structurally stops a long OOV
-        // blob from ever undercutting a dict-coverable path (RC0).
+        // char length and INDEPENDENT of syllable count. This is what
+        // structurally stops a long OOV blob from ever undercutting a
+        // dict-coverable path (RC0).
         assert_eq!(oov(1, 6), OOV_PER_CHAR_PENALTY * 6.0);
         assert_eq!(oov(1, 8), oov(2, 8));
         assert_eq!(oov(2, 8), oov(3, 8));
@@ -723,18 +573,17 @@ mod tests {
         // of MANY edges (here 7 single-char dict words, the
         // `ginalangtsiahpngbesai`→囡仔人食飯袂使 shape) must stay
         // cheaper than a single whole-buffer OOV blob spanning the same
-        // chars — length-independently. The pre-RC0 smooth OOV pricing
-        // let the blob win past ~6 edges (the reproduced bug).
+        // chars — length-independently.
         let blob_chars = 21usize; // ≈ "ginalangtsiahpngbesai"
         let oov_blob = oov(7, blob_chars);
-        // 7 modest-frequency dict edges (~3 chars each).
-        let dict_path: f64 = (0..7).map(|_| ec(500, 1, 3)).sum();
+        let dict_path: f64 = (0..7).map(|_| ec(UNSEEN, 1, 3)).sum();
         assert!(
             dict_path < oov_blob,
             "dict_path={dict_path} must stay < oov_blob={oov_blob}"
         );
-        // …and a 20-edge sentence still loses to one OOV char.
-        let huge_dict: f64 = (0..20).map(|_| ec(50, 1, 3)).sum();
+        // …and a 20-edge sentence of the costliest words still loses to
+        // one OOV char.
+        let huge_dict: f64 = (0..20).map(|_| ec(u16::MAX, 1, 3)).sum();
         assert!(
             huge_dict < oov(1, 1),
             "even a 20-edge dict path ({huge_dict}) < one OOV char ({})",
@@ -743,69 +592,68 @@ mod tests {
     }
 
     #[test]
-    fn longer_spelling_is_cheaper_at_equal_frequency() {
-        // khiin letter bias: `/ word_len^0.2`. At equal freq & syllable
-        // count a longer toneless spelling is the cheaper edge.
-        assert!(ec(100, 1, 6) < ec(100, 1, 3));
+    fn longer_spelling_is_cheaper_at_equal_walker_cost() {
+        // khiin letter bias: `/ word_len^0.2`.
+        assert!(ec(TAI, 1, 6) < ec(TAI, 1, 3));
     }
 
     #[test]
     fn user_preference_discounts_multi_syllable_cost() {
-        // A phrase edge with a positive decayed delta costs strictly
-        // less than the same edge with no user history; above the
-        // user-dict floor the discount is exactly `ln(1 + delta)`.
-        let neutral = ec(CUSTOM_EFFECTIVE_FREQ + 1, 2, 4);
-        let preferred = edge_cost(CUSTOM_EFFECTIVE_FREQ + 1, 2, 4, 1.0, true);
-        assert!(
-            preferred < neutral,
-            "preferred={preferred} neutral={neutral}"
-        );
+        // Below the user-entry cap the discount is exactly `ln(1 + delta)`.
+        let neutral = ec(TAI_UAN, 2, 6);
+        let preferred = edge_cost(TAI_UAN, 2, 6, 1.0, true);
         assert!((preferred - (neutral - 1.0f64.ln_1p())).abs() < 1e-9);
     }
 
-    #[test]
-    fn selected_rare_phrase_is_floored_to_user_dict_tier() {
-        // 2026-09-14 device repro (`kingsin` with 敬神/警訊 sources off):
-        // 更新 freq 1 alone under its key must still beat the 經 (9218) +
-        // 身 (10865) split once the user has selected it — a selection is
-        // user-dict evidence, priced like a custom entry.
-        let split = ec(9218, 1, 4) + ec(10865, 1, 3);
-        let cold = ec(1, 2, 7);
-        assert!(
-            cold > split,
-            "cold rare phrase loses the split (the bug shape)"
-        );
-        // One fresh pick: δ = BOOST_ALPHA → full tier.
-        let one_fresh = f64::from(ranking::BOOST_ALPHA);
-        let selected_once = edge_cost(1, 2, 7, one_fresh, true);
-        assert!(
-            selected_once < split,
-            "selected={selected_once} split={split}"
-        );
-        let at_tier = ec(CUSTOM_EFFECTIVE_FREQ, 2, 7) - one_fresh.ln_1p();
-        assert!((selected_once - at_tier).abs() < 1e-9);
-        // Floor, not a jump past a genuinely frequent phrase: the same
-        // delta on a freq-above-floor phrase is unchanged by the floor.
-        let above = edge_cost(CUSTOM_EFFECTIVE_FREQ * 2, 2, 7, one_fresh, true);
-        let above_expected = ec(CUSTOM_EFFECTIVE_FREQ * 2, 2, 7) - one_fresh.ln_1p();
-        assert!((above - above_expected).abs() < 1e-9);
-        // Single-syllable edges are NOT floored (S3 damping policy).
-        assert_eq!(edge_cost(1, 1, 3, 4.0, true), ec(1, 1, 3));
+    // A split the cold rare phrase loses: two common single characters.
+    // trace: (6.000 + 6.500) / 3^0.2 = 10.0343
+    fn common_split() -> f64 {
+        ec(6_000, 1, 3) + ec(6_500, 1, 3)
     }
 
     #[test]
-    fn user_dict_floor_fades_with_the_selection_weight() {
+    fn selected_rare_phrase_is_capped_to_the_user_entry_tier() {
+        // trace: cold unseen 2-syll phrase 13.181 / 4^0.2 × 2^0.2 = 11.475 > split 10.034
+        let split = common_split();
+        let cold = ec(UNSEEN, 2, 4);
+        assert!(cold > split, "cold rare phrase loses the split");
+        // One fresh pick: δ = BOOST_ALPHA → full tier.
+        // trace: 7.878 / 4^0.2 × 2^0.2 − ln(1.1) = 6.858 − 0.095 = 6.763 < 10.034
+        let one_fresh = f64::from(ranking::BOOST_ALPHA);
+        let selected_once = edge_cost(UNSEEN, 2, 4, one_fresh, true);
+        assert!(selected_once < split, "selected={selected_once}");
+        let at_tier = ec(CUSTOM_EDGE_COST, 2, 4) - one_fresh.ln_1p();
+        assert!((selected_once - at_tier).abs() < 1e-9);
+        // A cap, not a jump past a genuinely common phrase: the same delta
+        // on a phrase cheaper than the tier is only discounted.
+        let below = edge_cost(TAI_UAN, 2, 4, one_fresh, true);
+        assert!((below - (ec(TAI_UAN, 2, 4) - one_fresh.ln_1p())).abs() < 1e-9);
+        // Single-syllable edges are NOT capped (S3 damping policy).
+        assert_eq!(edge_cost(UNSEEN, 1, 3, 4.0, true), ec(UNSEEN, 1, 3));
+    }
+
+    #[test]
+    fn user_entry_cap_fades_with_the_selection_weight() {
         // Codex post-impl 2026-09-15 P2: a boolean gate never expired. The
-        // floor scales with δ: a single pick decayed to 5% of BOOST_ALPHA
-        // (~90 days at τ = 30 d) still beats the 經+身 split, but at 0.25%
-        // (~180 days) the corpus order is back; saturated repeat picks
-        // (δ = 4) stay at the full tier.
-        let split = ec(9218, 1, 4) + ec(10865, 1, 3);
+        // cap rises as δ decays: a single pick decayed to 5% of BOOST_ALPHA
+        // (~90 days at τ = 30 d) still beats the split, at 0.25% (~180
+        // days) the cap is above the unseen cost and the corpus order is
+        // back; saturated repeat picks (δ = 4) stay at the full tier.
+        // trace: cap(0.05) = 7.878 + ln(2001 / 101) = 10.864 → 9.458 − ln(1.005) < 10.034
+        //        cap(0.0025) = 7.878 + ln(2001 / 6) = 13.688 > 13.181 → 11.475 − ln(1.00025) > 10.034
+        let split = common_split();
         let alpha = f64::from(ranking::BOOST_ALPHA);
-        assert!(edge_cost(1, 2, 7, alpha * 0.05, true) < split);
-        assert!(edge_cost(1, 2, 7, alpha * 0.0025, true) > split);
-        let saturated_expected = ec(CUSTOM_EFFECTIVE_FREQ, 2, 7) - 4.0f64.ln_1p();
-        assert!((edge_cost(1, 2, 7, 4.0, true) - saturated_expected).abs() < 1e-9);
+        assert!(edge_cost(UNSEEN, 2, 4, alpha * 0.05, true) < split);
+        assert!(edge_cost(UNSEEN, 2, 4, alpha * 0.0025, true) > split);
+        let saturated_expected = ec(CUSTOM_EDGE_COST, 2, 4) - 4.0f64.ln_1p();
+        assert!((edge_cost(UNSEEN, 2, 4, 4.0, true) - saturated_expected).abs() < 1e-9);
+    }
+
+    #[test]
+    fn user_entry_cap_without_selection_lifts_nothing() {
+        // s = 0: cap = 7.878 + ln(2001) = 15.479 nats, above an unseen word.
+        assert!((user_entry_cost_cap(0.0) - 15.4794).abs() < 1e-3);
+        assert!(user_entry_cost_cap(0.0) > f64::from(UNSEEN) / 1000.0);
     }
 
     #[test]
@@ -814,8 +662,8 @@ mod tests {
         // a hot single char with a huge decayed delta gets ln(1)=0
         // discount → identical to neutral (SCALE = 0.0).
         assert_eq!(WALKER_SINGLE_SYLLABLE_USER_DELTA_SCALE, 0.0);
-        let neutral = ec(184_693, 1, 1);
-        let with_huge_delta = edge_cost(184_693, 1, 1, 4.0, true);
+        let neutral = ec(E_THE, 1, 1);
+        let with_huge_delta = edge_cost(E_THE, 1, 1, 4.0, true);
         assert_eq!(
             with_huge_delta, neutral,
             "single-syllable edge must ignore the user delta at SCALE=0.0"
@@ -826,25 +674,22 @@ mod tests {
     fn user_discount_never_raises_cost_on_malformed_delta() {
         // δ is clamped `>= 0`; a (contractually impossible) negative
         // delta must not turn the discount into a penalty.
-        let neutral = ec(50, 2, 4);
-        assert!(edge_cost(50, 2, 4, -1.0, true) <= neutral + 1e-12);
-        assert!((edge_cost(50, 2, 4, -1.0, true) - neutral).abs() < 1e-9);
+        let neutral = ec(TAI_UAN, 2, 4);
+        assert!((edge_cost(TAI_UAN, 2, 4, -1.0, true) - neutral).abs() < 1e-9);
     }
 
     #[test]
-    fn cost_is_finite_at_frequency_and_syllable_extremes() {
-        for &(f, s, l) in &[
-            (0u32, 0u8, 0usize),
+    fn cost_is_finite_at_walker_cost_and_syllable_extremes() {
+        for &(w, s, l) in &[
+            (0u16, 0u8, 0usize),
             (0, 1, 1),
-            (184_693, 8, 12),
-            (u32::MAX, u8::MAX, 64),
+            (E_THE, 8, 12),
+            (u16::MAX, u8::MAX, 64),
         ] {
             // Both pricing branches must stay finite at the extremes.
-            // The OOV branch is `OOV_PER_CHAR_PENALTY * len`; at
-            // `len = 64` that is `6.4e11`, far below f64's range.
             for dict_hit in [true, false] {
-                let c = edge_cost(f, s, l, 4.0, dict_hit);
-                assert!(c.is_finite(), "f={f} s={s} l={l} dict_hit={dict_hit} → {c}");
+                let c = edge_cost(w, s, l, 4.0, dict_hit);
+                assert!(c.is_finite(), "w={w} s={s} l={l} dict_hit={dict_hit} → {c}");
             }
         }
     }

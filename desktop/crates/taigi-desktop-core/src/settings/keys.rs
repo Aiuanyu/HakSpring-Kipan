@@ -17,7 +17,8 @@
 //! fresh install types with, so the cross-platform alignment has one home.
 
 use super::choices::{
-    AppearanceMode, CandidateFontChoice, CandidateLayout, CandidateSizeChoice, SettingsPane,
+    AppearanceMode, CandidateFontChoice, CandidateLayout, CandidateSizeChoice, KeyboardLayout,
+    SettingChoice, SettingsPane,
 };
 use super::document::SettingsKey;
 use super::engine_settings::{
@@ -149,6 +150,8 @@ pub const IS_KAUTIAN_ACCENT_TAICHUNG_ENABLED: SettingsKey<bool> =
     SettingsKey::new("kautianAccentTaichungEnabled", SUBCOLL.accent_taichung);
 pub const IS_KAUTIAN_NAME_APPENDIX_ENABLED: SettingsKey<bool> =
     SettingsKey::new("kautianNameAppendixEnabled", SUBCOLL.name_appendix);
+pub const IS_KAUTIAN_ALT_READING_ENABLED: SettingsKey<bool> =
+    SettingsKey::new("kautianAltReadingEnabled", SUBCOLL.alt_reading);
 
 /// The app UI display language, as a `DisplayLanguage` tag. The roster owns
 /// the default: the composing engine never reads which language the UI is in.
@@ -239,6 +242,11 @@ pub const INSTALLED_FONT_FACE: SettingsKey<&'static str> =
 pub const TONE_INPUT_SCHEME: SettingsKey<crate::keys::ToneInputScheme> =
     SettingsKey::new("toneInputScheme", crate::keys::ToneInputScheme::Standard);
 
+/// The layout TL / POJ keys are read in (`KeyboardLayout`). Windows reads it
+/// (the macOS twin is `SettingsStore.swift` `keyboardLayout`); TPS ignores it.
+pub const KEYBOARD_LAYOUT: SettingsKey<KeyboardLayout> =
+    SettingsKey::new("keyboardLayout", KeyboardLayout::DEFAULT);
+
 /// Whether the candidate window is shown at all. Off means no fetch and no
 /// window — the user types romanization and Space / Enter write it as typed
 /// (USER 2026-09-08: "for users who just want to type", S33). Desktop-only like
@@ -269,8 +277,9 @@ pub const CLEARED_COMPOSING_CHORD: &str = "";
 /// user), not the update bookkeeping, not the remembered pane. macOS keeps a
 /// Swift twin: `SettingsStore.swift` `resetGeneralSettings`. The input mode
 /// takes the romanization TPS returns to and the TPS key panel with it.
-pub const GENERAL_KEYS: [&str; 10] = [
+pub const GENERAL_KEYS: [&str; 11] = [
     INPUT_MODE.name,
+    KEYBOARD_LAYOUT.name,
     LAST_ROMANIZATION_MODE.name,
     TPS_KEYBOARD_SHOWN.name,
     TONE_INPUT_SCHEME.name,
@@ -291,9 +300,9 @@ pub const APPEARANCE_KEYS: [&str; 4] = [
     CANDIDATE_SIZE.name,
 ];
 
-/// The 13 source toggles + 11 subcollection toggles the Dictionary Sources pane's reset
+/// The 13 source toggles + 12 subcollection toggles the Dictionary Sources pane's reset
 /// removes (`SettingsStore.swift` `resetDictionarySources` is the macOS twin).
-pub const DICTIONARY_SOURCE_KEYS: [&str; 24] = [
+pub const DICTIONARY_SOURCE_KEYS: [&str; 25] = [
     IS_KAUTIAN_ENABLED.name,
     IS_TAIGITV_ENABLED.name,
     IS_ITAIGI_ENABLED.name,
@@ -318,6 +327,7 @@ pub const DICTIONARY_SOURCE_KEYS: [&str; 24] = [
     IS_KAUTIAN_ACCENT_SINTIK_ENABLED.name,
     IS_KAUTIAN_ACCENT_TAICHUNG_ENABLED.name,
     IS_KAUTIAN_NAME_APPENDIX_ENABLED.name,
+    IS_KAUTIAN_ALT_READING_ENABLED.name,
 ];
 
 #[cfg(test)]

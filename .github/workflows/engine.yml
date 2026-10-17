@@ -76,16 +76,9 @@ jobs:
           workspaces: engine
 
       # --no-fail-fast so one red crate does not hide the others' results.
-      #
-      # corpus_total_freq_matches_dictionary_csv is skipped, not fixed: it has
-      # been red on main since 2026-08-29 because CORPUS_TOTAL_FREQ in
-      # engine/composing/src/lattice/cost.rs was not updated with the rebuilt
-      # dictionary.csv, and updating it moves the OOV cost — a candidate-ranking
-      # change the maintainer has not signed off. Remove the --skip when the
-      # constant is updated.
       - name: cargo test
         working-directory: engine
-        run: cargo test --workspace --no-fail-fast -- --skip corpus_total_freq_matches_dictionary_csv
+        run: cargo test --workspace --no-fail-fast
 
       # Only the targets the feature changes: the lib (trace.rs's unit tests
       # are behind it) and tests/e2e_trace.rs (`#![cfg(feature = "e2e-trace")]`).

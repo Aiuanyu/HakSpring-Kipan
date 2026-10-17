@@ -157,6 +157,18 @@ enum ShortcutAction: CaseIterable, Sendable {
     /// the one row that leaves the typing session.
     case openLastSettingsPane
 
+    /// The roster split into the blocks the Shortcuts pane draws under the
+    /// composing rows (USER 2026-10-16), each with its title: Romanization,
+    /// the switches about a romanization's candidates; Phonetic Symbols, the
+    /// TPS switch and its key panel; Other, the symbol picker, the Telex guide
+    /// and the settings window. Each block keeps `allCases`' order. Mirrors
+    /// desktop-core `ShortcutAction::GROUPS` / `GROUP_TITLES`.
+    static let groups: [(title: StringKey, actions: [ShortcutAction])] = [
+        (.settingsOutputScriptRoman, [.toggleRomanization, .toggleTranslateSwapped, .cycleCandidateDisplayMode]),
+        (.settingsTpsMode, [.toggleTps, .showTpsKeyboard]),
+        (.commonOther, [.showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
+    ]
+
     var name: KeyboardShortcuts.Name {
         switch self {
         case .toggleRomanization: .toggleRomanization
@@ -168,14 +180,6 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .showTelexGuide: .showTelexGuide
         case .showTpsKeyboard: .showTpsKeyboard
         }
-    }
-
-    /// Whether this action opens the settings window rather than doing
-    /// something to the composition in flight. The two need different
-    /// dispatch: a window is process-wide, while a switch has to reach the
-    /// session that owns the engine (`ShortcutHotkeys.perform`).
-    var opensSettings: Bool {
-        self == .openLastSettingsPane
     }
 
     /// Whether this action's chord is matched by the key path instead of
@@ -208,7 +212,7 @@ enum ShortcutAction: CaseIterable, Sendable {
     ///
     /// Named here as well as on the `Name` so `ShortcutAction` stays the one
     /// place that knows everything about an action — and so the composing half
-    /// (`ComposingShortcuts.Row.defaultChord`) has a sibling with the same name.
+    /// (`ComposingShortcuts.Row.Field.shippedChord`) has a sibling with the same name.
     var defaultShortcut: KeyboardShortcuts.Shortcut? {
         name.initialShortcut
     }
@@ -503,20 +507,20 @@ enum ShortcutConflicts {
         return characters
     }()
 
-    /// Which composing actions hold the chord `shortcut` occupies.
+    /// Which composing fields hold the chord `shortcut` occupies.
     ///
     /// The pure half of "a global recording takes the key from the composing
     /// tier". Both halves of the seam are asked the same way the intra-tier
-    /// rules are (`conflictingActions`, `ComposingShortcuts.rows(holding:)`),
+    /// rules are (`conflictingActions`, `ComposingShortcuts.fields(holding:)`),
     /// so the pane resolves every collision by one rule: last writer wins, and
-    /// the loser's row empties in front of the user.
+    /// the loser's field empties in front of the user.
     @MainActor
-    static func composingActionsHolding(
+    static func composingFieldsHolding(
         _ shortcut: KeyboardShortcuts.Shortcut,
         in shortcuts: ComposingShortcuts,
-    ) -> [ComposingShortcuts.Row] {
+    ) -> [ComposingShortcuts.Row.Field] {
         guard let chord = composingChord(occupiedBy: shortcut) else { return [] }
-        return shortcuts.rows(holding: chord)
+        return shortcuts.fields(holding: chord)
     }
 
     /// Which global actions hold `chord` — the same question from the other
@@ -529,7 +533,7 @@ enum ShortcutConflicts {
         }
     }
 
-    /// A global recording just landed: take the chord off any composing row
+    /// A global recording just landed: take the chord off any composing field
     /// that held it.
     ///
     /// `shortcuts` are the composing rows as the pane last read them — a
@@ -541,7 +545,7 @@ enum ShortcutConflicts {
         in store: SettingsStore,
     ) {
         guard let shortcut = KeyboardShortcuts.getShortcut(for: changed.name) else { return }
-        for loser in composingActionsHolding(shortcut, in: shortcuts) {
+        for loser in composingFieldsHolding(shortcut, in: shortcuts) {
             store.setComposingChord(nil, for: loser)
         }
     }
@@ -605,15 +609,16 @@ enum ShortcutConflicts {
 
         guard let shortcuts = KeyRules.composingShortcuts(in: store.userDefaults) else { return }
         for (action, shortcut, chord) in held {
-            let holders = shortcuts.rows(holding: chord)
+            let holders = shortcuts.fields(holding: chord)
             guard !holders.isEmpty else { continue }
 
             let globalIsDefault = shortcut == action.defaultShortcut
             for holder in holders {
                 // A chord the user chose outranks one an action merely shipped
                 // with — and the composing side counts as chosen when it holds
-                // anything other than its own default.
-                let composingRecordingOutranks = globalIsDefault && chord != holder.defaultChord
+                // anything other than what the field ships with (a second
+                // field ships empty, so any chord on it is chosen).
+                let composingRecordingOutranks = globalIsDefault && chord != holder.shippedChord
                 if composingRecordingOutranks {
                     KeyboardShortcuts.setShortcut(nil, for: action.name)
                 } else {

@@ -7,7 +7,7 @@ mod common;
 
 mod association_v2;
 mod compound_hanji;
-mod dictionary_reader_v3;
+mod dictionary_reader_v4;
 mod fused_toneless_key;
 mod parity;
 mod partial_prefix_syllable_reach;

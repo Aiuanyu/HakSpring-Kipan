@@ -13,13 +13,12 @@ use common::{open_user_data, production_lexicon_ready};
 use protos::engine::{
     composing_request, request, response, AppConfig, CommitAsShown, CommitContinuous,
     CommitOutcome, CommitScript, ComposingRequest, ComposingResponse, FetchAtPos, HanjiConversion,
-    Platform, Reset, Start,
+    Reset, Start,
 };
 
 /// The desktop TPS config, asking for the conversion.
 fn tps_converting() -> AppConfig {
     AppConfig {
-        platform_id: Platform::Macos as i32,
         input_mode: "tps".to_owned(),
         hanji_conversion: Some(HanjiConversion { toggles: None }),
         ..AppConfig::default()
@@ -76,8 +75,7 @@ fn a_picked_word_ranks_the_walks_after_it() {
     let other = listed
         .into_iter()
         .find(|row| {
-            row.consumed_span_start == 0
-                && row.consumed_span_end as usize == raw.len()
+            row.consumed_span_end as usize == raw.len()
                 && row.hanji.as_deref().is_some_and(|hanji| hanji != neutral)
         })
         .expect("a homophone of the walker's word");

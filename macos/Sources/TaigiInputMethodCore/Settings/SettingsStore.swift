@@ -20,7 +20,7 @@ struct SettingsKey<Value: Sendable>: Sendable {
 /// Live-read by construction: every getter goes to `UserDefaults` on every access
 /// and caches nothing, so a mode switched from the input-source menu applies to
 /// the very next keystroke without anything having to be told about it
-/// (`docs/contributing/ios-settings-injection.md` §3 — a snapshot taken at
+/// (`docs/contributing/ios-architecture.md` §3 — a snapshot taken at
 /// construction is exactly what breaks mid-session TL↔POJ switching).
 ///
 /// Instances cache nothing, so there is no shared one: the input-source menu
@@ -208,6 +208,10 @@ final class SettingsStore: @unchecked Sendable {
             name: "kautianNameAppendixEnabled",
             defaultValue: EngineSettings.defaults.dictionarySources.kautianSubcollections.nameAppendix,
         )
+        static let isKautianAltReadingEnabled = SettingsKey(
+            name: "kautianAltReadingEnabled",
+            defaultValue: EngineSettings.defaults.dictionarySources.kautianSubcollections.altReading,
+        )
 
         /// The app UI display language, as a `DisplayLanguage` tag. The only key here whose default
         /// does not come from `EngineSettings.defaults`: which language the UI is written in is not
@@ -366,15 +370,16 @@ final class SettingsStore: @unchecked Sendable {
             defaultValue: true,
         )
 
-        /// The per-action composing chords are keyed by the name desktop-core
-        /// gives each row (`ComposingShortcuts.Row.settingsKey`) rather than
-        /// named here one by one: the core's roster is the source of truth for
-        /// which of them exist, and a second list would be one an action could
-        /// be added to only one of.
+        /// The per-field composing chords are keyed by the name desktop-core
+        /// gives each field (`ComposingShortcuts.Row.Field.settingsKey`) rather
+        /// than named here one by one: the core's roster is the source of truth
+        /// for which of them exist, and a second list would be one an action
+        /// could be added to only one of.
         ///
-        /// An absent key means "never touched" and reads as the action's
-        /// default; a stored empty string means the user cleared the row, which
-        /// is why the two cannot be collapsed.
+        /// On a first field an absent key means "never touched" and reads as
+        /// the action's default; a stored empty string means the user cleared
+        /// it, which is why the two cannot be collapsed. A second field ships
+        /// empty, so both read as empty there.
         static let clearedComposingChord = ""
     }
 
@@ -524,11 +529,11 @@ final class SettingsStore: @unchecked Sendable {
         userDefaults.set(after.symbols, forKey: Keys.recentSymbols.name)
     }
 
-    /// Records `chord` on `row`, or clears the row when it is nil.
-    func setComposingChord(_ chord: ComposingKeyChord?, for row: ComposingShortcuts.Row) {
+    /// Records `chord` on `field`, or clears the field when it is nil.
+    func setComposingChord(_ chord: ComposingKeyChord?, for field: ComposingShortcuts.Row.Field) {
         userDefaults.set(
             chord?.rawValue ?? Keys.clearedComposingChord,
-            forKey: row.settingsKey,
+            forKey: field.settingsKey,
         )
     }
 
@@ -541,8 +546,8 @@ final class SettingsStore: @unchecked Sendable {
     /// move. The global half of the pane is `KeyboardShortcuts`' own registry and
     /// is restored by its `reset`, which writes each name's initial shortcut back.
     func resetComposingShortcuts(_ shortcuts: ComposingShortcuts) {
-        for row in shortcuts.rows {
-            userDefaults.removeObject(forKey: row.settingsKey)
+        for field in shortcuts.rows.flatMap(\.fields) {
+            userDefaults.removeObject(forKey: field.settingsKey)
         }
     }
 
@@ -619,6 +624,7 @@ final class SettingsStore: @unchecked Sendable {
             Keys.isKautianAccentSintikEnabled.name,
             Keys.isKautianAccentTaichungEnabled.name,
             Keys.isKautianNameAppendixEnabled.name,
+            Keys.isKautianAltReadingEnabled.name,
         )
     }
 
@@ -714,18 +720,6 @@ final class SettingsStore: @unchecked Sendable {
     var storedIsHanjiFirst: Bool {
         get { bool(Keys.isHanjiFirst) }
         set { userDefaults.set(newValue, forKey: Keys.isHanjiFirst.name) }
-    }
-
-    /// Whether a typed punctuation key becomes full-width: the stored swap
-    /// masked by the display mode (`CandidateDisplayMode
-    /// .effectiveFullWidthPunctuation(stored:)`, §42). Read by
-    /// `FullWidthPunctuation` on every key.
-    /// Always on under TPS, whatever the stored swap, as on mobile; the
-    /// stored swap is kept for the way back. Mirrors desktop-core's
-    /// effective value (`SettingsDocument`, desktop TPS roadmap D4).
-    var isFullWidthPunctuation: Bool {
-        inputMode == .tps
-            || candidateDisplayMode.effectiveFullWidthPunctuation(stored: storedIsHanjiFirst)
     }
 
     /// Whether committing a word auto-inserts a trailing space. Read by the

@@ -70,9 +70,6 @@ WIRE_SURFACE_CRATES = {"protos", "dispatch", "swift-ffi", "android-jni"}
 # Crates a desktop shell links directly (desktop/, windows/, linux/ Cargo.toml).
 DESKTOP_LINKED_CRATE = "dispatch"
 LEAF_ONLY_SUBDIRS = ("tests/", "benches/")
-# Known-failing test CI skips too (.github/workflows/engine.yml § cargo test);
-# drop both skips together when the cost.rs constant is updated.
-ENGINE_TEST_SKIP = "corpus_total_freq_matches_dictionary_csv"
 
 IOS_TEST = (
     "xcodebuild -project ios/TaigiKeyboard.xcodeproj -scheme TaigiKeyboardTests "
@@ -99,6 +96,8 @@ NO_GATE_DIRS = {
     "changelog",
     "corpus",
     "docs",
+    "film",
+    "manual",
 }
 INVARIANT_PREFIXES = ("docs/", "tools/invariant_labels")
 INVARIANT_SUFFIXES = (".rs", ".kt", ".swift")
@@ -332,9 +331,7 @@ class Selection:
 def engine_commands(crates: list[str], select_dispatch_trace: bool) -> list[Command]:
     packages = " ".join(f"-p {crate}" for crate in crates)
     manifest = f"--manifest-path {ENGINE_MANIFEST}"
-    commands = [
-        Command(f"cargo test {manifest} {packages} -- --skip {ENGINE_TEST_SKIP}")
-    ]
+    commands = [Command(f"cargo test {manifest} {packages}")]
     if select_dispatch_trace:
         commands.append(
             Command(f"cargo test {manifest} -p dispatch --features e2e-trace")

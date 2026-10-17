@@ -9,7 +9,9 @@ use super::{
     ComposingManager, TpsKeyOutcome,
 };
 use crate::engine;
-use crate::keys::{types_a_tps_glyph, CandidateNavigation, ComposingKeyIntent, KeyEventSnapshot};
+use crate::keys::{
+    tps_keyboard_cap_of, CandidateNavigation, ComposingKeyIntent, KeyEventSnapshot, TpsKeyCapIndex,
+};
 use crate::policies;
 use crate::settings::{keys, InputMode, SettingsDocument};
 
@@ -45,6 +47,12 @@ pub trait IntentSurface: ComposingEffectExecutor {
     fn index_for_key_slot(&self, slot: usize) -> Option<usize>;
 
     fn navigate(&mut self, direction: CandidateNavigation);
+
+    /// The engine took a TPS glyph typed by the key at `cap`: the on-screen
+    /// key panel flashes that cap. A click on the panel arrives here too, as
+    /// the same key; the separator Space, which has no cap, does not.
+    /// Desktop TPS roadmap D6.
+    fn tps_keyboard_cap_typed(&mut self, cap: TpsKeyCapIndex);
 }
 
 /// Runs `intent` for the key `snapshot`. Answers whether the key was
@@ -78,7 +86,12 @@ pub fn perform_intent(
                 // Typing TPS fetches nothing: the window opens on demand
                 // (roadmap § D7), and a key typed over it takes it down. The
                 // engine's answer already carries the converted preedit.
-                TpsKeyOutcome::Taken => close_open_list(list, surface),
+                TpsKeyOutcome::Taken => {
+                    if let Some(cap) = tps_keyboard_cap_of(key) {
+                        surface.tps_keyboard_cap_typed(cap);
+                    }
+                    close_open_list(list, surface);
+                }
                 // A Space after the closed last syllable (O1, revised by D7):
                 // it opens the window for the last word, as Zhuyin input
                 // methods do — a window already up took the Space as its
@@ -142,9 +155,8 @@ pub fn perform_intent(
             // MODE, so Hanji-first gets `taigi？ ` (macOS pins the same pair).
             // Under TPS the composition is written as shown and earns no
             // space.
-            let is_width_flip = ComposingKeyIntent::width_flip_character(snapshot).is_some();
             let document_text =
-                document_punctuation(settings, text, is_width_flip).unwrap_or_else(|| text.clone());
+                document_punctuation(settings, text).unwrap_or_else(|| text.clone());
             let gate = auto_space_gate(settings, raw_preedit_wrote_romanization(settings));
             let insert = policies::augment_insert(&document_text, manager.display_text(), gate);
             let committed = manager.commit_composition_then_insert(&insert.text, surface);
@@ -160,16 +172,16 @@ pub fn perform_intent(
             false
         }
         ComposingKeyIntent::PassThrough => {
-            let Some(typed) = ComposingKeyIntent::document_text(snapshot) else {
+            let Some(typed) =
+                ComposingKeyIntent::document_text(snapshot, settings.choice(&keys::INPUT_MODE))
+            else {
                 return false;
             };
-            // The swap is read before the width for a bare key (the word in
-            // front of the caret is romanization, which keeps Latin marks);
-            // the width-flip chord named its width, so the swap attaches the
-            // glyph the user asked for.
-            let is_width_flip = ComposingKeyIntent::width_flip_character(snapshot).is_some();
-            let punctuation = document_punctuation(settings, &typed, is_width_flip);
-            let swapping = if is_width_flip {
+            // The swap is read before the width (the word in front of the
+            // caret is romanization, which keeps Latin marks); TPS has only
+            // the full width, so there the swap attaches the glyph written.
+            let punctuation = document_punctuation(settings, &typed);
+            let swapping = if is_tps(settings) {
                 punctuation.as_deref().unwrap_or(&typed)
             } else {
                 &typed
@@ -177,11 +189,14 @@ pub fn perform_intent(
             if swap_auto_space(swapping, settings, manager, surface) {
                 return true;
             }
-            // Punctuation this input method writes itself: the client cannot
-            // map a key it types.
-            if let Some(punctuation) = punctuation {
-                surface.insert_external(&punctuation);
-                manager.note_character_typed_outside_composition(&punctuation);
+            // Text this input method writes itself: punctuation the client
+            // cannot map a key to, and a remapped key's text, which the host
+            // would type as the QWERTY key's (mid-composition the classifier
+            // already makes printable text `CommitThenInsert`).
+            let written = punctuation.or_else(|| snapshot.is_remapped.then(|| typed.clone()));
+            if let Some(text) = written {
+                surface.insert_external(&text);
+                manager.note_character_typed_outside_composition(&text);
                 return true;
             }
             manager.note_character_typed_outside_composition(&typed);
@@ -192,7 +207,7 @@ pub fn perform_intent(
             commit_candidate(cell, false, settings, manager, list, surface);
             true
         }
-        // Space: the highlighted cell's OTHER script.
+        // Output the Other Script: the highlighted cell's OTHER script.
         ComposingKeyIntent::CommitAlternateScript => {
             let cell = surface.selected_index();
             commit_candidate(cell, true, settings, manager, list, surface);
@@ -274,8 +289,9 @@ pub fn insert_symbol(
 }
 
 /// Whether a key the classifier passes through is one this input method
-/// consumes all the same: punctuation it writes itself (full width, or the
-/// width-flip chord in either width), or an attaching mark right after an
+/// consumes all the same: punctuation it writes itself (full width, the TPS
+/// punctuation chord included), the text of a remapped key
+/// (`KeyEventSnapshot::is_remapped`), or an attaching mark right after an
 /// auto space (`is_swap_armed`: the shell's best answer before the key
 /// runs — at least the arm; a shell that knows its document cannot take the
 /// swap folds that in too).
@@ -284,11 +300,12 @@ pub fn pass_through_may_consume(
     settings: &SettingsDocument,
     is_swap_armed: bool,
 ) -> bool {
-    let Some(typed) = ComposingKeyIntent::document_text(snapshot) else {
+    let Some(typed) =
+        ComposingKeyIntent::document_text(snapshot, settings.choice(&keys::INPUT_MODE))
+    else {
         return false;
     };
-    let is_width_flip = ComposingKeyIntent::width_flip_character(snapshot).is_some();
-    if document_punctuation(settings, &typed, is_width_flip).is_some() {
+    if snapshot.is_remapped || document_punctuation(settings, &typed).is_some() {
         return true;
     }
     is_swap_armed
@@ -459,21 +476,14 @@ fn raw_preedit_wrote_romanization(settings: &SettingsDocument) -> bool {
     policies::raw_preedit_writes_romanization(settings.choice(&keys::INPUT_MODE))
 }
 
-/// `policies::document_punctuation` under the DERIVED width, so roman-only
-/// stays half-width and combined follows the stored swap. Under TPS a key
-/// whose bare press types a glyph (`,` `.` `;` …) has its Ctrl chord as the
-/// punctuation key, full width as always under TPS; any other key's chord
-/// still flips, so half-width punctuation stays reachable.
-fn document_punctuation(
-    settings: &SettingsDocument,
-    text: &str,
-    is_width_flip: bool,
-) -> Option<String> {
-    let engine_settings = settings.engine_settings();
-    let is_layout_key = engine_settings.input_mode == InputMode::Tps && types_a_tps_glyph(text);
-    policies::document_punctuation(
-        text,
-        engine_settings.is_full_width_punctuation,
-        is_width_flip && !is_layout_key,
-    )
+/// The full-width mark this input method writes for `text`, or `None` when
+/// the host writes the key: mapped only under the DERIVED width, so
+/// roman-only stays half-width, combined follows the stored swap and TPS is
+/// always full.
+fn document_punctuation(settings: &SettingsDocument, text: &str) -> Option<String> {
+    settings
+        .engine_settings()
+        .is_full_width_punctuation
+        .then(|| policies::full_width_mapped(text))
+        .flatten()
 }

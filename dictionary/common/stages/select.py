@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from common.cleanup import HANLO_EXEMPT_META_KEY
 from common.kautian_provenance import (
     PROVENANCE_META_KEY,
     build_accent_mask_map,
@@ -35,7 +36,9 @@ def run(ctx: PipelineContext) -> None:
     dialect_sheet: str | None = opts.get("dialect_sheet")
     dialect_columns: list[str] = opts.get("dialect_columns") or []
     main_sheets: list[str] = opts.get("main_sheets") or []
+    alt_reading_sheets: list[str] = opts.get("alt_reading_sheets") or []
     name_sheets: list[str] = opts.get("name_sheets") or []
+    hanlo_exempt_sheets: list[str] = opts.get("hanlo_exempt_sheets") or []
     column_rename: dict[str, str] = {**_DEFAULT_COLUMN_RENAME, **(opts.get("column_rename") or {})}
 
     # Provenance map keys must mirror the cleanup stage's `tl` normalization
@@ -44,18 +47,26 @@ def run(ctx: PipelineContext) -> None:
 
     sheets = ctx.current_sheets()
 
+    _require_sheets(ctx, "hanlo_exempt_sheets", hanlo_exempt_sheets, sheets)
+    exempt_keys = build_membership_set(sheets, hanlo_exempt_sheets, preserve_spaces)
+    ctx.set_meta(HANLO_EXEMPT_META_KEY, exempt_keys)
+    ctx.logger.info(f"  hanlo exempt keys: {len(exempt_keys)}")
+
     _stash_provenance_maps(
-        ctx, sheets, dialect_sheet, dialect_columns, main_sheets, name_sheets, preserve_spaces
+        ctx,
+        sheets,
+        dialect_sheet=dialect_sheet,
+        dialect_columns=dialect_columns,
+        main_sheets=main_sheets,
+        alt_reading_sheets=alt_reading_sheets,
+        name_sheets=name_sheets,
+        preserve_spaces=preserve_spaces,
     )
     out_sheets: dict[str, pd.DataFrame] = {}
     total_rows = 0
 
+    _require_sheets(ctx, "sheets", list(sheet_specs), sheets)
     for sheet_name, spec in sheet_specs.items():
-        if sheet_name not in sheets:
-            raise ValueError(
-                f"{ctx.source_name}: select.sheets references {sheet_name!r} "
-                f"not in loaded sheets {list(sheets)}"
-            )
         columns = spec["columns"]
         df = sheets[sheet_name][columns].copy()
         rename_map = {c: column_rename[c] for c in columns if c in column_rename}
@@ -67,11 +78,7 @@ def run(ctx: PipelineContext) -> None:
         )
 
     if dialect_sheet:
-        if dialect_sheet not in sheets:
-            raise ValueError(
-                f"{ctx.source_name}: select.dialect_sheet={dialect_sheet!r} not in "
-                f"loaded sheets"
-            )
+        _require_sheets(ctx, "dialect_sheet", [dialect_sheet], sheets)
         df = sheets[dialect_sheet]
         df_long = df.melt(
             id_vars=["漢字"],
@@ -97,12 +104,24 @@ def run(ctx: PipelineContext) -> None:
     ctx.logger.info(f"Total: {len(out_sheets)} files, {total_rows} rows")
 
 
+def _require_sheets(
+    ctx: PipelineContext, option: str, names: list[str], sheets: dict[str, pd.DataFrame]
+) -> None:
+    missing = [name for name in names if name not in sheets]
+    if missing:
+        raise ValueError(
+            f"{ctx.source_name}: select.{option} references {missing} "
+            f"not in loaded sheets {list(sheets)}"
+        )
+
+
 def _stash_provenance_maps(
     ctx: PipelineContext,
     sheets: dict[str, pd.DataFrame],
     dialect_sheet: str | None,
     dialect_columns: list[str],
     main_sheets: list[str],
+    alt_reading_sheets: list[str],
     name_sheets: list[str],
     preserve_spaces: bool,
 ) -> None:
@@ -115,7 +134,7 @@ def _stash_provenance_maps(
     from the raw sheets before that happens. Skips silently when no
     subcollection sheets are configured — non-kautian sources never reach this.
     """
-    if not (dialect_sheet or main_sheets or name_sheets):
+    if not (dialect_sheet or main_sheets or alt_reading_sheets or name_sheets):
         return
 
     accent_map: dict = {}
@@ -123,9 +142,19 @@ def _stash_provenance_maps(
         accent_map = build_accent_mask_map(sheets[dialect_sheet], dialect_columns, preserve_spaces)
     name_set = build_membership_set(sheets, name_sheets, preserve_spaces)
     main_set = build_membership_set(sheets, main_sheets, preserve_spaces)
+    alt_reading_set = build_membership_set(sheets, alt_reading_sheets, preserve_spaces)
 
-    ctx.set_meta(PROVENANCE_META_KEY, {"accent": accent_map, "name": name_set, "main": main_set})
+    ctx.set_meta(
+        PROVENANCE_META_KEY,
+        {
+            "accent": accent_map,
+            "name": name_set,
+            "main": main_set,
+            "alt_reading": alt_reading_set,
+        },
+    )
     ctx.logger.info(
         f"  provenance maps: accent_keys={len(accent_map)} "
-        f"name_keys={len(name_set)} main_keys={len(main_set)}"
+        f"name_keys={len(name_set)} main_keys={len(main_set)} "
+        f"alt_reading_keys={len(alt_reading_set)}"
     )

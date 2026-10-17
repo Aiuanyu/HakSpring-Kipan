@@ -15,6 +15,10 @@ current-at-release values when cutting a dictionary refresh.
 - **Licence**: **CC BY-ND 3.0 TW** (創用CC 姓名標示-禁止改作 3.0 臺灣) — verified 2026-09-05 against the publisher's copyright notice, <https://sutian.moe.edu.tw/zh-hant/piantsip/pankhuan-singbing/>. Covers text and audio content (文字、音檔內容). **Commercial use permitted; no NonCommercial term.** This file previously recorded CC BY-NC 4.0, which was wrong. Only Hanji + romanization are taken — see `dictionary/LICENSE` for why CC BY-ND permits that.
 - **Notes**: Multi-sheet; pipeline `select`/`expand`/`merge` stages
   handle the pivoting. Largest single source (~49k rows).
+- **Update watch**: `.github/workflows/kautian-watch.yml` downloads
+  <https://sutian.moe.edu.tw/media/senn/ods/kautian.ods> every Monday and opens an
+  issue when its `content.xml` differs from the capture (MoE re-exports the file
+  daily, so the zip bytes change even when the rows do not).
 
 ### taigitv — 公視台語新詞辭庫
 - **Publisher**: 公共電視文化事業基金會 / 公視台語台 (PTS Taigi)
@@ -116,6 +120,7 @@ current-at-release values when cutting a dictionary refresh.
 - `char_freq_merged.txt` — character-frequency corpus driving the
   `frequency` stage. Provenance: merged user corpus (TBD).
 - `khiin_frequency.csv` — frequency values supplementing Khiin IME coverage.
+  Provenance: Khiin project (<https://github.com/khiin-pjh/khiin>), date TBD.
 - `romanized_readings.tsv` — reading (`tl_num`) → hanji for the words that
   Han-Lo sources write in romanization (`kap`, `tī`, `hō͘`, …), so they do not
   break the bigram chain. 47 rows, hand-curated 2026-09-28: each hanji is the
@@ -135,10 +140,9 @@ current-at-release values when cutting a dictionary refresh.
   seen fewer than 2 times are dropped. Regenerate with
   `PYTHONPATH=. python3 -m build.corpus_bigrams` after
   `git submodule update --init --checkout corpus/taigi-corpus`. Not a
-  `build.sh` step; consumed by the association.bin v2 writer (bigram LM
-  roadmap P3). Method and numbers: `docs/reports/2026-09-28-bigram-corpus-spike.md`.
-  Provenance: Khiin project (<https://github.com/khiin-pjh/khiin>),
-  date TBD.
+  `build.sh` step; `create_association_bin` reads the bigrams and
+  `create_dictionary_bin` the unigrams. Method and numbers:
+  `docs/reports/2026-09-28-bigram-corpus-spike.md`.
 - `khiin_conversions.csv` — tone-conversion pairs from the Khiin project
   used in `build/merge_csv.py` to backfill rows absent from the nine main
   sources. Date TBD.
@@ -150,8 +154,7 @@ When refreshing a source:
 1. Replace `data/raw/<file>` with the new capture. Include the date in
    the filename if the publisher provides one (`scrape-YYYYMMDD*.json`).
 2. Update `Captured:` above with the new date.
-3. Re-run `./run.sh` (regenerates every source's `data/<key>.csv`; the
-   CLI no longer supports per-source filtering) then `./build.sh` and
+3. Re-run `./run.sh` (regenerates every source's `data/<key>.csv`) then `./build.sh` and
    `tools/compare_baseline.py verify`. Content changes will typically
    fail the gate — decide whether to re-capture the baseline (rare,
    explicit user decision) or roll the refresh into a larger update.

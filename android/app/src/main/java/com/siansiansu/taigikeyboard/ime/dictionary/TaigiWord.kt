@@ -9,7 +9,6 @@ package com.siansiansu.taigikeyboard.ime.dictionary
  * @property id Database row ID
  * @property roman Romanized form with tone marks (POJ or TL)
  * @property hanji Chinese characters representation (nullable)
- * @property lengthScore Dictionary frequency score used for ranking; higher is more common.
  *
  * Compose stability contract — declared stable in
  * `android/app/compose_compiler_config.conf` so `CandidateCell(word:
@@ -26,7 +25,6 @@ data class TaigiWord(
     val id: Int,
     val roman: String,
     val hanji: String?,
-    val lengthScore: Int?,
     /**
      * Per-cell metadata sidechannel — mirror of iOS
      * `Autocomplete.Suggestion.additionalInfo: [String: String]`. Kept as a
@@ -49,9 +47,6 @@ data class TaigiWord(
      * Adding a new feature → add a const here, do not sprinkle string literals.
      */
     object MetadataKeys {
-        /** `"true"` on the slot-0 composing-text cell. Routes tap to commit raw / pending input. */
-        const val IS_COMPOSING_TEXT = "isComposingText"
-
         /** `"true"` on Continuous-mode candidate cells (slots 1..n). Routes tap to commitContinuous. */
         const val IS_CONTINUOUS = "isContinuous"
 

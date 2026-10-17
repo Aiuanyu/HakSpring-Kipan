@@ -57,7 +57,6 @@ import com.siansiansu.taigikeyboard.i18n.generated.dictionaryImportResult
 import com.siansiansu.taigikeyboard.ime.dictionary.CustomDictionaryWord
 import com.siansiansu.taigikeyboard.ime.dictionary.UserDataException
 import com.siansiansu.taigikeyboard.ui.components.ActionRow
-import com.siansiansu.taigikeyboard.ui.components.ConfirmationDialog
 import com.siansiansu.taigikeyboard.ui.components.EmptyListCard
 import com.siansiansu.taigikeyboard.ui.components.FileDownload
 import com.siansiansu.taigikeyboard.ui.components.FileUpload
@@ -91,12 +90,12 @@ fun CustomDictionaryScreen(
     val stringResolver by rememberUpdatedState(LocalStringResolver.current)
 
     val entries by viewModel.entries.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isImporting by viewModel.isImporting.collectAsStateWithLifecycle()
     val isCustomDictEnabled by viewModel.isCustomDictEnabled.collectAsStateWithLifecycle()
 
     var showEditDialog by remember { mutableStateOf(false) }
     var editingEntry by remember { mutableStateOf<CustomDictionaryWord?>(null) }
-    var showDeleteAllDialog by remember { mutableStateOf(false) }
     var showResultDialog by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf("") }
     var filterText by remember { mutableStateOf("") }
@@ -139,7 +138,7 @@ fun CustomDictionaryScreen(
                             CustomDictionaryRefusal.CUSTOM_DICTIONARY_REFUSAL_NO_USABLE_ROWS,
                             CustomDictionaryRefusal.CUSTOM_DICTIONARY_REFUSAL_NOT_UTF8,
                             -> stringResolver.resolve(StringKey.DICTIONARY_INVALID_C_S_V_FORMAT)
-                            else -> e.localizedMessage ?: stringResolver.resolve(StringKey.COMMON_IMPORT_FAILED)
+                            else -> stringResolver.resolve(StringKey.COMMON_IMPORT_FAILED)
                         }
                     showResultDialog = true
                 }
@@ -162,8 +161,8 @@ fun CustomDictionaryScreen(
                     }
                     resultMessage = stringResolver.resolve(StringKey.DICTIONARY_EXPORT_SUCCESS)
                     showResultDialog = true
-                } catch (e: Exception) {
-                    resultMessage = e.localizedMessage ?: stringResolver.resolve(StringKey.COMMON_EXPORT_FAILED)
+                } catch (_: Exception) {
+                    resultMessage = stringResolver.resolve(StringKey.COMMON_EXPORT_FAILED)
                     showResultDialog = true
                 }
             }
@@ -278,13 +277,13 @@ fun CustomDictionaryScreen(
                     }
                 }
 
-                // Delete all
+                // Delete all — runs on the tap, no confirmation (USER 2026-10-16)
                 item {
                     Spacer(Modifier.height(16.dp))
                     SettingsCard {
                         ActionRow(
                             label = L10n.dictionaryDeleteAll,
-                            onClick = { if (!isImporting) showDeleteAllDialog = true },
+                            onClick = { if (!isImporting) viewModel.deleteAll() },
                             textColor = MaterialTheme.colorScheme.error,
                         )
                     }
@@ -320,7 +319,9 @@ fun CustomDictionaryScreen(
                     }
                 }
 
-                if (entries.isEmpty()) {
+                if (isLoading) {
+                    item { SettingsCard { LoadingRow() } }
+                } else if (entries.isEmpty()) {
                     item { EmptyListCard(L10n.dictionaryCustomDictEmpty) }
                 } else if (filterText.isNotEmpty() && filteredEntries.isEmpty()) {
                     item { NoticeCard(L10n.dictionaryNoResults) }
@@ -390,21 +391,6 @@ fun CustomDictionaryScreen(
                 viewModel.save(entry)
                 showEditDialog = false
             },
-        )
-    }
-
-    // Delete all confirmation
-    if (showDeleteAllDialog) {
-        ConfirmationDialog(
-            title = L10n.dictionaryDeleteAll,
-            message = L10n.dictionaryDeleteAllMessage,
-            confirmLabel = L10n.dictionaryClear,
-            dismissLabel = L10n.commonCancel,
-            onConfirm = {
-                showDeleteAllDialog = false
-                viewModel.deleteAll()
-            },
-            onDismiss = { showDeleteAllDialog = false },
         )
     }
 
