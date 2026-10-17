@@ -2,7 +2,62 @@
 
 Working instructions for coding agents — and for humans — in this repository. Tool-specific additions live in each tool's own file (`CLAUDE.md` for Claude Code). Licensing, secrets and commit conventions: [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-**TaigiKeyboard** — cross-platform Taiwanese input method: iOS (Swift + KeyboardKit), Android (Kotlin + FlorisBoard), macOS (IMKit), Windows (TSF, Rust), Linux (Fcitx5 + IBus, Rust) over a shared Rust engine. POJ/TL/TPS romanization, Hanji, tone variation, autocomplete, continuous input.
+**HakSpring Kipan（客源翠企盤）** — a Taiwanese Hakfa input method: a soft fork of [TaigiKeyboard](https://github.com/taigikeyboard/taigikeyboard), the cross-platform Taigi IME (iOS / Android / macOS / Windows / Linux shells over a shared Rust engine). Kipan types Hakfa in HagPinPlus (HPP) — toneless continuous input, abbreviations, Hakfa Hanji — with dictionaries from HakSpring（客源翠）: the MOE Hakfa dictionary（教典）and the Hakfa proficiency-test vocabulary（認證詞彙）.
+
+**Status**: macOS and Android are proofs of concept on Sixian（四縣）; iOS, Windows and Linux still ship upstream behaviour. Multi-dialect support is the next milestone. Most of the code and docs below still say Taigi / TL / POJ / TPS — that is upstream naming kept on purpose (§ Soft fork). In Kipan the `tl` fields carry the HPP reading.
+
+## HakSpring Kipan collaboration
+
+One maintainer works with local agents (Gemini and Claude in Antigravity, Claude Code on the maintainer's Mac) and cloud agents (Claude Code on the web, Jules) that reach the project through GitHub. These rules hold for all of them.
+
+### Soft fork
+
+- **Upstream**: `https://github.com/taigikeyboard/taigikeyboard`, branch `main`. Fork point `bd6900f` (v3.6.13). `#NNN` in commits up to the fork point refers to upstream's PRs.
+- **Change user-facing identity**: app names, bundle IDs / `applicationId`, user-data directories and file names, icons, URLs, UI strings.
+- **Keep upstream identifiers**: do not rename `taigi`, `tl`, `poj`, `tps`, `com.siansiansu.taigikeyboard`, crate / module / file names in code you do not otherwise need to change. Every rename turns an upstream fix into a merge conflict. Mass renames are out of scope unless the maintainer asks.
+- **Hakfa code goes in new modules** named `hakfa` (e.g. `engine/phonetics/src/hakfa_tables.rs`, `dictionary/sources/official/hakspring/`). In upstream files, add the smallest hook that reaches the new module rather than rewriting the file.
+- **Merging upstream**: `git fetch https://github.com/taigikeyboard/taigikeyboard.git main`, merge (never rebase) on a branch, regenerate dictionary binaries and i18n outputs with the repo's tooling instead of hand-resolving them, and commit as `chore(upstream): merge taigikeyboard main <short-sha>`.
+- **Contributing back**: an engine improvement that helps Taigi too goes to upstream as its own PR, on a branch cut from upstream `main`.
+
+### Where project knowledge lives
+
+| Layer | What | Where |
+|---|---|---|
+| Code-bound knowledge | build pitfalls, architecture, data rules, how-tos | this repo, `docs/hakfa/` — commit it with the code it describes |
+| Decisions, status, roadmap | what is decided, what is next | the maintainer's notes (below) |
+| Discussion | maintainer ↔ agent threads | the maintainer's notes (below) |
+
+**The maintainer's notes** are a private Obsidian vault, kept in a private GitHub repository of the maintainer's. Kipan's notes are under `創作/程式/HakSpring/IME/`:
+
+- `IME.md` — the hub: current status, the decisions table, roadmap, active discussion. **Read it first** when you have the vault. A row in its decisions table overrides anything said in an archived thread.
+- `dialects.md`, `android.md`, `ui-strings.md`, `names.md` — sub-plans.
+- `log/` — archived threads (read-only; read them only to learn why something was decided).
+- `hub-template.md` — the format every note follows.
+
+Access: local agents on the maintainer's Mac have the vault; a session the maintainer explicitly attaches it to has it. Cloud sessions normally do not — do not ask for it. Work from the issue, which the maintainer writes to be self-contained.
+
+Writing in the vault — only when asked, and following `hub-template.md`:
+
+- Traditional Chinese (zh-TW), full-width punctuation, timestamps in UTC+8 as `<sup>YYYYMMDD HH:MM</sup>`.
+- Your section is `### C<n>` (Claude) or `### G<n>` (Gemini) with a model tag line such as `#Claude/Opus-5-5/Code` under the heading. `### R<n>` sections belong to the maintainer; never write one.
+- Append; never rewrite another author's section. Check whether a file exists before creating it.
+- Obsidian links: `[[full/path|text]]`, embeds `![[full/path#heading]]`.
+- When a decision is made, update its row in the hub's decisions table.
+
+**Privacy**: the vault holds personal material outside `創作/程式/HakSpring/`. Never read, quote or copy anything outside that folder into this repository, an issue, a PR or a commit. Even from the Kipan notes, carry over technical content only — no personal remarks, no local paths such as `/Users/<name>/…` (also § Privacy in `docs/contributing/known-pitfalls.md`).
+
+### Issues, PRs, commits
+
+- **Open an issue** for work handed to a cloud agent, or for a user report. The body stands alone: goal, the decisions that apply (pasted, not linked to the vault), acceptance criteria, likely files.
+- **One logical change per PR and per commit.** Do not bundle a platform, i18n, dictionary data and tooling into one commit.
+- **Commit messages**: Conventional Commits `type(scope): subject`. The description may be in Hakfa Hanji (the maintainer's practice in this fork) or English; follow the language the maintainer asked for. The body says what changed, why, and which platforms were built and tested.
+- After a PR merges, a local agent with the vault adds one line to the hub (what changed + PR URL).
+
+### Reporting
+
+- Open with three lines: what changed, the result, what the maintainer has to decide.
+- Keep **verified** (a command you ran in this session and its output) apart from **inferred**. Never write "all tests pass" or "100 % done" for something you did not run — and name the stale-artifact gate (`make dict`, `make build`) you ran before a platform test.
+- Hakfa phonetics: never carry a TL / POJ rule over to HPP by analogy (HPP has no `tsh` / `chh`; its stop finals are `b d g`). When unsure, ask the maintainer.
 
 ## Project Structure
 
@@ -13,7 +68,7 @@ engine/            # Shared Rust engine — Cargo workspace, FFI to every platfo
 desktop/           # Rust crates shared by the desktops — taigi-desktop-core (all three), -storage (Windows + Linux), -update (Windows)
 dictionary/        # Dictionary sources + build pipeline + output artifacts
 assets/            # Committed shipped data every platform packages — dictionaries/ (pipeline output), fonts/, symbols/
-docs/              # engine/, architecture/, contributing/, phonetics/ (TL/POJ/TPS reference), ui/, references/, reports/, roadmap.md
+docs/              # hakfa/ (Kipan-specific), engine/, architecture/, contributing/, phonetics/ (TL/POJ/TPS reference), ui/, references/, reports/, roadmap.md
 taigi-converter/   # Canonical TL↔POJ↔TPS converter (git submodule)
 tools/             # Dev tooling — test selection, i18n codegen, release/, secret-scan/
 e2e/               # End-to-end typing tests — scenarios/, analyzer/, drivers/
@@ -27,10 +82,10 @@ emoji/             # Emoji data generator (own instructions file)
 
 1. **Xcode project files are maintainer-only** — agents never edit `.xcodeproj` / `.pbxproj` / `.xcworkspace`. Xcode synchronized groups auto-include new files under most `Sources/TaigiKeyboard/*` subdirs — exceptions in `docs/contributing/ios-guidelines.md`. Android Gradle files are editable.
 2. **Cross-platform alignment** — align on **intended behavior**, not API calls; verify each platform independently; document when the same behavior needs different implementations (`docs/contributing/cross-platform-alignment.md`).
-3. **Phonetics = authoritative-source-only** — never infer TL/POJ/TPS rules from test/dictionary absence; read `docs/phonetics/taigi-phonetics-reference.md` and `taigi-converter/` first (`docs/contributing/phonetics.md`).
+3. **Phonetics = authoritative-source-only** — never infer TL/POJ/TPS rules from test/dictionary absence; read `docs/phonetics/taigi-phonetics-reference.md` and `taigi-converter/` first (`docs/contributing/phonetics.md`). For Hakfa (HPP, the MOE Hakfa romanization, PFS) the sources are `engine/phonetics/src/hakfa_tables.rs`, `docs/hakfa/` and the maintainer; the Taigi references above govern the Taigi code paths only.
 4. **Bugfix = root cause first** — reproduce the failure and pin the cause to `file:line` before writing the fix; the PR states both.
 5. **Direction-first over fix-scope** — between two correct fixes prefer consistency and correct architectural direction over the smaller diff; state the trade-off.
-6. **Word identity = (漢字, canonical-TL) pair** — neither alone is a key (`重/tîng` ≠ `重/tāng`). Governs every dedup / lookup / ranking-merge / variant decision project-wide. POJ/TPS are alternate renderings of the same TL reading.
+6. **Word identity = (漢字, canonical-TL) pair** — neither alone is a key (`重/tîng` ≠ `重/tāng`). Governs every dedup / lookup / ranking-merge / variant decision project-wide. POJ/TPS are alternate renderings of the same TL reading. In Kipan the canonical reading is the HPP reading stored in the `tl` field.
 
 ## Design principles
 
@@ -41,7 +96,8 @@ emoji/             # Emoji data generator (own instructions file)
 
 | Before… | Read |
 |---|---|
-| your first change | `docs/contributing/known-pitfalls.md` |
+| your first change | § HakSpring Kipan collaboration above, then `docs/contributing/known-pitfalls.md` |
+| any Hakfa phonetics, dictionary or dialect work | `docs/hakfa/`; with the vault, also the hub's decisions table and `dialects.md` |
 | changing files on a platform | that platform's guide in `docs/contributing/` (index: `docs/contributing/README.md`) |
 | adding / renaming / deleting an `i18n/*.json` key from platform code | `docs/contributing/i18n.md` |
 | adding or changing a framework / OS API call (KeyboardKit, `UITextDocumentProxy`, `InputMethodService`, Compose, DataStore) | `docs/contributing/doc-lookup.md` — verify against current docs, never from memory |
