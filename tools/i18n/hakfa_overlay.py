@@ -64,6 +64,20 @@ def check_orphans(repo_root: Path) -> None:
             raise ValueError(f"{path}: no i18n/{path.name} for this overlay")
 
 
+def stale_keys(repo_root: Path) -> dict:
+    # namespace -> overlay keys that no longer exist upstream (removed or renamed by upstream).
+    stale = {}
+    for path in sorted((repo_root / OVERLAY_DIR).glob("*.json")):
+        base = repo_root / "i18n" / path.name
+        if not base.exists():
+            continue
+        upstream = _load(base).get("keys", {})
+        gone = [key for key in _load(path).get("keys", {}) if key not in upstream]
+        if gone:
+            stale[path.stem] = gone
+    return stale
+
+
 def missing_hakha(repo_root: Path) -> dict:
     # namespace -> [(key, taiha text)] for upstream keys that have no `hakha` yet.
     from i18n_lib import BASE_LANGUAGE
@@ -105,6 +119,12 @@ def main(argv) -> int:
     if argv[1:] == ["--seed"]:
         seed(repo_root)
         return 0
+    stale = stale_keys(repo_root)
+    for namespace, keys in stale.items():
+        for key in keys:
+            print(f"hakfa-overlay: {OVERLAY_DIR}/{namespace}.json:{key} no longer exists upstream — move or drop it", file=sys.stderr)
+    if stale:
+        return 1
     missing = missing_hakha(repo_root)
     for namespace, pairs in missing.items():
         for key, _ in pairs:
