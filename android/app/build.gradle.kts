@@ -1,4 +1,5 @@
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 plugins {
@@ -20,6 +21,7 @@ spotless {
 }
 
 val buildDate: String = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+val buildTime: String = LocalTime.now().format(DateTimeFormatter.ofPattern("HHmm"))
 
 android {
     namespace = "com.siansiansu.taigikeyboard"
@@ -91,6 +93,9 @@ android {
     sourceSets["main"].assets.srcDir(file("$rootDir/../assets/dictionaries"))
 
     buildTypes {
+        debug {
+            versionNameSuffix = "+dev-$buildDate-$buildTime"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
