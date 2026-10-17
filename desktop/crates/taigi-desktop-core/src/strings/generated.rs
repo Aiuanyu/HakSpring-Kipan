@@ -430,7 +430,7 @@ impl StringKey {
 pub(super) fn lookup(language: DisplayLanguage, key: StringKey) -> Option<&'static str> {
     match language {
         DisplayLanguage::Hakha => hakha(key),
-        DisplayLanguage::Taiha => taiha(key),
+        DisplayLanguage::Hanji => taiha(key),
         DisplayLanguage::English => en(key),
         DisplayLanguage::Japanese => ja(key),
         DisplayLanguage::Tailo => tailo(key),

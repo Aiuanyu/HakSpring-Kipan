@@ -3,7 +3,7 @@
 //!
 //! `generated.rs` is written by the repo-root `make i18n` from `i18n/*.json`;
 //! this file is the hand-written half. Resolution runs active language →
-//! Hanji → the key's own raw name. macOS keeps a Swift twin:
+//! Hakha (Kipan's base language) → the key's own raw name. macOS keeps a Swift twin:
 //! `macos/Sources/TaigiInputMethodCore/Strings/StringResolver.swift`.
 
 // Generator output, gated byte-for-byte by tools/i18n/check.py — rustfmt must not touch it.
@@ -21,6 +21,9 @@ pub use generated::StringKey;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum DisplayLanguage {
     System,
+    /// Kipan: Hakfa Hanji (`hakha`), the base language.
+    Hakha,
+    /// Taigi Hanji. Kipan persists it as `taiha` and still reads upstream's `hanji`.
     Hanji,
     Tailo,
     Poj,
@@ -36,8 +39,9 @@ impl DisplayLanguage {
     /// languages in the order iOS / Android / macOS list them.
     /// CROSS-PLATFORM INVARIANT (INVARIANT_DISPLAY_LANGUAGE_PRODUCTION_ROSTER) —
     /// macOS keeps a Swift twin: `DisplayLanguage.swift` `productionLanguages`.
-    pub const PICKER: [DisplayLanguage; 6] = [
+    pub const PICKER: [DisplayLanguage; 7] = [
         DisplayLanguage::System,
+        DisplayLanguage::Hakha,
         DisplayLanguage::Hanji,
         DisplayLanguage::English,
         DisplayLanguage::Japanese,
@@ -50,7 +54,8 @@ impl DisplayLanguage {
     pub fn tag(self) -> &'static str {
         match self {
             DisplayLanguage::System => Self::DEFAULT_TAG,
-            DisplayLanguage::Hanji => "hanji",
+            DisplayLanguage::Hakha => "hakha",
+            DisplayLanguage::Hanji => "taiha",
             DisplayLanguage::Tailo => "tailo",
             DisplayLanguage::Poj => "poj",
             DisplayLanguage::Japanese => "ja",
@@ -58,18 +63,19 @@ impl DisplayLanguage {
         }
     }
 
-    /// A stored tag → language. An unknown or removed tag reads as Hanji, the
+    /// A stored tag → language. An unknown or removed tag reads as Hakha, the
     /// base language every key is authored in (`DisplayLanguage.swift` `fromTag`
     /// is the macOS twin).
     pub fn from_tag(tag: &str) -> Self {
         match tag {
             "system" => DisplayLanguage::System,
-            "hanji" => DisplayLanguage::Hanji,
+            "hakha" => DisplayLanguage::Hakha,
+            "taiha" | "hanji" => DisplayLanguage::Hanji,
             "tailo" => DisplayLanguage::Tailo,
             "poj" => DisplayLanguage::Poj,
             "ja" => DisplayLanguage::Japanese,
             "en" => DisplayLanguage::English,
-            _ => DisplayLanguage::Hanji,
+            _ => DisplayLanguage::Hakha,
         }
     }
 
@@ -86,7 +92,7 @@ impl DisplayLanguage {
         match language.as_str() {
             "ja" => DisplayLanguage::Japanese,
             "en" => DisplayLanguage::English,
-            _ => DisplayLanguage::Hanji,
+            _ => DisplayLanguage::Hakha,
         }
     }
 
@@ -106,7 +112,8 @@ impl DisplayLanguage {
     pub fn endonym(self) -> Option<&'static str> {
         match self {
             DisplayLanguage::System => None,
-            DisplayLanguage::Hanji => Some("漢字"),
+            DisplayLanguage::Hakha => Some("諸夏字／漢字客文"),
+            DisplayLanguage::Hanji => Some("漢字（臺文）"),
             DisplayLanguage::Tailo => Some("Tâi-lô"),
             DisplayLanguage::Poj => Some("Pe̍h-ōe-jī"),
             DisplayLanguage::Japanese => Some("日本語"),
@@ -137,19 +144,19 @@ impl StringResolver {
             "resolve DisplayLanguage::System through `effective` before building a resolver"
         );
         let language = if language == DisplayLanguage::System {
-            DisplayLanguage::Hanji
+            DisplayLanguage::Hakha
         } else {
             language
         };
         Self { language }
     }
 
-    /// Active language → Hanji → the key's own raw name. The last fallback is
+    /// Active language → Hakha → the key's own raw name. The last fallback is
     /// what a missing translation looks like on screen: a visible
     /// `i18n_desktop_generalTab`, never a blank.
     pub fn resolve(&self, key: StringKey) -> &'static str {
         generated::lookup(self.language, key)
-            .or_else(|| generated::lookup(DisplayLanguage::Hanji, key))
+            .or_else(|| generated::lookup(DisplayLanguage::Hakha, key))
             .unwrap_or_else(|| key.as_str())
     }
 
@@ -262,11 +269,11 @@ mod tests {
         );
         assert_eq!(
             DisplayLanguage::resolve_automatic("zh-TW"),
-            DisplayLanguage::Hanji
+            DisplayLanguage::Hakha
         );
         assert_eq!(
             DisplayLanguage::resolve_automatic(""),
-            DisplayLanguage::Hanji
+            DisplayLanguage::Hakha
         );
         assert_eq!(
             DisplayLanguage::Poj.effective("en-US"),
@@ -276,11 +283,12 @@ mod tests {
     }
 
     #[test]
-    fn tags_round_trip_and_unknown_reads_as_hanji() {
+    fn tags_round_trip_and_unknown_reads_as_hakha() {
         for language in DisplayLanguage::PICKER {
             assert_eq!(DisplayLanguage::from_tag(language.tag()), language);
         }
-        assert_eq!(DisplayLanguage::from_tag("klingon"), DisplayLanguage::Hanji);
+        assert_eq!(DisplayLanguage::from_tag("klingon"), DisplayLanguage::Hakha);
+        assert_eq!(DisplayLanguage::from_tag("hanji"), DisplayLanguage::Hanji);
         assert_eq!(DisplayLanguage::DEFAULT_TAG, DisplayLanguage::System.tag());
     }
 

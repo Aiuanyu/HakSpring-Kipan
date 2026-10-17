@@ -218,7 +218,8 @@ PLACEHOLDER_TYPES = {
 
 # Value-language key -> Rust `DisplayLanguage` variant, and the variant that maps nothing.
 # MIRROR: must equal the variants in desktop/crates/taigi-desktop-core/src/strings/mod.rs.
-RUST_LANGUAGE_VARIANTS = {"hakha": "Hakha", "taiha": "Taiha", "tailo": "Tailo", "poj": "Poj", "ja": "Japanese", "en": "English"}
+# Kipan: `taiha` keeps upstream's `Hanji` variant (Taigi Hanji); only `Hakha` is new.
+RUST_LANGUAGE_VARIANTS = {"hakha": "Hakha", "taiha": "Hanji", "tailo": "Tailo", "poj": "Poj", "ja": "Japanese", "en": "English"}
 RUST_SYSTEM_VARIANT = "System"
 RUST_MAP_LANGUAGES = tuple((lang, RUST_LANGUAGE_VARIANTS[lang]) for lang in PRODUCTION_LANGUAGES)
 
