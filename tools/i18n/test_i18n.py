@@ -40,7 +40,8 @@ def _write_namespace(repo_root: Path, namespace: str, keys: dict) -> None:
 
 
 APP_NAME_VALUES = {
-    "hanji": "台語齒盤",
+    "hakha": "客源翠企盤",
+    "taiha": "台語齒盤",
     "tailo": "Khí-puânn",
     "poj": "Khí-pôaⁿ",
     "en": "TaigiKeyboard",
@@ -120,35 +121,35 @@ class ValidateTest(unittest.TestCase):
 
     def test_empty_value_rejected(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "字", "en": ""})})
+            self._validate({"k": _android_key({"hakha": "字", "en": ""})})
 
     def test_unknown_language_rejected(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "字", "fr": "x"})})
+            self._validate({"k": _android_key({"hakha": "字", "fr": "x"})})
 
     def test_placeholder_mismatch_rejected(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "{a}", "en": "{b}"})})
+            self._validate({"k": _android_key({"hakha": "{a}", "en": "{b}"})})
 
     def test_declared_placeholder_mismatch_rejected(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "{a}"}, placeholders={"b": "int"})})
+            self._validate({"k": _android_key({"hakha": "{a}"}, placeholders={"b": "int"})})
 
     def test_bad_scope_rejected(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": {"scope": {"platforms": ["freebsd"], "surfaces": ["host"]}, "values": {"hanji": "字"}}})
+            self._validate({"k": {"scope": {"platforms": ["freebsd"], "surfaces": ["host"]}, "values": {"hakha": "字"}}})
 
     def test_halfwidth_comma_in_hanji_rejected(self):
         with self.assertRaisesRegex(ValueError, "full-width comma"):
-            self._validate({"k": _android_key({"hanji": "拍開,才會收著", "en": "x"})})
+            self._validate({"k": _android_key({"hakha": "拍開,才會收著", "en": "x"})})
 
     def test_halfwidth_comma_in_other_languages_allowed(self):
         # Romanization and the OS locales punctuate half-width; the rule is Hanji's alone.
-        self._validate({"k": _android_key({"hanji": "拍開，才會收著", "en": "a, b", "tailo": "phah-khui, tsiah"})})
+        self._validate({"k": _android_key({"hakha": "拍開，才會收著", "en": "a, b", "tailo": "phah-khui, tsiah"})})
 
     def test_comma_between_digits_in_hanji_allowed(self):
         # A numeric separator is how a number is written, not how a sentence is punctuated.
-        self._validate({"k": _android_key({"hanji": "上限 30,000 項", "en": "x"})})
+        self._validate({"k": _android_key({"hakha": "上限 30,000 項", "en": "x"})})
 
     def test_comma_with_a_digit_on_only_one_side_in_hanji_rejected(self):
         # The exemption needs a digit on BOTH sides — a comma that merely touches a number is
@@ -156,16 +157,16 @@ class ValidateTest(unittest.TestCase):
         for text in ("上限 30,項", "上限 ,000 項"):
             with self.subTest(text=text):
                 with self.assertRaisesRegex(ValueError, "full-width comma"):
-                    self._validate({"k": _android_key({"hanji": text, "en": "x"})})
+                    self._validate({"k": _android_key({"hakha": text, "en": "x"})})
 
     def test_valid_passes(self):
-        self._validate({"k": _android_key({"hanji": "字", "en": "x"})})
+        self._validate({"k": _android_key({"hakha": "字", "en": "x"})})
 
 
 class ProductionCompletenessTest(unittest.TestCase):
     # A fully-authored key: every production language present + non-empty. tailo/poj joined the roster
     # at promotion (R5-2 / R6-2), so a complete key now carries all five.
-    _FULL = {"hanji": "字", "en": "x", "ja": "字", "tailo": "jī", "poj": "jī"}
+    _FULL = {"hakha": "字", "taiha": "字", "en": "x", "ja": "字", "tailo": "jī", "poj": "jī"}
 
     def _entries(self, values):
         return [("ns", "k", {"scope": {"platforms": ["android"], "surfaces": ["host"]}, "values": values})]
@@ -178,7 +179,7 @@ class ProductionCompletenessTest(unittest.TestCase):
     def test_production_languages_roster_matches_platform_order(self):
         # CROSS-PLATFORM INVARIANT (INVARIANT_DISPLAY_LANGUAGE_PRODUCTION_ROSTER) — same set + order as the
         # platform productionLanguages rosters (ios DisplayLanguage.swift / android DisplayLanguage.kt §37).
-        self.assertEqual(PRODUCTION_LANGUAGES, ("hanji", "en", "ja", "tailo", "poj"))
+        self.assertEqual(PRODUCTION_LANGUAGES, ("hakha", "taiha", "en", "ja", "tailo", "poj"))
 
     def test_all_production_languages_passes(self):
         validate_production_completeness(self._entries(dict(self._FULL)))
@@ -214,7 +215,7 @@ class ProductionCompletenessTest(unittest.TestCase):
     def test_build_outputs_enforces_when_flagged(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            _write_namespace(repo, "probe", {"k": _android_key({"hanji": "字", "en": "x"})})  # partial
+            _write_namespace(repo, "probe", {"k": _android_key({"hakha": "字", "en": "x"})})  # partial
             build_outputs(repo)  # default: completeness off -> partial fixture allowed
             with self.assertRaises(ValueError):
                 build_outputs(repo, enforce_production_completeness=True)
@@ -228,8 +229,8 @@ class BuildOutputsTest(unittest.TestCase):
                 repo,
                 "probe",
                 {
-                    "shared": _android_key({"hanji": "共用", "en": "Shared"}),
-                    "iosOnly": {"scope": {"platforms": ["ios"], "surfaces": ["host"]}, "values": {"hanji": "iOS"}},
+                    "shared": _android_key({"hakha": "共用", "en": "Shared"}),
+                    "iosOnly": {"scope": {"platforms": ["ios"], "surfaces": ["host"]}, "values": {"hakha": "iOS"}},
                 },
             )
             outputs = build_outputs(repo)
@@ -244,7 +245,7 @@ class BuildOutputsTest(unittest.TestCase):
     def test_deterministic(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            _write_namespace(repo, "probe", {"k": _android_key({"hanji": "字"})})
+            _write_namespace(repo, "probe", {"k": _android_key({"hakha": "字"})})
             self.assertEqual(build_outputs(repo), build_outputs(repo))
 
     def test_generated_map_partial_fixture_emits_tailo_only(self):
@@ -254,7 +255,7 @@ class BuildOutputsTest(unittest.TestCase):
         # real source is held to tailo/poj completeness by validate_production_completeness (see below).
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            _write_namespace(repo, "probe", {"k": _ios_key({"hanji": "字", "tailo": "jī"})})
+            _write_namespace(repo, "probe", {"k": _ios_key({"hakha": "字", "tailo": "jī"})})
             outputs = build_outputs(repo)
             taigi_map = outputs[f"{i18n_lib.GEN_PKG_DIR}/GeneratedTaigiStrings.kt"]
             self.assertIn('StringKey.PROBE_K to "jī"', taigi_map)
@@ -272,7 +273,7 @@ class BuildOutputsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
             # Distinct tailo/poj so the map is proven to carry the poj value, not a copy of tailo.
-            _write_namespace(repo, "probe", {"k": _ios_key({"hanji": "字", "tailo": "tsuā", "poj": "chōa"})})
+            _write_namespace(repo, "probe", {"k": _ios_key({"hakha": "字", "taiha": "字", "tailo": "tsuā", "poj": "chōa"})})
             outputs = build_outputs(repo)
             taigi_map = outputs[f"{i18n_lib.GEN_PKG_DIR}/GeneratedTaigiStrings.kt"]
             self.assertIn('StringKey.PROBE_K to "tsuā"', taigi_map)  # under `private val tailo`
@@ -302,19 +303,19 @@ class GeneratedMapCompletenessTest(unittest.TestCase):
         # tailo + poj are production languages, so a half-authored pair fails the single production gate:
         # poj missing -> "missing production language(s) ['poj']". (No separate lockstep gate.)
         with self.assertRaisesRegex(ValueError, "missing production language"):
-            self._build({"hanji": "字", "tailo": "jī", "ja": "字", "en": "char"})
+            self._build({"hakha": "字", "tailo": "jī", "ja": "字", "en": "char"})
 
     def test_poj_without_tailo_rejected(self):
         with self.assertRaisesRegex(ValueError, "missing production language"):
-            self._build({"hanji": "字", "poj": "jī", "ja": "字", "en": "char"})
+            self._build({"hakha": "字", "poj": "jī", "ja": "字", "en": "char"})
 
     def test_both_present_passes(self):
-        self._build({"hanji": "字", "tailo": "jī", "poj": "jī", "ja": "字", "en": "char"})
+        self._build({"hakha": "字", "taiha": "字", "tailo": "jī", "poj": "jī", "ja": "字", "en": "char"})
 
     def test_neither_present_rejected(self):
         # A key authoring neither tailo nor poj fails production completeness — every picker option must render.
         with self.assertRaisesRegex(ValueError, "missing production language"):
-            self._build({"hanji": "字", "ja": "字", "en": "char"})
+            self._build({"hakha": "字", "ja": "字", "en": "char"})
 
 
 class InnoMessagesTest(unittest.TestCase):
@@ -332,9 +333,9 @@ class InnoMessagesTest(unittest.TestCase):
                     "installerNote": {
                         "scope": {"platforms": ["windows"], "surfaces": ["host"]},
                         "placeholders": {"step": "string"},
-                        "values": {"hanji": "步驟：{step}", "tailo": "pōo-tsàu: {step}", "poj": "pō͘-chàu: {step}", "en": "Step: {step}", "ja": "手順: {step}"},
+                        "values": {"hakha": "步驟：{step}", "taiha": "步驟：{step}", "tailo": "pōo-tsàu: {step}", "poj": "pō͘-chàu: {step}", "en": "Step: {step}", "ja": "手順: {step}"},
                     },
-                    "plainKey": _all_platform_key({"hanji": "字", "tailo": "jī", "poj": "jī", "en": "x", "ja": "字"}),
+                    "plainKey": _all_platform_key({"hakha": "字", "taiha": "字", "tailo": "jī", "poj": "jī", "en": "x", "ja": "字"}),
                 },
             )
             outputs = build_outputs(repo)
@@ -351,7 +352,7 @@ class InnoMessagesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
             _write_app_name_namespace(repo)
-            _write_namespace(repo, "probe", {"k": _all_platform_key({"hanji": "字", "tailo": "jī", "poj": "jī", "en": "x", "ja": "字"})})
+            _write_namespace(repo, "probe", {"k": _all_platform_key({"hakha": "字", "taiha": "字", "tailo": "jī", "poj": "jī", "en": "x", "ja": "字"})})
             self.assertNotIn(WINDOWS_INSTALLER_MESSAGES_FILE, build_outputs(repo))
 
 
@@ -361,32 +362,32 @@ class PlaceholderValidationTest(unittest.TestCase):
 
     def test_format_key_requires_declaration(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "{count} 項"})})
+            self._validate({"k": _android_key({"hakha": "{count} 項"})})
 
     def test_unknown_placeholder_type_rejected(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "{count}"}, placeholders={"count": "banana"})})
+            self._validate({"k": _android_key({"hakha": "{count}"}, placeholders={"count": "banana"})})
 
     def test_keyword_placeholder_name_rejected(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "{fun}"}, placeholders={"fun": "int"})})
+            self._validate({"k": _android_key({"hakha": "{fun}"}, placeholders={"fun": "int"})})
 
     def test_swift_keyword_placeholder_name_rejected(self):
         # `default` is a legal Kotlin identifier but a Swift keyword; the placeholder becomes a Swift
         # function parameter, so it must be rejected for the iOS emitter (Codex post-impl).
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "{default}"}, placeholders={"default": "int"})})
+            self._validate({"k": _android_key({"hakha": "{default}"}, placeholders={"default": "int"})})
 
     def test_declared_but_unused_rejected(self):
         with self.assertRaises(ValueError):
-            self._validate({"k": _android_key({"hanji": "no placeholder"}, placeholders={"count": "int"})})
+            self._validate({"k": _android_key({"hakha": "no placeholder"}, placeholders={"count": "int"})})
 
     def test_translation_reorder_allowed(self):
         # en reorders the two placeholders vs base; allowed because substitution is by name.
-        self._validate({"k": _android_key({"hanji": "{a} {b}", "en": "{b} {a}"}, placeholders={"a": "int", "b": "int"})})
+        self._validate({"k": _android_key({"hakha": "{a} {b}", "en": "{b} {a}"}, placeholders={"a": "int", "b": "int"})})
 
     def test_valid_format_key_passes(self):
-        self._validate({"k": _android_key({"hanji": "{imported} ok {skipped}"}, placeholders={"imported": "int", "skipped": "int"})})
+        self._validate({"k": _android_key({"hakha": "{imported} ok {skipped}"}, placeholders={"imported": "int", "skipped": "int"})})
 
 
 class FormatEmitTest(unittest.TestCase):
@@ -398,7 +399,7 @@ class FormatEmitTest(unittest.TestCase):
                 "probe",
                 {
                     "imp": _android_key(
-                        {"hanji": "{imported} ok {skipped}", "en": "{skipped} dup {imported}"},
+                        {"hakha": "{imported} ok {skipped}", "en": "{skipped} dup {imported}"},
                         placeholders={"imported": "int", "skipped": "int"},
                     ),
                 },
@@ -418,21 +419,21 @@ class FormatEmitTest(unittest.TestCase):
     def test_literal_percent_escaped_in_format_key(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            _write_namespace(repo, "probe", {"pct": _android_key({"hanji": "{count}% done"}, placeholders={"count": "int"})})
+            _write_namespace(repo, "probe", {"pct": _android_key({"hakha": "{count}% done"}, placeholders={"count": "int"})})
             outputs = build_outputs(repo)
             self.assertIn("%1$d%% done", outputs[f"{i18n_lib.ANDROID_RES_ROOT}/values/strings_i18n.xml"])
 
     def test_plain_key_percent_untouched(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            _write_namespace(repo, "probe", {"k": _android_key({"hanji": "100% sure"})})
+            _write_namespace(repo, "probe", {"k": _android_key({"hakha": "100% sure"})})
             outputs = build_outputs(repo)
             self.assertIn("100% sure", outputs[f"{i18n_lib.ANDROID_RES_ROOT}/values/strings_i18n.xml"])
 
     def test_no_format_keys_emits_placeholder_comment(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            _write_namespace(repo, "probe", {"k": _android_key({"hanji": "字"})})
+            _write_namespace(repo, "probe", {"k": _android_key({"hakha": "字"})})
             formats = build_outputs(repo)[f"{i18n_lib.GEN_PKG_DIR}/StringResolverFormats.kt"]
             self.assertIn("No format-arg keys", formats)
             self.assertNotIn("import", formats)  # no unused imports when there are no accessors
@@ -460,27 +461,27 @@ class IOSEmitTest(unittest.TestCase):
 
     def test_xcstrings_source_language_is_native_english(self):
         catalog = json.loads(
-            self._outputs({"k": _ios_key({"hanji": "字", "en": "Character"})})[i18n_lib.IOS_XCSTRINGS]
+            self._outputs({"k": _ios_key({"hakha": "字", "en": "Character"})})[i18n_lib.IOS_XCSTRINGS]
         )
         self.assertEqual(catalog["sourceLanguage"], "en")
 
     def test_xcstrings_keyed_by_res_name_with_only_native_authored_langs(self):
-        catalog = json.loads(self._outputs({"k": _ios_key({"hanji": "字"}, comment="c")})[i18n_lib.IOS_XCSTRINGS])
+        catalog = json.loads(self._outputs({"k": _ios_key({"hakha": "字"}, comment="c")})[i18n_lib.IOS_XCSTRINGS])
         unit = catalog["strings"]["i18n_probe_k"]
         self.assertEqual(unit["comment"], "c")
         self.assertEqual(unit["localizations"], {})
-        ios_map = self._outputs({"k": _ios_key({"hanji": "字"})})[
+        ios_map = self._outputs({"k": _ios_key({"hakha": "字"})})[
             f"{i18n_lib.IOS_GEN_DIR}/GeneratedTaigiStrings.swift"
         ]
         self.assertIn('.probeK: "字"', ios_map)
 
     def test_xcstrings_authored_language_uses_bcp47_tag(self):
-        catalog = json.loads(self._outputs({"k": _ios_key({"hanji": "字", "en": "Word"})})[i18n_lib.IOS_XCSTRINGS])
+        catalog = json.loads(self._outputs({"k": _ios_key({"hakha": "字", "en": "Word"})})[i18n_lib.IOS_XCSTRINGS])
         self.assertIn("en", catalog["strings"]["i18n_probe_k"]["localizations"])
 
     def test_xcstrings_never_emits_product_language_bundle_tags(self):
         outputs = self._outputs(
-            {"k": _ios_key({"hanji": "字", "tailo": "jī", "poj": "jī", "en": "Word", "ja": "字"})}
+            {"k": _ios_key({"hakha": "字", "taiha": "字", "tailo": "jī", "poj": "jī", "en": "Word", "ja": "字"})}
         )
         xcstrings = outputs[i18n_lib.IOS_XCSTRINGS]
         self.assertNotIn("nan-Hant-TW", xcstrings)
@@ -491,8 +492,8 @@ class IOSEmitTest(unittest.TestCase):
     def test_ios_scope_filter_excludes_android_only(self):
         outputs = self._outputs(
             {
-                "shared": _ios_key({"hanji": "共用"}),
-                "androidOnly": {"scope": {"platforms": ["android"], "surfaces": ["host"]}, "values": {"hanji": "A"}},
+                "shared": _ios_key({"hakha": "共用"}),
+                "androidOnly": {"scope": {"platforms": ["android"], "surfaces": ["host"]}, "values": {"hakha": "A"}},
             },
         )
         string_key_swift = outputs[f"{i18n_lib.IOS_GEN_DIR}/StringKey.swift"]
@@ -502,7 +503,7 @@ class IOSEmitTest(unittest.TestCase):
     def test_ios_format_uses_lld_and_int64_cast(self):
         # iOS %lld (Swift Int is 64-bit) + Int64() cast — NOT Android's %d.
         outputs = self._outputs(
-            {"imp": _ios_key({"hanji": "{imported} ok {skipped}"}, placeholders={"imported": "int", "skipped": "int"})},
+            {"imp": _ios_key({"hakha": "{imported} ok {skipped}"}, placeholders={"imported": "int", "skipped": "int"})},
         )
         generated_map = outputs[f"{i18n_lib.IOS_GEN_DIR}/GeneratedTaigiStrings.swift"]
         self.assertIn('.probeImp: "%1$lld ok %2$lld"', generated_map)
@@ -513,7 +514,7 @@ class IOSEmitTest(unittest.TestCase):
         self.assertIn("%1$d ok %2$d", outputs[f"{i18n_lib.ANDROID_RES_ROOT}/values/strings_i18n.xml"])
 
     def test_ios_no_format_keys_emits_comment(self):
-        formats = self._outputs({"k": _ios_key({"hanji": "字"})})[f"{i18n_lib.IOS_GEN_DIR}/StringResolverFormats.swift"]
+        formats = self._outputs({"k": _ios_key({"hakha": "字"})})[f"{i18n_lib.IOS_GEN_DIR}/StringResolverFormats.swift"]
         self.assertIn("No format-arg keys", formats)
         self.assertNotIn("extension StringResolver", formats)
 
@@ -536,7 +537,7 @@ class PlaceholderTypeTest(unittest.TestCase):
                     "scope": {"platforms": ["android", "ios", "macos"], "surfaces": ["host"]},
                     "placeholders": {"reason": "string"},
                     "values": {
-                        "hanji": "失敗({reason})",
+                        "hakha": "失敗({reason})",
                         "tailo": "sit-pāi({reason})",
                         "poj": "sit-pāi({reason})",
                         "en": "failed ({reason})",
@@ -599,12 +600,12 @@ class MacOSBundleNameTest(unittest.TestCase):
         )
 
     def test_value_is_escaped_as_a_strings_literal(self):
-        strings = self._strings(_bundle_name_outputs({**APP_NAME_VALUES, "hanji": 'a"b\\c'}), "zh-Hant")
+        strings = self._strings(_bundle_name_outputs({**APP_NAME_VALUES, "hakha": 'a"b\\c'}), "zh-Hant")
         self.assertIn(r'"CFBundleName" = "a\"b\\c";', strings)
 
     def test_source_without_the_app_name_key_emits_nothing(self):
         # Unit fixtures author their own tiny namespaces and must not all have to declare a Home tab.
-        outputs = _build_probe_outputs({"k": _all_platform_key({"hanji": "字"})})
+        outputs = _build_probe_outputs({"k": _all_platform_key({"hakha": "字"})})
         self.assertFalse([path for path in outputs if path.startswith(f"{i18n_lib.MACOS_APP_DIR}/")])
 
     def test_windows_gets_the_same_name_per_ui_language_as_a_string_table_source(self):
@@ -619,11 +620,11 @@ class MacOSBundleNameTest(unittest.TestCase):
         )
 
     def test_windows_product_name_is_escaped_as_a_rust_literal(self):
-        source = _bundle_name_outputs({**APP_NAME_VALUES, "hanji": 'a"b\\c'})[i18n_lib.WINDOWS_PRODUCT_NAME_FILE]
+        source = _bundle_name_outputs({**APP_NAME_VALUES, "hakha": 'a"b\\c'})[i18n_lib.WINDOWS_PRODUCT_NAME_FILE]
         self.assertIn(r'(0x0404, "a\"b\\c"),', source)
 
     def test_source_without_the_app_name_key_emits_no_windows_product_names(self):
-        outputs = _build_probe_outputs({"k": _all_platform_key({"hanji": "字"})})
+        outputs = _build_probe_outputs({"k": _all_platform_key({"hakha": "字"})})
         self.assertNotIn(i18n_lib.WINDOWS_PRODUCT_NAME_FILE, outputs)
 
     def test_cli_build_without_the_app_name_key_fails_naming_it(self):
@@ -652,13 +653,14 @@ class MacOSEmitTest(unittest.TestCase):
         outputs = self._outputs(
             {
                 "k": _all_platform_key(
-                    {"hanji": "字", "tailo": "jī-tailo", "poj": "jī-poj", "en": "Word", "ja": "文字"},
+                    {"hakha": "字", "taiha": "字-taiha", "tailo": "jī-tailo", "poj": "jī-poj", "en": "Word", "ja": "文字"},
                 )
             },
         )
         macos_map = outputs[f"{i18n_lib.MACOS_GEN_DIR}/GeneratedStrings.swift"]
         for case, value in (
-            ("hanji", "字"),
+            ("hakha", "字"),
+            ("taiha", "字-taiha"),
             ("tailo", "jī-tailo"),
             ("poj", "jī-poj"),
             ("japanese", "文字"),
@@ -679,7 +681,7 @@ class MacOSEmitTest(unittest.TestCase):
         self.assertEqual([lang for lang, _case in i18n_lib.MACOS_MAP_LANGUAGES], list(PRODUCTION_LANGUAGES))
 
     def test_map_emits_empty_dictionary_for_an_unauthored_language(self):
-        macos_map = self._outputs({"k": _all_platform_key({"hanji": "字"})})[
+        macos_map = self._outputs({"k": _all_platform_key({"hakha": "字"})})[
             f"{i18n_lib.MACOS_GEN_DIR}/GeneratedStrings.swift"
         ]
         self.assertIn("private static let english: [StringKey: String] = [:]", macos_map)
@@ -687,10 +689,10 @@ class MacOSEmitTest(unittest.TestCase):
     def test_scope_filtering_is_three_way(self):
         outputs = self._outputs(
             {
-                "shared": _all_platform_key({"hanji": "共用"}),
-                "macosOnly": {"scope": {"platforms": ["macos"], "surfaces": ["host"]}, "values": {"hanji": "M"}},
-                "iosOnly": {"scope": {"platforms": ["ios"], "surfaces": ["host"]}, "values": {"hanji": "I"}},
-                "androidOnly": {"scope": {"platforms": ["android"], "surfaces": ["host"]}, "values": {"hanji": "A"}},
+                "shared": _all_platform_key({"hakha": "共用"}),
+                "macosOnly": {"scope": {"platforms": ["macos"], "surfaces": ["host"]}, "values": {"hakha": "M"}},
+                "iosOnly": {"scope": {"platforms": ["ios"], "surfaces": ["host"]}, "values": {"hakha": "I"}},
+                "androidOnly": {"scope": {"platforms": ["android"], "surfaces": ["host"]}, "values": {"hakha": "A"}},
             },
         )
         macos_keys = outputs[f"{i18n_lib.MACOS_GEN_DIR}/StringKey.swift"]
@@ -711,9 +713,9 @@ class MacOSEmitTest(unittest.TestCase):
     def test_adding_macos_scope_leaves_ios_and_android_artifacts_byte_identical(self):
         # Scoping an existing key to macOS must be additive: the guarantee that lets PR-by-PR macOS
         # adoption never touch a shipped iOS or Android string.
-        keys = {"k": _ios_key({"hanji": "字", "en": "Word"})}
+        keys = {"k": _ios_key({"hakha": "字", "en": "Word"})}
         before = self._outputs(keys)
-        after = self._outputs({"k": _all_platform_key({"hanji": "字", "en": "Word"})})
+        after = self._outputs({"k": _all_platform_key({"hakha": "字", "en": "Word"})})
         for path, content in before.items():
             if path.startswith(i18n_lib.MACOS_GEN_DIR) or path == i18n_lib.WINDOWS_GEN_FILE:
                 continue  # the desktop artifacts are exactly what the added scope is supposed to change
@@ -725,7 +727,7 @@ class MacOSEmitTest(unittest.TestCase):
         outputs = self._outputs(
             {
                 "imp": _all_platform_key(
-                    {"hanji": "{imported} ok {skipped}"},
+                    {"hakha": "{imported} ok {skipped}"},
                     placeholders={"imported": "int", "skipped": "int"},
                 )
             },
@@ -753,8 +755,8 @@ class MacOSEmitTest(unittest.TestCase):
         # The artifact LIST must not depend on how keys are scoped — check.py compares a fixed set of
         # paths, so a platform dropping out of the map would silently stop being gated. What those
         # files contain when the scope is empty is a separate contract; see the production gate below.
-        scoped = set(self._outputs({"k": _all_platform_key({"hanji": "字"})}))
-        unscoped = set(self._outputs({"k": _ios_key({"hanji": "字"})}))
+        scoped = set(self._outputs({"k": _all_platform_key({"hakha": "字"})}))
+        unscoped = set(self._outputs({"k": _ios_key({"hakha": "字"})}))
         self.assertEqual(scoped, unscoped)
         self.assertIn(f"{i18n_lib.MACOS_GEN_DIR}/StringKey.swift", unscoped)
 
@@ -782,8 +784,8 @@ class GlobalValidationTest(unittest.TestCase):
         # catches the collision that would emit two identical Swift cases / Kotlin vals.
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            _write_namespace(repo, "common", {"fooBar": _android_key({"hanji": "1"})})
-            _write_namespace(repo, "commonFoo", {"bar": _android_key({"hanji": "2"})})
+            _write_namespace(repo, "common", {"fooBar": _android_key({"hakha": "1"})})
+            _write_namespace(repo, "commonFoo", {"bar": _android_key({"hakha": "2"})})
             with self.assertRaises(ValueError) as ctx:
                 build_outputs(repo)
             self.assertIn("duplicate accessor", str(ctx.exception))
@@ -796,7 +798,7 @@ def _plural_key(values: dict, placeholders: dict) -> dict:
 
 # A two-count plural message: each count selects its own one/other arm independently.
 _PLURAL_VALUES = {
-    "hanji": "匯入 {customDict} 自訂、{frequency} 詞頻",
+    "hakha": "匯入 {customDict} 自訂、{frequency} 詞頻",
     "en": "Imported {customDict, plural, one {# custom entry} other {# custom entries}}, "
     "{frequency, plural, one {# frequency record} other {# frequency records}}",
 }
@@ -866,7 +868,7 @@ class PluralValidateTest(unittest.TestCase):
 
     def test_plural_in_base_language_rejected(self):
         with self.assertRaises(ValueError) as ctx:
-            self._validate({"k": _plural_key({"hanji": "{n, plural, one {#} other {#}}"}, {"n": "int"})})
+            self._validate({"k": _plural_key({"hakha": "{n, plural, one {#} other {#}}"}, {"n": "int"})})
         self.assertIn("must not use plural", str(ctx.exception))
 
 
@@ -912,7 +914,7 @@ class PluralEmitTest(unittest.TestCase):
             _write_namespace(
                 repo,
                 "probe",
-                {"imp": _plural_key({"hanji": "{n} x", "ja": "{n, plural, one {#} other {#}}"}, {"n": "int"})},
+                {"imp": _plural_key({"hakha": "{n} x", "ja": "{n, plural, one {#} other {#}}"}, {"n": "int"})},
             )
             with self.assertRaises(ValueError) as ctx:
                 build_outputs(repo)
@@ -981,13 +983,13 @@ class WindowsEmitTest(unittest.TestCase):
         # Same shape as macOS: no resource bundle, so every production language is a generated map
         # with a DISTINCT sentinel per language, and `.system` maps nothing.
         outputs = self._outputs(
-            {"k": self._windows_key({"hanji": "字", "tailo": "jī-tailo", "poj": "jī-poj", "en": "Word", "ja": "文字"})},
+            {"k": self._windows_key({"hakha": "字", "taiha": "字-taiha", "tailo": "jī-tailo", "poj": "jī-poj", "en": "Word", "ja": "文字"})},
         )
         rust = outputs[i18n_lib.WINDOWS_GEN_FILE]
         self.assertIn("pub enum StringKey {", rust)
         self.assertIn("    ProbeK,", rust)
         self.assertIn('Self::ProbeK => "i18n_probe_k",', rust)
-        for lang, sentinel in (("hanji", "字"), ("tailo", "jī-tailo"), ("poj", "jī-poj"), ("en", "Word"), ("ja", "文字")):
+        for lang, sentinel in (("hakha", "字"), ("taiha", "字-taiha"), ("tailo", "jī-tailo"), ("poj", "jī-poj"), ("en", "Word"), ("ja", "文字")):
             body = rust.split(f"fn {lang}(key: StringKey)", 1)[1].split("\n}", 1)[0]
             self.assertIn(f'StringKey::ProbeK => "{sentinel}"', body)
         for variant in i18n_lib.RUST_LANGUAGE_VARIANTS.values():
@@ -995,9 +997,9 @@ class WindowsEmitTest(unittest.TestCase):
         self.assertIn("DisplayLanguage::System => None", rust)
 
     def test_windows_scope_filters_keys_and_leaves_other_platforms_byte_identical(self):
-        shared = self._windows_key({"hanji": "S"})
-        windows_only = self._windows_key({"hanji": "W"}, platforms=("windows",))
-        macos_only = self._windows_key({"hanji": "M"}, platforms=("macos",))
+        shared = self._windows_key({"hakha": "S"})
+        windows_only = self._windows_key({"hakha": "W"}, platforms=("windows",))
+        macos_only = self._windows_key({"hakha": "M"}, platforms=("macos",))
         before = self._outputs({"shared": shared, "macosOnly": macos_only})
         after = self._outputs({"shared": shared, "macosOnly": macos_only, "windowsOnly": windows_only})
         rust = after[i18n_lib.WINDOWS_GEN_FILE]
@@ -1014,7 +1016,7 @@ class WindowsEmitTest(unittest.TestCase):
                 "why": {
                     "scope": {"platforms": ["windows"], "surfaces": ["host"]},
                     "placeholders": {"reason": "string", "count": "int"},
-                    "values": {"hanji": "失敗{count}次（{reason}）", "en": "{reason}: failed {count} times"},
+                    "values": {"hakha": "失敗{count}次（{reason}）", "en": "{reason}: failed {count} times"},
                 }
             },
         )
@@ -1031,7 +1033,7 @@ class WindowsEmitTest(unittest.TestCase):
                 "rows": {
                     "scope": {"platforms": ["windows"], "surfaces": ["host"]},
                     "placeholders": {"n": "int"},
-                    "values": {"hanji": "{n} 列", "en": "{n, plural, one {# row} other {# rows}}"},
+                    "values": {"hakha": "{n} 列", "en": "{n, plural, one {# row} other {# rows}}"},
                 }
             },
         )
@@ -1049,7 +1051,7 @@ class WindowsEmitTest(unittest.TestCase):
                     "scope": {"platforms": ["windows"], "surfaces": ["host"]},
                     "placeholders": {"imported": "int", "skipped": "int"},
                     "values": {
-                        "hanji": "匯入{imported}筆，略過{skipped}筆",
+                        "hakha": "匯入{imported}筆，略過{skipped}筆",
                         "en": "{imported, plural, one {# entry} other {# entries}} imported, "
                         "{skipped, plural, one {# entry} other {# entries}} skipped",
                     },
@@ -1072,7 +1074,7 @@ class WindowsEmitTest(unittest.TestCase):
                         "k": {
                             "scope": {"platforms": ["windows"], "surfaces": ["host"]},
                             "placeholders": {"loop": "int"},
-                            "values": {"hanji": "{loop}"},
+                            "values": {"hakha": "{loop}"},
                         }
                     },
                 },
@@ -1081,8 +1083,8 @@ class WindowsEmitTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate Rust accessor"):
             i18n_lib._validate_global(
                 [
-                    ("probe", "aB", {"scope": {"platforms": ["windows"], "surfaces": ["host"]}, "values": {"hanji": "1"}}),
-                    ("probe", "a_b", {"scope": {"platforms": ["windows"], "surfaces": ["host"]}, "values": {"hanji": "2"}}),
+                    ("probe", "aB", {"scope": {"platforms": ["windows"], "surfaces": ["host"]}, "values": {"hakha": "1"}}),
+                    ("probe", "a_b", {"scope": {"platforms": ["windows"], "surfaces": ["host"]}, "values": {"hakha": "2"}}),
                 ]
             )
 

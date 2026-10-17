@@ -119,14 +119,14 @@
                 style="@style/SmartbarToolbarMode"
                 android:singleLine="true"
                 android:ellipsize="none"
-                android:text="POJ" />
+                android:text="PFS" />
 
             <Button
                 android:id="@+id/toolbar_mode_tl"
                 style="@style/SmartbarToolbarMode"
                 android:singleLine="true"
                 android:ellipsize="none"
-                android:text="TL" />
+                android:text="HPP" />
 
             <Button
                 android:id="@+id/toolbar_mode_en"

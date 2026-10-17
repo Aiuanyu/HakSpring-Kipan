@@ -13,13 +13,13 @@ import com.siansiansu.taigikeyboard.ui.components.SelectionListScreen
 val inputModeOptions: List<Pair<String, StringKey>> =
     listOf(
         "poj" to StringKey.SETTINGS_POJ_MODE,
-        "tl" to StringKey.SETTINGS_TL_MODE,
+        "tl" to StringKey.SETTINGS_HPP_MODE,
         "english" to StringKey.SETTINGS_ENGLISH_MODE,
         "tps" to StringKey.SETTINGS_TPS_MODE,
     )
 
 @Composable
-fun inputModeDisplayName(mode: String): String = stringRes(inputModeOptions.firstOrNull { it.first == mode }?.second ?: StringKey.SETTINGS_TL_MODE)
+fun inputModeDisplayName(mode: String): String = stringRes(inputModeOptions.firstOrNull { it.first == mode }?.second ?: StringKey.SETTINGS_HPP_MODE)
 
 @Composable
 fun InputModeScreen(

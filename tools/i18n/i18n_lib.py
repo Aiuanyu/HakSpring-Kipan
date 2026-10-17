@@ -14,7 +14,7 @@ from pathlib import Path
 # tailo/poj are hand-authored in lockstep (P3b/P3c). Beyond the base, the production CLI additionally
 # requires every PRODUCTION_LANGUAGES value (validate_production_completeness) — which covers the tailo/poj
 # pair too, both being production languages; only a NON-production language's absence is a deliberate fallback.
-BASE_LANGUAGE = "hanji"
+BASE_LANGUAGE = "hakha"
 
 # Display languages emitted to the Kotlin TL/POJ map (no OS locale -> GeneratedMap path). poj is the POJ
 # rendering of the same reading as tailo; both are hand-authored as a pair (kept in step by
@@ -28,13 +28,13 @@ GENERATED_MAP_LANGUAGES = ("tailo", "poj")
 # The lint config disables Android `MissingTranslation`, so this completeness check is the generator's job (R4-3).
 # CROSS-PLATFORM INVARIANT (INVARIANT_DISPLAY_LANGUAGE_PRODUCTION_ROSTER) — must mirror the picker roster
 # in android/.../i18n/DisplayLanguage.kt `productionLanguages` and ios/.../Strings/DisplayLanguage.swift
-# `productionLanguages` (hanji/en/ja/tailo/poj), SAME ORDER. Drift would either gate an unshipped language
+# `productionLanguages` (hakha/taiha/en/ja/tailo/poj), SAME ORDER. Drift would either gate an unshipped language
 # or let a shipped one render incomplete.
-PRODUCTION_LANGUAGES = ("hanji", "en", "ja", "tailo", "poj")
+PRODUCTION_LANGUAGES = ("hakha", "taiha", "en", "ja", "tailo", "poj")
 
 VALID_PLATFORMS = {"ios", "android", "macos", "windows", "linux"}
 VALID_SURFACES = {"host", "extension"}
-VALID_VALUE_LANGUAGES = {"hanji", "tailo", "poj", "ja", "en"}
+VALID_VALUE_LANGUAGES = {"hakha", "taiha", "tailo", "poj", "ja", "en"}
 
 # Output locations (repo-relative).
 ANDROID_PKG = "android/app/src/main/java/com/siansiansu/taigikeyboard"
@@ -84,7 +84,7 @@ WINDOWS_GEN_FILE = f"{WINDOWS_STRINGS_DIR}/generated.rs"
 # (`FmtMessage` / `{cm:Key,arg}`) in the key's declared placeholder order.
 WINDOWS_INSTALLER_MESSAGES_FILE = "windows/installer/Messages.iss"
 WINDOWS_INSTALLER_KEY_PREFIX = "installer"
-INNO_LANGUAGES = {"hanji": "chinesetraditional", "en": "english", "ja": "japanese"}
+INNO_LANGUAGES = {"hakha": "chinesetraditional", "en": "english", "ja": "japanese"}
 
 # The macOS bundle's OWN localized name — THE reference for this mechanism; everywhere else points here.
 #
@@ -102,7 +102,7 @@ INNO_LANGUAGES = {"hanji": "chinesetraditional", "en": "english", "ja": "japanes
 # `IOS_NATIVE_LANGUAGES`: that roster answers to what App Store Connect accepts, which is a different
 # constraint that is allowed to diverge from what a Mac's system language can be.
 MACOS_APP_DIR = "macos/App"
-MACOS_BUNDLE_LOCALIZATIONS = {"en": "en", "ja": "ja", "hanji": "zh-Hant"}
+MACOS_BUNDLE_LOCALIZATIONS = {"en": "en", "ja": "ja", "hakha": "zh-Hant"}
 
 # The i18n key the bundle name is read from. Deliberately NOT expressed as a `macos` platform scope:
 # scoping it would also emit it into the generated Swift string map, where nothing would ever look it
@@ -125,13 +125,13 @@ MACOS_BUNDLE_NAME_PLIST_KEYS = ("CFBundleDisplayName", "CFBundleName")
 # build scripts render (`windows/build-support/resource.rs`) — a build script cannot depend on a
 # workspace crate, so the generated strings cannot live in `taigi-desktop-core`.
 WINDOWS_PRODUCT_NAME_FILE = "windows/build-support/product_name_strings.rs"
-WINDOWS_PRODUCT_NAME_LANGIDS = {"en": 0x0409, "ja": 0x0411, "hanji": 0x0404}
+WINDOWS_PRODUCT_NAME_LANGIDS = {"en": 0x0409, "ja": 0x0411, "hakha": 0x0404}
 
 # Value-language key -> Swift `DisplayLanguage` case. The generated maps index by enum case, not by
 # tag, and two names differ from their tag (`ja`/`en`) — so this is the ONE place that mapping lives.
 # MIRROR: must equal the cases in ios/.../Strings/DisplayLanguage.swift and
 # macos/.../Strings/DisplayLanguage.swift.
-SWIFT_LANGUAGE_CASES = {"hanji": "hanji", "tailo": "tailo", "poj": "poj", "ja": "japanese", "en": "english"}
+SWIFT_LANGUAGE_CASES = {"hakha": "hakha", "taiha": "taiha", "tailo": "tailo", "poj": "poj", "ja": "japanese", "en": "english"}
 
 # `.system` is a selection policy with no authored strings, so it is never a map key — but every
 # generated `lookup` must still answer for it (with nil), which is why it is named separately here.
@@ -141,7 +141,7 @@ SWIFT_SYSTEM_CASE = "system"
 # iOS maps only the three with no OS locale; macOS maps the whole production roster (no catalog).
 # Derived from PRODUCTION_LANGUAGES so promoting a sixth language cannot silently skip the macOS map —
 # it would otherwise resolve to the Hanji fallback at runtime with every gate still green.
-IOS_MAP_LANGUAGES = tuple((lang, SWIFT_LANGUAGE_CASES[lang]) for lang in ("hanji", "tailo", "poj"))
+IOS_MAP_LANGUAGES = tuple((lang, SWIFT_LANGUAGE_CASES[lang]) for lang in ("hakha", "taiha", "tailo", "poj"))
 MACOS_MAP_LANGUAGES = tuple((lang, SWIFT_LANGUAGE_CASES[lang]) for lang in PRODUCTION_LANGUAGES)
 
 # DisplayLanguage enum case for English, per language — the only count-inflecting display language, so
@@ -155,7 +155,7 @@ SWIFT_ENGLISH_ENUM = SWIFT_LANGUAGE_CASES["en"]
 # Languages resolved via native Android resource dirs (plan D2). hanji -> default values/ (always
 # emitted); en/ja -> language-qualified dirs, emitted only once a key actually carries that value.
 NATIVE_RESOURCE_DIRS = {
-    "hanji": "values",
+    "hakha": "values",
     "en": "values-en",
     "ja": "values-ja",
 }
@@ -218,7 +218,7 @@ PLACEHOLDER_TYPES = {
 
 # Value-language key -> Rust `DisplayLanguage` variant, and the variant that maps nothing.
 # MIRROR: must equal the variants in desktop/crates/taigi-desktop-core/src/strings/mod.rs.
-RUST_LANGUAGE_VARIANTS = {"hanji": "Hanji", "tailo": "Tailo", "poj": "Poj", "ja": "Japanese", "en": "English"}
+RUST_LANGUAGE_VARIANTS = {"hakha": "Hakha", "taiha": "Taiha", "tailo": "Tailo", "poj": "Poj", "ja": "Japanese", "en": "English"}
 RUST_SYSTEM_VARIANT = "System"
 RUST_MAP_LANGUAGES = tuple((lang, RUST_LANGUAGE_VARIANTS[lang]) for lang in PRODUCTION_LANGUAGES)
 

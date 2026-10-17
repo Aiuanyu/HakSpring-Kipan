@@ -4,32 +4,32 @@
     "romanizationKeyboard": {
       "comment": "Section header for the romanization keyboard layouts (host tab + IME layout overlay).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "羅馬字齒盤", "tailo": "Lô-má-jī khí-puânn", "poj": "Lô-má-jī khí-pôaⁿ", "en": "Romanization Keyboards", "ja": "ローマ字キーボード" }
+      "values": { "hakha": "羅馬字企盤", "taiha": "羅馬字齒盤", "tailo": "Lô-má-jī khí-puânn", "poj": "Lô-má-jī khí-pôaⁿ", "en": "Romanization Keyboards", "ja": "ローマ字キーボード" }
     },
     "standardLayout": {
       "comment": "Layout name: the standard QWERTY-style romanization layout (Lohankha).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "Lohankha", "tailo": "Lohankha", "poj": "Lohankha", "en": "Lohankha", "ja": "Lohankha" }
+      "values": { "hakha": "Lohankha", "taiha": "Lohankha", "tailo": "Lohankha", "poj": "Lohankha", "en": "Lohankha", "ja": "Lohankha" }
     },
     "phahTaigiLayout": {
       "comment": "Layout name: the PhahTaigi romanization layout.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "PhahTaigi", "tailo": "PhahTaigi", "poj": "PhahTaigi", "en": "PhahTaigi", "ja": "PhahTaigi" }
+      "values": { "hakha": "PhahTaigi", "taiha": "PhahTaigi", "tailo": "PhahTaigi", "poj": "PhahTaigi", "en": "PhahTaigi", "ja": "PhahTaigi" }
     },
     "tpsLayout": {
       "comment": "Layout name: the Taiwanese Phonetic Symbols (TPS) keyboard.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "方音符號齒盤", "tailo": "Hong-im-hû-hō khí-puânn", "poj": "Hong-im-hû-hō khí-pôaⁿ", "en": "Phonetic Symbols", "ja": "方音符号" }
+      "values": { "hakha": "方音符號企盤", "taiha": "方音符號齒盤", "tailo": "Hong-im-hû-hō khí-puânn", "poj": "Hong-im-hû-hō khí-pôaⁿ", "en": "Phonetic Symbols", "ja": "方音符号" }
     },
     "moe1Layout": {
       "comment": "Layout name: MOE Taiwanese phonetic-symbol key arrangement, variant 1.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "教育部排列 1", "tailo": "Kàu-io̍k-pōo pâi-lia̍t 1", "poj": "Kàu-io̍k-pō͘ pâi-lia̍t 1", "en": "MOE Layout 1", "ja": "教育部配列 1" }
+      "values": { "hakha": "教育部排列 1", "taiha": "教育部排列 1", "tailo": "Kàu-io̍k-pōo pâi-lia̍t 1", "poj": "Kàu-io̍k-pō͘ pâi-lia̍t 1", "en": "MOE Layout 1", "ja": "教育部配列 1" }
     },
     "moe2Layout": {
       "comment": "Layout name: MOE Taiwanese phonetic-symbol key arrangement, variant 2.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "教育部排列 2", "tailo": "Kàu-io̍k-pōo pâi-lia̍t 2", "poj": "Kàu-io̍k-pō͘ pâi-lia̍t 2", "en": "MOE Layout 2", "ja": "教育部配列 2" }
+      "values": { "hakha": "教育部排列 2", "taiha": "教育部排列 2", "tailo": "Kàu-io̍k-pōo pâi-lia̍t 2", "poj": "Kàu-io̍k-pō͘ pâi-lia̍t 2", "en": "MOE Layout 2", "ja": "教育部配列 2" }
     }
   }
 }

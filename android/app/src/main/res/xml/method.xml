@@ -11,7 +11,7 @@
          imeSubtypeLocale is intentionally absent (deprecated; an OEM reading it could re-surface
          "Min Nan Chinese"). -->
     <subtype
-        android:label="@string/app_name"
+        android:label="@string/ime_subtype_sixian"
         android:languageTag="mul"
         android:imeSubtypeMode="keyboard" />
 

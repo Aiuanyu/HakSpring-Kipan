@@ -56,8 +56,8 @@ struct TaigiButtonContent<StandardContent: View>: View {
     private var spaceInputModeLabel: String? {
         guard action == .space else { return nil }
         switch inputMode {
-        case .poj: return "POJ"
-        case .tl: return "TL"
+        case .poj: return "PFS"
+        case .tl: return "HPP"
         case .english: return "EN"
         case .tps: return "TPS"
         }

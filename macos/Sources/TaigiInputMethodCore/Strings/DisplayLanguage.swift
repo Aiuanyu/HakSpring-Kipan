@@ -18,11 +18,15 @@ import Foundation
 /// the same contract on all three platforms.
 enum DisplayLanguage: String, CaseIterable {
     case system
-    case hanji
+    case hakha
+    case taiha
     case tailo
     case poj
     case japanese = "ja"
     case english = "en"
+
+    /// Backward compatibility alias for taiha (formerly hanji)
+    static let hanji = DisplayLanguage.taiha
 
     /// Persisted tag (`SettingsStore.displayLanguage`). Equals the raw value; mirrors iOS `.tag`.
     var tag: String {
@@ -39,7 +43,8 @@ enum DisplayLanguage: String, CaseIterable {
     /// android .../i18n/DisplayLanguage.kt `endonym`. Drift causes silent divergence.
     var endonym: String {
         switch self {
-        case .hanji: "漢字"
+        case .hakha: "諸夏字／漢字客文"
+        case .taiha: "漢字（臺文）"
         case .tailo: "Tâi-lô"
         case .poj: "Pe̍h-ōe-jī"
         case .japanese: "日本語"
@@ -58,7 +63,7 @@ enum DisplayLanguage: String, CaseIterable {
     /// CROSS-PLATFORM INVARIANT (INVARIANT_DISPLAY_LANGUAGE_PRODUCTION_ROSTER) — mirrors
     /// ios/.../Strings/DisplayLanguage.swift + android/.../i18n/DisplayLanguage.kt
     /// `productionLanguages` and tools/i18n `PRODUCTION_LANGUAGES`, SAME ORDER.
-    static let productionLanguages: [DisplayLanguage] = [.hanji, .english, .japanese, .tailo, .poj]
+    static let productionLanguages: [DisplayLanguage] = [.hakha, .taiha, .english, .japanese, .tailo, .poj]
 
     /// What the picker offers: `.system` (Automatic) first, then the production roster.
     /// CROSS-PLATFORM INVARIANT — mirrors iOS + android `selectableLanguages`.
@@ -67,8 +72,7 @@ enum DisplayLanguage: String, CaseIterable {
     /// Resolves the Automatic policy to a concrete authored language from the device OS language subtag
     /// (lowercased ISO 639). Pure + injectable for tests — never reads `Locale` itself; the store passes
     /// the device subtag in. `ja*` → Japanese, `en*` → English, anything else (incl. `zh*` / absent) →
-    /// Hanji. Taiwanese Hanji is the neutral default so a Chinese-locale (or any non-ja/en) device reads
-    /// the UI in Hanji, not English.
+    /// Hakha.
     /// CROSS-PLATFORM INVARIANT (INVARIANT_DISPLAY_LANGUAGE_AUTOMATIC_RESOLUTION) — mirrors iOS +
     /// android `resolveAutomatic`.
     static func resolveAutomatic(_ deviceLanguageSubtag: String) -> DisplayLanguage {
@@ -78,7 +82,7 @@ enum DisplayLanguage: String, CaseIterable {
         if deviceLanguageSubtag.hasPrefix("en") {
             return .english
         }
-        return .hanji
+        return .hakha
     }
 
     /// The concrete language this selection resolves to: `.system` defers to the device locale via
@@ -89,9 +93,12 @@ enum DisplayLanguage: String, CaseIterable {
         self == .system ? DisplayLanguage.resolveAutomatic(deviceLanguageSubtag) : self
     }
 
-    /// Maps a persisted tag to a selectable language. Unknown or removed tags resolve to `.hanji`;
+    /// Maps a persisted tag to a selectable language. Unknown or removed tags resolve to `.hakha`;
     /// `"system"` is selectable, so it round-trips to `.system`.
     static func fromTag(_ tag: String) -> DisplayLanguage {
-        DisplayLanguage(rawValue: tag) ?? .hanji
+        if tag == "hanji" {
+            return .taiha
+        }
+        return DisplayLanguage(rawValue: tag) ?? .hakha
     }
 }

@@ -16,7 +16,8 @@
         ]
       },
       "values": {
-        "hanji": "取消",
+        "hakha": "取消",
+        "taiha": "取消",
         "tailo": "Tshú-siau",
         "poj": "Chhú-siau",
         "en": "Cancel",
@@ -38,7 +39,8 @@
         ]
       },
       "values": {
-        "hanji": "好",
+        "hakha": "好",
+        "taiha": "好",
         "tailo": "Hó",
         "poj": "Hó",
         "en": "OK",
@@ -61,7 +63,8 @@
         ]
       },
       "values": {
-        "hanji": "刪除",
+        "hakha": "刪除",
+        "taiha": "刪除",
         "tailo": "San-tî",
         "poj": "San-tî",
         "en": "Delete",
@@ -83,7 +86,8 @@
         ]
       },
       "values": {
-        "hanji": "儲存",
+        "hakha": "儲存",
+        "taiha": "儲存",
         "tailo": "Thú-tsûn",
         "poj": "Thú-chûn",
         "en": "Save",
@@ -103,7 +107,8 @@
         ]
       },
       "values": {
-        "hanji": "設定",
+        "hakha": "設定",
+        "taiha": "設定",
         "tailo": "Siat-tīng",
         "poj": "Siat-tēng",
         "en": "Settings",
@@ -126,7 +131,8 @@
         ]
       },
       "values": {
-        "hanji": "頂一頁",
+        "hakha": "頂一頁",
+        "taiha": "頂一頁",
         "tailo": "Tíng tsi̍t ia̍h",
         "poj": "Téng chi̍t ia̍h",
         "en": "Previous Page",
@@ -149,7 +155,8 @@
         ]
       },
       "values": {
-        "hanji": "後一頁",
+        "hakha": "後一頁",
+        "taiha": "後一頁",
         "tailo": "Āu tsi̍t ia̍h",
         "poj": "Āu chi̍t ia̍h",
         "en": "Next Page",
@@ -167,7 +174,8 @@
         ]
       },
       "values": {
-        "hanji": "錯誤",
+        "hakha": "錯誤",
+        "taiha": "錯誤",
         "tailo": "Tshò-gōo",
         "poj": "Chhò-gō͘",
         "en": "Error",
@@ -185,7 +193,8 @@
         ]
       },
       "values": {
-        "hanji": "說明",
+        "hakha": "說明",
+        "taiha": "說明",
         "tailo": "Suat-bîng",
         "poj": "Soat-bêng",
         "en": "Info",
@@ -205,7 +214,8 @@
         ]
       },
       "values": {
-        "hanji": "關閉",
+        "hakha": "關閉",
+        "taiha": "關閉",
         "tailo": "Kuan-pì",
         "poj": "Koan-pì",
         "en": "Close",
@@ -227,7 +237,8 @@
         ]
       },
       "values": {
-        "hanji": "其他",
+        "hakha": "其他",
+        "taiha": "其他",
         "tailo": "Kî-thann",
         "poj": "Kî-thaⁿ",
         "en": "Other",
@@ -247,7 +258,8 @@
         ]
       },
       "values": {
-        "hanji": "編輯",
+        "hakha": "編輯",
+        "taiha": "編輯",
         "tailo": "Pian-tsi̍p",
         "poj": "Pian-chi̍p",
         "en": "Edit",
@@ -270,7 +282,8 @@
         ]
       },
       "values": {
-        "hanji": "切換漢字/羅馬字",
+        "hakha": "切換漢字/羅馬字",
+        "taiha": "切換漢字/羅馬字",
         "tailo": "Tshiat-uānn hàn-jī / lô-má-jī",
         "poj": "Chhiat-ōaⁿ hàn-jī / lô-má-jī",
         "en": "Switch Hanji or Romanization",
@@ -288,7 +301,8 @@
         ]
       },
       "values": {
-        "hanji": "倒轉去",
+        "hakha": "倒轉去",
+        "taiha": "倒轉去",
         "tailo": "Tò-tńg--khì",
         "poj": "Tò-tńg--khì",
         "en": "Back",
@@ -307,7 +321,8 @@
         ]
       },
       "values": {
-        "hanji": "官方網站",
+        "hakha": "官方網站",
+        "taiha": "官方網站",
         "tailo": "Kuann-hong bāng-tsām",
         "poj": "Koaⁿ-hong bāng-chām",
         "en": "Official Website",
@@ -328,7 +343,8 @@
         ]
       },
       "values": {
-        "hanji": "匯出失敗",
+        "hakha": "匯出失敗",
+        "taiha": "匯出失敗",
         "tailo": "Huē-tshut sit-pāi",
         "poj": "Hōe-chhut sit-pāi",
         "en": "Export failed",
@@ -350,7 +366,8 @@
         ]
       },
       "values": {
-        "hanji": "匯入失敗",
+        "hakha": "匯入失敗",
+        "taiha": "匯入失敗",
         "tailo": "Huē-ji̍p sit-pāi",
         "poj": "Hōe-ji̍p sit-pāi",
         "en": "Import failed",
@@ -372,7 +389,8 @@
         ]
       },
       "values": {
-        "hanji": "教育部臺灣台語常用詞辭典",
+        "hakha": "教育部臺灣客話常用詞辭典",
+        "taiha": "教育部臺灣台語常用詞辭典",
         "tailo": "Kàu-io̍k-pōo tâi-uân-tâi-gí siâng-iōng-sû sû-tián",
         "poj": "Kàu-io̍k-pō͘ tâi-oân-tâi-gí siâng-iōng-sû sû-tián",
         "en": "MOE Dictionary of Common Taiwanese Words",
@@ -394,7 +412,8 @@
         ]
       },
       "values": {
-        "hanji": "公視台語台台語新詞辭庫",
+        "hakha": "公視客話台客話新詞辭庫",
+        "taiha": "公視台語台台語新詞辭庫",
         "tailo": "Kong-sī tâi-gí-tâi tâi-gí sin sû sî khòo",
         "poj": "Kong-sī tâi-gí-tâi tâi-gí sin sû sî khò͘",
         "en": "PTS Taigi New-Word Lexicon",
@@ -416,7 +435,8 @@
         ]
       },
       "values": {
-        "hanji": "工藝中心臺灣台語工藝詞庫",
+        "hakha": "工藝中心臺灣客話工藝詞庫",
+        "taiha": "工藝中心臺灣台語工藝詞庫",
         "tailo": "Kang-gē tiong-sim tâi-uân-tâi-gí kang-gē sû khòo",
         "poj": "Kang-gē tiong-sim tâi-oân-tâi-gí kang-gē sû khò͘",
         "en": "NTCRI Taiwanese Craft Glossary",
@@ -438,7 +458,8 @@
         ]
       },
       "values": {
-        "hanji": "iTaigi愛台語",
+        "hakha": "iTaigi愛客話",
+        "taiha": "iTaigi愛台語",
         "tailo": "iTaigi ài-tâi-gí",
         "poj": "iTaigi ài-tâi-gí",
         "en": "iTaigi",
@@ -460,7 +481,8 @@
         ]
       },
       "values": {
-        "hanji": "臺日大辭典台語譯本",
+        "hakha": "臺日大辭典客話譯本",
+        "taiha": "臺日大辭典台語譯本",
         "tailo": "Tâi ji̍t tuā sû-tián tâi-gí i̍k-pún",
         "poj": "Tâi ji̍t tōa sû-tián tâi-gí e̍k-pún",
         "en": "Taiwanese-Japanese Dictionary (Taigi Edition)",
@@ -482,7 +504,8 @@
         ]
       },
       "values": {
-        "hanji": "台華線頂對照典",
+        "hakha": "台華線上對照典",
+        "taiha": "台華線頂對照典",
         "tailo": "Tâi huâ suànn-tíng tuì-tsiàu tián",
         "poj": "Tâi hôa sòaⁿ-téng tùi-chiàu tián",
         "en": "Taigi-Mandarin Online Cross-Reference",
@@ -504,7 +527,8 @@
         ]
       },
       "values": {
-        "hanji": "台灣植物名彙",
+        "hakha": "台灣植物名彙",
+        "taiha": "台灣植物名彙",
         "tailo": "Tâi-uân tsi̍t-bu̍t miâ luī",
         "poj": "Tâi-oân chi̍t-bu̍t miâ lūi",
         "en": "Taiwan Plant Name Glossary",
@@ -526,7 +550,8 @@
         ]
       },
       "values": {
-        "hanji": "教育部學科術語臺灣台語對譯",
+        "hakha": "教育部學科術語臺灣客話對譯",
+        "taiha": "教育部學科術語臺灣台語對譯",
         "tailo": "Kàu-io̍k-pōo ha̍k-kho su̍t-gí tâi-uân-tâi-gí tuì-i̍k",
         "poj": "Kàu-io̍k-pō͘ ha̍k-kho su̍t-gí tâi-oân-tâi-gí tùi-e̍k",
         "en": "MOE Academic Subject Terminology (Taigi)",
@@ -548,7 +573,8 @@
         ]
       },
       "values": {
-        "hanji": "腔口差",
+        "hakha": "腔口差",
+        "taiha": "腔口差",
         "tailo": "Khiunn-kháu tsha",
         "poj": "Khiuⁿ-kháu chha",
         "en": "Accent Variations",
@@ -570,7 +596,8 @@
         ]
       },
       "values": {
-        "hanji": "系統",
+        "hakha": "系統",
+        "taiha": "系統",
         "tailo": "Hē-thóng",
         "poj": "Hē-thóng",
         "en": "System",
@@ -592,7 +619,8 @@
         ]
       },
       "values": {
-        "hanji": "粉圓",
+        "hakha": "粉圓",
+        "taiha": "粉圓",
         "tailo": "Hún-înn",
         "poj": "Hún-îⁿ",
         "en": "Open Huninn",
@@ -614,7 +642,8 @@
         ]
       },
       "values": {
-        "hanji": "芫荽",
+        "hakha": "芫荽",
+        "taiha": "芫荽",
         "tailo": "Ian-sui",
         "poj": "Ian-sui",
         "en": "Iansui",
@@ -636,7 +665,8 @@
         ]
       },
       "values": {
-        "hanji": "源樣明體",
+        "hakha": "源樣明體",
+        "taiha": "源樣明體",
         "tailo": "Guân iūnn bîng-thé",
         "poj": "Goân iūⁿ bêng-thé",
         "en": "GenYoMin",
@@ -658,7 +688,8 @@
         ]
       },
       "values": {
-        "hanji": "源樣烏體",
+        "hakha": "源樣烏體",
+        "taiha": "源樣烏體",
         "tailo": "Guân iūnn oo thé",
         "poj": "Goân iūⁿ o͘ thé",
         "en": "GenYoGothic",

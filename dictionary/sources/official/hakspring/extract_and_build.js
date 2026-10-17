@@ -118,6 +118,34 @@ function processWordPhoneticPairs(word, rawPhonetic) {
   return pairs;
 }
 
+/**
+ * 客話 HagPinPlus 聲母提取（長度優先，涵蓋多字母聲母）
+ * 包含 zh, ch, sh, rh, ng, bb 等複合聲母
+ * 與 engine/phonetics/src/hakfa_tables.rs::HAKFA_ABBREV_INITIALS 保持 100% 同步
+ */
+const HAKFA_ABBREV_INITIALS = [
+  'zh', 'ch', 'sh', 'rh', 'bb', 'ng',
+  'b', 'p', 'm', 'f', 'v', 'd', 't', 'n', 'l', 'g', 'k', 'h', 'z', 'c', 's', 'j', 'q', 'x'
+];
+
+function extractLeadingInitial(syllable) {
+  const lowered = syllable.toLowerCase();
+  for (const init of HAKFA_ABBREV_INITIALS) {
+    if (lowered.startsWith(init)) {
+      return init;
+    }
+  }
+  // 零聲母（元音開頭），取第 1 個字元
+  return lowered[0] || '';
+}
+
+function deriveHakfaAbbrev(notoneSylls) {
+  if (notoneSylls.length < 2) {
+    return '';
+  }
+  return notoneSylls.map(extractLeadingInitial).join('');
+}
+
 console.log('▶ [1/4] 開始萃取客源翠語料並展開變體...');
 
 const map = new Map(); // key: word + '|' + fusedNotone -> entry
@@ -168,8 +196,8 @@ for (const cf of certFiles) {
       if (notoneSylls.length === 0) continue;
       const fusedNotone = notoneSylls.join('');
       const hyphenatedPhonetic = tokens.join('-');
-      // 零聲母直接取首母音字母
-      const fusedAbbrev = notoneSylls.map(s => s[0]).join('');
+      // 客話聲母縮寫（多字母聲母長度優先，單音節詞留空）
+      const fusedAbbrev = deriveHakfaAbbrev(notoneSylls);
       const key = pair.word + '|' + fusedNotone;
 
       if (!map.has(key) || map.get(key).freq < cf.freq) {
@@ -228,7 +256,8 @@ if (fs.existsSync(gipJsonPath)) {
       if (notoneSylls.length === 0) continue;
       const fusedNotone = notoneSylls.join('');
       const hyphenatedPhonetic = tokens.join('-');
-      const fusedAbbrev = notoneSylls.map(s => s[0]).join('');
+      // 客話聲母縮寫（多字母聲母長度優先，單音節詞留空）
+      const fusedAbbrev = deriveHakfaAbbrev(notoneSylls);
       const key = pair.word + '|' + fusedNotone;
       const freq = Math.max(100, gipDefaultFreq - pair.word.length * 1000);
 
@@ -276,7 +305,8 @@ console.log(`  ✓ 已輸出 CSV 至 ${csvPath}`);
 console.log('\n▶ [2/4] 建置 dictionary.bin (TKDB v3)...');
 const outDirs = [
   path.join(REPO_ROOT, 'output/hakfa'),
-  path.join(REPO_ROOT, 'dictionary/output/hakfa')
+  path.join(REPO_ROOT, 'dictionary/output/hakfa'),
+  path.join(REPO_ROOT, 'assets/dictionaries')
 ];
 for (const d of outDirs) {
   fs.mkdirSync(d, { recursive: true });

@@ -26,7 +26,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.siansiansu.taigikeyboard"
+        applicationId = "net.aiuanyu.inputmethod.hakspring.kipan"
         // Android 9+, so Android 9 users can still install from Play. Was 30
         // from 2026-08-17 (#532) to 2026-09-19, lowered back after an Android 9
         // user could no longer install. User-data SQL is the engine's bundled
@@ -42,7 +42,7 @@ android {
         // Android at once by `make version-mobile x.y.z` (the mobile train;
         // macOS + Windows are the separately numbered desktop train).
         versionCode = (System.currentTimeMillis() / 60_000L).toInt()
-        versionName = "3.6.13"
+        versionName = "0.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -139,11 +139,11 @@ kotlin {
     }
 }
 
-// Output name: TaigiKeyboard-{versionName}-{versionCode}-{yyyyMMdd}
-// Example: TaigiKeyboard-3.6.4-29637600-20260808-release.aab
+// Output name: HakSpring-Kipan-{versionName}-{versionCode}-{yyyyMMdd}
+// Example: HakSpring-Kipan-0.0.2-29637600-20261015-release.aab
 base {
     archivesName.set(
-        "TaigiKeyboard-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-$buildDate",
+        "HakSpring-Kipan-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-$buildDate",
     )
 }
 

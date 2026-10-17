@@ -23,7 +23,7 @@ struct StringResolver {
     }
 
     func resolve(_ key: StringKey) -> String {
-        GeneratedStrings.lookup(language, key) ?? hanjiDefault(key)
+        GeneratedStrings.lookup(language, key) ?? hakhaDefault(key)
     }
 
     /// Resolves a format key's template under the active language and interpolates `args`. The single
@@ -40,7 +40,7 @@ struct StringResolver {
         String(format: template, arguments: args)
     }
 
-    private func hanjiDefault(_ key: StringKey) -> String {
-        GeneratedStrings.lookup(.hanji, key) ?? key.rawValue
+    private func hakhaDefault(_ key: StringKey) -> String {
+        GeneratedStrings.lookup(.hakha, key) ?? key.rawValue
     }
 }

@@ -3637,6 +3637,24 @@
         }
       }
     },
+    "i18n_settings_hppMode": {
+      "comment": "Input-mode option: HagPinPlus (HPP) romanization. Also the iOS smartbar input-mode button a11y label (extension surface).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tâi-lô"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tâi-lô"
+          }
+        }
+      }
+    },
     "i18n_settings_inputMode": {
       "comment": "Settings row + sub-screen title for selecting the active input mode (mobile). The desktop General pane labels its TL / POJ picker inputScript instead.",
       "extractionState": "manual",
@@ -3957,24 +3975,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "スペース"
-          }
-        }
-      }
-    },
-    "i18n_settings_tlMode": {
-      "comment": "Input-mode option: Tâi-lô (TL) romanization. Also the iOS smartbar input-mode button a11y label (extension surface).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tâi-lô"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tâi-lô"
           }
         }
       }

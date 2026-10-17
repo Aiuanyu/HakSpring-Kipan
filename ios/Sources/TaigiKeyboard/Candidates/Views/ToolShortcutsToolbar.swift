@@ -54,8 +54,8 @@ struct ToolShortcutsToolbar: View {
 
     private var expandedButtons: some View {
         HStack(spacing: 0) {
-            inputModeButton(mode: .poj, label: "POJ")
-            inputModeButton(mode: .tl, label: "TL")
+            inputModeButton(mode: .poj, label: "PFS")
+            inputModeButton(mode: .tl, label: "HPP")
             inputModeButton(mode: .english, label: "EN")
             inputModeButton(mode: .tps, label: "TPS")
 

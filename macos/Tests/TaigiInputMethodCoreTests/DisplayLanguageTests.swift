@@ -5,10 +5,10 @@ import XCTest
 /// shares with iOS and Android — see `docs/architecture/behavioral-invariants.md` §37 — so a failure
 /// means the three platforms have drifted, not that macOS alone is wrong.
 final class DisplayLanguageTests: XCTestCase {
-    func testINVARIANT_DISPLAY_LANGUAGE_PRODUCTION_ROSTER_pinsHanjiEnglishJapaneseTailoAndPoj() {
+    func testINVARIANT_DISPLAY_LANGUAGE_PRODUCTION_ROSTER_pinsHakhaTaihaEnglishJapaneseTailoAndPoj() {
         // Must equal the iOS/Android productionLanguages rosters and tools/i18n PRODUCTION_LANGUAGES,
         // same order: the generator gates translation completeness on that list.
-        XCTAssertEqual(DisplayLanguage.productionLanguages.map(\.tag), ["hanji", "en", "ja", "tailo", "poj"])
+        XCTAssertEqual(DisplayLanguage.productionLanguages.map(\.tag), ["hakha", "taiha", "en", "ja", "tailo", "poj"])
     }
 
     func testINVARIANT_DISPLAY_LANGUAGE_PRODUCTION_ROSTER_excludesSystemSelectionPolicy() {
@@ -20,7 +20,7 @@ final class DisplayLanguageTests: XCTestCase {
     func testINVARIANT_DISPLAY_LANGUAGE_PRODUCTION_ROSTER_selectableLeadsWithSystem() {
         XCTAssertEqual(
             DisplayLanguage.selectableLanguages.map(\.tag),
-            ["system", "hanji", "en", "ja", "tailo", "poj"],
+            ["system", "hakha", "taiha", "en", "ja", "tailo", "poj"],
         )
     }
 
@@ -30,39 +30,41 @@ final class DisplayLanguageTests: XCTestCase {
         }
     }
 
-    func testFromTag_unknownTagFallsBackToHanji() {
-        XCTAssertEqual(DisplayLanguage.fromTag("xx"), .hanji)
-        XCTAssertEqual(DisplayLanguage.fromTag(""), .hanji)
+    func testFromTag_unknownTagFallsBackToHakha() {
+        XCTAssertEqual(DisplayLanguage.fromTag("xx"), .hakha)
+        XCTAssertEqual(DisplayLanguage.fromTag(""), .hakha)
     }
 
     func testDefaultTag_resolvesToSystemAutomatic() {
-        // A fresh install follows the device OS locale rather than pinning Hanji.
+        // A fresh install follows the device OS locale rather than pinning Hakha.
         XCTAssertEqual(DisplayLanguage.defaultTag, "system")
         XCTAssertEqual(DisplayLanguage.fromTag(DisplayLanguage.defaultTag), .system)
     }
 
     func testINVARIANT_DISPLAY_LANGUAGE_AUTOMATIC_RESOLUTION_mapsDeviceSubtagToAuthoredLanguage() {
         // Japanese device → Japanese; English → English; everything else (Chinese included, or a
-        // device that reports nothing) → Hanji.
+        // device that reports nothing) → Hakha.
         XCTAssertEqual(DisplayLanguage.resolveAutomatic("ja"), .japanese)
         XCTAssertEqual(DisplayLanguage.resolveAutomatic("en"), .english)
-        XCTAssertEqual(DisplayLanguage.resolveAutomatic("zh"), .hanji)
-        XCTAssertEqual(DisplayLanguage.resolveAutomatic("fr"), .hanji)
-        XCTAssertEqual(DisplayLanguage.resolveAutomatic(""), .hanji)
+        XCTAssertEqual(DisplayLanguage.resolveAutomatic("zh"), .hakha)
+        XCTAssertEqual(DisplayLanguage.resolveAutomatic("fr"), .hakha)
+        XCTAssertEqual(DisplayLanguage.resolveAutomatic(""), .hakha)
     }
 
     func testINVARIANT_DISPLAY_LANGUAGE_AUTOMATIC_RESOLUTION_effectiveLanguageOnlyResolvesSystem() {
         // An explicitly picked language is itself no matter what the device reports; only SYSTEM follows it.
-        XCTAssertEqual(DisplayLanguage.hanji.effectiveLanguage("ja"), .hanji)
+        XCTAssertEqual(DisplayLanguage.hakha.effectiveLanguage("ja"), .hakha)
+        XCTAssertEqual(DisplayLanguage.taiha.effectiveLanguage("ja"), .taiha)
         XCTAssertEqual(DisplayLanguage.english.effectiveLanguage("ja"), .english)
         XCTAssertEqual(DisplayLanguage.system.effectiveLanguage("ja"), .japanese)
         XCTAssertEqual(DisplayLanguage.system.effectiveLanguage("en"), .english)
-        XCTAssertEqual(DisplayLanguage.system.effectiveLanguage("zh"), .hanji)
+        XCTAssertEqual(DisplayLanguage.system.effectiveLanguage("zh"), .hakha)
     }
 
     func testEndonym_isTheLanguagesOwnName() {
         // Language-invariant strings, so they are not i18n keys — and they MUST match iOS/Android.
-        XCTAssertEqual(DisplayLanguage.hanji.endonym, "漢字")
+        XCTAssertEqual(DisplayLanguage.hakha.endonym, "諸夏字／漢字客文")
+        XCTAssertEqual(DisplayLanguage.taiha.endonym, "漢字（臺文）")
         XCTAssertEqual(DisplayLanguage.tailo.endonym, "Tâi-lô")
         XCTAssertEqual(DisplayLanguage.poj.endonym, "Pe̍h-ōe-jī")
         XCTAssertEqual(DisplayLanguage.japanese.endonym, "日本語")

@@ -190,7 +190,7 @@ enum StringKey: String {
     case settingsDisplayLanguage = "i18n_settings_displayLanguage"
     case settingsDisplayLanguageAutomatic = "i18n_settings_displayLanguageAutomatic"
     case settingsPojMode = "i18n_settings_pojMode"
-    case settingsTlMode = "i18n_settings_tlMode"
+    case settingsHppMode = "i18n_settings_hppMode"
     case settingsTpsMode = "i18n_settings_tpsMode"
     case settingsCandidateDisplayMode = "i18n_settings_candidateDisplayMode"
     case settingsCandidateDisplayModeSideBySide = "i18n_settings_candidateDisplayModeSideBySide"

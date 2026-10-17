@@ -375,7 +375,7 @@ class PrefHelper(
     // [applyKeyboardLayoutType]. See [TpsCascade] for asymmetry vs
     // [applyInputMode]. Cannot use the `preference` delegate.
     var keyboardLayoutType: String
-        get() = cached(PreferenceKeys.KEYBOARD_LAYOUT_TYPE, "phahTaigi")
+        get() = cached(PreferenceKeys.KEYBOARD_LAYOUT_TYPE, "qwerty")
         set(value) = applyKeyboardLayoutType(value)
 
     // Single definition of "TPS is active" — [TpsCascade] keeps the two prefs
@@ -685,7 +685,7 @@ class PrefHelper(
     fun observeKeyboardLayoutType(): Flow<String> =
         dataStore.data
             .map { prefs ->
-                prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] ?: "phahTaigi"
+                prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] ?: "qwerty"
             }.distinctUntilChanged()
 
     /**
@@ -827,7 +827,7 @@ class PrefHelper(
             prefs[PreferenceKeys.AUTO_CAPITALIZATION_ENABLED] = true
             prefs[PreferenceKeys.AUTO_SPACE_ENABLED] = false
             prefs[PreferenceKeys.FONT_TYPE] = DEFAULT_FONT_TYPE
-            prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] = "phahTaigi"
+            prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] = "qwerty"
             prefs[PreferenceKeys.TPS_OR_MAPS_TO_ER] = true
             prefs[PreferenceKeys.TOOLBAR_AUTO_COLLAPSE] = true
             prefs[PreferenceKeys.GLOBE_KEY_ENABLED] = true

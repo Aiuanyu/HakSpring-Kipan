@@ -13,7 +13,7 @@ enum InputMode: String, CaseIterable, Sendable {
     /// flashes, so the HUD names the mode in the words the pane uses.
     var displayNameKey: StringKey {
         switch self {
-        case .tl: .settingsTlMode
+        case .tl: .settingsHppMode
         case .poj: .settingsPojMode
         case .tps: .settingsTpsMode
         }

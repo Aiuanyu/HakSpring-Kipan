@@ -538,8 +538,8 @@ private fun resolveSpaceVisual(
         -> KeyVisual.Icon(R.drawable.ic_space_bar, keyFg)
         KeyboardMode.CHARACTERS -> {
             val label = when (inputMode) {
-                "poj" -> "POJ"
-                "tl" -> "TL"
+                "poj" -> "PFS"
+                "tl" -> "HPP"
                 "tps" -> "TPS"
                 "english" -> "EN"
                 else -> null
@@ -652,30 +652,26 @@ private fun resolveBackgroundColor(
     }
 }
 
-// Tone hint diacritics for number keys — direct port of legacy
-// `KeyView.toneHints`. POJ + TL share all but tone 9.
+// Tone hint diacritics for number keys in Hakfa (HagPinPlus / GIP):
+// Uses standard Western diacritics (\u00B4 acute, \u02C7 caron, \u0060 grave, \u00AF macron)
+// instead of East-Asian Zhuyin full-width marks.
 private val toneHints = mapOf(
-    49 to "ˊ", // 1 (no mark, drawn as space placeholder downstream)
-    50 to "ˊ", // 2  ˊ MODIFIER LETTER ACUTE ACCENT
-    51 to "ˋ", // 3  ˋ MODIFIER LETTER GRAVE ACCENT
-    53 to "ˆ", // 5  ˆ MODIFIER LETTER CIRCUMFLEX ACCENT
-    54 to "ˇ", // 6  ˇ CARON
-    55 to "ˉ", // 7  ˉ MODIFIER LETTER MACRON
-    56 to "ˈ", // 8  ˈ MODIFIER LETTER VERTICAL LINE
+    49 to "´", // 1  ´ ACUTE ACCENT (U+00B4)
+    50 to "ˇ", // 2  ˇ CARON (U+02C7)
+    51 to "`", // 3  ` GRAVE ACCENT (U+0060)
+    53 to "^", // 5  ^ CIRCUMFLEX (U+005E)
+    54 to "ˇ", // 6  ˇ CARON (U+02C7)
+    55 to "¯", // 7  ¯ MACRON (U+00AF)
 )
 
-/** No tone marks for "0", "1", "4" — render space for layout consistency. */
-private val noToneHintCodes = setOf(48, 49, 52)
+/** No tone marks for "0", "4", "8", "9" — render space for layout consistency. */
+private val noToneHintCodes = setOf(48, 52, 56, 57)
 
 internal fun toneHintForCode(
     code: Int,
     inputMode: String?,
 ): String? {
     if (inputMode == "english") return null
-    if (code == 57) {
-        // Tone 9: POJ uses breve (˘ U+02D8); TL uses double prime (ʺ U+02BA).
-        return if (inputMode == "poj") "˘" else "ʺ"
-    }
     if (noToneHintCodes.contains(code)) return " "
     return toneHints[code]
 }

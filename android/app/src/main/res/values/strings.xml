@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">TaigiKeyboard</string>
+    <string name="app_name">客源翠企盤</string>
+    <string name="ime_subtype_sixian">臺灣客話四縣腔</string>
 
     <!-- Key labels (referenced by KeyContent and layout XML) -->
     <string name="key__phone_pause">Pause</string>

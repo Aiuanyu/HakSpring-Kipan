@@ -35,11 +35,11 @@ final class DisplayLanguageStoreTests: XCTestCase {
         XCTAssertEqual(store.language, .japanese)
     }
 
-    func testInit_withUnknownStoredTag_fallsBackToHanji() {
+    func testInit_withUnknownStoredTag_fallsBackToHakha() {
         userDefaults.set("xx", forKey: SettingsStore.Keys.displayLanguage.name)
         let store = makeStore(deviceSubtag: "en")
-        XCTAssertEqual(store.selected, .hanji)
-        XCTAssertEqual(store.language, .hanji)
+        XCTAssertEqual(store.selected, .hakha)
+        XCTAssertEqual(store.language, .hakha)
     }
 
     func testSetLanguage_persistsToTheSameSuiteItReadsFrom() {
@@ -53,7 +53,7 @@ final class DisplayLanguageStoreTests: XCTestCase {
 
     func testSetLanguage_toSystem_persistsTheAutomaticTagAndResolvesTheDeviceLocale() {
         let store = makeStore(deviceSubtag: "en")
-        store.setLanguage(.hanji)
+        store.setLanguage(.hakha)
         store.setLanguage(.system)
 
         XCTAssertEqual(userDefaults.string(forKey: SettingsStore.Keys.displayLanguage.name), "system")
@@ -83,7 +83,7 @@ final class DisplayLanguageStoreTests: XCTestCase {
     /// fires on the writing thread and the store hops to the main actor before touching its state.
     func testStore_whenTheDefaultsKeyIsWrittenDirectly_picksUpTheNewLanguage() {
         let store = makeStore(deviceSubtag: "zh")
-        XCTAssertEqual(store.language, .hanji)
+        XCTAssertEqual(store.language, .hakha)
 
         userDefaults.set(DisplayLanguage.tailo.tag, forKey: SettingsStore.Keys.displayLanguage.name)
 

@@ -29,9 +29,10 @@ if [ ! -f "$REPO_ROOT/engine/target/debug/fst-builder" ]; then
     cargo build -p fst-builder --manifest-path "$REPO_ROOT/engine/Cargo.toml"
 fi
 
-# 2. 執行客源翠詞庫提取與三神件建置
+# 2. 執行客源翠詞庫提取與四神件建置
 echo "▶ 執行客話詞庫建置管線..."
 node "$SCRIPT_DIR/sources/official/hakspring/extract_and_build.js"
+python3 "$SCRIPT_DIR/tools/build_hakfa_association.py"
 
 # 3. 部署選項
 if [ "$1" == "--deploy" ]; then
@@ -46,7 +47,8 @@ if [ "$1" == "--deploy" ]; then
     cp "$OUTPUT_DIR/dictionary.bin" "$ASSETS_DIR/dictionary.bin"
     cp "$OUTPUT_DIR/dictionary.fst" "$ASSETS_DIR/dictionary.fst"
     cp "$OUTPUT_DIR/syllables.fst" "$ASSETS_DIR/syllables.fst"
-    echo "  ✓ 成功部署客話辭典至 $ASSETS_DIR/"
+    cp "$OUTPUT_DIR/association.bin" "$ASSETS_DIR/association.bin"
+    echo "  ✓ 成功部署客話四神件辭典至 $ASSETS_DIR/"
 fi
 
 echo ""

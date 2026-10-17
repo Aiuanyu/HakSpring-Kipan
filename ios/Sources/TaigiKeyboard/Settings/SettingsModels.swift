@@ -11,7 +11,7 @@ extension InputMode {
     var displayNameKey: StringKey {
         switch self {
         case .poj: .settingsPojMode
-        case .tl: .settingsTlMode
+        case .tl: .settingsHppMode
         case .english: .settingsEnglishMode
         case .tps: .settingsTpsMode
         }
