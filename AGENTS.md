@@ -50,7 +50,7 @@ Writing in the vault — only when asked, and following `hub-template.md`:
 
 - **Open an issue** for work handed to a cloud agent, or for a user report. The body stands alone: goal, the decisions that apply (pasted, not linked to the vault), acceptance criteria, likely files.
 - **One logical change per PR and per commit.** Do not bundle a platform, i18n, dictionary data and tooling into one commit.
-- **Commit messages**: Conventional Commits `type(scope): subject`. The description may be in Hakfa Hanji (the maintainer's practice in this fork) or English; follow the language the maintainer asked for. The body says what changed, why, and which platforms were built and tested.
+- **Commit messages and PR descriptions are in Hakfa** — Hakfa Hanji（客語漢字）, the maintainer's decision for this fork. Keep the Conventional Commits prefix `type(scope):` in English and identifiers as they are in the code. The body says what changed, why, and which platforms were built and tested. Exceptions: a PR to upstream TaigiKeyboard is in English; an upstream merge commit keeps upstream's own messages.
 - After a PR merges, a local agent with the vault adds one line to the hub (what changed + PR URL).
 
 ### Reporting
@@ -135,7 +135,7 @@ Details and timings: `docs/architecture/build-artifacts.md`.
 ## Conventions
 
 - **【族名與語名規範】一律使用 `hakfa`（Hakfa）／嚴禁使用 `hakka`**：專案全體（包含程式碼命名、變數、檔名、路徑、文件與 UI），若涉及客語羅馬化代號或族語命名，**嚴禁使用 ❌ `hakka`，一律使用 ⭕ `hakfa`（有大寫時就大寫，如 `Hakfa`）**。原因：臺灣客人大體喊自家 Hagngin、喊族語 Hakfa。
-- Code, comments and docs in **English**. Living docs name UI labels by their i18n `en` value. CJK only for Taigi content (phonetic / Hanji examples, test data, proper names of dictionaries and fonts). Dated snapshots (`docs/reports/**`, `docs/releases/**`) are frozen.
+- Code, comments and docs in **English** (Kipan exception: commit messages and PR descriptions are in Hakfa — § Issues, PRs, commits). Living docs name UI labels by their i18n `en` value. CJK only for Taigi content (phonetic / Hanji examples, test data, proper names of dictionaries and fonts). Dated snapshots (`docs/reports/**`, `docs/releases/**`) are frozen.
 - Conventional Commits `type(scope): subject`; one PR per logical change; say which platforms you built and tested.
 - `changelog/` is edited only at release time.
 - No personal identifiers in tracked files, commits or PRs (`docs/contributing/known-pitfalls.md` § Privacy).
