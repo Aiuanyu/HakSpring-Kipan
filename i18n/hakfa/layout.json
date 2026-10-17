@@ -1,0 +1,11 @@
+{
+  "namespace": "layout",
+  "keys": {
+    "romanizationKeyboard": { "hakha": "羅馬字企盤" },
+    "standardLayout": { "hakha": "Lohankha" },
+    "phahTaigiLayout": { "hakha": "PhahTaigi" },
+    "tpsLayout": { "hakha": "方音符號企盤" },
+    "moe1Layout": { "hakha": "教育部排列 1" },
+    "moe2Layout": { "hakha": "教育部排列 2" }
+  }
+}

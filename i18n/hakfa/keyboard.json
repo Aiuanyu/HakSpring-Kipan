@@ -1,0 +1,18 @@
+{
+  "namespace": "keyboard",
+  "keys": {
+    "expandCandidates": { "hakha": "展開抑是收合候選詞列" },
+    "morePopupHint": { "hakha": "長撳有較濟字" },
+    "toggleToolbar": { "hakha": "展開抑是收合工具列" },
+    "symbolPanel": { "hakha": "符號面板" },
+    "switchLayout": { "hakha": "切換佈局" },
+    "switchInputMethod": { "hakha": "切換輸入法" },
+    "switchInputMethodHint": { "hakha": "長撳擇企盤" },
+    "dismissKeyboard": { "hakha": "收合企盤" },
+    "oneHandedMode": { "hakha": "單手模式" },
+    "oneHandedLeft": { "hakha": "倒手" },
+    "oneHandedRight": { "hakha": "正手" },
+    "oneHandedOff": { "hakha": "一般" },
+    "oneHandedSwapSide": { "hakha": "換邊" }
+  }
+}

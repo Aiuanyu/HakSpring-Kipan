@@ -16,12 +16,11 @@
         ]
       },
       "values": {
-        "hakha": "客源翠企盤",
-        "taiha": "客源翠企盤",
-        "tailo": "HakSpring-Kipan",
-        "poj": "HakSpring-Kipan",
-        "en": "HakSpring-Kipan",
-        "ja": "客源翠企盤"
+        "hanji": "台語齒盤",
+        "tailo": "Tâi-gí Khí-puânn",
+        "poj": "Tâi-gí Khí-pôaⁿ",
+        "en": "TaigiKeyboard",
+        "ja": "台湾語キーボード"
       }
     },
     "setupKeyboard": {
@@ -36,8 +35,7 @@
         ]
       },
       "values": {
-        "hakha": "企盤愛打開才會當使用",
-        "taiha": "齒盤愛拍開才會當使用",
+        "hanji": "齒盤愛拍開才會當使用",
         "tailo": "Khí-puânn ài phah-khui tsiah ē-tàng sú-iōng",
         "poj": "Khí-pôaⁿ ài phah-khui chiah ē-tàng sú-iōng",
         "en": "Enable the keyboard to start using it",
@@ -56,8 +54,7 @@
         ]
       },
       "values": {
-        "hakha": "打字說明",
-        "taiha": "拍字說明",
+        "hanji": "拍字說明",
         "tailo": "Phah-jī suat-bîng",
         "poj": "Phah-jī soat-bêng",
         "en": "Typing Guide",
@@ -76,8 +73,7 @@
         ]
       },
       "values": {
-        "hakha": "功能設定",
-        "taiha": "功能設定",
+        "hanji": "功能設定",
         "tailo": "Kong-lîng siat-tīng",
         "poj": "Kong-lêng siat-tēng",
         "en": "Feature Settings",
@@ -96,8 +92,7 @@
         ]
       },
       "values": {
-        "hakha": "啟用方法",
-        "taiha": "啟用方法",
+        "hanji": "啟用方法",
         "tailo": "Khé-iōng hong-huat",
         "poj": "Khé-iōng hong-hoat",
         "en": "How to Enable",
@@ -116,8 +111,7 @@
         ]
       },
       "values": {
-        "hakha": "第三方企盤愛手動啟用，請照下跤 个 步驟設定。",
-        "taiha": "第三方齒盤愛手動啟用，請照下跤 ê 步驟設定。",
+        "hanji": "第三方齒盤愛手動啟用，請照下跤 ê 步驟設定。",
         "tailo": "Tē-sann hong khí-puânn ài tshiú-tōng khé-iōng, tshiánn tsiàu ē-kha ê pōo-tsōo siat-tīng.",
         "poj": "Tē-saⁿ hong khí-pôaⁿ ài chhiú-tōng khé-iōng, chhiáⁿ chiàu ē-kha ê pō͘-chō͘ siat-tēng.",
         "en": "Third-party keyboards must be enabled manually. Follow the steps below.",
@@ -136,8 +130,7 @@
         ]
       },
       "values": {
-        "hakha": "「允准完整取用」分企盤會當摎 App 共用設定摎使用資料。客源翠企盤毋會共你拍 个 內容送去網路。",
-        "taiha": "「允准完整取用」予齒盤會當佮 App 共用設定佮使用資料。台語齒盤袂共你拍 ê 內容送去網路。",
+        "hanji": "「允准完整取用」予齒盤會當佮 App 共用設定佮使用資料。台語齒盤袂共你拍 ê 內容送去網路。",
         "tailo": "\"Ún-tsún uân-tsíng tshú-iōng\" hōo khí-puânn ē-tàng kah App kiōng-iōng siat-tīng kah sú-iōng tsu-liāu. Tâi-gí khí-puânn buē kā lí phah ê luē-iông sàng khì bāng-lōo.",
         "poj": "\"Ún-chún oân-chéng chhú-iōng\" hō͘ khí-pôaⁿ ē-tàng kah App kiōng-iōng siat-tēng kah sú-iōng chu-liāu. Tâi-gí khí-pôaⁿ bōe kā lí phah ê lōe-iông sàng khì bāng-lō͘.",
         "en": "\"Allow Full Access\" lets the keyboard share settings and usage data with the app. TaigiKeyboard does not send what you type over the network.",
@@ -156,8 +149,7 @@
         ]
       },
       "values": {
-        "hakha": "無共樣牌子 个 手機仔，設定方式可能淡薄仔無共樣。",
-        "taiha": "無仝牌子 ê 手機仔，設定方式可能淡薄仔無仝。",
+        "hanji": "無仝牌子 ê 手機仔，設定方式可能淡薄仔無仝。",
         "tailo": "Bô kâng pâi-tsú ê tshiú-ki-á, siat-tīng hong-sik khó-lîng tām-po̍h-á bô kâng.",
         "poj": "Bô kâng pâi-chú ê chhiú-ki-á, siat-tēng hong-sek khó-lêng tām-po̍h-á bô kâng.",
         "en": "Steps may differ slightly between phone brands.",
@@ -176,8 +168,7 @@
         ]
       },
       "values": {
-        "hakha": "完成了後，重開你目前使用 个 App。紲落來，在會當打字 个 所在撳牢地球圖示，切去客源翠企盤。",
-        "taiha": "完成了後，重開你目前使用 ê App。紲落來，佇會當拍字 ê 所在揤牢地球圖示，切去台語齒盤。",
+        "hanji": "完成了後，重開你目前使用 ê App。紲落來，佇會當拍字 ê 所在揤牢地球圖示，切去台語齒盤。",
         "tailo": "Uân-sîng liáu-āu, tîng-khui lí ba̍k-tsîng sú-iōng ê App. Suà--lo̍h-lâi, tī ē-tàng phah-jī ê sóo-tsāi tshi̍h tiâu tuē-kiû tôo-sī, tshiat khì tâi-gí khí-puânn.",
         "poj": "Oân-sêng liáu-āu, têng-khui lí ba̍k-chêng sú-iōng ê App. Sòa--lo̍h-lâi, tī ē-tàng phah-jī ê só͘-chāi chhi̍h tiâu tōe-kiû tô͘-sī, chhiat khì tâi-gí khí-pôaⁿ.",
         "en": "Once done, restart the app you are using. Then, wherever you can type, press and hold the globe icon to switch to TaigiKeyboard.",
@@ -196,8 +187,7 @@
         ]
       },
       "values": {
-        "hakha": "去設定頁",
-        "taiha": "去設定頁",
+        "hanji": "去設定頁",
         "tailo": "Khì siat-tīng ia̍h",
         "poj": "Khì siat-tēng ia̍h",
         "en": "Open Settings",
@@ -216,8 +206,7 @@
         ]
       },
       "values": {
-        "hakha": "點撳「企盤」",
-        "taiha": "點揤「齒盤」",
+        "hanji": "點揤「齒盤」",
         "tailo": "Tiám-tshi̍h \"khí-puânn\"",
         "poj": "Tiám-chhi̍h \"khí-pôaⁿ\"",
         "en": "Tap \"Keyboards\"",
@@ -236,8 +225,7 @@
         ]
       },
       "values": {
-        "hakha": "點撳「增加企盤」、「允准完整取用」",
-        "taiha": "點揤「增加齒盤」、「允准完整取用」",
+        "hanji": "點揤「增加齒盤」、「允准完整取用」",
         "tailo": "Tiám-tshi̍h \"tsing-ka khí-puânn\", \"ún-tsún uân-tsíng tshú-iōng\"",
         "poj": "Tiám-chhi̍h \"cheng-ka khí-pôaⁿ\", \"ún-chún oân-chéng chhú-iōng\"",
         "en": "Tap \"Add keyboard\" and \"Allow Full Access\"",
@@ -256,8 +244,7 @@
         ]
       },
       "values": {
-        "hakha": "為阮評分",
-        "taiha": "為阮評分",
+        "hanji": "為阮評分",
         "tailo": "Uī guán phîng-hun",
         "poj": "Ūi goán phêng-hun",
         "en": "Rate Us",
@@ -279,8 +266,7 @@
         ]
       },
       "values": {
-        "hakha": "關於企盤",
-        "taiha": "關於齒盤",
+        "hanji": "關於齒盤",
         "tailo": "Kuan-î Khí-puânn",
         "poj": "Koan-î Khí-pôaⁿ",
         "en": "About the Keyboard",
@@ -302,8 +288,7 @@
         ]
       },
       "values": {
-        "hakha": "客源翠企盤是一个自由、開源 个 客話打字家私，永遠免費、無廣告，嘛毋會推出付費功能。毋管是一般使用者、先生、學校抑是客話教育團體，攏會當自由使用。希望分逐家用客話、教客話 个 時，免有額外 个 負擔。",
-        "taiha": "台語齒盤是一个自由、開源 ê 台語拍字家私，永遠免費、無廣告，嘛袂推出付費功能。毋管是一般使用者、先生、學校抑是台語教育團體，攏會當自由使用。希望予逐家用台語、教台語 ê 時，免有額外 ê 負擔。",
+        "hanji": "台語齒盤是一个自由、開源 ê 台語拍字家私，永遠免費、無廣告，嘛袂推出付費功能。毋管是一般使用者、先生、學校抑是台語教育團體，攏會當自由使用。希望予逐家用台語、教台語 ê 時，免有額外 ê 負擔。",
         "tailo": "Tâi-gí Khí-puânn sī tsi̍t ê tsū-iû, khai-guân ê Tâi-gí phah-jī ke-si, íng-uán bián-huì, bô kóng-kò, mā bē tshui-tshut hù-huì kong-lîng. M̄-kuán sī it-puann sú-iōng-tsiá, sian-sinn, ha̍k-hāu ia̍h-sī Tâi-gí kàu-io̍k thuân-thé, lóng ē-tàng tsū-iû sú-iōng. Hi-bāng hōo ta̍k-ke iōng Tâi-gí, kà Tâi-gí ê sî, bián ū gia̍h-guā ê hū-tam.",
         "poj": "Tâi-gí Khí-pôaⁿ sī chi̍t ê chū-iû, khai-goân ê Tâi-gí phah-jī ke-si, éng-oán bián-hùi, bô kóng-kò, mā bē chhui-chhut hù-hùi kong-lêng. M̄-koán sī it-poaⁿ sú-iōng-chiá, sian-siⁿ, ha̍k-hāu ia̍h-sī Tâi-gí kàu-io̍k thoân-thé, lóng ē-tàng chū-iû sú-iōng. Hi-bāng hō͘ ta̍k-ke iōng Tâi-gí, kà Tâi-gí ê sî, bián ū gia̍h-gōa ê hū-tam.",
         "en": "TaigiKeyboard is a free, open-source Taiwanese input method — free forever, with no ads and no paid features ever. Everyday users, teachers, schools and Taiwanese-language education groups are all free to use it. The hope is that using and teaching Taiwanese comes with no extra burden.",
@@ -325,8 +310,7 @@
         ]
       },
       "values": {
-        "hakha": "這隻計畫目前由我一个人利用上班以外 个 時間開發摎維護。向望會當一直做落去，分逐隻想愛用母語打字 个 人，攏會當輕鬆用母語打字。",
-        "taiha": "這个計畫目前由我一个人利用上班以外 ê 時間開發佮維護。向望會當一直做落去，予逐个想欲用母語拍字 ê 人，攏會當輕鬆用母語拍字。",
+        "hanji": "這个計畫目前由我一个人利用上班以外 ê 時間開發佮維護。向望會當一直做落去，予逐个想欲用母語拍字 ê 人，攏會當輕鬆用母語拍字。",
         "tailo": "Tsit ê kè-uē bo̍k-tsiân iû guá tsi̍t ê lâng lī-iōng siōng-pan í-guā ê sî-kan khai-huat kah uî-hōo. Ǹg-bāng ē-tàng it-ti̍t tsò lo̍h-khì, hōo ta̍k ê siūnn-beh iōng bó-gí phah-jī ê lâng, lóng ē-tàng khin-sang iōng bó-gí phah-jī.",
         "poj": "Chit ê kè-ōe bo̍k-chiân iû goá chi̍t ê lâng lī-iōng siōng-pan í-gōa ê sî-kan khai-hoat kah ûi-hō͘. Ǹg-bāng ē-tàng it-ti̍t chò lo̍h-khì, hō͘ ta̍k ê siūⁿ-beh iōng bó-gí phah-jī ê lâng, lóng ē-tàng khin-sang iōng bó-gí phah-jī.",
         "en": "This project is developed and maintained by one person, in the hours outside a day job. I hope to keep it going, so that everyone who wants to type in their mother tongue can do so with ease.",
@@ -348,8 +332,7 @@
         ]
       },
       "values": {
-        "hakha": "taigikeyboard.tw",
-        "taiha": "taigikeyboard.tw",
+        "hanji": "taigikeyboard.tw",
         "tailo": "taigikeyboard.tw",
         "poj": "taigikeyboard.tw",
         "en": "taigikeyboard.tw",
@@ -371,8 +354,7 @@
         ]
       },
       "values": {
-        "hakha": "GitHub",
-        "taiha": "GitHub",
+        "hanji": "GitHub",
         "tailo": "GitHub",
         "poj": "GitHub",
         "en": "GitHub",
@@ -394,8 +376,7 @@
         ]
       },
       "values": {
-        "hakha": "Discord",
-        "taiha": "Discord",
+        "hanji": "Discord",
         "tailo": "Discord",
         "poj": "Discord",
         "en": "Discord",
@@ -417,8 +398,7 @@
         ]
       },
       "values": {
-        "hakha": "Facebook",
-        "taiha": "Facebook",
+        "hanji": "Facebook",
         "tailo": "Facebook",
         "poj": "Facebook",
         "en": "Facebook",
@@ -440,8 +420,7 @@
         ]
       },
       "values": {
-        "hakha": "Instagram",
-        "taiha": "Instagram",
+        "hanji": "Instagram",
         "tailo": "Instagram",
         "poj": "Instagram",
         "en": "Instagram",
@@ -463,8 +442,7 @@
         ]
       },
       "values": {
-        "hakha": "Threads",
-        "taiha": "Threads",
+        "hanji": "Threads",
         "tailo": "Threads",
         "poj": "Threads",
         "en": "Threads",
@@ -486,8 +464,7 @@
         ]
       },
       "values": {
-        "hakha": "info@taigikeyboard.tw",
-        "taiha": "info@taigikeyboard.tw",
+        "hanji": "info@taigikeyboard.tw",
         "tailo": "info@taigikeyboard.tw",
         "poj": "info@taigikeyboard.tw",
         "en": "info@taigikeyboard.tw",
@@ -509,8 +486,7 @@
         ]
       },
       "values": {
-        "hakha": "© 2026 Bîn-hiân",
-        "taiha": "© 2026 Bîn-hiân",
+        "hanji": "© 2026 Bîn-hiân",
         "tailo": "© 2026 Bîn-hiân",
         "poj": "© 2026 Bîn-hiân",
         "en": "© 2026 Bîn-hiân",
@@ -529,8 +505,7 @@
         ]
       },
       "values": {
-        "hakha": "隱私權政策",
-        "taiha": "隱私權政策",
+        "hanji": "隱私權政策",
         "tailo": "Ín-su-khuân tsìng-tshik",
         "poj": "Ín-su-khoân chèng-chhek",
         "en": "Privacy Policy",
@@ -549,8 +524,7 @@
         ]
       },
       "values": {
-        "hakha": "目前版本",
-        "taiha": "目前版本",
+        "hanji": "目前版本",
         "tailo": "Ba̍k-tsîng pán-pún",
         "poj": "Ba̍k-chêng pán-pún",
         "en": "Current Version",
@@ -569,8 +543,7 @@
         ]
       },
       "values": {
-        "hakha": "致謝",
-        "taiha": "致謝",
+        "hanji": "致謝",
         "tailo": "Tì-siā",
         "poj": "Tì-siā",
         "en": "Acknowledgements",
@@ -589,8 +562,7 @@
         ]
       },
       "values": {
-        "hakha": "授權條款",
-        "taiha": "授權條款",
+        "hanji": "授權條款",
         "tailo": "Siū-khuân tiâu-khuán",
         "poj": "Siū-khoân tiâu-khoán",
         "en": "License",
@@ -609,8 +581,7 @@
         ]
       },
       "values": {
-        "hakha": "© 教育部",
-        "taiha": "© 教育部",
+        "hanji": "© 教育部",
         "tailo": "© Kàu-io̍k-pōo",
         "poj": "© Kàu-io̍k-pō͘",
         "en": "© Ministry of Education",
@@ -629,8 +600,7 @@
         ]
       },
       "values": {
-        "hakha": "© iTaigi愛客話",
-        "taiha": "© iTaigi愛台語",
+        "hanji": "© iTaigi愛台語",
         "tailo": "© iTaigi ài-tâi-gí",
         "poj": "© iTaigi ài-tâi-gí",
         "en": "© iTaigi",
@@ -649,8 +619,7 @@
         ]
       },
       "values": {
-        "hakha": "© 公視客話台",
-        "taiha": "© 公視台語台",
+        "hanji": "© 公視台語台",
         "tailo": "© Kong-sī tâi-gí-tâi",
         "poj": "© Kong-sī tâi-gí-tâi",
         "en": "© PTS Taigi",
@@ -669,8 +638,7 @@
         ]
       },
       "values": {
-        "hakha": "© justfont",
-        "taiha": "© justfont",
+        "hanji": "© justfont",
         "tailo": "© justfont",
         "poj": "© justfont",
         "en": "© justfont",
@@ -689,8 +657,7 @@
         ]
       },
       "values": {
-        "hakha": "© ButTaiwan",
-        "taiha": "© ButTaiwan",
+        "hanji": "© ButTaiwan",
         "tailo": "© ButTaiwan",
         "poj": "© ButTaiwan",
         "en": "© ButTaiwan",
@@ -709,8 +676,7 @@
         ]
       },
       "values": {
-        "hakha": "© 佐佐木舜一",
-        "taiha": "© 佐佐木舜一",
+        "hanji": "© 佐佐木舜一",
         "tailo": "© Tsò-tsò-bo̍k sùn tsi̍t",
         "poj": "© Chò-chò-bo̍k sùn chi̍t",
         "en": "© Sasaki Shun'ichi",
@@ -729,8 +695,7 @@
         ]
       },
       "values": {
-        "hakha": "© 鄭良偉",
-        "taiha": "© 鄭良偉",
+        "hanji": "© 鄭良偉",
         "tailo": "© Tēnn liông uí",
         "poj": "© Tēⁿ liông úi",
         "en": "© Tēⁿ Liông-uí",
@@ -749,8 +714,7 @@
         ]
       },
       "values": {
-        "hakha": "© 小川尚義",
-        "taiha": "© 小川尚義",
+        "hanji": "© 小川尚義",
         "tailo": "© Siáu-tshuan siōng gī",
         "poj": "© Siáu-chhoan siōng gī",
         "en": "© Ogawa Naoyoshi",
@@ -769,8 +733,7 @@
         ]
       },
       "values": {
-        "hakha": "© 國立臺灣工藝研究發展中心",
-        "taiha": "© 國立臺灣工藝研究發展中心",
+        "hanji": "© 國立臺灣工藝研究發展中心",
         "tailo": "© Kok-li̍p tâi-uân kang-gē gián-kiù huat-tián tiong-sim",
         "poj": "© Kok-li̍p tâi-oân kang-gē gián-kiù hoat-tián tiong-sim",
         "en": "© National Taiwan Craft Research and Development Institute",
@@ -789,8 +752,7 @@
         ]
       },
       "values": {
-        "hakha": "實齋整理、提供",
-        "taiha": "實齋整理、提供",
+        "hanji": "實齋整理、提供",
         "tailo": "Si̍t tse tsíng-lí, thê-kiong",
         "poj": "Si̍t che chéng-lí, thê-kiong",
         "en": "Compiled and provided by 實齋",
@@ -809,8 +771,7 @@
         ]
       },
       "values": {
-        "hakha": "建中整理、提供",
-        "taiha": "建中整理、提供",
+        "hanji": "建中整理、提供",
         "tailo": "Kiàn-tiong tsíng-lí, thê-kiong",
         "poj": "Kiàn-tiong chéng-lí, thê-kiong",
         "en": "Compiled and provided by 建中",

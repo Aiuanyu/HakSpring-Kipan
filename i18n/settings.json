@@ -4,292 +4,292 @@
     "reset": {
       "comment": "Generic restore-to-default action label / a11y description (恢復 = restore). Used by the reset-settings dialog AND reused for the color-picker / slider reset-icon contentDescription on the theme + layout editors.",
       "scope": { "platforms": ["android", "ios", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "恢復", "taiha": "恢復", "tailo": "Hue-ho̍k", "poj": "Hoe-ho̍k", "en": "Reset", "ja": "リセット" }
+      "values": { "hanji": "恢復", "tailo": "Hue-ho̍k", "poj": "Hoe-ho̍k", "en": "Reset", "ja": "リセット" }
     },
     "inputMode": {
       "comment": "Settings row + sub-screen title for selecting the active input mode (mobile). The desktop General pane labels its TL / POJ picker inputScript instead.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "輸入模式", "taiha": "輸入模式", "tailo": "Su-ji̍p bôo-sik", "poj": "Su-ji̍p bô͘-sek", "en": "Input Mode", "ja": "入力モード" }
+      "values": { "hanji": "輸入模式", "tailo": "Su-ji̍p bôo-sik", "poj": "Su-ji̍p bô͘-sek", "en": "Input Mode", "ja": "入力モード" }
     },
     "keyboardLayout": {
       "comment": "macOS General picker: QWERTY (default), Dvorak, Colemak for TL/POJ input. TPS keeps its fixed QWERTY positions.",
       "scope": { "platforms": ["macos"], "surfaces": ["host"] },
-      "values": { "hakha": "企盤排列", "taiha": "齒盤排列", "tailo": "Khí-puânn pâi-lia̍t", "poj": "Khí-pôaⁿ pâi-lia̍t", "en": "Keyboard Layout", "ja": "キーボード配列" }
+      "values": { "hanji": "齒盤排列", "tailo": "Khí-puânn pâi-lia̍t", "poj": "Khí-pôaⁿ pâi-lia̍t", "en": "Keyboard Layout", "ja": "キーボード配列" }
     },
     "displayLanguage": {
       "comment": "Settings row + sub-screen title for selecting the app UI display language (orthogonal to the input mode). Most option labels are endonyms (own-script, not i18n keys); the Automatic option uses displayLanguageAutomatic.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "介面語言", "taiha": "介面語言", "tailo": "Kài-bīn gí-giân", "poj": "Kài-bīn gí-giân", "en": "Display Language", "ja": "表示言語" }
+      "values": { "hanji": "介面語言", "tailo": "Kài-bīn gí-giân", "poj": "Kài-bīn gí-giân", "en": "Display Language", "ja": "表示言語" }
     },
     "displayLanguageAutomatic": {
       "comment": "Display-language picker option that follows the OS/device language (ja->日本語, zh->漢字, else->English). Unlike the other rows this is a translated label, not an endonym.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "自動", "taiha": "自動", "tailo": "Tsū-tōng", "poj": "Chū-tōng", "en": "Automatic", "ja": "自動" }
+      "values": { "hanji": "自動", "tailo": "Tsū-tōng", "poj": "Chū-tōng", "en": "Automatic", "ja": "自動" }
     },
     "pojMode": {
       "comment": "Input-mode option: Pe̍h-ōe-jī (POJ) romanization. Also the iOS smartbar input-mode button a11y label (extension surface). Also the Pe̍h-ōe-jī settings section header (pojSettingsSectionTitle merged 2026-09-20).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "白話字", "taiha": "白話字", "tailo": "Pe̍h-uē-jī", "poj": "Pe̍h-ōe-jī", "en": "Pe̍h-ōe-jī", "ja": "Pe̍h-ōe-jī" }
+      "values": { "hanji": "白話字", "tailo": "Pe̍h-uē-jī", "poj": "Pe̍h-ōe-jī", "en": "Pe̍h-ōe-jī", "ja": "Pe̍h-ōe-jī" }
     },
-    "hppMode": {
-      "comment": "Input-mode option: HagPinPlus (HPP) romanization. Also the iOS smartbar input-mode button a11y label (extension surface).",
+    "tlMode": {
+      "comment": "Input-mode option: Tâi-lô (TL) romanization. Also the iOS smartbar input-mode button a11y label (extension surface).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "HagPinPlus", "taiha": "台羅", "tailo": "Tâi-lô", "poj": "Tâi-lô", "en": "Tâi-lô", "ja": "Tâi-lô" }
+      "values": { "hanji": "台羅", "tailo": "Tâi-lô", "poj": "Tâi-lô", "en": "Tâi-lô", "ja": "Tâi-lô" }
     },
     "englishMode": {
       "comment": "Input-mode option: English keyboard. Also the iOS smartbar input-mode button a11y label (extension surface), and the Windows mode-flash label when a Shift tap switches to English input.",
       "scope": { "platforms": ["android", "ios", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "英文", "taiha": "英文", "tailo": "Ing-bûn", "poj": "Eng-bûn", "en": "English", "ja": "英語" }
+      "values": { "hanji": "英文", "tailo": "Ing-bûn", "poj": "Eng-bûn", "en": "English", "ja": "英語" }
     },
     "taigiMode": {
       "comment": "Windows mode-flash label when a Shift tap switches back from English to Taigi input. Pairs with englishMode.",
       "scope": { "platforms": ["windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "客話", "taiha": "台語", "tailo": "Tâi-gí", "poj": "Tâi-gí", "en": "Taigi", "ja": "台湾語" }
+      "values": { "hanji": "台語", "tailo": "Tâi-gí", "poj": "Tâi-gí", "en": "Taigi", "ja": "台湾語" }
     },
     "tpsMode": {
       "comment": "Input-mode option: Taiwanese Phonetic Symbols (TPS). Also the iOS smartbar input-mode button a11y label (extension surface). Also the TPS settings section header and the layout page's TPS section header (tpsSettingsSectionTitle / layout.taigiPhonetic merged 2026-09-20).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "方音符號", "taiha": "方音符號", "tailo": "Hong-im-hû-hō", "poj": "Hong-im-hû-hō", "en": "Phonetic Symbols", "ja": "方音符号" }
+      "values": { "hanji": "方音符號", "tailo": "Hong-im-hû-hō", "poj": "Hong-im-hû-hō", "en": "Phonetic Symbols", "ja": "方音符号" }
     },
     "typingSectionTitle": {
       "comment": "Section header for typing-behaviour settings.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "打字設定", "taiha": "拍字設定", "tailo": "Phah-jī siat-tīng", "poj": "Phah-jī siat-tēng", "en": "Typing", "ja": "入力" }
+      "values": { "hanji": "拍字設定", "tailo": "Phah-jī siat-tīng", "poj": "Phah-jī siat-tēng", "en": "Typing", "ja": "入力" }
     },
     "candidateDisplayMode": {
       "comment": "Picker label: how a candidate cell renders the (Hanji, romanization) pair — side by side (today) or romanization only. Host settings + iOS/Android in-keyboard settings overlay; desktop appearance pane.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "候選詞顯示", "taiha": "候選詞顯示", "tailo": "Hāu-suán-sû hián-sī", "poj": "Hāu-soán-sû hián-sī", "en": "Candidate Display", "ja": "候補の表示" }
+      "values": { "hanji": "候選詞顯示", "tailo": "Hāu-suán-sû hián-sī", "poj": "Hāu-soán-sû hián-sī", "en": "Candidate Display", "ja": "候補の表示" }
     },
     "candidateDisplayModeSideBySide": {
       "comment": "Picker value (default): cell shows hanji and romanization as primary + secondary; the 文/A key decides which leads.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "漢羅對應", "taiha": "漢羅對應", "tailo": "Hàn-Lô tuì-ìng", "poj": "Hàn-Lô tùi-èng", "en": "Hanji–Romanization Pairing", "ja": "漢字とローマ字の対応" }
+      "values": { "hanji": "漢羅對應", "tailo": "Hàn-Lô tuì-ìng", "poj": "Hàn-Lô tùi-èng", "en": "Hanji–Romanization Pairing", "ja": "漢字とローマ字の対応" }
     },
     "candidateDisplayModeCombined": {
       "comment": "Picker value: cell shows hanji and romanization as ONE label (Hanji romanization); committing writes the hanji; the 文/A key is inert. TL/POJ only.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "漢羅濫", "taiha": "漢羅濫", "tailo": "Hàn-Lô lām", "poj": "Hàn-Lô lām", "en": "Hanji with Romanization", "ja": "漢字＋ローマ字" }
+      "values": { "hanji": "漢羅濫", "tailo": "Hàn-Lô lām", "poj": "Hàn-Lô lām", "en": "Hanji with Romanization", "ja": "漢字＋ローマ字" }
     },
     "candidateDisplayModeRomanOnly": {
       "comment": "Picker value: cell shows the romanization only; committing writes the romanization; TL/POJ only.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "羅馬字", "taiha": "羅馬字", "tailo": "Lô-má-jī", "poj": "Lô-má-jī", "en": "Romanization Only", "ja": "ローマ字のみ" }
+      "values": { "hanji": "羅馬字", "tailo": "Lô-má-jī", "poj": "Lô-má-jī", "en": "Romanization Only", "ja": "ローマ字のみ" }
     },
     "outputBothScripts": {
       "comment": "Toggle label: annotate committed text with the other script in brackets.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "括號標註", "taiha": "括號標註", "tailo": "Kuat-hō phiau-tsù", "poj": "Koat-hō phiau-chù", "en": "Annotate in Brackets", "ja": "括弧で併記" }
+      "values": { "hanji": "括號標註", "tailo": "Kuat-hō phiau-tsù", "poj": "Koat-hō phiau-chù", "en": "Annotate in Brackets", "ja": "括弧で併記" }
     },
     "inputScript": {
       "comment": "Desktop General pane: label of the TL / POJ picker (USER 2026-09-18: \"input/output script\"), paired with outputScript below. Mobile keeps inputMode (Input Mode) — its picker also holds TPS.",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "輸入文字", "taiha": "輸入文字", "tailo": "Su-ji̍p bûn-jī", "poj": "Su-ji̍p bûn-jī", "en": "Input Script", "ja": "入力文字" }
+      "values": { "hanji": "輸入文字", "tailo": "Su-ji̍p bûn-jī", "poj": "Su-ji̍p bûn-jī", "en": "Input Script", "ja": "入力文字" }
     },
     "outputScript": {
       "comment": "Desktop General pane: label of the Hanji / romanization picker — which script a commit writes, the same stored swap the backtick shortcut flips. Paired with inputScript above.",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "輸出文字", "taiha": "輸出文字", "tailo": "Su-tshut bûn-jī", "poj": "Su-chhut bûn-jī", "en": "Output Script", "ja": "出力文字" }
+      "values": { "hanji": "輸出文字", "tailo": "Su-tshut bûn-jī", "poj": "Su-chhut bûn-jī", "en": "Output Script", "ja": "出力文字" }
     },
     "outputScriptHanji": {
       "comment": "Picker value (default): commit writes the Hanji; the romanization is the subtitle.",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "漢字", "taiha": "漢字", "tailo": "Hàn-jī", "poj": "Hàn-jī", "en": "Hanji", "ja": "漢字" }
+      "values": { "hanji": "漢字", "tailo": "Hàn-jī", "poj": "Hàn-jī", "en": "Hanji", "ja": "漢字" }
     },
     "outputScriptRoman": {
       "comment": "Picker value: commit writes the romanization; the Hanji is the subtitle.",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "羅馬字", "taiha": "羅馬字", "tailo": "Lô-má-jī", "poj": "Lô-má-jī", "en": "Romanization", "ja": "ローマ字" }
+      "values": { "hanji": "羅馬字", "tailo": "Lô-má-jī", "poj": "Lô-má-jī", "en": "Romanization", "ja": "ローマ字" }
     },
     "syllableSeparator": {
       "comment": "Picker label: how candidate / committed romanization separates syllables — the dictionary hyphen, a space, or nothing (tâi-uân / tâi uân / tâiuân); the neutral-tone -- becomes · under Space and None. Options: desktop.telexGuideHyphen, settings.syllableSeparatorSpace, settings.syllableSeparatorNone. All five platforms (host settings) plus the mobile keyboard settings overlay.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "音節分隔", "taiha": "音節分隔", "tailo": "Im-tsiat hun-keh", "poj": "Im-chiat hun-keh", "en": "Syllable Separator", "ja": "音節の区切り" }
+      "values": { "hanji": "音節分隔", "tailo": "Im-tsiat hun-keh", "poj": "Im-chiat hun-keh", "en": "Syllable Separator", "ja": "音節の区切り" }
     },
     "syllableSeparatorSpace": {
       "comment": "Syllable Separator picker value: a space between syllables (tâi uân, hōo ·guá).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "空白", "taiha": "空白", "tailo": "Khang-pe̍h", "poj": "Khang-pe̍h", "en": "Space", "ja": "スペース" }
+      "values": { "hanji": "空白", "tailo": "Khang-pe̍h", "poj": "Khang-pe̍h", "en": "Space", "ja": "スペース" }
     },
     "syllableSeparatorNone": {
       "comment": "Syllable Separator picker value: nothing between syllables (tâiuân, hōo·guá).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "無", "taiha": "無", "tailo": "Bô", "poj": "Bô", "en": "None", "ja": "なし" }
+      "values": { "hanji": "無", "tailo": "Bô", "poj": "Bô", "en": "None", "ja": "なし" }
     },
     "syllableSeparatorInfo": {
       "comment": "Help text for the Syllable Separator picker (mobile host app).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "音節中間用連字符（tâi-uân）、空白（tâi uân）抑是無分隔（tâiuân）。後兩種輕聲 -- 改用 ·。", "taiha": "音節中間用連字符（tâi-uân）、空白（tâi uân）抑是無分隔（tâiuân）。後兩種輕聲 -- 改用 ·。", "tailo": "Im-tsiat tiong-kan iōng liân-jī-hû (tâi-uân), khang-pe̍h (tâi uân) iah-sī bô hun-keh (tâiuân). Āu nn̄g tsióng khin-siann -- kái iōng ·.", "poj": "Im-chiat tiong-kan iōng liân-jī-hû (tâi-oân), khang-pe̍h (tâi oân) iah-sī bô hun-keh (tâioân). Āu nn̄g chióng khin-siaⁿ -- kái iōng ·.", "en": "Syllables are separated by a hyphen (tâi-uân), a space (tâi uân), or nothing (tâiuân). With the last two, the neutral-tone -- becomes ·.", "ja": "音節の区切り：ハイフン（tâi-uân）、スペース（tâi uân）、なし（tâiuân）。後の二つでは軽声 -- は · になります。" }
+      "values": { "hanji": "音節中間用連字符（tâi-uân）、空白（tâi uân）抑是無分隔（tâiuân）。後兩種輕聲 -- 改用 ·。", "tailo": "Im-tsiat tiong-kan iōng liân-jī-hû (tâi-uân), khang-pe̍h (tâi uân) iah-sī bô hun-keh (tâiuân). Āu nn̄g tsióng khin-siann -- kái iōng ·.", "poj": "Im-chiat tiong-kan iōng liân-jī-hû (tâi-oân), khang-pe̍h (tâi oân) iah-sī bô hun-keh (tâioân). Āu nn̄g chióng khin-siaⁿ -- kái iōng ·.", "en": "Syllables are separated by a hyphen (tâi-uân), a space (tâi uân), or nothing (tâiuân). With the last two, the neutral-tone -- becomes ·.", "ja": "音節の区切り：ハイフン（tâi-uân）、スペース（tâi uân）、なし（tâiuân）。後の二つでは軽声 -- は · になります。" }
     },
     "candidateWindow": {
       "comment": "Toggle label on the desktop General pane: show the candidate window at all. Off = no window, Space / Enter write the typed romanization (S33).",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "顯示選字窗", "taiha": "顯示選字窗", "tailo": "Hián-sī suán-jī-thang", "poj": "Hián-sī soán-jī-thang", "en": "Show Candidate Window", "ja": "候補ウィンドウを表示" }
+      "values": { "hanji": "顯示選字窗", "tailo": "Hián-sī suán-jī-thang", "poj": "Hián-sī soán-jī-thang", "en": "Show Candidate Window", "ja": "候補ウィンドウを表示" }
     },
     "literalRomanCandidate": {
       "comment": "Toggle label: show what is being typed as the first candidate in the strip (§34 literal-roman candidate). All four platforms.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "當咧拍 个 字放第一个", "taiha": "當咧拍 ê 字囥第一个", "tailo": "Tng-teh phah ê jī khǹg tē-it ê", "poj": "Tng-teh phah ê jī khǹg tē-it ê", "en": "Show Typed Text First", "ja": "入力中の文字を先頭に表示" }
+      "values": { "hanji": "當咧拍 ê 字囥第一个", "tailo": "Tng-teh phah ê jī khǹg tē-it ê", "poj": "Tng-teh phah ê jī khǹg tē-it ê", "en": "Show Typed Text First", "ja": "入力中の文字を先頭に表示" }
     },
     "literalRomanCandidateInfo": {
       "comment": "Help text for the Show Typed Text First toggle.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "候選詞列第一格顯示你拍 个 羅馬字，點撳抑是撳 Enter 送出。關閉了後單淨會當用 Enter 送出。", "taiha": "候選詞列第一格顯示你拍 ê 羅馬字，點揤抑是揤 Enter 送出。關閉了後干焦會當用 Enter 送出。", "tailo": "Hāu-suán sû lia̍t tē-it keh hián-sī lí phah ê lô-má-jī, tiám-tshi̍h ah-sī tshi̍h Enter sàng-tshut. Kuainn--khí-lâi liáu-āu kan-ta ē-tàng iōng Enter sàng-tshut.", "poj": "Hāu-soán sû lia̍t tē-it keh hián-sī lí phah ê lô-má-jī, tiám-chhi̍h ah-sī chhi̍h Enter sàng-chhut. Koaiⁿ--khí-lâi liáu-āu kan-ta ē-tàng iōng Enter sàng-chhut.", "en": "Shows what you typed in the first slot of the candidate bar; tap it or press Enter to commit. When off, only Enter commits it.", "ja": "入力したローマ字を候補バーの先頭に表示し、タップか Enter で確定できます。オフの場合は Enter でのみ確定できます。" }
+      "values": { "hanji": "候選詞列第一格顯示你拍 ê 羅馬字，點揤抑是揤 Enter 送出。關閉了後干焦會當用 Enter 送出。", "tailo": "Hāu-suán sû lia̍t tē-it keh hián-sī lí phah ê lô-má-jī, tiám-tshi̍h ah-sī tshi̍h Enter sàng-tshut. Kuainn--khí-lâi liáu-āu kan-ta ē-tàng iōng Enter sàng-tshut.", "poj": "Hāu-soán sû lia̍t tē-it keh hián-sī lí phah ê lô-má-jī, tiám-chhi̍h ah-sī chhi̍h Enter sàng-chhut. Koaiⁿ--khí-lâi liáu-āu kan-ta ē-tàng iōng Enter sàng-chhut.", "en": "Shows what you typed in the first slot of the candidate bar; tap it or press Enter to commit. When off, only Enter commits it.", "ja": "入力したローマ字を候補バーの先頭に表示し、タップか Enter で確定できます。オフの場合は Enter でのみ確定できます。" }
     },
     "autoCapitalization": {
       "comment": "Toggle label: automatic capitalization in English mode.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "自動大本字", "taiha": "自動大本字", "tailo": "Tsū-tōng tuā-pún-jī", "poj": "Chū-tōng tōa-pún-jī", "en": "Auto-Capitalization", "ja": "自動大文字化" }
+      "values": { "hanji": "自動大本字", "tailo": "Tsū-tōng tuā-pún-jī", "poj": "Chū-tōng tōa-pún-jī", "en": "Auto-Capitalization", "ja": "自動大文字化" }
     },
     "toneInputScheme": {
       "comment": "Picker label on the desktop General pane: which keys type a tone (Standard = digits, Telex = letters); the candidate-slot keys follow from the choice.",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "聲調拍法", "taiha": "聲調拍法", "tailo": "Siann-tiāu phah-huat", "poj": "Siaⁿ-tiāu phah-hoat", "en": "Tone Keys", "ja": "声調の入力方式" }
+      "values": { "hanji": "聲調拍法", "tailo": "Siann-tiāu phah-huat", "poj": "Siaⁿ-tiāu phah-hoat", "en": "Tone Keys", "ja": "声調の入力方式" }
     },
     "toneSchemeStandard": {
       "comment": "toneInputScheme option: digits 1-9 type the tone, the bare letters q w d f z x v y ; pick a candidate. Named after what the user types rather than 標準 (USER 2026-09-09) — beside Telex, \"standard\" says which is the default, not which keys carry the tone.",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "數字調", "taiha": "數字調", "tailo": "Sòo-jī-tiāu", "poj": "Sò͘-jī-tiāu", "en": "Numeric Tones", "ja": "数字で声調" }
+      "values": { "hanji": "數字調", "tailo": "Sòo-jī-tiāu", "poj": "Sò͘-jī-tiāu", "en": "Numeric Tones", "ja": "数字で声調" }
     },
     "toneSchemeTelex": {
       "comment": "toneInputScheme option: the letters v y d w x q type the tone, digits 1-9 pick a candidate. A scheme name, kept as-is in every language. Also the title over the floating Telex guide's key table — the scheme's own name, nothing else (USER 2026-09-0x; desktop.telexGuideTitle merged 2026-09-20).",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "Telex", "taiha": "Telex", "tailo": "Telex", "poj": "Telex", "en": "Telex", "ja": "Telex" }
+      "values": { "hanji": "Telex", "tailo": "Telex", "poj": "Telex", "en": "Telex", "ja": "Telex" }
     },
     "autoSpace": {
       "comment": "Toggle label: auto-insert a space after committing a word.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "自動閬一格", "taiha": "自動閬一格", "tailo": "Tsū-tōng làng tsi̍t ê phāng", "poj": "Chū-tōng làng chi̍t ê phāng", "en": "Auto-Space", "ja": "自動スペース" }
+      "values": { "hanji": "自動閬一格", "tailo": "Tsū-tōng làng tsi̍t ê phāng", "poj": "Chū-tōng làng chi̍t ê phāng", "en": "Auto-Space", "ja": "自動スペース" }
     },
     "keyboardSectionTitle": {
       "comment": "Section header for keyboard-chrome settings.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "企盤設定", "taiha": "齒盤設定", "tailo": "Khí-puânn siat-tīng", "poj": "Khí-pôaⁿ siat-tēng", "en": "Keyboard", "ja": "キーボード" }
+      "values": { "hanji": "齒盤設定", "tailo": "Khí-puânn siat-tīng", "poj": "Khí-pôaⁿ siat-tēng", "en": "Keyboard", "ja": "キーボード" }
     },
     "toolbarAutoCollapse": {
       "comment": "Toggle label: automatically collapse the candidate toolbar after selecting a word.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "選字後自動收合工具列", "taiha": "選字後自動收合工具列", "tailo": "Suán jī liáu-āu tsū-tōng siu-ha̍p kang-khū-lia̍t", "poj": "Soán jī liáu-āu chū-tōng siu-ha̍p kang-khū-lia̍t", "en": "Collapse Toolbar After Selection", "ja": "候補選択後にツールバーを折りたたむ" }
+      "values": { "hanji": "選字後自動收合工具列", "tailo": "Suán jī liáu-āu tsū-tōng siu-ha̍p kang-khū-lia̍t", "poj": "Soán jī liáu-āu chū-tōng siu-ha̍p kang-khū-lia̍t", "en": "Collapse Toolbar After Selection", "ja": "候補選択後にツールバーを折りたたむ" }
     },
     "toolbarAutoCollapseInfo": {
       "comment": "Help text for the auto-hide-toolbar toggle.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "分企盤面頂空間較大。", "taiha": "予齒盤面頂空間較大。", "tailo": "Hōo khí-puânn bīn-tíng khang-king khah-tōa.", "poj": "Hō͘ khí-pôaⁿ bīn-téng khang-keng khah-tōa.", "en": "Gives the keyboard more room.", "ja": "キーボードの表示領域が広くなります。" }
+      "values": { "hanji": "予齒盤面頂空間較大。", "tailo": "Hōo khí-puânn bīn-tíng khang-king khah-tōa.", "poj": "Hō͘ khí-pôaⁿ bīn-téng khang-keng khah-tōa.", "en": "Gives the keyboard more room.", "ja": "キーボードの表示領域が広くなります。" }
     },
     "globeKey": {
       "comment": "Toggle label: show the globe / keyboard-switch key.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "企盤切換按鈕", "taiha": "齒盤切換揤鈕", "tailo": "Khí-puânn tshiat-uānn tshi̍h-liú", "poj": "Khí-pôaⁿ chhiat-ōaⁿ chhi̍h-liú", "en": "Keyboard-Switch Key", "ja": "キーボード切替キー" }
+      "values": { "hanji": "齒盤切換揤鈕", "tailo": "Khí-puânn tshiat-uānn tshi̍h-liú", "poj": "Khí-pôaⁿ chhiat-ōaⁿ chhi̍h-liú", "en": "Keyboard-Switch Key", "ja": "キーボード切替キー" }
     },
     "globeKeyInfo": {
       "comment": "Help text for the globe-key toggle.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "在企盤面頂加 1 粒地球按鈕，撳著會使切換去其他企盤。", "taiha": "佇齒盤面頂加 1 粒地球揤鈕，揤著會使切換去其他齒盤。", "tailo": "Tī khí-puânn bīn-tíng ka 1 lia̍p tuē-kiû tshi̍h-liú, tshi̍h tio̍h ē-sái tshiat-uānn khì kî-thann khí-puânn.", "poj": "Tī khí-pôaⁿ bīn-téng ka 1 lia̍p tōe-kiû chhi̍h-liú, chhi̍h tio̍h ē-sái chhiat-ōaⁿ khì kî-thaⁿ khí-pôaⁿ.", "en": "Adds a globe key to the keyboard; tap it to switch to another keyboard.", "ja": "キーボードに地球儀キーを追加します。タップすると他のキーボードに切り替えられます。" }
+      "values": { "hanji": "佇齒盤面頂加 1 粒地球揤鈕，揤著會使切換去其他齒盤。", "tailo": "Tī khí-puânn bīn-tíng ka 1 lia̍p tuē-kiû tshi̍h-liú, tshi̍h tio̍h ē-sái tshiat-uānn khì kî-thann khí-puânn.", "poj": "Tī khí-pôaⁿ bīn-téng ka 1 lia̍p tōe-kiû chhi̍h-liú, chhi̍h tio̍h ē-sái chhiat-ōaⁿ khì kî-thaⁿ khí-pôaⁿ.", "en": "Adds a globe key to the keyboard; tap it to switch to another keyboard.", "ja": "キーボードに地球儀キーを追加します。タップすると他のキーボードに切り替えられます。" }
     },
     "feedbackSectionTitle": {
       "comment": "Section header for key-press feedback settings.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "打字反應", "taiha": "拍字反應", "tailo": "Phah-jī huán-ìng", "poj": "Phah-jī hoán-èng", "en": "Key-Press Feedback", "ja": "入力フィードバック" }
+      "values": { "hanji": "拍字反應", "tailo": "Phah-jī huán-ìng", "poj": "Phah-jī hoán-èng", "en": "Key-Press Feedback", "ja": "入力フィードバック" }
     },
     "soundFeedback": {
       "comment": "Toggle label: key-press sound feedback.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "撳仔聲", "taiha": "揤仔聲", "tailo": "Tshi̍h á siann", "poj": "Chhi̍h á siaⁿ", "en": "Key Sound", "ja": "キー音" }
+      "values": { "hanji": "揤仔聲", "tailo": "Tshi̍h á siann", "poj": "Chhi̍h á siaⁿ", "en": "Key Sound", "ja": "キー音" }
     },
     "vibrationFeedback": {
       "comment": "Toggle label: key-press vibration feedback.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "震動反應", "taiha": "震動反應", "tailo": "Tín-tāng huán-ìng", "poj": "Tín-tāng hoán-èng", "en": "Vibration", "ja": "バイブレーション" }
+      "values": { "hanji": "震動反應", "tailo": "Tín-tāng huán-ìng", "poj": "Tín-tāng hoán-èng", "en": "Vibration", "ja": "バイブレーション" }
     },
     "doubleTapOO": {
       "comment": "Toggle label: double-tap oo composes o͘ (POJ).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "連紲拍 oo → o͘", "taiha": "連紲拍 oo → o͘", "tailo": "Liân-suà phah oo -> o͘", "poj": "Liân-sòa phah o͘ -> o͘", "en": "Double-tap oo → o͘", "ja": "oo を続けて入力 → o͘" }
+      "values": { "hanji": "連紲拍 oo → o͘", "tailo": "Liân-suà phah oo -> o͘", "poj": "Liân-sòa phah o͘ -> o͘", "en": "Double-tap oo → o͘", "ja": "oo を続けて入力 → o͘" }
     },
     "doubleTapNN": {
       "comment": "Toggle label: double-tap nn composes ⁿ (POJ nasal).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "連紲拍 nn → ⁿ", "taiha": "連紲拍 nn → ⁿ", "tailo": "Liân-suà phah nn -> ⁿ", "poj": "Liân-sòa phah nn -> ⁿ", "en": "Double-tap nn → ⁿ", "ja": "nn を続けて入力 → ⁿ" }
+      "values": { "hanji": "連紲拍 nn → ⁿ", "tailo": "Liân-suà phah nn -> ⁿ", "poj": "Liân-sòa phah nn -> ⁿ", "en": "Double-tap nn → ⁿ", "ja": "nn を続けて入力 → ⁿ" }
     },
     "nasalMarkerUppercase": {
       "comment": "Picker label: how the POJ nasal marker is written in capitals — the stored switch, true = ᴺ (nasalMarkerUppercaseCapital, the default), false = ⁿ (nasalMarkerUppercaseSmall). All five platforms (host settings) plus the mobile keyboard settings overlay.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "白話字大本鼻音", "taiha": "白話字大本鼻音", "tailo": "Pe̍h-uē-jī tuā-pún phīnn-im", "poj": "Pe̍h-ōe-jī tōa-pún phīⁿ-im", "en": "Nasal mark in POJ capitals", "ja": "白話字の大文字での鼻音記号" }
+      "values": { "hanji": "白話字大本鼻音", "tailo": "Pe̍h-uē-jī tuā-pún phīnn-im", "poj": "Pe̍h-ōe-jī tōa-pún phīⁿ-im", "en": "Nasal mark in POJ capitals", "ja": "白話字の大文字での鼻音記号" }
     },
     "nasalMarkerUppercaseCapital": {
       "comment": "Picker value (default): in capitals the nasal marker follows the letters before it, ᴺ (SIÂᴺ).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "ᴺ（SIÂᴺ）", "taiha": "ᴺ（SIÂᴺ）", "tailo": "ᴺ (SIÂᴺ)", "poj": "ᴺ (SIÂᴺ)", "en": "ᴺ (SIÂᴺ)", "ja": "ᴺ（SIÂᴺ）" }
+      "values": { "hanji": "ᴺ（SIÂᴺ）", "tailo": "ᴺ (SIÂᴺ)", "poj": "ᴺ (SIÂᴺ)", "en": "ᴺ (SIÂᴺ)", "ja": "ᴺ（SIÂᴺ）" }
     },
     "nasalMarkerUppercaseSmall": {
       "comment": "Picker value: the nasal marker is always the small ⁿ, even in capitals (SIÂⁿ).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "ⁿ（SIÂⁿ）", "taiha": "ⁿ（SIÂⁿ）", "tailo": "ⁿ (SIÂⁿ)", "poj": "ⁿ (SIÂⁿ)", "en": "ⁿ (SIÂⁿ)", "ja": "ⁿ（SIÂⁿ）" }
+      "values": { "hanji": "ⁿ（SIÂⁿ）", "tailo": "ⁿ (SIÂⁿ)", "poj": "ⁿ (SIÂⁿ)", "en": "ⁿ (SIÂⁿ)", "ja": "ⁿ（SIÂⁿ）" }
     },
     "tpsOrMapsToER": {
       "comment": "Toggle label: render TL 'or' final as TPS ㄜ.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "or 對應 ㄜ", "taiha": "or 對應 ㄜ", "tailo": "Or tuì-ìng ㄜ", "poj": "Or tùi-èng ㄜ", "en": "Map or → ㄜ", "ja": "or を ㄜ に対応" }
+      "values": { "hanji": "or 對應 ㄜ", "tailo": "Or tuì-ìng ㄜ", "poj": "Or tùi-èng ㄜ", "en": "Map or → ㄜ", "ja": "or を ㄜ に対応" }
     },
     "tpsOrMapsToERInfo": {
       "comment": "Help text for the or→ㄜ toggle.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "開啟時 or 顯示做 ㄜ，關閉時顯示做 ㄛ。毋會影響尋詞結果。", "taiha": "開啟時 or 顯示做 ㄜ，關閉時顯示做 ㄛ。袂影響揣詞結果。", "tailo": "Phah-khui sî or hián-sī tsò ㄜ, kuainn--khí-lâi sî hián-sī tsò ㄛ. Buē íng-hióng tshuē sû kiat-kó.", "poj": "Phah-khui sî or hián-sī chò ㄜ, koaiⁿ--khí-lâi sî hián-sī chò ㄛ. Bōe éng-hióng chhōe sû kiat-kó.", "en": "When on, 'or' appears as ㄜ; when off, as ㄛ. Search results are unaffected.", "ja": "オンでは「or」を ㄜ、オフでは ㄛ と表示します。検索結果には影響しません。" }
+      "values": { "hanji": "開啟時 or 顯示做 ㄜ，關閉時顯示做 ㄛ。袂影響揣詞結果。", "tailo": "Phah-khui sî or hián-sī tsò ㄜ, kuainn--khí-lâi sî hián-sī tsò ㄛ. Buē íng-hióng tshuē sû kiat-kó.", "poj": "Phah-khui sî or hián-sī chò ㄜ, koaiⁿ--khí-lâi sî hián-sī chò ㄛ. Bōe éng-hióng chhōe sû kiat-kó.", "en": "When on, 'or' appears as ㄜ; when off, as ㄛ. Search results are unaffected.", "ja": "オンでは「or」を ㄜ、オフでは ㄛ と表示します。検索結果には影響しません。" }
     },
     "resetSettings": {
       "comment": "Destructive action row + dialog title: reset all settings to their defaults. Settings only — learning records and custom words are untouched.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "恢復設定", "taiha": "恢復設定", "tailo": "Hue-ho̍k siat-tīng", "poj": "Hoe-ho̍k siat-tēng", "en": "Reset Settings", "ja": "設定をリセット" }
+      "values": { "hanji": "恢復設定", "tailo": "Hue-ho̍k siat-tīng", "poj": "Hoe-ho̍k siat-tēng", "en": "Reset Settings", "ja": "設定をリセット" }
     },
     "resetSettingsMessage": {
       "comment": "Confirmation-dialog body for resetting settings; explicitly states that learning records and custom words are kept.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "這會恢復所有設定。學習紀錄摎自訂詞攏會保留。敢愛繼續？", "taiha": "這會恢復所有設定。學習紀錄佮自訂詞攏會保留。敢欲繼續？", "tailo": "Tse ē hue-ho̍k sóo-iú siat-tīng. Ha̍k-si̍p kì-lio̍k kah tsū-tīng-sû lóng ē pó-liû. Kám beh kè-sio̍k?", "poj": "Che ē hoe-ho̍k só͘-iú siat-tēng. Ha̍k-si̍p kì-lio̍k kah chū-tēng-sû lóng ē pó-liû. Kám beh kè-sio̍k?", "en": "This resets all settings. Learning records and custom words are kept. Continue?", "ja": "すべての設定をリセットします。学習記録とカスタム単語は保持されます。続けますか？" }
+      "values": { "hanji": "這會恢復所有設定。學習紀錄佮自訂詞攏會保留。敢欲繼續？", "tailo": "Tse ē hue-ho̍k sóo-iú siat-tīng. Ha̍k-si̍p kì-lio̍k kah tsū-tīng-sû lóng ē pó-liû. Kám beh kè-sio̍k?", "poj": "Che ē hoe-ho̍k só͘-iú siat-tēng. Ha̍k-si̍p kì-lio̍k kah chū-tēng-sû lóng ē pó-liû. Kám beh kè-sio̍k?", "en": "This resets all settings. Learning records and custom words are kept. Continue?", "ja": "すべての設定をリセットします。学習記録とカスタム単語は保持されます。続けますか？" }
     },
     "resetSuccess": {
       "comment": "Toast shown after settings were reset successfully.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "設定已恢復", "taiha": "設定已恢復", "tailo": "Siat-tīng í hue-ho̍k", "poj": "Siat-tēng í hoe-ho̍k", "en": "Settings reset", "ja": "設定をリセットしました" }
+      "values": { "hanji": "設定已恢復", "tailo": "Siat-tīng í hue-ho̍k", "poj": "Siat-tēng í hoe-ho̍k", "en": "Settings reset", "ja": "設定をリセットしました" }
     },
     "resetFailed": {
       "comment": "Toast shown when resetting settings fails.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "恢復設定失敗，請重試", "taiha": "恢復設定失敗，請重試", "tailo": "Hue-ho̍k siat-tīng sit-pāi, tshiánn tîng-tshì", "poj": "Hoe-ho̍k siat-tēng sit-pāi, chhiáⁿ tîng-chhì", "en": "Failed to reset settings. Please try again.", "ja": "設定のリセットに失敗しました。もう一度お試しください。" }
+      "values": { "hanji": "恢復設定失敗，請重試", "tailo": "Hue-ho̍k siat-tīng sit-pāi, tshiánn tîng-tshì", "poj": "Hoe-ho̍k siat-tēng sit-pāi, chhiáⁿ tîng-chhì", "en": "Failed to reset settings. Please try again.", "ja": "設定のリセットに失敗しました。もう一度お試しください。" }
     },
     "noEmailApp": {
       "comment": "Toast shown when no email app is available to send the bug report.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "尋無 Email App", "taiha": "揣無 Email App", "tailo": "Tshuē-bô Email App", "poj": "Chhōe-bô Email App", "en": "No email app found", "ja": "メールアプリが見つかりません" }
+      "values": { "hanji": "揣無 Email App", "tailo": "Tshuē-bô Email App", "poj": "Chhōe-bô Email App", "en": "No email app found", "ja": "メールアプリが見つかりません" }
     },
     "diagnosticSectionTitle": {
       "comment": "Section header for device-diagnostics actions.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "裝置資訊", "taiha": "裝置資訊", "tailo": "Tsong-tì tsu-sìn", "poj": "Chong-tì chu-sìn", "en": "Device Info", "ja": "デバイス情報" }
+      "values": { "hanji": "裝置資訊", "tailo": "Tsong-tì tsu-sìn", "poj": "Chong-tì chu-sìn", "en": "Device Info", "ja": "デバイス情報" }
     },
     "diagnosticCopy": {
       "comment": "Action row: copy device diagnostic info to clipboard.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "Khó͘-phih 裝置資訊", "taiha": "Khó͘-phih 裝置資訊", "tailo": "Khó͘-phih tsong-tì tsu-sìn", "poj": "Khó͘-phih chong-tì chu-sìn", "en": "Copy Device Info", "ja": "デバイス情報をコピー" }
+      "values": { "hanji": "Khó͘-phih 裝置資訊", "tailo": "Khó͘-phih tsong-tì tsu-sìn", "poj": "Khó͘-phih chong-tì chu-sìn", "en": "Copy Device Info", "ja": "デバイス情報をコピー" }
     },
     "diagnosticCopied": {
       "comment": "Toast confirming diagnostic info was copied.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "已 khó͘-phih", "taiha": "已 khó͘-phih", "tailo": "Í khó͘-phih", "poj": "Í khó͘-phih", "en": "Copied", "ja": "コピーしました" }
+      "values": { "hanji": "已 khó͘-phih", "tailo": "Í khó͘-phih", "poj": "Í khó͘-phih", "en": "Copied", "ja": "コピーしました" }
     },
     "diagnosticShare": {
       "comment": "Action row: share device diagnostic info via the share sheet.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "分享裝置資訊", "taiha": "分享裝置資訊", "tailo": "Hun-hióng tsong-tì tsu-sìn", "poj": "Hun-hióng chong-tì chu-sìn", "en": "Share Device Info", "ja": "デバイス情報を共有" }
+      "values": { "hanji": "分享裝置資訊", "tailo": "Hun-hióng tsong-tì tsu-sìn", "poj": "Hun-hióng chong-tì chu-sìn", "en": "Share Device Info", "ja": "デバイス情報を共有" }
     },
     "diagnosticEmail": {
       "comment": "Action row: email a bug report with diagnostic info attached.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "Email 回報問題", "taiha": "Email 回報問題", "tailo": "Email huê-pò būn-tê", "poj": "Email hôe-pò būn-tê", "en": "Email a Bug Report", "ja": "メールで問題を報告" }
+      "values": { "hanji": "Email 回報問題", "tailo": "Email huê-pò būn-tê", "poj": "Email hôe-pò būn-tê", "en": "Email a Bug Report", "ja": "メールで問題を報告" }
     },
     "openApp": {
       "comment": "Keyboard-overlay button linking to the host app's full settings screen.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["extension"] },
-      "values": { "hakha": "去 APP 調整", "taiha": "去 APP 調整", "tailo": "Khì APP tiâu-tsíng", "poj": "Khì APP tiâu-chéng", "en": "Adjust in App", "ja": "アプリで調整" }
+      "values": { "hanji": "去 APP 調整", "tailo": "Khì APP tiâu-tsíng", "poj": "Khì APP tiâu-chéng", "en": "Adjust in App", "ja": "アプリで調整" }
     }
   }
 }

@@ -8,6 +8,8 @@ import json
 import re
 from pathlib import Path
 
+import hakfa_overlay  # Kipan: Hakfa strings over the upstream sources
+
 # --- Schema constants -------------------------------------------------------
 
 # Base language: every key MUST define this (structural — validate_namespace). en/ja are real OS locales;
@@ -738,10 +740,11 @@ def _collect_entries(repo_root: Path):
     entries = []
     for path in sorted(src_dir.glob("*.json")):
         namespace = path.stem
-        data = load_namespace(path)
+        data = hakfa_overlay.apply(namespace, load_namespace(path), repo_root)
         validate_namespace(namespace, data, path)
         for key, entry in data["keys"].items():
             entries.append((namespace, key, entry))
+    hakfa_overlay.check_orphans(repo_root)
     _validate_global(entries)
     return entries
 

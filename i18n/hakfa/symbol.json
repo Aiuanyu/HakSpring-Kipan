@@ -1,0 +1,10 @@
+{
+  "namespace": "symbol",
+  "keys": {
+    "fullWidth": { "hakha": "全角" },
+    "halfWidth": { "hakha": "半角" },
+    "hiragana": { "hakha": "平假名" },
+    "katakana": { "hakha": "片假名" },
+    "kaomoji": { "hakha": "顏文字" }
+  }
+}

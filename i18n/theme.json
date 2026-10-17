@@ -4,282 +4,282 @@
     "customFont": {
       "comment": "Global keyboard font row label, shown in the Settings tab and as the font-picker title (font is a global setting, not a per-theme field). Shared by iOS, Android and macOS (the macOS candidate-window font picker).",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "字型設定", "taiha": "字型設定", "tailo": "Jī-hîng siat-tīng", "poj": "Jī-hêng siat-tēng", "en": "Font", "ja": "フォント" }
+      "values": { "hanji": "字型設定", "tailo": "Jī-hîng siat-tīng", "poj": "Jī-hêng siat-tēng", "en": "Font", "ja": "フォント" }
     },
     "customThemesSection": {
       "comment": "Section header above the custom-theme shelf in the theme picker.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "自訂主題", "taiha": "自訂主題", "tailo": "Tsū-tīng tsú-tê", "poj": "Chū-tēng chú-tê", "en": "Custom Themes", "ja": "カスタムテーマ" }
+      "values": { "hanji": "自訂主題", "tailo": "Tsū-tīng tsú-tê", "poj": "Chū-tēng chú-tê", "en": "Custom Themes", "ja": "カスタムテーマ" }
     },
     "createNewTheme": {
       "comment": "Label + content description for the create-new-theme card on the theme picker shelf.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "新主題…", "taiha": "新主題…", "tailo": "Sin tsú-tê...", "poj": "Sin chú-tê...", "en": "New Theme…", "ja": "新しいテーマ…" }
+      "values": { "hanji": "新主題…", "tailo": "Sin tsú-tê...", "poj": "Sin chú-tê...", "en": "New Theme…", "ja": "新しいテーマ…" }
     },
     "familyClassic": {
       "comment": "Built-in theme key-style family header: filled keys.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "素色", "taiha": "素色", "tailo": "Sòo-sik", "poj": "Sò͘-sek", "en": "Filled", "ja": "塗りつぶし" }
+      "values": { "hanji": "素色", "tailo": "Sòo-sik", "poj": "Sò͘-sek", "en": "Filled", "ja": "塗りつぶし" }
     },
     "familyFramed": {
       "comment": "Built-in theme key-style family header: transparent keys with an outline border.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "框線", "taiha": "框線", "tailo": "Khing-suànn", "poj": "Kheng-sòaⁿ", "en": "Outlined", "ja": "枠線" }
+      "values": { "hanji": "框線", "tailo": "Khing-suànn", "poj": "Kheng-sòaⁿ", "en": "Outlined", "ja": "枠線" }
     },
     "familyClean": {
       "comment": "Built-in theme key-style family header: transparent keys, no border.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "無框", "taiha": "無框", "tailo": "Bô-khing", "poj": "Bô-kheng", "en": "Borderless", "ja": "枠なし" }
+      "values": { "hanji": "無框", "tailo": "Bô-khing", "poj": "Bô-kheng", "en": "Borderless", "ja": "枠なし" }
     },
     "paletteDefault": {
       "comment": "Built-in theme color name: the adaptive default palette (value = 'Default'). DRAFT TL/POJ (ī-siat, full dict main reading) + en/ja pending USER proofread.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "預設", "taiha": "預設", "tailo": "Ī-siat", "poj": "Ī-siat", "en": "Default", "ja": "デフォルト" }
+      "values": { "hanji": "預設", "tailo": "Ī-siat", "poj": "Ī-siat", "en": "Default", "ja": "デフォルト" }
     },
     "palettePink": {
       "comment": "Built-in theme color name: soft pink gradient (value = 'Sakura' / cherry blossom). DRAFT TL/POJ (ing-hue, full dict entry) + en/ja pending USER proofread.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "櫻花", "taiha": "櫻花", "tailo": "Ing-hue", "poj": "Eng-hoe", "en": "Sakura", "ja": "桜" }
+      "values": { "hanji": "櫻花", "tailo": "Ing-hue", "poj": "Eng-hoe", "en": "Sakura", "ja": "桜" }
     },
     "paletteGold": {
       "comment": "Built-in theme color name: golden gradient (value = 'Gold'). DRAFT TL/POJ (金 kim + 煌 hông, component-grounded) + en/ja pending USER proofread.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "金煌", "taiha": "金煌", "tailo": "Kim-hông", "poj": "Kim-hông", "en": "Gold", "ja": "ゴールド" }
+      "values": { "hanji": "金煌", "tailo": "Kim-hông", "poj": "Kim-hông", "en": "Gold", "ja": "ゴールド" }
     },
     "paletteBlue": {
       "comment": "Built-in theme color name: blue gradient (value = 'Sea Breeze'). DRAFT TL/POJ (hái-hong, full dict entry) + en/ja pending USER proofread.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "海風", "taiha": "海風", "tailo": "Hái-hong", "poj": "Hái-hong", "en": "Sea Breeze", "ja": "潮風" }
+      "values": { "hanji": "海風", "tailo": "Hái-hong", "poj": "Hái-hong", "en": "Sea Breeze", "ja": "潮風" }
     },
     "paletteGreen": {
       "comment": "Built-in theme color name: green gradient (value = 'Jade' / jade green). DRAFT TL/POJ (翠 tshuì + 青 tshing, component-grounded) + en/ja pending USER proofread.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "翠青", "taiha": "翠青", "tailo": "Tshuì-tshing", "poj": "Chhùi-chheng", "en": "Jade", "ja": "翡翠" }
+      "values": { "hanji": "翠青", "tailo": "Tshuì-tshing", "poj": "Chhùi-chheng", "en": "Jade", "ja": "翡翠" }
     },
     "palettePurple": {
       "comment": "Built-in theme color name: purple gradient (value = 'Wisteria'). DRAFT TL/POJ (藤 tîn + 紫 tsí, component-grounded) + en/ja pending USER proofread.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "藤紫", "taiha": "藤紫", "tailo": "Tîn-tsí", "poj": "Tîn-chí", "en": "Wisteria", "ja": "藤紫" }
+      "values": { "hanji": "藤紫", "tailo": "Tîn-tsí", "poj": "Tîn-chí", "en": "Wisteria", "ja": "藤紫" }
     },
     "paletteCatppuccin": {
       "comment": "Built-in theme color name: the dark-only Catppuccin Mocha palette. Hanji 暗眠山貓 is a pun (山貓=mountain cat≈cat, 暗眠=dark sleep≈dark mode). DRAFT TL/POJ (暗 àm + 眠 bîn + 山貓 suann-niau, component-grounded) + en/ja pending USER proofread.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "暗眠山貓", "taiha": "暗眠山貓", "tailo": "Àm-bîn-suann-niau", "poj": "Àm-bîn-soaⁿ-niau", "en": "Catppuccin", "ja": "キャットプチン" }
+      "values": { "hanji": "暗眠山貓", "tailo": "Àm-bîn-suann-niau", "poj": "Àm-bîn-soaⁿ-niau", "en": "Catppuccin", "ja": "キャットプチン" }
     },
     "backgroundSection": {
       "comment": "Theme editor section header: the background group (type picker + its rows). One surface for the keyboard and the candidate bar.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "背景", "taiha": "背景", "tailo": "Puē-kíng", "poj": "Pōe-kéng", "en": "Background", "ja": "背景" }
+      "values": { "hanji": "背景", "tailo": "Puē-kíng", "poj": "Pōe-kéng", "en": "Background", "ja": "背景" }
     },
     "backgroundTypeSolid": {
       "comment": "Theme editor background type (segmented picker): one flat color.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "孤色", "taiha": "孤色", "tailo": "Koo-sik", "poj": "Ko͘-sek", "en": "Solid", "ja": "単色" }
+      "values": { "hanji": "孤色", "tailo": "Koo-sik", "poj": "Ko͘-sek", "en": "Solid", "ja": "単色" }
     },
     "backgroundTypeGradient": {
       "comment": "Theme editor background type (segmented picker): a two-color linear gradient.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "漸層", "taiha": "漸層", "tailo": "Tsiām-tsân", "poj": "Chiām-chân", "en": "Gradient", "ja": "グラデーション" }
+      "values": { "hanji": "漸層", "tailo": "Tsiām-tsân", "poj": "Chiām-chân", "en": "Gradient", "ja": "グラデーション" }
     },
     "gradientStartColor": {
       "comment": "Theme editor color-row label: the gradient's first stop.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "開始", "taiha": "開始", "tailo": "Khai-sí", "poj": "Khai-sí", "en": "Start", "ja": "開始" }
+      "values": { "hanji": "開始", "tailo": "Khai-sí", "poj": "Khai-sí", "en": "Start", "ja": "開始" }
     },
     "gradientEndColor": {
       "comment": "Theme editor color-row label: the gradient's last stop.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "結束", "taiha": "結束", "tailo": "Kiat-sok", "poj": "Kiat-sok", "en": "End", "ja": "終了" }
+      "values": { "hanji": "結束", "tailo": "Kiat-sok", "poj": "Kiat-sok", "en": "End", "ja": "終了" }
     },
     "backgroundTypePhoto": {
       "comment": "Theme editor background type (segmented picker): a photo from the user's library.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "相片", "taiha": "相片", "tailo": "Siòng-phìnn", "poj": "Siòng-phìⁿ", "en": "Photo", "ja": "写真" }
+      "values": { "hanji": "相片", "tailo": "Siòng-phìnn", "poj": "Siòng-phìⁿ", "en": "Photo", "ja": "写真" }
     },
     "photoPick": {
       "comment": "Theme editor row label / button: open the photo picker when no photo is set yet.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "選擇相片", "taiha": "選擇相片", "tailo": "Suán siòng-phìnn", "poj": "Soán siòng-phìⁿ", "en": "Choose Photo", "ja": "写真を選択" }
+      "values": { "hanji": "選擇相片", "tailo": "Suán siòng-phìnn", "poj": "Soán siòng-phìⁿ", "en": "Choose Photo", "ja": "写真を選択" }
     },
     "photoChange": {
       "comment": "Theme editor row label / button: open the photo picker to replace the current photo.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "更換相片", "taiha": "更換相片", "tailo": "Uānn siòng-phìnn", "poj": "Ōaⁿ siòng-phìⁿ", "en": "Change Photo", "ja": "写真を変更" }
+      "values": { "hanji": "更換相片", "tailo": "Uānn siòng-phìnn", "poj": "Ōaⁿ siòng-phìⁿ", "en": "Change Photo", "ja": "写真を変更" }
     },
     "photoDim": {
       "comment": "Theme editor slider label: how strongly the photo is toned down (a white or black overlay) so keys stay readable.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "透明度", "taiha": "透明度", "tailo": "Thàu-bîng-tōo", "poj": "Thàu-bêng-tō͘", "en": "Transparency", "ja": "透明度" }
+      "values": { "hanji": "透明度", "tailo": "Thàu-bîng-tōo", "poj": "Thàu-bêng-tō͘", "en": "Transparency", "ja": "透明度" }
     },
     "photoPosition": {
       "comment": "Photo position: the VoiceOver / TalkBack label of the drag surface over the theme editor preview that moves the photo (no visible row on either platform).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "位置", "taiha": "位置", "tailo": "Uī-tì", "poj": "Ūi-tì", "en": "Position", "ja": "位置" }
+      "values": { "hanji": "位置", "tailo": "Uī-tì", "poj": "Ūi-tì", "en": "Position", "ja": "位置" }
     },
     "photoHintMove": {
       "comment": "Theme editor: label beside the move icon in the transient gesture hint over the photo preview (drag to move the photo). Fades out on first touch.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "徙位", "taiha": "徙位", "tailo": "Suá-uī", "poj": "Sóa-ūi", "en": "Move", "ja": "移動" }
+      "values": { "hanji": "徙位", "tailo": "Suá-uī", "poj": "Sóa-ūi", "en": "Move", "ja": "移動" }
     },
     "photoHintZoom": {
       "comment": "Theme editor: label beside the pinch icon in the transient gesture hint over the photo preview (pinch to zoom the photo). Fades out on first touch.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "放大", "taiha": "放大", "tailo": "Hòng-tuā", "poj": "Hòng-tōa", "en": "Zoom", "ja": "拡大" }
+      "values": { "hanji": "放大", "tailo": "Hòng-tuā", "poj": "Hòng-tōa", "en": "Zoom", "ja": "拡大" }
     },
     "previewExpand": {
       "comment": "Theme editor: VoiceOver / TalkBack label of the chevron that expands the collapsed live keyboard preview pinned at the bottom. 預覽 = ī-lám (dictionary).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "展開預覽", "taiha": "展開預覽", "tailo": "Tián-khui ī-lám", "poj": "Tián-khui ī-lám", "en": "Expand Preview", "ja": "プレビューを展開" }
+      "values": { "hanji": "展開預覽", "tailo": "Tián-khui ī-lám", "poj": "Tián-khui ī-lám", "en": "Expand Preview", "ja": "プレビューを展開" }
     },
     "previewCollapse": {
       "comment": "Theme editor: VoiceOver / TalkBack label of the chevron that collapses the live keyboard preview pinned at the bottom (frees room to scroll the settings). 預覽 = ī-lám (dictionary).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "收合預覽", "taiha": "收合預覽", "tailo": "Siu-ha̍p ī-lám", "poj": "Siu-ha̍p ī-lám", "en": "Collapse Preview", "ja": "プレビューを折りたたむ" }
+      "values": { "hanji": "收合預覽", "tailo": "Siu-ha̍p ī-lám", "poj": "Siu-ha̍p ī-lám", "en": "Collapse Preview", "ja": "プレビューを折りたたむ" }
     },
     "gradientDirection": {
       "comment": "Gradient direction: the VoiceOver / TalkBack label of the drag pointer over the theme editor preview (no visible row on either platform).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "方向", "taiha": "方向", "tailo": "Hong-hiòng", "poj": "Hong-hiòng", "en": "Direction", "ja": "方向" }
+      "values": { "hanji": "方向", "tailo": "Hong-hiòng", "poj": "Hong-hiòng", "en": "Direction", "ja": "方向" }
     },
     "colorKeySection": {
       "comment": "Theme editor section header: the key-surface group (key colors + sizing).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "按鈕介面", "taiha": "揤鈕介面", "tailo": "Tshi̍h-liú kài-bīn", "poj": "Chhi̍h-liú kài-bīn", "en": "Keys", "ja": "キー" }
+      "values": { "hanji": "揤鈕介面", "tailo": "Tshi̍h-liú kài-bīn", "poj": "Chhi̍h-liú kài-bīn", "en": "Keys", "ja": "キー" }
     },
     "candidateSection": {
       "comment": "Theme editor section header: the candidate-bar group (candidate colors + text size).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "候選詞介面", "taiha": "候選詞介面", "tailo": "Hāu-suán sû kài-bīn", "poj": "Hāu-soán sû kài-bīn", "en": "Candidate Bar", "ja": "候補バー" }
+      "values": { "hanji": "候選詞介面", "tailo": "Hāu-suán sû kài-bīn", "poj": "Hāu-soán sû kài-bīn", "en": "Candidate Bar", "ja": "候補バー" }
     },
     "colorKeyboardBackground": {
       "comment": "Theme editor color-row label: the keyboard background color.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "企盤色水", "taiha": "齒盤色水", "tailo": "Khí-puânn sik-tsuí", "poj": "Khí-pôaⁿ sek-chúi", "en": "Keyboard Background", "ja": "キーボード背景" }
+      "values": { "hanji": "齒盤色水", "tailo": "Khí-puânn sik-tsuí", "poj": "Khí-pôaⁿ sek-chúi", "en": "Keyboard Background", "ja": "キーボード背景" }
     },
     "colorKeyText": {
       "comment": "Theme editor color-row label: the key glyph (text) color.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "按鈕文字", "taiha": "揤鈕文字", "tailo": "Tshi̍h-liú bûn-jī", "poj": "Chhi̍h-liú bûn-jī", "en": "Key Text", "ja": "キー文字" }
+      "values": { "hanji": "揤鈕文字", "tailo": "Tshi̍h-liú bûn-jī", "poj": "Chhi̍h-liú bûn-jī", "en": "Key Text", "ja": "キー文字" }
     },
     "colorKeyFill": {
       "comment": "Theme editor color-row label: the fill color of every key (letter and special keys share it).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "按鈕色水", "taiha": "揤鈕色水", "tailo": "Tshi̍h-liú sik-tsuí", "poj": "Chhi̍h-liú sek-chúi", "en": "Key Fill", "ja": "キーの色" }
+      "values": { "hanji": "揤鈕色水", "tailo": "Tshi̍h-liú sik-tsuí", "poj": "Chhi̍h-liú sek-chúi", "en": "Key Fill", "ja": "キーの色" }
     },
     "colorCandidateText": {
       "comment": "Theme editor color-row label: the candidate text color.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "候選詞文字", "taiha": "候選詞文字", "tailo": "Hāu-suán sû bûn-jī", "poj": "Hāu-soán sû bûn-jī", "en": "Candidate Text", "ja": "候補の文字" }
+      "values": { "hanji": "候選詞文字", "tailo": "Hāu-suán sû bûn-jī", "poj": "Hāu-soán sû bûn-jī", "en": "Candidate Text", "ja": "候補の文字" }
     },
     "colorCandidateHighlight": {
       "comment": "Theme editor color-row label: the background of the highlighted (first / selected) candidate box. Untouched = follows the key fill or gradient.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "候選詞框色水", "taiha": "候選詞框色水", "tailo": "Hāu-suán sû khing sik-tsuí", "poj": "Hāu-soán sû kheng sek-chúi", "en": "Candidate Highlight", "ja": "候補の選択枠" }
+      "values": { "hanji": "候選詞框色水", "tailo": "Hāu-suán sû khing sik-tsuí", "poj": "Hāu-soán sû kheng sek-chúi", "en": "Candidate Highlight", "ja": "候補の選択枠" }
     },
     "keyHeight": {
       "comment": "Theme editor slider label: keyboard height scale.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "企盤懸度", "taiha": "齒盤懸度", "tailo": "Khí-puânn kuân-tōo", "poj": "Khí-pôaⁿ koân-tō͘", "en": "Keyboard Height", "ja": "キーボードの高さ" }
+      "values": { "hanji": "齒盤懸度", "tailo": "Khí-puânn kuân-tōo", "poj": "Khí-pôaⁿ koân-tō͘", "en": "Keyboard Height", "ja": "キーボードの高さ" }
     },
     "keyFontSize": {
       "comment": "Theme editor slider label: key glyph font size.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "按鈕字大細", "taiha": "揤鈕字大細", "tailo": "Tshi̍h-liú jī tuā-sè", "poj": "Chhi̍h-liú jī tōa-sè", "en": "Key Font Size", "ja": "キー文字の大きさ" }
+      "values": { "hanji": "揤鈕字大細", "tailo": "Tshi̍h-liú jī tuā-sè", "poj": "Chhi̍h-liú jī tōa-sè", "en": "Key Font Size", "ja": "キー文字の大きさ" }
     },
     "candidateTextSize": {
       "comment": "Theme editor slider label: candidate text size.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "候選詞大細", "taiha": "候選詞大細", "tailo": "Hāu-suán sû tuā-sè", "poj": "Hāu-soán sû tōa-sè", "en": "Candidate Text Size", "ja": "候補の文字の大きさ" }
+      "values": { "hanji": "候選詞大細", "tailo": "Hāu-suán sû tuā-sè", "poj": "Hāu-soán sû tōa-sè", "en": "Candidate Text Size", "ja": "候補の文字の大きさ" }
     },
     "keyCornerRadius": {
       "comment": "Theme editor slider label: key corner radius.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "按鈕圓角", "taiha": "揤鈕圓角", "tailo": "Tshi̍h-liú înn kak", "poj": "Chhi̍h-liú îⁿ kak", "en": "Key Corner Radius", "ja": "キーの角丸" }
+      "values": { "hanji": "揤鈕圓角", "tailo": "Tshi̍h-liú înn kak", "poj": "Chhi̍h-liú îⁿ kak", "en": "Key Corner Radius", "ja": "キーの角丸" }
     },
     "keyBorderWidth": {
       "comment": "Theme editor slider label: key border width.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "按鈕邊粗幼", "taiha": "揤鈕邊粗幼", "tailo": "Tshi̍h-liú pinn tshoo-iù", "poj": "Chhi̍h-liú piⁿ chho͘-iù", "en": "Key Border Width", "ja": "キーの枠線の太さ" }
+      "values": { "hanji": "揤鈕邊粗幼", "tailo": "Tshi̍h-liú pinn tshoo-iù", "poj": "Chhi̍h-liú piⁿ chho͘-iù", "en": "Key Border Width", "ja": "キーの枠線の太さ" }
     },
     "keyShadow": {
       "comment": "Theme editor slider label: key shadow intensity.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "按鈕陰影", "taiha": "揤鈕陰影", "tailo": "Tshi̍h-liú im-iánn", "poj": "Chhi̍h-liú im-iáⁿ", "en": "Key Shadow", "ja": "キーの影" }
+      "values": { "hanji": "揤鈕陰影", "tailo": "Tshi̍h-liú im-iánn", "poj": "Chhi̍h-liú im-iáⁿ", "en": "Key Shadow", "ja": "キーの影" }
     },
     "editorTitleNew": {
       "comment": "Theme editor top-bar title in create mode; also the fallback name when a theme is saved with a blank name (identity is the UUID; names may repeat and stay editable), and the name a look customized before themes existed is carried over under. theme.defaultName merged 2026-09-20.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
-      "values": { "hakha": "新主題", "taiha": "新主題", "tailo": "Sin tsú-tê", "poj": "Sin chú-tê", "en": "New Theme", "ja": "新しいテーマ" }
+      "values": { "hanji": "新主題", "tailo": "Sin tsú-tê", "poj": "Sin chú-tê", "en": "New Theme", "ja": "新しいテーマ" }
     },
     "editorTitleEdit": {
       "comment": "Theme editor top-bar title in edit mode.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "編輯主題", "taiha": "編輯主題", "tailo": "Pian-tsi̍p tsú-tê", "poj": "Pian-chi̍p chú-tê", "en": "Edit Theme", "ja": "テーマを編集" }
+      "values": { "hanji": "編輯主題", "tailo": "Pian-tsi̍p tsú-tê", "poj": "Pian-chi̍p chú-tê", "en": "Edit Theme", "ja": "テーマを編集" }
     },
     "nameHeader": {
       "comment": "Theme name dialog header.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "主題名稱", "taiha": "主題名稱", "tailo": "Tsú-tê miâ-tshing", "poj": "Chú-tê miâ-chheng", "en": "Theme Name", "ja": "テーマ名" }
+      "values": { "hanji": "主題名稱", "tailo": "Tsú-tê miâ-tshing", "poj": "Chú-tê miâ-chheng", "en": "Theme Name", "ja": "テーマ名" }
     },
     "namePlaceholder": {
       "comment": "Theme name dialog text-field placeholder.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "輸入主題名稱", "taiha": "輸入主題名稱", "tailo": "Su-ji̍p tsú-tê miâ-tshing", "poj": "Su-ji̍p chú-tê miâ-chheng", "en": "Enter a theme name", "ja": "テーマ名を入力" }
+      "values": { "hanji": "輸入主題名稱", "tailo": "Su-ji̍p tsú-tê miâ-tshing", "poj": "Su-ji̍p chú-tê miâ-chheng", "en": "Enter a theme name", "ja": "テーマ名を入力" }
     },
     "editorResetAll": {
       "comment": "Reset-to-defaults button. Theme editor on Android and iOS; the macOS shortcuts pane reuses it for the same action.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hakha": "恢復預設設定", "taiha": "恢復預設設定", "tailo": "Hue-ho̍k ī-siat siat-tīng", "poj": "Hoe-ho̍k ī-siat siat-tēng", "en": "Reset to Defaults", "ja": "既定値に戻す" }
+      "values": { "hanji": "恢復預設設定", "tailo": "Hue-ho̍k ī-siat siat-tīng", "poj": "Hoe-ho̍k ī-siat siat-tēng", "en": "Reset to Defaults", "ja": "既定値に戻す" }
     },
     "cardMenuApply": {
       "comment": "Custom-theme card action-menu item: apply this theme.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "套用", "taiha": "套用", "tailo": "Thò-iōng", "poj": "Thò-iōng", "en": "Apply", "ja": "適用" }
+      "values": { "hanji": "套用", "tailo": "Thò-iōng", "poj": "Thò-iōng", "en": "Apply", "ja": "適用" }
     },
     "capReachedTitle": {
       "comment": "Title of the alert shown when the custom-theme count cap (5) is reached.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "已達主題數量上限", "taiha": "已達主題數量上限", "tailo": "Í ta̍t tsú-tê sòo-liōng siōng hān", "poj": "Í ta̍t chú-tê sò͘-liōng siōng hān", "en": "Theme Limit Reached", "ja": "テーマ数の上限に達しました" }
+      "values": { "hanji": "已達主題數量上限", "tailo": "Í ta̍t tsú-tê sòo-liōng siōng hān", "poj": "Í ta̍t chú-tê sò͘-liōng siōng hān", "en": "Theme Limit Reached", "ja": "テーマ数の上限に達しました" }
     },
     "capReachedMessage": {
       "comment": "Body of the custom-theme cap-reached alert (cap is UserThemeStore.MAX_USER_THEMES = 5).",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
-      "values": { "hakha": "自訂主題上限是 5 个，請先刪除一个才會使閣新增。", "taiha": "自訂主題上限是 5 个，請先刪除一个才會使閣新增。", "tailo": "Tsū-tīng tsú-tê siōng hān sī 5 ê, tshiánn sian san-tî tsi̍t-ê tsiah ē-sái koh sin-tsing.", "poj": "Chū-tēng chú-tê siōng hān sī 5 ê, chhiáⁿ sian san-tî chi̍t-ê chiah ē-sái koh sin-cheng.", "en": "You can save up to 5 custom themes. Delete one before adding another.", "ja": "カスタムテーマは 5 個まで保存できます。追加する前に 1 個削除してください。" }
+      "values": { "hanji": "自訂主題上限是 5 个，請先刪除一个才會使閣新增。", "tailo": "Tsū-tīng tsú-tê siōng hān sī 5 ê, tshiánn sian san-tî tsi̍t-ê tsiah ē-sái koh sin-tsing.", "poj": "Chū-tēng chú-tê siōng hān sī 5 ê, chhiáⁿ sian san-tî chi̍t-ê chiah ē-sái koh sin-cheng.", "en": "You can save up to 5 custom themes. Delete one before adding another.", "ja": "カスタムテーマは 5 個まで保存できます。追加する前に 1 個削除してください。" }
     },
     "cardMenu": {
       "comment": "Accessibility content description for the custom-theme card's action-menu button. Android-only (iOS has no equivalent a11y label).",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "主題選項", "taiha": "主題選項", "tailo": "Tsú-tê suán-hāng", "poj": "Chú-tê soán-hāng", "en": "Theme options", "ja": "テーマのオプション" }
+      "values": { "hanji": "主題選項", "tailo": "Tsú-tê suán-hāng", "poj": "Chú-tê soán-hāng", "en": "Theme options", "ja": "テーマのオプション" }
     },
     "colorPickerGrid": {
       "comment": "Color picker dialog tab label: the swatch-grid picker. Android-only (iOS uses a native color picker).",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "格仔", "taiha": "格仔", "tailo": "Keh-á", "poj": "Keh-á", "en": "Grid", "ja": "グリッド" }
+      "values": { "hanji": "格仔", "tailo": "Keh-á", "poj": "Keh-á", "en": "Grid", "ja": "グリッド" }
     },
     "colorPickerSpectrum": {
       "comment": "Color picker dialog tab label: the spectrum picker. Android-only.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "光譜", "taiha": "光譜", "tailo": "Kong phóo", "poj": "Kong phó͘", "en": "Spectrum", "ja": "スペクトル" }
+      "values": { "hanji": "光譜", "tailo": "Kong phóo", "poj": "Kong phó͘", "en": "Spectrum", "ja": "スペクトル" }
     },
     "colorPickerSliders": {
       "comment": "Color picker dialog tab label: the RGB sliders picker. Android-only.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "滑桿", "taiha": "滑桿", "tailo": "Ku̍t kuáinn", "poj": "Ku̍t koáiⁿ", "en": "Sliders", "ja": "スライダー" }
+      "values": { "hanji": "滑桿", "tailo": "Ku̍t kuáinn", "poj": "Ku̍t koáiⁿ", "en": "Sliders", "ja": "スライダー" }
     },
     "colorRed": {
       "comment": "Color picker RGB slider label: red channel. Android-only.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "紅色", "taiha": "紅色", "tailo": "Âng-sik", "poj": "Âng-sek", "en": "Red", "ja": "赤" }
+      "values": { "hanji": "紅色", "tailo": "Âng-sik", "poj": "Âng-sek", "en": "Red", "ja": "赤" }
     },
     "colorGreen": {
       "comment": "Color picker RGB slider label: green channel. Android-only.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "綠色", "taiha": "綠色", "tailo": "Li̍k-sik", "poj": "Le̍k-sek", "en": "Green", "ja": "緑" }
+      "values": { "hanji": "綠色", "tailo": "Li̍k-sik", "poj": "Le̍k-sek", "en": "Green", "ja": "緑" }
     },
     "colorBlue": {
       "comment": "Color picker RGB slider label: blue channel. Android-only.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
-      "values": { "hakha": "藍色", "taiha": "藍色", "tailo": "Nâ-sik", "poj": "Nâ-sek", "en": "Blue", "ja": "青" }
+      "values": { "hanji": "藍色", "tailo": "Nâ-sik", "poj": "Nâ-sek", "en": "Blue", "ja": "青" }
     }
   }
 }

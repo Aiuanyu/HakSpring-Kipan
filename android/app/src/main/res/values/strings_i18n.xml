@@ -191,7 +191,7 @@
     <string name="i18n_settings_displayLanguage">介面語言</string>
     <string name="i18n_settings_displayLanguageAutomatic">自動</string>
     <string name="i18n_settings_pojMode">白話字</string>
-    <string name="i18n_settings_hppMode">HagPinPlus</string>
+    <string name="i18n_settings_tlMode">HagPinPlus</string>
     <string name="i18n_settings_englishMode">英文</string>
     <string name="i18n_settings_tpsMode">方音符號</string>
     <string name="i18n_settings_typingSectionTitle">打字設定</string>

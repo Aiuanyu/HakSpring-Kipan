@@ -198,7 +198,7 @@ enum class StringKey(
     SETTINGS_DISPLAY_LANGUAGE(R.string.i18n_settings_displayLanguage),
     SETTINGS_DISPLAY_LANGUAGE_AUTOMATIC(R.string.i18n_settings_displayLanguageAutomatic),
     SETTINGS_POJ_MODE(R.string.i18n_settings_pojMode),
-    SETTINGS_HPP_MODE(R.string.i18n_settings_hppMode),
+    SETTINGS_TL_MODE(R.string.i18n_settings_tlMode),
     SETTINGS_ENGLISH_MODE(R.string.i18n_settings_englishMode),
     SETTINGS_TPS_MODE(R.string.i18n_settings_tpsMode),
     SETTINGS_TYPING_SECTION_TITLE(R.string.i18n_settings_typingSectionTitle),

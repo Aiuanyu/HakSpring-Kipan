@@ -81,6 +81,9 @@ jobs:
       - name: Codegen unit tests
         run: python3 tools/i18n/test_i18n.py
 
+      - name: Hakfa overlay unit tests
+        run: python3 tools/i18n/test_hakfa_overlay.py
+
       # Same check Gradle's `checkI18nGenerated` runs before every Android
       # build: the committed outputs must match what i18n/*.json generates.
       - name: Generated artifacts are current

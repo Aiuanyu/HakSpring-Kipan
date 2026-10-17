@@ -41,7 +41,7 @@ impl InputMode {
     pub fn label_key(self) -> crate::strings::StringKey {
         use crate::strings::StringKey;
         match self {
-            Self::Tl => StringKey::SettingsHppMode,
+            Self::Tl => StringKey::SettingsTlMode,
             Self::Poj => StringKey::SettingsPojMode,
             Self::Tps => StringKey::SettingsTpsMode,
         }

@@ -1,0 +1,9 @@
+{
+  "namespace": "nav",
+  "keys": {
+    "tabHome": { "hakha": "頭頁" },
+    "tabTheme": { "hakha": "主題" },
+    "tabLayout": { "hakha": "佈局" },
+    "tabDictionary": { "hakha": "詞庫" }
+  }
+}

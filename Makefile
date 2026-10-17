@@ -112,6 +112,7 @@ i18n:
 # Pure-Python, no Android/iOS toolchain needed — runs the same logic the platform builds compile against.
 i18n-test:
 	python3 tools/i18n/test_i18n.py
+	python3 tools/i18n/test_hakfa_overlay.py
 
 # Generate continuous-input dogfood test table (TL/POJ/TPS + 漢字) from the
 # built dictionary.csv. Random each run; prints to stdout for manual on-device

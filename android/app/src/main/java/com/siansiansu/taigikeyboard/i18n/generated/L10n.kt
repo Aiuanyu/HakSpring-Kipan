@@ -382,8 +382,8 @@ object L10n {
         @Composable get() = stringRes(StringKey.SETTINGS_DISPLAY_LANGUAGE_AUTOMATIC)
     val settingsPojMode: String
         @Composable get() = stringRes(StringKey.SETTINGS_POJ_MODE)
-    val settingsHppMode: String
-        @Composable get() = stringRes(StringKey.SETTINGS_HPP_MODE)
+    val settingsTlMode: String
+        @Composable get() = stringRes(StringKey.SETTINGS_TL_MODE)
     val settingsEnglishMode: String
         @Composable get() = stringRes(StringKey.SETTINGS_ENGLISH_MODE)
     val settingsTpsMode: String
