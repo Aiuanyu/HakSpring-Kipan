@@ -239,7 +239,15 @@ fn hakfa_candidates(input: &str, settings: &EngineSettings) -> Vec<String> {
 fn hakfa_supp_dict_single_chars_reachable() {
     let _engine = engine();
     let settings = EngineSettings::default();
-    for (input, hanji) in [("lam", "藍"), ("li", "理"), ("gung", "公"), ("iun", "運")] {
+    for (input, hanji) in [
+        ("lam", "藍"),
+        ("li", "理"),
+        ("gung", "公"),
+        ("iun", "運"),
+        // Polyphone readings: 發 has a single-character entry only as bod, 單 only as san.
+        ("fad", "發"),
+        ("dan", "單"),
+    ] {
         let candidates = hakfa_candidates(input, &settings);
         assert!(
             candidates.iter().any(|h| h == hanji),

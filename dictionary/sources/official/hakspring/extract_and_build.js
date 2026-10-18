@@ -16,7 +16,8 @@ const { spawnSync } = require('child_process');
 const { walkerCost } = require('./tkdb_v4');
 
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
-const HAKSPRING_ROOT = '/Users/gjrobert/NAS/projects/HakSpring';
+// HAKSPRING_ROOT overrides the HakSpring checkout, e.g. a worktree whose data is not on main yet.
+const HAKSPRING_ROOT = process.env.HAKSPRING_ROOT || '/Users/gjrobert/NAS/projects/HakSpring';
 const HAKSPRING_DATA = path.join(HAKSPRING_ROOT, 'data');
 const FST_BUILDER = path.join(REPO_ROOT, 'engine/target/debug/fst-builder');
 
