@@ -260,7 +260,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTCRI Taiwanese Craft Glossary"
+            "value": "HakSpring Character Supplement"
           }
         },
         "ja": {
@@ -1394,7 +1394,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Over 1,200 key Taigi craft terms covering eleven categories such as ceramics, woodcraft, metalwork, bamboo and rattan, fiber, glass, lacquer, stonework, leather, and paper craft."
+            "value": "Single-character readings the MOE dictionary lacks, filled in automatically by HakSpring."
           }
         },
         "ja": {

@@ -63,7 +63,6 @@ fun DictionarySourcesScreen(
     var moeEnabled by remember { mutableStateOf(prefs.moeDictEnabled) }
     var newwordEnabled by remember { mutableStateOf(prefs.newwordDictEnabled) }
     var sttiEnabled by remember { mutableStateOf(prefs.sttiDictEnabled) }
-    var kunggeEnabled by remember { mutableStateOf(prefs.kunggeDictEnabled) }
     var itaigiEnabled by remember { mutableStateOf(prefs.itaigiDictEnabled) }
     var taiwanJapanEnabled by remember { mutableStateOf(prefs.taiwanJapanDictEnabled) }
     var taiHuaEnabled by remember { mutableStateOf(prefs.taiHuaDictEnabled) }
@@ -224,17 +223,6 @@ fun DictionarySourcesScreen(
                             prefs.sttiDictEnabled = it
                         },
                     )
-                    SettingsDivider()
-                    DictionaryRowWithDescription(
-                        label = L10n.commonKunggeDict,
-                        checked = kunggeEnabled,
-                        description = L10n.dictionaryKunggeDescription,
-                        url = "https://kanggesu.ntcri.gov.tw",
-                        onCheckedChange = {
-                            kunggeEnabled = it
-                            prefs.kunggeDictEnabled = it
-                        },
-                    )
                 }
 
                 Spacer(Modifier.height(24.dp))
@@ -286,6 +274,17 @@ fun DictionarySourcesScreen(
                 SectionHeader(L10n.dictionarySupplementSectionTitle)
 
                 SettingsCard {
+                    // hakfa: bit 6 (kungge) is the HakSpring character supplement, locked on;
+                    // PrefHelper.isKunggeDictEnabled forces it on for the engine too.
+                    DictionaryRowWithDescription(
+                        label = L10n.commonKunggeDict,
+                        checked = true,
+                        description = L10n.dictionaryKunggeDescription,
+                        url = "https://hakspring.pages.dev/",
+                        enabled = false,
+                        onCheckedChange = {},
+                    )
+                    SettingsDivider()
                     DictionaryInfoSwitch(
                         L10n.dictionaryVariantDictionary,
                         variantEnabled,

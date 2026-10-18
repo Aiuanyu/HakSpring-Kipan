@@ -20,7 +20,7 @@
     "importFailed": { "hakha": "匯入失敗" },
     "moeDict": { "hakha": "教育部臺灣客話常用詞辭典" },
     "newwordDict": { "hakha": "公視客話台客話新詞辭庫" },
-    "kunggeDict": { "hakha": "工藝中心臺灣客話工藝詞庫" },
+    "kunggeDict": { "hakha": "客源翠補字典", "en": "HakSpring Character Supplement" },
     "iTaigiDict": { "hakha": "iTaigi愛客話" },
     "taiwanJapanDict": { "hakha": "臺日大辭典客話譯本" },
     "taiHuaDict": { "hakha": "台華線上對照典" },

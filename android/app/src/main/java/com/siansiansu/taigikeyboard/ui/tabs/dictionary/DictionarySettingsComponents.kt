@@ -266,6 +266,7 @@ internal fun DictionaryRowWithDescription(
     description: String,
     url: String,
     onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
 ) {
     val context = LocalContext.current
 
@@ -309,6 +310,7 @@ internal fun DictionaryRowWithDescription(
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
+                enabled = enabled,
             )
         }
         Text(

@@ -19,7 +19,7 @@
     <string name="i18n_common_importFailed">Import failed</string>
     <string name="i18n_common_moeDict">MOE Dictionary of Common Taiwanese Words</string>
     <string name="i18n_common_newwordDict">PTS Taigi New-Word Lexicon</string>
-    <string name="i18n_common_kunggeDict">NTCRI Taiwanese Craft Glossary</string>
+    <string name="i18n_common_kunggeDict">HakSpring Character Supplement</string>
     <string name="i18n_common_iTaigiDict">iTaigi</string>
     <string name="i18n_common_taiwanJapanDict">Taiwanese-Japanese Dictionary (Taigi Edition)</string>
     <string name="i18n_common_taiHuaDict">Taigi-Mandarin Online Cross-Reference</string>
@@ -86,7 +86,7 @@
     <string name="i18n_dictionary_moeDescription">Search Taiwanese Taigi and Mandarin, with audio for headwords and example sentences for easy learning. Includes category and radical-stroke indexes plus appendices.</string>
     <string name="i18n_dictionary_newwordDescription">Taigi TV invites experts and scholars to meet regularly, settle fitting Taigi terms for emerging words, and build a public lookup glossary.</string>
     <string name="i18n_dictionary_sttiDescription">Since 2017, the project has translated academic terminology from eight fields into Taigi: language arts, mathematics, social studies, natural science, arts, integrative activities, technology, and health and physical education.</string>
-    <string name="i18n_dictionary_kunggeDescription">Over 1,200 key Taigi craft terms covering eleven categories such as ceramics, woodcraft, metalwork, bamboo and rattan, fiber, glass, lacquer, stonework, leather, and paper craft.</string>
+    <string name="i18n_dictionary_kunggeDescription">Single-character readings the MOE dictionary lacks, filled in automatically by HakSpring.</string>
     <string name="i18n_dictionary_lkkDescription">Suggested Han-Roman mixed-script characters from the Lí Kang-Khioh Taigi Culture and Education Foundation.</string>
     <string name="i18n_dictionary_devDescription">Adds government agencies, common names, administrative divisions, dates, times, numbers, and other words with limited coverage in the MOE Dictionary.</string>
     <string name="i18n_dictionary_iTaigiDescription">A crowd-edited open Taigi dictionary.</string>

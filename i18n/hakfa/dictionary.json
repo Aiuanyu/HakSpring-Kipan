@@ -53,7 +53,7 @@
     "moeDescription": { "hakha": "客話、華語攏會當尋，詞目摎例句有發音通聽，學習較利便。閣有分類、部首筆劃索引摎附錄。" },
     "newwordDescription": { "hakha": "客話台招專家學者，定期開會，討論新詞愛仰般用客話講較好，建立詞庫分逐家查、分逐家用。" },
     "sttiDescription": { "hakha": "對 106 年開始，共語文、數學、社會、自然科學、藝術、綜合活動、科技、健康摎體育這 8 大領域 个 學科術語編做客話。" },
-    "kunggeDescription": { "hakha": "收規一千兩百組重要 个 客話工藝詞，包括陶瓷、木藝、金工、竹藤、纖維、玻璃、漆藝、石藝、皮革、紙藝這 11 項工藝類別。" },
+    "kunggeDescription": { "hakha": "教典未獨立建字，愛灣語客源翠程式自動補音", "en": "Single-character readings the MOE dictionary lacks, filled in automatically by HakSpring." },
     "lkkDescription": { "hakha": "李江却客話文教基金會漢羅合用建議用字。" },
     "devDescription": { "hakha": "補充政府機關、常見人名、行政區、數字、時間、日期摎其他教典較少收錄 个 詞。" },
     "iTaigiDescription": { "hakha": "一个群眾編輯 个 開放客話辭典" },

@@ -370,7 +370,9 @@ impl SettingsDocument {
             sitbut: self.bool(&keys::IS_SITBUT_ENABLED),
             taihoa: self.bool(&keys::IS_TAIHOA_ENABLED),
             taijit: self.bool(&keys::IS_TAIJIT_ENABLED),
-            kungge: self.bool(&keys::IS_KUNGGE_ENABLED),
+            // hakfa: bit 6 is the HakSpring character supplement, locked on whatever is stored
+            // (docs/hakfa/supp-dict.md).
+            kungge: true,
             stti: self.bool(&keys::IS_STTI_ENABLED),
             khpoo: self.bool(&keys::IS_KHPOO_ENABLED),
             variant: self.bool(&keys::IS_VARIANT_ENABLED),
@@ -807,6 +809,14 @@ mod tests {
             !doc.contains(keys::IS_NASAL_MARKER_UPPERCASE_ENABLED.name),
             "一般's key"
         );
+    }
+
+    /// hakfa: bit 6 (kungge), the HakSpring character supplement, reads as on even when stored off.
+    #[test]
+    fn hakfa_supp_dict_source_is_locked_on() {
+        let mut doc = SettingsDocument::default();
+        doc.set_bool(&keys::IS_KUNGGE_ENABLED, false);
+        assert!(doc.dictionary_sources().kungge);
     }
 
     #[test]

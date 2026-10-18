@@ -16,8 +16,6 @@ struct DictionaryTogglesView: View {
     private var isKautianEnabled = SettingsStore.Keys.isKautianEnabled.defaultValue
     @AppStorage(SettingsStore.Keys.isTaigitvEnabled.name)
     private var isTaigitvEnabled = SettingsStore.Keys.isTaigitvEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKunggeEnabled.name)
-    private var isKunggeEnabled = SettingsStore.Keys.isKunggeEnabled.defaultValue
     @AppStorage(SettingsStore.Keys.isSttiEnabled.name)
     private var isSttiEnabled = SettingsStore.Keys.isSttiEnabled.defaultValue
 
@@ -91,7 +89,6 @@ struct DictionaryTogglesView: View {
                 .disabled(!isKautianEnabled)
 
                 Toggle(language.string(.commonNewwordDict), isOn: $isTaigitvEnabled)
-                Toggle(language.string(.commonKunggeDict), isOn: $isKunggeEnabled)
                 Toggle(language.string(.commonSttiDict), isOn: $isSttiEnabled)
             } header: {
                 Text(language.string(.dictionaryMoeSectionTitle))
@@ -107,6 +104,10 @@ struct DictionaryTogglesView: View {
             }
 
             Section {
+                // hakfa: bit 6 (kungge) is the HakSpring character supplement, locked on;
+                // desktop-core `SettingsDocument::dictionary_sources` forces it on for the engine too.
+                Toggle(language.string(.commonKunggeDict), isOn: .constant(true))
+                    .disabled(true)
                 Toggle(language.string(.dictionaryVariantDictionary), isOn: $isVariantEnabled)
                 Toggle(language.string(.dictionaryKhiin), isOn: $isKhiinEnabled)
                 Toggle(language.string(.commonAccentDict), isOn: $isKhpooEnabled)

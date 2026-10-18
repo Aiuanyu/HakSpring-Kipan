@@ -19,7 +19,7 @@
     <string name="i18n_common_importFailed">匯入失敗</string>
     <string name="i18n_common_moeDict">教育部臺灣客話常用詞辭典</string>
     <string name="i18n_common_newwordDict">公視客話台客話新詞辭庫</string>
-    <string name="i18n_common_kunggeDict">工藝中心臺灣客話工藝詞庫</string>
+    <string name="i18n_common_kunggeDict">客源翠補字典</string>
     <string name="i18n_common_iTaigiDict">iTaigi愛客話</string>
     <string name="i18n_common_taiwanJapanDict">臺日大辭典客話譯本</string>
     <string name="i18n_common_taiHuaDict">台華線上對照典</string>
@@ -86,7 +86,7 @@
     <string name="i18n_dictionary_moeDescription">客話、華語攏會當尋，詞目摎例句有發音通聽，學習較利便。閣有分類、部首筆劃索引摎附錄。</string>
     <string name="i18n_dictionary_newwordDescription">客話台招專家學者，定期開會，討論新詞愛仰般用客話講較好，建立詞庫分逐家查、分逐家用。</string>
     <string name="i18n_dictionary_sttiDescription">對 106 年開始，共語文、數學、社會、自然科學、藝術、綜合活動、科技、健康摎體育這 8 大領域 个 學科術語編做客話。</string>
-    <string name="i18n_dictionary_kunggeDescription">收規一千兩百組重要 个 客話工藝詞，包括陶瓷、木藝、金工、竹藤、纖維、玻璃、漆藝、石藝、皮革、紙藝這 11 項工藝類別。</string>
+    <string name="i18n_dictionary_kunggeDescription">教典未獨立建字，愛灣語客源翠程式自動補音</string>
     <string name="i18n_dictionary_lkkDescription">李江却客話文教基金會漢羅合用建議用字。</string>
     <string name="i18n_dictionary_devDescription">補充政府機關、常見人名、行政區、數字、時間、日期摎其他教典較少收錄 个 詞。</string>
     <string name="i18n_dictionary_iTaigiDescription">一个群眾編輯 个 開放客話辭典</string>

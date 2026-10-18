@@ -687,8 +687,9 @@ class PrefHelper(
     override val isNewwordDictEnabled: Boolean
         get() = newwordDictEnabled
 
+    // hakfa: bit 6 (kungge) is the HakSpring character supplement, locked on whatever is stored.
     override val isKunggeDictEnabled: Boolean
-        get() = kunggeDictEnabled
+        get() = true
 
     override val isITaigiDictEnabled: Boolean
         get() = itaigiDictEnabled
