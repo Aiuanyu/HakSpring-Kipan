@@ -3,6 +3,7 @@
  * HakSpring Dictionary Pipeline for HakSpring-Kipan (客話企盤)
  * 
  * 1. 讀取客源翠四縣認證（初基中中高中）與教典四縣語料
+ *    plus the HakSpring character supplement (data/supp/, step 3)
  * 2. 調用客源翠 js/variant-parser.js (getLineVariants) 展開所有區域音字變體
  * 3. 展開同義詞括號，剔除所有【】污染，確保（諸夏字, 讀音）一對一精確對應
  * 4. 進行零聲母簡拼與無調轉換
@@ -278,6 +279,48 @@ if (fs.existsSync(gipJsonPath)) {
   }
 }
 
+// 3. HakSpring character supplement (Sixian): single-character readings for characters
+//    that MOE and certification data only have inside words, aligned by HakSpring.
+//    Its own source: bit 6 (upstream's `kungge`, relabelled and locked on).
+//    Produced by HakSpring `python3 process_all_data.py --only-supp`; see docs/hakfa/supp-dict.md.
+const SUPP_BITMASK = 1 << 6;
+const suppJsonPath = path.join(HAKSPRING_DATA, 'supp', '補字典-四.json');
+if (!fs.existsSync(suppJsonPath)) {
+  throw new Error(`${suppJsonPath} not found: run python3 process_all_data.py --only-supp in HakSpring first`);
+}
+{
+  const suppLines = JSON.parse(fs.readFileSync(suppJsonPath, 'utf8')).content.split('\n');
+  let added = 0;
+  for (let i = 1; i < suppLines.length; i++) {
+    const line = suppLines[i];
+    if (!line.trim()) continue;
+    // The first four columns (id, word, display and query readings) never hold commas or quotes.
+    const parts = line.split(',');
+    const word = parts[1];
+    const syll = parts[2];
+    if (!word || !syll) continue;
+    const notone = removeTone(syll);
+    const key = word + '|' + notone;
+    if (map.has(key)) continue;
+    // Frequency grows with how often the character occurs in words, but stays below every real entry.
+    const count = Number((line.match(/出現 (\d+) 擺/) || [])[1] || 1);
+    map.set(key, {
+      word,
+      tl: syll,
+      tl_num: syll,
+      tl_notone: notone,
+      tl_abbrev: '',
+      freq: Math.min(9000, 1000 + 100 * count),
+      syllable_count: 1,
+      syllables: [notone],
+      bitmask: SUPP_BITMASK,
+      subtag: 0, // not a kautian row (engine/lexicon dictionary_reader.rs passes_filter)
+    });
+    added++;
+  }
+  console.log(`  ✓ 客源翠補字典（四縣）: ${added} 筆`);
+}
+
 const records = Array.from(map.values());
 // 斷言：嚴格確保所有詞條的標音 tl 都不包含任何數字
 for (const r of records) {
@@ -293,9 +336,9 @@ console.log(`  ✓ 總計詞庫筆數 (認證 + 教典): ${records.length} 筆`)
 const csvOutputDir = path.join(REPO_ROOT, 'dictionary/sources/official/hakspring/data');
 fs.mkdirSync(csvOutputDir, { recursive: true });
 const csvPath = path.join(csvOutputDir, 'hakspring.csv');
-const csvLines = ['word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count'];
+const csvLines = ['word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask'];
 for (const r of records) {
-  csvLines.push(`"${r.word}","${r.tl}","${r.tl_num}","${r.tl_notone}","${r.tl_abbrev}",${r.freq},${r.syllable_count}`);
+  csvLines.push(`"${r.word}","${r.tl}","${r.tl_num}","${r.tl_notone}","${r.tl_abbrev}",${r.freq},${r.syllable_count},${r.bitmask ?? 1}`);
 }
 fs.writeFileSync(csvPath, csvLines.join('\n'), 'utf8');
 console.log(`  ✓ 已輸出 CSV 至 ${csvPath}`);
@@ -347,12 +390,12 @@ for (let i = 0; i < records.length; i++) {
   const tlBuf = Buffer.from(r.tl, 'utf8');
   const recBuf = Buffer.alloc(13 + hanziBuf.length + tlBuf.length);
 
-  recBuf.writeUInt16LE(1, 0);              // bitmask: 1 (official)
+  recBuf.writeUInt16LE(r.bitmask ?? 1, 0); // bitmask: 1 (MOE + certification); supplement 1 << 6
   recBuf.writeUInt32LE(r.freq, 2);          // frequency
   recBuf.writeUInt8(hanziBuf.length, 6);    // hanzi_len
   recBuf.writeUInt8(tlBuf.length, 7);       // tl_len
   recBuf.writeUInt8(r.syllable_count, 8);   // syllable_count
-  recBuf.writeUInt16LE(1, 9);              // kautian_subtag: 1 (KAUTIAN_SUBTAG_MAIN_BIT: has_main = true)
+  recBuf.writeUInt16LE(r.subtag ?? 1, 9);  // kautian_subtag: 1 (KAUTIAN_SUBTAG_MAIN_BIT: has_main = true); supplement 0
   recBuf.writeUInt16LE(walkerCost(r.freq), 11); // walker_cost (v4), see tkdb_v4.js
   hanziBuf.copy(recBuf, 13);
   tlBuf.copy(recBuf, 13 + hanziBuf.length);

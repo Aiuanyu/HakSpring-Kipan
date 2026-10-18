@@ -222,6 +222,45 @@ fn hakfa_fetch_candidates_for_ngai_and_fadseu() {
     engine::reset(generation);
 }
 
+fn hakfa_candidates(input: &str, settings: &EngineSettings) -> Vec<String> {
+    let generation = fresh_generation();
+    compose(input, settings, generation);
+    let fetch = engine::fetch_at_pos(settings, generation, 0).expect("fetch round trip");
+    let candidates = fetch
+        .candidates
+        .expect("continuous phase answers with a list");
+    engine::reset(generation);
+    candidates.into_iter().filter_map(|c| c.hanji).collect()
+}
+
+/// HakSpring character supplement (bit 6, upstream's `kungge`): characters with no
+/// single-character entry in MOE or certification data are typed as one syllable.
+#[test]
+fn hakfa_supp_dict_single_chars_reachable() {
+    let _engine = engine();
+    let settings = EngineSettings::default();
+    for (input, hanji) in [("lam", "藍"), ("li", "理"), ("gung", "公"), ("iun", "運")] {
+        let candidates = hakfa_candidates(input, &settings);
+        assert!(
+            candidates.iter().any(|h| h == hanji),
+            "{input} should offer {hanji}: {candidates:?}"
+        );
+    }
+}
+
+/// The supplement is its own source: with bit 6 off at the engine, its characters are gone.
+#[test]
+fn hakfa_supp_dict_is_its_own_source() {
+    let _engine = engine();
+    let mut settings = EngineSettings::default();
+    settings.dictionary_sources.kungge = false;
+    let candidates = hakfa_candidates("lam", &settings);
+    assert!(
+        !candidates.iter().any(|h| h == "藍"),
+        "藍 still offered with kungge off: {candidates:?}"
+    );
+}
+
 #[test]
 fn fetch_at_pos_returns_dictionary_candidates_and_commit_finalizes() {
     let _engine = engine();
