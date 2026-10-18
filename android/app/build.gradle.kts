@@ -152,6 +152,18 @@ base {
     )
 }
 
+// Debug APK 檔名摎 versionName 共樣：HakSpring-Kipan-0.0.2+dev-20261018-0746-debug.apk
+// AGP 無公開 API 改 APK 檔名，用 VariantOutputImpl（內部 API）；AGP 升版若壞忒，退轉 archivesName 就好。
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.outputs.forEach { output ->
+            (output as? com.android.build.api.variant.impl.VariantOutputImpl)
+                ?.outputFileName
+                ?.set(output.versionName.map { "HakSpring-Kipan-$it-debug.apk" })
+        }
+    }
+}
+
 // Fail the build if committed i18n generated output (res/values/strings_i18n.xml + the
 // i18n/generated Kotlin) is stale vs the i18n/*.json sources. A Make-only gate cannot protect
 // Android Studio / archive / direct `assemble`, so this hooks into preBuild. Run `make i18n` to fix.
