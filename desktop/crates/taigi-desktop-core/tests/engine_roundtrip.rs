@@ -198,7 +198,7 @@ fn hakfa_fetch_candidates_for_ngai_and_fadseu() {
     let transition = compose("ngai", &settings, generation);
     println!("transition for ngai: {:?}", transition);
 
-    let fetch = engine::fetch_at_pos(&settings, PLATFORM, generation, 0).expect("fetch round trip");
+    let fetch = engine::fetch_at_pos(&settings, generation, 0).expect("fetch round trip");
     let candidates = fetch
         .candidates
         .expect("continuous phase answers with a list");
@@ -211,7 +211,7 @@ fn hakfa_fetch_candidates_for_ngai_and_fadseu() {
     let generation = fresh_generation();
     let transition = compose("fadseu", &settings, generation);
     println!("transition for fadseu: {:?}", transition);
-    let fetch = engine::fetch_at_pos(&settings, PLATFORM, generation, 0).expect("fetch round trip");
+    let fetch = engine::fetch_at_pos(&settings, generation, 0).expect("fetch round trip");
     let candidates = fetch
         .candidates
         .expect("continuous phase answers with a list");
@@ -504,6 +504,8 @@ fn default_toggles_resolve_their_badge_sources() {
 #[test]
 fn hakfa_slot_keys_are_digits_and_letters_remain_inputs() {
     use taigi_desktop_core::keys::{CandidateSlotKeySet, ComposingKeyBindings, ComposingKeyIntent, KeyEventSnapshot, KeyModifiers};
+    use taigi_desktop_core::platform::DesktopPlatform;
+    const PLATFORM: DesktopPlatform = DesktopPlatform::MacOS;
     let bindings = ComposingKeyBindings::default();
     assert_eq!(bindings.slot_key_set(), CandidateSlotKeySet::Digits);
 

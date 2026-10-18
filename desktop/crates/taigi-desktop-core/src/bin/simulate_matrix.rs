@@ -240,10 +240,10 @@ fn main() {
             let mut final_transition = None;
             for ch in tc.input.chars() {
                 let s = ch.to_string();
-                let tr = engine::append(&s, &prof.settings, PLATFORM, gen).expect("append 成功");
+                let tr = engine::append(&s, &prof.settings, gen).expect("append 成功");
                 
                 // 獲取當前候選清單
-                let fetch = engine::fetch_at_pos(&prof.settings, PLATFORM, gen, 0)
+                let fetch = engine::fetch_at_pos(&prof.settings, gen, 0)
                     .expect("fetch 成功");
                 let cands = fetch.candidates.unwrap_or_default();
                 let top: Vec<CandidateSnapshot> = cands.iter().take(5).enumerate().map(|(idx, c)| {
@@ -269,7 +269,7 @@ fn main() {
             }
 
             // 2. 模擬確認選字 (首選 commit)
-            let fetch = engine::fetch_at_pos(&prof.settings, PLATFORM, gen, 0).expect("fetch 成功");
+            let fetch = engine::fetch_at_pos(&prof.settings, gen, 0).expect("fetch 成功");
             let cands = fetch.candidates.unwrap_or_default();
             
             let final_output = if let Some(first) = cands.first() {
@@ -284,7 +284,6 @@ fn main() {
                         syllable_count: first.syllable_count,
                     },
                     &prof.settings,
-                    PLATFORM,
                     gen,
                 );
                 match commit_res {
