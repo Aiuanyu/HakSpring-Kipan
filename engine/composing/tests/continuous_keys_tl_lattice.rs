@@ -94,17 +94,19 @@ fn longest_match_suppresses_shorter_single_syllable_prefix() {
 }
 
 #[test]
-fn straddled_prefix_guard_stays_tps_only() {
-    // §18 guard (e) is TPS only (maintainer 2026-10-10: TL / POJ unchanged).
-    // `kata` against {ka, kat, ta, a}: ta runs past kat, which would rescue
-    // `ka` under TPS; TL and POJ keep dropping it.
+fn straddled_prefix_guard_tps_and_tl_not_poj() {
+    // §18 guard (e) is TPS only upstream (maintainer 2026-10-10: TL / POJ unchanged).
+    // hakfa: TL too — Hakka `b d g` codas are also onsets (`hed|ui` vs `he|dui`),
+    // so TL now keeps `ka` here (docs/hakfa/candidates.md). POJ stays upstream.
+    // `kata` against {ka, kat, ta, a}: ta runs past kat, which rescues `ka`.
     let samples = ["ka1", "kat4", "ta1", "a1"];
-    for (inv, mode, family) in [
-        (build_inventory(&samples), phonetics::InputMode::Tl, "tl"),
+    for (inv, mode, family, keeps_ka) in [
+        (build_inventory(&samples), phonetics::InputMode::Tl, "tl", true),
         (
             build_poj_inventory(&samples),
             phonetics::InputMode::Poj,
             "poj",
+            false,
         ),
     ] {
         let keys = build_continuous_keys_with_inventory("kata", &inv, mode);
@@ -113,9 +115,10 @@ fn straddled_prefix_guard_stays_tps_only() {
             texts.contains(&format!("{family}:kat").as_str()),
             "{family}: `kat` must be keyed (the control reaches the rule), got {texts:?}",
         );
-        assert!(
-            !texts.contains(&format!("{family}:ka").as_str()),
-            "{family}: `ka` must stay suppressed, got {texts:?}",
+        assert_eq!(
+            texts.contains(&format!("{family}:ka").as_str()),
+            keeps_ka,
+            "{family}: `ka` kept should be {keeps_ka}, got {texts:?}",
         );
     }
 }

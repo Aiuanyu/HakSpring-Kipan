@@ -600,3 +600,27 @@ fn hakfa_slot_keys_are_digits_and_letters_remain_inputs() {
         );
     }
 }
+
+/// A shorter syllable stays listed when the next syllable starts with the longer
+/// one's coda: `he|dui` beside `hed`. Hakka `b d g` are codas and onsets both
+/// (docs/hakfa/candidates.md).
+#[test]
+fn hakfa_shorter_syllable_listed_when_coda_is_next_onset() {
+    let _engine = engine();
+    let settings = EngineSettings::default();
+    let candidates = hakfa_candidates("heduioigefibo", &settings);
+    assert!(
+        candidates.iter().skip(1).any(|h| h == "係"),
+        "係 (he) must be selectable beside hed: {candidates:?}"
+    );
+    assert!(
+        candidates.iter().any(|h| h == "核"),
+        "hed candidates must stay: {candidates:?}"
+    );
+    // Both d typed: nothing straddles, so the bare `he` stays dropped.
+    let candidates = hakfa_candidates("heddui", &settings);
+    assert!(
+        !candidates.iter().skip(1).any(|h| h == "係"),
+        "heddui must not list he: {candidates:?}"
+    );
+}

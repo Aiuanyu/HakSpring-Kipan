@@ -587,8 +587,11 @@ pub(crate) fn left_anchored_keys_and_restrictions(
             && remainder_has_closed_syllable(shadow, end, mode, barriers)
     };
     let survives_as_phrase = |end: usize| has_phrase_reading(end) && !is_closed_dead_end(end);
+    // hakfa: TL mode too. Hakka entering-tone codas `b d g` are also onsets,
+    // so `hed|ui` vs `he|dui` straddles constantly; without this `he` is
+    // unreachable once `hed` parses (docs/hakfa/candidates.md).
     let is_straddled_prefix = |end: usize| {
-        matches!(mode, InputMode::Tps)
+        matches!(mode, InputMode::Tps | InputMode::Tl)
             && valid_span_endings_lowered_with_barriers(&lowered, end, inv, mode, 1, barriers)
                 .into_iter()
                 .any(|next_end| Some(next_end) > max_single_end)
