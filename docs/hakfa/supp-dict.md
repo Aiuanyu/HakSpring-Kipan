@@ -15,9 +15,9 @@ The MOE Hakfa dictionary (教典) and the certification word lists (認證) have
 | | Value |
 |---|---|
 | Bitmask | bit 6 (`1 << 6`), upstream internal name `kungge` (soft fork: internal names unchanged) |
-| `kautian_subtag` | `0` (not a kautian row) |
+| `kautian_subtag` | `0` (not a kautian row), plus the lect code in bits 13–15 ([lect.md](lect.md)) |
 | Frequency | `min(9000, 1000 + 100 × occurrences)` — always below real dictionary words (≥ 19,000) |
-| `hakspring.csv` | new last column `bitmask` |
+| `hakspring.csv` | column `bitmask` (and `lect`, see [lect.md](lect.md)) |
 
 Bit 6 follows the Obsidian `dialects` plan table (教典 0, 認證 1, … 客源翠補字典 6).
 

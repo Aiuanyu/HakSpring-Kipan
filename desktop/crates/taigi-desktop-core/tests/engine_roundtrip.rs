@@ -269,6 +269,28 @@ fn hakfa_supp_dict_is_its_own_source() {
     );
 }
 
+/// hakfa: certification rows carry bit 1 (`taigitv`), MOE rows bit 0 (`kautian`).
+/// 護理師 is only in the certification lists, so it follows bit 1 alone.
+#[test]
+fn hakfa_cert_is_its_own_source() {
+    let _engine = engine();
+    let mut settings = EngineSettings::default();
+    settings.dictionary_sources.kautian = false;
+    let candidates = hakfa_candidates("fulisii", &settings);
+    assert!(
+        candidates.iter().any(|h| h == "護理師"),
+        "護理師 missing with kautian off: {candidates:?}"
+    );
+
+    let mut settings = EngineSettings::default();
+    settings.dictionary_sources.taigitv = false;
+    let candidates = hakfa_candidates("fulisii", &settings);
+    assert!(
+        !candidates.iter().any(|h| h == "護理師"),
+        "護理師 still offered with taigitv off: {candidates:?}"
+    );
+}
+
 #[test]
 fn fetch_at_pos_returns_dictionary_candidates_and_commit_finalizes() {
     let _engine = engine();

@@ -24,6 +24,32 @@ const FST_BUILDER = path.join(REPO_ROOT, 'engine/target/debug/fst-builder');
 // 載入客源翠正宗 variant-parser
 const { getLineVariants } = require(path.join(HAKSPRING_ROOT, 'js/variant-parser.js'));
 
+// Dictionary sources (bitmask). Obsidian `dialects` plan: 教典 0, 認證 1, … 客源翠補字典 6.
+// Upstream internal names: bit 0 `kautian`, bit 1 `taigitv`, bit 6 `kungge` (soft fork).
+const KAUTIAN_BITMASK = 1 << 0;
+const CERT_BITMASK = 1 << 1;
+const SUPP_BITMASK = 1 << 6;
+
+// Lects (腔). The lect code rides kautian_subtag bits 13-15, which the engine reader
+// masks off today (KAUTIAN_SUBTAG_USED_MASK in engine/lexicon/src/dictionary_reader.rs),
+// so writing it changes no filtering yet. Code 0 means "no lect" and fails the build.
+// Only 四 is wired so far; 海 needs its MOE tone-value table first (dialects Phase 1).
+const LECT_SHIFT = 13;
+const LECTS = {
+  '四': { code: 1, name: '四縣' },
+};
+
+function parseLectArg(argv) {
+  const i = argv.indexOf('--lect');
+  const lectKey = i === -1 ? '四' : argv[i + 1];
+  if (!LECTS[lectKey]) {
+    throw new Error(`--lect ${lectKey}: unsupported lect, expected one of ${Object.keys(LECTS).join(' ')}`);
+  }
+  return lectKey;
+}
+const LECT_KEY = parseLectArg(process.argv.slice(2));
+const LECT = LECTS[LECT_KEY];
+
 // 聲調與母音映射表
 const VOWEL_MAP = {
   'ā': 'a', 'á': 'a', 'ǎ': 'a', 'â': 'a', 'à': 'a',
@@ -149,18 +175,18 @@ function deriveHakfaAbbrev(notoneSylls) {
   return notoneSylls.map(extractLeadingInitial).join('');
 }
 
-console.log('▶ [1/4] 開始萃取客源翠語料並展開變體...');
+console.log(`▶ [1/4] 開始萃取客源翠語料並展開變體（${LECT.name}）...`);
 
 const map = new Map(); // key: word + '|' + fusedNotone -> entry
 
 // 1. 處理認證五級（按級別賦予詞頻）
 const certFiles = [
-  { file: '113四基.json', freq: 50000, name: '四縣基礎級' },
-  { file: '113四初.json', freq: 45000, name: '四縣初級' },
-  { file: '113四中.json', freq: 40000, name: '四縣中級' },
-  { file: '113四中高.json', freq: 35000, name: '四縣中高級' },
-  { file: '113四高.json', freq: 30000, name: '四縣高級' }
-];
+  { level: '基', freq: 50000, levelName: '基礎級' },
+  { level: '初', freq: 45000, levelName: '初級' },
+  { level: '中', freq: 40000, levelName: '中級' },
+  { level: '中高', freq: 35000, levelName: '中高級' },
+  { level: '高', freq: 30000, levelName: '高級' }
+].map(c => ({ file: `113${LECT_KEY}${c.level}.json`, freq: c.freq, name: `${LECT.name}${c.levelName}` }));
 
 for (const cf of certFiles) {
   const p = path.join(HAKSPRING_DATA, 'cert', cf.file);
@@ -212,7 +238,8 @@ for (const cf of certFiles) {
           tl_abbrev: fusedAbbrev,
           freq: cf.freq,
           syllable_count: Math.min(notoneSylls.length, 4),
-          syllables: notoneSylls
+          syllables: notoneSylls,
+          bitmask: CERT_BITMASK
         });
       }
     }
@@ -221,8 +248,8 @@ for (const cf of certFiles) {
 
 console.log(`  ✓ 認證詞彙（展開變體後）: ${map.size} 筆`);
 
-// 2. 處理教典四縣（讀取 20250630-四.json，取得正宗 HagPinPlus 顯示欄位）
-const gipJsonPath = path.join(HAKSPRING_DATA, 'gip', '20250630-四.json');
+// 2. 處理教典（讀取 20250630-<腔>.json，取得正宗 HagPinPlus 顯示欄位）
+const gipJsonPath = path.join(HAKSPRING_DATA, 'gip', `20250630-${LECT_KEY}.json`);
 if (fs.existsSync(gipJsonPath)) {
   const rawGip = fs.readFileSync(gipJsonPath, 'utf8');
   const gipData = JSON.parse(rawGip);
@@ -238,7 +265,7 @@ if (fs.existsSync(gipJsonPath)) {
       客家語: parts[1],
       客語標音_顯示: parts[2],
       客語標音_查詢: parts[3],
-      sourceName: '教典四縣'
+      sourceName: `教典${LECT.name}`
     };
 
     const parsed = getLineVariants(row);
@@ -264,7 +291,11 @@ if (fs.existsSync(gipJsonPath)) {
       const key = pair.word + '|' + fusedNotone;
       const freq = Math.max(100, gipDefaultFreq - pair.word.length * 1000);
 
-      if (!map.has(key)) {
+      if (map.has(key)) {
+        // Also in the certification lists: the certification reading and frequency stay,
+        // the row just gains the MOE source bit.
+        map.get(key).bitmask |= KAUTIAN_BITMASK;
+      } else {
         map.set(key, {
           word: pair.word,
           tl: hyphenatedPhonetic,
@@ -273,19 +304,19 @@ if (fs.existsSync(gipJsonPath)) {
           tl_abbrev: fusedAbbrev,
           freq: freq,
           syllable_count: Math.min(notoneSylls.length, 4),
-          syllables: notoneSylls
+          syllables: notoneSylls,
+          bitmask: KAUTIAN_BITMASK
         });
       }
     }
   }
 }
 
-// 3. HakSpring character supplement (Sixian): single-character readings for characters
+// 3. HakSpring character supplement: single-character readings for characters
 //    that MOE and certification data only have inside words, aligned by HakSpring.
 //    Its own source: bit 6 (upstream's `kungge`, relabelled and locked on).
 //    Produced by HakSpring `python3 process_all_data.py --only-supp`; see docs/hakfa/supp-dict.md.
-const SUPP_BITMASK = 1 << 6;
-const suppJsonPath = path.join(HAKSPRING_DATA, 'supp', '補字典-四.json');
+const suppJsonPath = path.join(HAKSPRING_DATA, 'supp', `補字典-${LECT_KEY}.json`);
 if (!fs.existsSync(suppJsonPath)) {
   throw new Error(`${suppJsonPath} not found: run python3 process_all_data.py --only-supp in HakSpring first`);
 }
@@ -319,14 +350,34 @@ if (!fs.existsSync(suppJsonPath)) {
     });
     added++;
   }
-  console.log(`  ✓ 客源翠補字典（四縣）: ${added} 筆`);
+  console.log(`  ✓ 客源翠補字典（${LECT.name}）: ${added} 筆`);
 }
 
 const records = Array.from(map.values());
+for (const r of records) {
+  // kautian_subtag: MOE and certification rows have the main bit (1); the supplement has 0.
+  // The lect code goes on top in bits 13-15.
+  r.subtag = (r.subtag ?? 1) | (LECT.code << LECT_SHIFT);
+}
 // 斷言：嚴格確保所有詞條的標音 tl 都不包含任何數字
 for (const r of records) {
   if (/[0-9]/.test(r.tl)) {
     throw new Error(`[Assertion Error] 詞條 "${r.word}" 拼音仍然包含數字: "${r.tl}"`);
+  }
+}
+// 斷言：every row has a known source and a lect; a MOE row needs a subcollection bit,
+// or the engine drops it once subcollection filtering is active (dictionary_reader.rs passes_filter).
+const KNOWN_SOURCES = KAUTIAN_BITMASK | CERT_BITMASK | SUPP_BITMASK;
+for (const r of records) {
+  if (!r.bitmask || (r.bitmask & ~KNOWN_SOURCES) !== 0) {
+    throw new Error(`[Assertion Error] 詞條 "${r.word}" 來源位元不對: ${r.bitmask}`);
+  }
+  const lectCode = r.subtag >> LECT_SHIFT;
+  if (lectCode === 0) {
+    throw new Error(`[Assertion Error] 詞條 "${r.word}" 無腔`);
+  }
+  if ((r.bitmask & KAUTIAN_BITMASK) && (r.subtag & ((1 << LECT_SHIFT) - 1)) === 0) {
+    throw new Error(`[Assertion Error] 教典詞條 "${r.word}" 無子集位元`);
   }
 }
 // 依照詞頻排序
@@ -337,9 +388,9 @@ console.log(`  ✓ 總計詞庫筆數 (認證 + 教典): ${records.length} 筆`)
 const csvOutputDir = path.join(REPO_ROOT, 'dictionary/sources/official/hakspring/data');
 fs.mkdirSync(csvOutputDir, { recursive: true });
 const csvPath = path.join(csvOutputDir, 'hakspring.csv');
-const csvLines = ['word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask'];
+const csvLines = ['word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect'];
 for (const r of records) {
-  csvLines.push(`"${r.word}","${r.tl}","${r.tl_num}","${r.tl_notone}","${r.tl_abbrev}",${r.freq},${r.syllable_count},${r.bitmask ?? 1}`);
+  csvLines.push(`"${r.word}","${r.tl}","${r.tl_num}","${r.tl_notone}","${r.tl_abbrev}",${r.freq},${r.syllable_count},${r.bitmask},${LECT_KEY}`);
 }
 fs.writeFileSync(csvPath, csvLines.join('\n'), 'utf8');
 console.log(`  ✓ 已輸出 CSV 至 ${csvPath}`);
@@ -391,12 +442,12 @@ for (let i = 0; i < records.length; i++) {
   const tlBuf = Buffer.from(r.tl, 'utf8');
   const recBuf = Buffer.alloc(13 + hanziBuf.length + tlBuf.length);
 
-  recBuf.writeUInt16LE(r.bitmask ?? 1, 0); // bitmask: 1 (MOE + certification); supplement 1 << 6
+  recBuf.writeUInt16LE(r.bitmask, 0);      // bitmask: MOE 1 << 0, certification 1 << 1, supplement 1 << 6
   recBuf.writeUInt32LE(r.freq, 2);          // frequency
   recBuf.writeUInt8(hanziBuf.length, 6);    // hanzi_len
   recBuf.writeUInt8(tlBuf.length, 7);       // tl_len
   recBuf.writeUInt8(r.syllable_count, 8);   // syllable_count
-  recBuf.writeUInt16LE(r.subtag ?? 1, 9);  // kautian_subtag: 1 (KAUTIAN_SUBTAG_MAIN_BIT: has_main = true); supplement 0
+  recBuf.writeUInt16LE(r.subtag, 9);       // kautian_subtag: 1 (KAUTIAN_SUBTAG_MAIN_BIT: has_main = true); supplement 0; lect in bits 13-15
   recBuf.writeUInt16LE(walkerCost(r.freq), 11); // walker_cost (v4), see tkdb_v4.js
   hanziBuf.copy(recBuf, 13);
   tlBuf.copy(recBuf, 13 + hanziBuf.length);

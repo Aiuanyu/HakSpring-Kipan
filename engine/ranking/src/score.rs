@@ -19,7 +19,9 @@
 
 const CONTINUOUS_SOURCE_BITS: &[(u16, u8)] = &[
     (1 << 0, 1), // kautian
-    (1 << 1, 2), // taigitv
+    // hakfa: bit 1 is the certification word lists, ranked with MOE so ties keep
+    // dictionary order (docs/hakfa/lect.md). Upstream: taigitv, rank 2.
+    (1 << 1, 1), // taigitv
     (1 << 7, 3), // stti
     (1 << 6, 4), // kungge
 ];
@@ -373,10 +375,10 @@ mod tests {
 
     #[test]
     fn source_tier_rank_first_match_wins_in_table_order() {
-        // Table order: kautian(1) → taigitv(2) → stti(3) → kungge(4).
+        // Table order: kautian(1) → taigitv(1, hakfa) → stti(3) → kungge(4).
         // Overlapping bits should resolve to the lowest rank present.
         assert_eq!(source_tier_rank(KAUTIAN_BIT, false), 1);
-        assert_eq!(source_tier_rank(TAIGITV_BIT, false), 2);
+        assert_eq!(source_tier_rank(TAIGITV_BIT, false), 1);
         assert_eq!(source_tier_rank(STTI_BIT, false), 3);
         assert_eq!(source_tier_rank(KUNGGE_BIT, false), 4);
         // Kautian + kungge → kautian (entry-order first match).

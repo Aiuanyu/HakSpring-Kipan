@@ -1,0 +1,60 @@
+# Lects (腔) and dictionary sources
+
+Kipan will type five Hakfa lects (Sixian, Hailu, Dapu, Raoping, Zhao'an), switched as exclusive modes, with sub-lect variants (e.g. Sixian north / south / Meinong) as toggles inside a lect. Dictionary sources (MOE, certification lists, HakSpring supplement, …) are a separate axis. Design and decisions live in the maintainer's Obsidian `dialects` note; this page is the code-bound part.
+
+Status: P0 (data foundation) done for Sixian. Nothing filters by lect yet.
+
+## Record layout in `dictionary.bin`
+
+Two `u16` fields per record carry the axes. Upstream semantics are kept where Kipan has no reason to change them.
+
+### `bitmask` — dictionary source
+
+| Bit | Kipan source | Upstream internal name | Engine settings |
+|---|---|---|---|
+| 0 | MOE Hakfa dictionary (教典) | `kautian` | user toggle (to be locked on, together with bit 1, in the settings redesign) |
+| 1 | Certification word lists (認證詞彙) | `taigitv` | **locked on** |
+| 6 | HakSpring character supplement (客源翠補字典) | `kungge` | **locked on** ([supp-dict.md](supp-dict.md)) |
+
+A word found in both MOE and the certification lists is one record with bits 0 and 1 set; it keeps the certification reading and frequency. Planned: 2 loanword handbook, 3 MOE appendix, 4 name readings, 5 Thiên-kông dictionary; 7–11 reserved. Bits 9, 10 and 12 have upstream engine semantics (khiin gate, dev, variant) — do not reuse them.
+
+### `kautian_subtag` — subcollection, variant, lect
+
+| Bits | Meaning |
+|---|---|
+| 0 | main reading (`KAUTIAN_SUBTAG_MAIN_BIT`); set on MOE and certification rows, `0` on supplement rows |
+| 1–10 | upstream accent columns; Kipan will use 1, 2, 3 for the lect's variants (Sixian: north, south, Meinong; Raoping: Hsinchu, Zhuolan, Taoyuan) — not written yet |
+| 11 | upstream name appendix — not used |
+| 12 | upstream alternative reading (又唸作) — candidate for secondary readings split by `splitReadingVariants()`, not written yet |
+| **13–15** | **lect code** (Kipan) |
+
+Lect codes: `1` Sixian (四). Reserved: `2` Hailu, `3` Dapu, `4` Raoping, `5` Zhao'an. `0` means "no lect" and fails the build.
+
+The engine reader masks the subtag with `KAUTIAN_SUBTAG_USED_MASK` (bits 0–12), so the lect code is invisible to filtering today. Reading it requires widening that mask (upstream line in `engine/lexicon/src/dictionary_reader.rs`; keep the change small and commented).
+
+The lect is not passed to the engine inside `enabled_sources_bitmask` (only bits 27–31 are free there); it will get its own settings field.
+
+## Ranking
+
+`engine/ranking/src/score.rs` `CONTINUOUS_SOURCE_BITS`: Kipan ranks bit 1 (certification) at `1`, the same as bit 0 (MOE); upstream ranks `taigitv` at `2`. Source rank is only the last tiebreak (after walker cost, score and frequency), but with bit 1 at rank 2 a certification-only word lost every frequency tie to a word also in MOE (`ban`: 半 → 搬, `dai`: 帶 → 低). Equal rank keeps dictionary order, i.e. the candidates from before the source split. Certification already outranks MOE through frequency (30,000–50,000 vs. ≤ 20,000).
+
+## Build
+
+```bash
+node dictionary/sources/official/hakspring/extract_and_build.js [--lect 四]
+```
+
+- `--lect` defaults to `四`; any other value fails until its tone-value table is added (Hailu MOE readings are tone numbers; HakSpring `tone_mapping.json` has the table).
+- Inputs per lect: `data/cert/113<lect><level>.json`, `data/gip/20250630-<lect>.json`, `data/supp/補字典-<lect>.json` under `HAKSPRING_ROOT`.
+- Build assertions: every row has a known source bit and a lect code; every MOE row has a subcollection bit (else the engine drops it once subcollection filtering is active).
+- `hakspring.csv` gained a `lect` column.
+
+## Sub-lect readings (planned)
+
+Derived south Sixian / Meinong / Zhuolan / Taoyuan readings are produced by HakSpring, not by Kipan: an attachment table `data/sub-dialects-fill/<lect>.json` keyed by certification file + number (MOE: lect + headword). Kipan reads it, marks the variant bits and discounts the frequency of derived readings; it does not derive readings itself. Rows HakSpring could not derive are listed separately and must not be read.
+
+## Verification done for P0
+
+- Rebuilt dictionary vs. the previous one: same 23,124 records in the same order with identical headwords, readings, frequency and walker cost; `dictionary.fst` and `syllables.fst` byte-identical. Only `bitmask` (certification-only 4,516 rows → `2`, both 4,931 → `3`) and the subtag lect bits differ.
+- Default-settings candidates for 24,166 inputs (every toneless key, every abbreviation, 800 random 2–3 word strings) are identical before and after, through `taigi-desktop-core`'s engine.
+- `engine_roundtrip.rs` `hakfa_cert_is_its_own_source`: 護理師 (`fulisii`, certification only) survives MOE off and disappears with bit 1 off at the engine.
