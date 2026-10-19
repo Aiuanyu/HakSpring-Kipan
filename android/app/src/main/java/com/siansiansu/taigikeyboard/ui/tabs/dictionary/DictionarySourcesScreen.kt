@@ -61,7 +61,6 @@ fun DictionarySourcesScreen(
     val focusManager = LocalFocusManager.current
 
     var moeEnabled by remember { mutableStateOf(prefs.moeDictEnabled) }
-    var newwordEnabled by remember { mutableStateOf(prefs.newwordDictEnabled) }
     var sttiEnabled by remember { mutableStateOf(prefs.sttiDictEnabled) }
     var itaigiEnabled by remember { mutableStateOf(prefs.itaigiDictEnabled) }
     var taiwanJapanEnabled by remember { mutableStateOf(prefs.taiwanJapanDictEnabled) }
@@ -202,15 +201,15 @@ fun DictionarySourcesScreen(
                         )
                     }
                     SettingsDivider()
+                    // hakfa: bit 1 (taigitv) is the certification word lists, locked on;
+                    // PrefHelper.isNewwordDictEnabled forces it on for the engine too.
                     DictionaryRowWithDescription(
                         label = L10n.commonNewwordDict,
-                        checked = newwordEnabled,
+                        checked = true,
                         description = L10n.dictionaryNewwordDescription,
-                        url = "https://www.taigitv.org.tw/taigi-words",
-                        onCheckedChange = {
-                            newwordEnabled = it
-                            prefs.newwordDictEnabled = it
-                        },
+                        url = "https://hakspring.pages.dev/",
+                        enabled = false,
+                        onCheckedChange = {},
                     )
                     SettingsDivider()
                     DictionaryRowWithDescription(

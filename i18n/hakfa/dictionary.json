@@ -51,7 +51,7 @@
     "importBackupResult": { "hakha": "匯入 {customDict} 項自訂詞、{frequency} 項詞頻、{association} 項詞關聯" },
     "backupPrivacyWarning": { "hakha": "備份包含自訂詞、詞頻摎詞關聯紀錄，可能有私人內容，請妥當保管。" },
     "moeDescription": { "hakha": "客話、華語攏會當尋，詞目摎例句有發音通聽，學習較利便。閣有分類、部首筆劃索引摎附錄。" },
-    "newwordDescription": { "hakha": "客話台招專家學者，定期開會，討論新詞愛仰般用客話講較好，建立詞庫分逐家查、分逐家用。" },
+    "newwordDescription": { "hakha": "客家委員會客語能力認證基礎級到高級个詞彙，客源翠整理。", "en": "Word lists of the Hakfa proficiency certification, basic to advanced level, compiled by HakSpring." },
     "sttiDescription": { "hakha": "對 106 年開始，共語文、數學、社會、自然科學、藝術、綜合活動、科技、健康摎體育這 8 大領域 个 學科術語編做客話。" },
     "kunggeDescription": { "hakha": "教典未獨立建字，愛灣語客源翠程式自動補音", "en": "Single-character readings the MOE dictionary lacks, filled in automatically by HakSpring." },
     "lkkDescription": { "hakha": "李江却客話文教基金會漢羅合用建議用字。" },

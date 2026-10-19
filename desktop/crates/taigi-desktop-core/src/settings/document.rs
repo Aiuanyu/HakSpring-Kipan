@@ -365,7 +365,9 @@ impl SettingsDocument {
     pub fn dictionary_sources(&self) -> DictionarySourceToggles {
         DictionarySourceToggles {
             kautian: self.bool(&keys::IS_KAUTIAN_ENABLED),
-            taigitv: self.bool(&keys::IS_TAIGITV_ENABLED),
+            // hakfa: bit 1 is the certification word lists, locked on whatever is stored
+            // (docs/hakfa/lect.md).
+            taigitv: true,
             itaigi: self.bool(&keys::IS_ITAIGI_ENABLED),
             sitbut: self.bool(&keys::IS_SITBUT_ENABLED),
             taihoa: self.bool(&keys::IS_TAIHOA_ENABLED),
@@ -817,6 +819,14 @@ mod tests {
         let mut doc = SettingsDocument::default();
         doc.set_bool(&keys::IS_KUNGGE_ENABLED, false);
         assert!(doc.dictionary_sources().kungge);
+    }
+
+    /// hakfa: bit 1 (taigitv), the certification word lists, reads as on even when stored off.
+    #[test]
+    fn hakfa_cert_source_is_locked_on() {
+        let mut doc = SettingsDocument::default();
+        doc.set_bool(&keys::IS_TAIGITV_ENABLED, false);
+        assert!(doc.dictionary_sources().taigitv);
     }
 
     #[test]

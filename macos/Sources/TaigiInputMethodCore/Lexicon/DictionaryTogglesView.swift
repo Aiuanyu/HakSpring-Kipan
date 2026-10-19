@@ -14,8 +14,6 @@ struct DictionaryTogglesView: View {
 
     @AppStorage(SettingsStore.Keys.isKautianEnabled.name)
     private var isKautianEnabled = SettingsStore.Keys.isKautianEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isTaigitvEnabled.name)
-    private var isTaigitvEnabled = SettingsStore.Keys.isTaigitvEnabled.defaultValue
     @AppStorage(SettingsStore.Keys.isSttiEnabled.name)
     private var isSttiEnabled = SettingsStore.Keys.isSttiEnabled.defaultValue
 
@@ -88,7 +86,10 @@ struct DictionaryTogglesView: View {
                 // return the accents the user had chosen rather than all of them.
                 .disabled(!isKautianEnabled)
 
-                Toggle(language.string(.commonNewwordDict), isOn: $isTaigitvEnabled)
+                // hakfa: bit 1 (taigitv) is the certification word lists, locked on;
+                // desktop-core `SettingsDocument::dictionary_sources` forces it on for the engine too.
+                Toggle(language.string(.commonNewwordDict), isOn: .constant(true))
+                    .disabled(true)
                 Toggle(language.string(.commonSttiDict), isOn: $isSttiEnabled)
             } header: {
                 Text(language.string(.dictionaryMoeSectionTitle))

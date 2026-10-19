@@ -684,8 +684,9 @@ class PrefHelper(
     override val isMoeDictEnabled: Boolean
         get() = moeDictEnabled
 
+    // hakfa: bit 1 (taigitv) is the certification word lists, locked on whatever is stored.
     override val isNewwordDictEnabled: Boolean
-        get() = newwordDictEnabled
+        get() = true
 
     // hakfa: bit 6 (kungge) is the HakSpring character supplement, locked on whatever is stored.
     override val isKunggeDictEnabled: Boolean
