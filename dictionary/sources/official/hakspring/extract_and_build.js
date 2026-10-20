@@ -101,13 +101,28 @@ function convertToneValuesToDiacritics(str) {
  * 例如：ha sù 又讀2.há sù -> ['ha sù', 'há sù']
  * 例如：文1.qiěn sii 白qiěn se -> ['qiěn sii', 'qiěn se']
  */
+// 讀音欄个註記，照客源翠 scripts/build_supp_dict.py（READING_NOTES、DROP_NOTES）
+// 摎 data/annotations.md 第三節。
+// 另一隻正式讀音：拆開、全部收（「特」：教典特殊音，177 條，例 長 特diǒng）
+const READING_NOTES = ['又俗音', '又讀', '又音', '俗音', '特殊音', '特', '又', '文', '白'];
+// 合音、變調後个讀法，毋係字本身个讀音：拆開、丟忒
+const DROP_NOTES = ['小稱變調讀本調為', '小稱變調讀', '為後字變調', '後字變調讀', '後字變調',
+  '本調為', '合音讀', '合音'];
+const NOTE_SPLIT = new RegExp(
+  '(' + [...READING_NOTES, ...DROP_NOTES].sort((a, b) => b.length - a.length).join('|') + ')\\s*\\d*\\s*\\.?');
+
 function splitReadingVariants(phonetic) {
   if (!phonetic) return [];
-  let cleaned = convertToneValuesToDiacritics(phonetic);
-  const parts = cleaned.split(/(?:又讀|又俗音|俗音|又音|又|文|白)\d*\.?/g)
-    .map(s => s.trim())
-    .filter(Boolean);
-  return parts.length > 0 ? parts : [cleaned];
+  const cleaned = convertToneValuesToDiacritics(phonetic);
+  // split 有捕捉群組：[頭前, 註記, 讀音, 註記, 讀音, …]
+  const parts = cleaned.split(new RegExp(NOTE_SPLIT.source, 'g'));
+  const readings = [parts[0]];
+  for (let i = 1; i + 1 < parts.length; i += 2) {
+    if (!DROP_NOTES.includes(parts[i])) readings.push(parts[i + 1]);
+  }
+  // 無註記就係原讀音；有註記就淨收拆出來个（一開頭就係丟忒个讀法就無讀音）
+  if (parts.length === 1) return cleaned.trim() ? [cleaned.trim()] : [];
+  return readings.map(s => s.trim()).filter(Boolean);
 }
 
 /**
