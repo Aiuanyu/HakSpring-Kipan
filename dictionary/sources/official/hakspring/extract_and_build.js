@@ -106,6 +106,8 @@ function convertToneValuesToDiacritics(str) {
 // 另一隻正式讀音：拆開、全部收（「特」：教典特殊音，177 條，例 長 特diǒng）
 const READING_NOTES = ['又俗音', '又讀', '又音', '俗音', '特殊音', '特', '又', '文', '白'];
 // 合音、變調後个讀法，毋係字本身个讀音：拆開、丟忒
+// 教典「特」：特殊讀音。摎主讀音淨差聲調也愛另外留一筆，毋好併（平哥 20261021）
+const SPECIAL_NOTES = ['特殊音', '特'];
 const DROP_NOTES = ['小稱變調讀本調為', '小稱變調讀', '為後字變調', '後字變調讀', '後字變調',
   '本調為', '合音讀', '合音'];
 const NOTE_SPLIT = new RegExp(
@@ -116,13 +118,17 @@ function splitReadingVariants(phonetic) {
   const cleaned = convertToneValuesToDiacritics(phonetic);
   // split 有捕捉群組：[頭前, 註記, 讀音, 註記, 讀音, …]
   const parts = cleaned.split(new RegExp(NOTE_SPLIT.source, 'g'));
-  const readings = [parts[0]];
+  const readings = [{ phonetic: parts[0], special: false }];
   for (let i = 1; i + 1 < parts.length; i += 2) {
-    if (!DROP_NOTES.includes(parts[i])) readings.push(parts[i + 1]);
+    if (!DROP_NOTES.includes(parts[i])) {
+      readings.push({ phonetic: parts[i + 1], special: SPECIAL_NOTES.includes(parts[i]) });
+    }
   }
   // 無註記就係原讀音；有註記就淨收拆出來个（一開頭就係丟忒个讀法就無讀音）
-  if (parts.length === 1) return cleaned.trim() ? [cleaned.trim()] : [];
-  return readings.map(s => s.trim()).filter(Boolean);
+  if (parts.length === 1) return cleaned.trim() ? [{ phonetic: cleaned.trim(), special: false }] : [];
+  return readings
+    .map(r => ({ phonetic: r.phonetic.trim(), special: r.special }))
+    .filter(r => r.phonetic);
 }
 
 /**
@@ -154,10 +160,12 @@ function expandParens(word, phonetic) {
 }
 
 function processWordPhoneticPairs(word, rawPhonetic) {
-  const phonetics = splitReadingVariants(rawPhonetic);
+  const readings = splitReadingVariants(rawPhonetic);
   const pairs = [];
-  for (const ph of phonetics) {
-    pairs.push(...expandParens(word, ph));
+  for (const r of readings) {
+    for (const pair of expandParens(word, r.phonetic)) {
+      pairs.push({ ...pair, special: r.special });
+    }
   }
   return pairs;
 }
@@ -303,7 +311,12 @@ if (fs.existsSync(gipJsonPath)) {
       const hyphenatedPhonetic = tokens.join('-');
       // 客話聲母縮寫（多字母聲母長度優先，單音節詞留空）
       const fusedAbbrev = deriveHakfaAbbrev(notoneSylls);
-      const key = pair.word + '|' + fusedNotone;
+      // 「特」讀音：淨差聲調也另外一筆（鍵加帶調讀音）；共一隻帶調讀音就併
+      const plainKey = pair.word + '|' + fusedNotone;
+      const samePlain = map.has(plainKey) && map.get(plainKey).tl.normalize('NFC') === hyphenatedPhonetic.normalize('NFC');
+      const key = pair.special && !samePlain
+        ? pair.word + '|' + fusedNotone + '|' + hyphenatedPhonetic.normalize('NFC')
+        : plainKey;
       const freq = Math.max(100, gipDefaultFreq - pair.word.length * 1000);
 
       if (map.has(key)) {

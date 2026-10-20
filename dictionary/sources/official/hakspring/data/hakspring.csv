@@ -1616,7 +1616,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "出麻仔","cùd-mǎ-è","cùd-mǎ-è","cudmae","cme",40000,3,3,四
 "出血","cùd-hièd","cùd-hièd","cudhied","ch",40000,2,3,四
 "出血","cùd-hiàd","cùd-hiàd","cudhiad","ch",40000,2,2,四
-"打哈啾","dà-had-qiù","dà-had-qiù","dahadqiu","dhq",40000,3,3,四
+"打哈啾","dà-had-qiù","dà-had-qiù","dahadqiu","dhq",40000,3,2,四
 "嘔","èu","èu","eu","",40000,1,3,四
 "花花","fá-fá","fá-fá","fafa","ff",40000,2,2,四
 "發炎","fàd-iǎm","fàd-iǎm","fadiam","fi",40000,2,3,四
@@ -1988,7 +1988,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "毒","teu","teu","teu","",40000,1,3,四
 "投","těu","těu","teu","",40000,1,3,四
 "疊","tiab","tiab","tiab","",40000,1,3,四
-"停動","tǐn-túng","tǐn-túng","tintung","tt",40000,2,3,四
+"停動","tǐn-túng","tǐn-túng","tintung","tt",40000,2,2,四
 "托等","tòg-dèn","tòg-dèn","togden","td",40000,2,3,四
 "托等","tòg-nèn","tòg-nèn","tognen","tn",40000,2,2,四
 "塗改","tǔ-gòi","tǔ-gòi","tugoi","tg",40000,2,3,四
@@ -2223,7 +2223,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "杓嫲","sog-mǎ","sog-mǎ","sogma","sm",40000,2,3,四
 "樹奶仔","su-nen-è","su-nen-è","sunene","sne",40000,3,3,四
 "樹奶","su-nen","su-nen","sunen","sn",40000,2,2,四
-"手落仔","sù-làb-ě","sù-làb-ě","sulabe","sle",40000,3,3,四
+"手落仔","sù-làb-ě","sù-làb-ě","sulabe","sle",40000,3,2,四
 "手電筒","sù-tien-tǔng","sù-tien-tǔng","sutientung","stt",40000,3,2,四
 "手電仔","sù-tien-è","sù-tien-è","sutiene","ste",40000,3,3,四
 "手袖仔","sù-qiu-è","sù-qiu-è","suqiue","sqe",40000,3,3,四
@@ -5227,7 +5227,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "弱弱","ngiog-ngiog","ngiog-ngiog","ngiogngiog","ngng",35000,2,2,四
 "軟濟濟仔","ngión-jǐ-jǐ-è","ngión-jǐ-jǐ-è","ngionjijie","ngjje",35000,4,3,四
 "軟入入仔","ngión-ngib-ngib-è","ngión-ngib-ngib-è","ngionngibngibe","ngngnge",35000,4,2,四
-"軟習習仔","ngión-xìb-xìb-ě","ngión-xìb-xìb-ě","ngionxibxibe","ngxxe",35000,4,3,四
+"軟習習仔","ngión-xìb-xìb-ě","ngión-xìb-xìb-ě","ngionxibxibe","ngxxe",35000,4,2,四
 "軟習習仔","ngión-ngib-ngib-é","ngión-ngib-ngib-é","ngionngibngibe","ngngnge",35000,4,2,四
 "軟聲軟斗","ngión-sáng-ngión-dèu","ngión-sáng-ngión-dèu","ngionsangngiondeu","ngsngd",35000,4,2,四
 "嫩相","nun-xiong","nun-xiong","nunxiong","nx",35000,2,3,四
@@ -6634,7 +6634,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "搵啊下去","vun-a-há-hi","vun-a-há-hi","vunahahi","vahh",30000,4,2,四
 "溫痛","vún-tung","vún-tung","vuntung","vt",30000,2,2,四
 "溫溫","vún-vún","vún-vún","vunvun","vv",30000,2,2,四
-"溫溫溫溫","vún-vún-vun-vun","vún-vún-vun-vun","vunvunvunvun","vvvv",30000,4,3,四
+"溫溫溫溫","vún-vún-vun-vun","vún-vún-vun-vun","vunvunvunvun","vvvv",30000,4,2,四
 "四犁筆直","xi-lǎi-bìd-ciid","xi-lǎi-bìd-ciid","xilaibidciid","xlbc",30000,4,3,四
 "四蹄筆直","xi-tǎi-bìd-ciid","xi-tǎi-bìd-ciid","xitaibidciid","xtbc",30000,4,3,四
 "四腳壁直","xi-giòg-biàg-ciid","xi-giòg-biàg-ciid","xigiogbiagciid","xgbc",30000,4,2,四
@@ -6776,7 +6776,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "貓挨癢","meu-ái-ióng","meu-ái-ióng","meuaiiong","mai",30000,3,2,四
 "貓爪癢","meu-zàu-ióng","meu-zàu-ióng","meuzauiong","mzi",30000,3,2,四
 "尾擸擸仔","mí-liàb-liàb-ě","mí-liàb-liàb-ě","miliabliabe","mlle",30000,4,3,四
-"迷迷痴痴","mǐ-mǐ-cíi-cíi","mǐ-mǐ-cíi-cíi","mimiciicii","mmcc",30000,4,3,四
+"迷迷痴痴","mǐ-mǐ-cíi-cíi","mǐ-mǐ-cíi-cíi","mimiciicii","mmcc",30000,4,2,四
 "面挷挷仔","mien-báng-báng-è","mien-báng-báng-è","mienbangbange","mbbe",30000,4,2,四
 "面惹惹仔","mien-ngiá-ngiá-è","mien-ngiá-ngiá-è","mienngiangiae","mngnge",30000,4,2,四
 "面舐舐仔","mien-sé-sé-è","mien-sé-sé-è","miensesee","msse",30000,4,2,四
@@ -7228,7 +7228,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "蔭核","lim-hèd","lim-hèd","limhed","lh",30000,2,2,四
 "溜苔","liú-tǒi","liú-tǒi","liutoi","lt",30000,2,2,四
 "卵崽仔","lòn-zái-è","lòn-zái-è","lonzaie","lze",30000,3,3,四
-"虻仔","màng-ě","màng-ě","mange","me",30000,2,3,四
+"虻仔","màng-ě","màng-ě","mange","me",30000,2,2,四
 "尾仃仃","mí-dǎng-dǎng","mí-dǎng-dǎng","midangdang","mdd",30000,3,2,四
 "尾砣砣仔","mí-tǒ-tǒ-è","mí-tǒ-tǒ-è","mitotoe","mtte",30000,4,2,四
 "尾貼貼仔","mí-dàb-dàb-é","mí-dàb-dàb-é","midabdabe","mdde",30000,4,2,四
@@ -7951,7 +7951,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "毛虬虬","mó-kiǔ-kiǔ","mó-kiǔ-kiǔ","mokiukiu","mkk",30000,3,2,四
 "毛鬞鬞","mó-nǔng-nǔng","mó-nǔng-nǔng","monungnung","mnn",30000,3,2,四
 "毛鬅鬅仔","mó-pǎng-pǎng-è","mó-pǎng-pǎng-è","mopangpange","mppe",30000,4,2,四
-"毛披披仔","mó-pái-pái-è","mó-pái-pái-è","mopaipaie","mppe",30000,4,3,四
+"毛披披仔","mó-pái-pái-è","mó-pái-pái-è","mopaipaie","mppe",30000,4,2,四
 "無比止","mǒ-bì-zìi","mǒ-bì-zìi","mobizii","mbz",30000,3,3,四
 "無抽無間","mǒ-cú-mǒ-gién","mǒ-cú-mǒ-gién","mocumogien","mcmg",30000,4,2,四
 "無運","mǒ-iun","mǒ-iun","moiun","mi",30000,2,2,四
@@ -9802,6 +9802,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "帝","di","di","di","",19000,1,1,四
 "蒂","di","di","di","",19000,1,1,四
 "貼","dàb","dàb","dab","",19000,1,1,四
+"貼","diab","diab","diab","",19000,1,1,四
 "墊","diab","diab","diab","",19000,1,1,四
 "砧","diám","diám","diam","",19000,1,1,四
 "店","diam","diam","diam","",19000,1,1,四
@@ -14040,6 +14041,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "除非","cǔ-fí","cǔ-fí","cufi","cf",18000,2,1,四
 "馬桶","má-tùng","má-tùng","matung","mt",18000,2,1,四
 "骨髓","gùd-súi","gùd-súi","gudsui","gs",18000,2,1,四
+"骨髓","gùd-sǔi","gùd-sǔi","gudsui","gs",18000,2,1,四
 "高級","gó-gìb","gó-gìb","gogib","gg",18000,2,1,四
 "高級","gó-kìb","gó-kìb","gokib","gk",18000,2,1,四
 "高樓","gó-lěu","gó-lěu","goleu","gl",18000,2,1,四
@@ -14420,6 +14422,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "義子","ngi-zìi","ngi-zìi","ngizii","ngz",18000,2,1,四
 "聘金","pìn-gím","pìn-gím","pingim","pg",18000,2,1,四
 "腦髓","nò-súi","nò-súi","nosui","ns",18000,2,1,四
+"腦髓","nò-sǔi","nò-sǔi","nosui","ns",18000,2,1,四
 "腳底","giòg-dài","giòg-dài","giogdai","gd",18000,2,1,四
 "腳筋","giòg-gín","giòg-gín","gioggin","gg",18000,2,1,四
 "腳骨","giòg-gùd","giòg-gùd","gioggud","gg",18000,2,1,四
@@ -14574,6 +14577,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "甜粄","tiǎm-bàn","tiǎm-bàn","tiamban","tb",18000,2,1,四
 "田脣","tiěn-sǔn","tiěn-sǔn","tiensun","ts",18000,2,1,四
 "田主","tiěn-zù","tiěn-zù","tienzu","tz",18000,2,1,四
+"停動","tín-túng","tín-túng","tintung","tt",18000,2,1,四
 "塘虱","tǒng-sèd","tǒng-sèd","tongsed","ts",18000,2,1,四
 "歪命","vái-miang","vái-miang","vaimiang","vm",18000,2,1,四
 "為著","vi-dò","vi-dò","vido","vd",18000,2,1,四
@@ -17213,6 +17217,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "吂識","mǎng-sìid","mǎng-sìid","mangsiid","ms",18000,2,1,四
 "吂上","mǎng-sóng","mǎng-sóng","mangsong","ms",18000,2,1,四
 "吂大","mǎng-tai","mǎng-tai","mangtai","mt",18000,2,1,四
+"虻仔","màng-è","màng-è","mange","me",18000,2,1,四
 "卯時","máu-sǐi","máu-sǐi","mausii","ms",18000,2,1,四
 "矛盾","mǎu-tùn","mǎu-tùn","mautun","mt",18000,2,1,四
 "茅舍","mǎu-sà","mǎu-sà","mausa","ms",18000,2,1,四
@@ -17293,6 +17298,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "網羅","miòng-lǒ","miòng-lǒ","mionglo","ml",18000,2,1,四
 "毛巾","mó-gín","mó-gín","mogin","mg",18000,2,1,四
 "毛蟹","mo-hài","mo-hài","mohai","mh",18000,2,1,四
+"毛蟹","mó-hài","mó-hài","mohai","mh",18000,2,1,四
 "毛色","mó-sèd","mó-sèd","mosed","ms",18000,2,1,四
 "毛毯","mó-tàn","mó-tàn","motan","mt",18000,2,1,四
 "無變","mǒ-bien","mǒ-bien","mobien","mb",18000,2,1,四
@@ -19381,6 +19387,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "心電圖","xím-tien-tǔ","xím-tien-tǔ","ximtientu","xtt",17000,3,1,四
 "心野野","xím-iá-iá","xím-iá-iá","ximiaia","xii",17000,3,1,四
 "手巾仔","sù-gín-è","sù-gín-è","sugine","sge",17000,3,1,四
+"手落仔","sù-làb-è","sù-làb-è","sulabe","sle",17000,3,1,四
 "方向燈","fóng-hiong-dén","fóng-hiong-dén","fonghiongden","fhd",17000,3,1,四
 "日用品","ngìd-iung-pìn","ngìd-iung-pìn","ngidiungpin","ngip",17000,3,1,四
 "毋過意","m̌-go-i","m̌-go-i","mgoi","mgi",17000,3,1,四
@@ -19425,6 +19432,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "平交道","pǐn-gáu-to","pǐn-gáu-to","pingauto","pgt",17000,3,1,四
 "打赤膊","dà-càg-bòg","dà-càg-bòg","dacagbog","dcb",17000,3,1,四
 "打裎朘","dà-qin-zói","dà-qin-zói","daqinzoi","dqz",17000,3,1,四
+"打哈啾","dà-had-qiu","dà-had-qiu","dahadqiu","dhq",17000,3,1,四
 "打擂臺","dà-lǔi-tǒi","dà-lǔi-tǒi","daluitoi","dlt",17000,3,1,四
 "打頭崁","dà-těu-kàm","dà-těu-kàm","dateukam","dtk",17000,3,1,四
 "打退棚","dà-tui-pǎng","dà-tui-pǎng","datuipang","dtp",17000,3,1,四
@@ -20814,7 +20822,9 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "手路菜","sù-lu-coi","sù-lu-coi","sulucoi","slc",17000,3,1,四
 "日花仔","ngìd-fá-è","ngìd-fá-è","ngidfae","ngfe",17000,3,1,四
 "毛蟹膏","mo-hài-gáu","mo-hài-gáu","mohaigau","mhg",17000,3,1,四
+"毛蟹膏","mó-hài-gáu","mó-hài-gáu","mohaigau","mhg",17000,3,1,四
 "毛蟹蘭","mo-hài-lǎn","mo-hài-lǎn","mohailan","mhl",17000,3,1,四
+"毛蟹蘭","mó-hài-lǎn","mó-hài-lǎn","mohailan","mhl",17000,3,1,四
 "水浮蓮","sùi-pǒ-liěn","sùi-pǒ-liěn","suipolien","spl",17000,3,1,四
 "水雄雞","sùi-hiǔng-gié","sùi-hiǔng-gié","suihiunggie","shg",17000,3,1,四
 "缺牙耙","kièd-ngǎ-pǎ","kièd-ngǎ-pǎ","kiedngapa","kngp",17000,3,1,四
@@ -21401,6 +21411,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "抺抺摸摸","mǐ-mǐ-mó-mó","mǐ-mǐ-mó-mó","mimimomo","mmmm",16000,4,1,四
 "抺抺摸摸","mǐ-mǐ-miá-miá","mǐ-mǐ-miá-miá","mimimiamia","mmmm",16000,4,1,四
 "眉清目秀","mǐ-qín-mùg-xiu","mǐ-qín-mùg-xiu","miqinmugxiu","mqmx",16000,4,1,四
+"迷迷痴痴","mǐ-mǐ-cǐi-cǐi","mǐ-mǐ-cǐi-cǐi","mimiciicii","mmcc",16000,4,1,四
 "免致詏數","mién-zii-au-sii","mién-zii-au-sii","mienziiausii","mzas",16000,4,1,四
 "面帶笑容","mien-dai-seu-iǔng","mien-dai-seu-iǔng","miendaiseuiung","mdsi",16000,4,1,四
 "明知故犯","mǐn-dí-gu-fam","mǐn-dí-gu-fam","mindigufam","mdgf",16000,4,1,四
@@ -21701,6 +21712,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "耳角角仔","ngì-gòg-gòg-è","ngì-gòg-gòg-è","ngigoggoge","nggge",16000,4,1,四
 "捨身毋得","sà-síin-m̌-dèd","sà-síin-m̌-dèd","sasiinmded","ssmd",16000,4,1,四
 "火𤊶性","fò-làd-xin","fò-làd-xin","foladxin","flx",16000,3,1,四
+"毛披披仔","mó-pǎi-pǎi-è","mó-pǎi-pǎi-è","mopaipaie","mppe",16000,4,1,四
+"溫溫溫溫","vǔn-vǔn-vun-vun","vǔn-vǔn-vun-vun","vunvunvunvun","vvvv",16000,4,1,四
 "無焦無積","mǒ-zéu-mǒ-jìd","mǒ-zéu-mǒ-jìd","mozeumojid","mzmj",16000,4,1,四
 "出水出水","cùd-sùi-cùd-sùi","cùd-sùi-cùd-sùi","cudsuicudsui","cscs",16000,4,1,四
 "財源廣進","cǒi-ngiěn-gòng-jin","cǒi-ngiěn-gòng-jin","coingiengongjin","cnggj",16000,4,1,四
@@ -21725,6 +21738,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "兩姊姑仔","liòng-zìi-gú-è","liòng-zìi-gú-è","liongziigue","lzge",16000,4,1,四
 "面逼逼仔","mien-bèd-bèd-è","mien-bèd-bèd-è","mienbedbede","mbbe",16000,4,1,四
 "毛撐撐仔","mó-cǎng-cǎng-è","mó-cǎng-cǎng-è","mocangcange","mcce",16000,4,1,四
+"毛撐撐仔","mó-cáng-cáng-è","mó-cáng-cáng-è","mocangcange","mcce",16000,4,1,四
 "目眈眈仔","mùg-ciim-ciim-è","mùg-ciim-ciim-è","mugciimciime","mcce",16000,4,1,四
 "奀奀孱孱","ngán-ngán-zán-zán","ngán-ngán-zán-zán","ngannganzanzan","ngngzz",16000,4,1,四
 "硬翹翹仔","ngang-kieu-kieu-è","ngang-kieu-kieu-è","ngangkieukieue","ngkke",16000,4,1,四
@@ -21738,6 +21752,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "花螺調觜","fá-lǒ-diau-zùi","fá-lǒ-diau-zùi","falodiauzui","fldz",16000,4,1,四
 "無鹹無腥","mǒ-hǎm-mǒ-xiáng","mǒ-hǎm-mǒ-xiáng","mohammoxiang","mhmx",16000,4,1,四
 "無鹹無腥","mǒ-hǎm-mǒ-xiám","mǒ-hǎm-mǒ-xiám","mohammoxiam","mhmx",16000,4,1,四
+"軟習習仔","ngión-xìb-xìb-è","ngión-xìb-xìb-è","ngionxibxibe","ngxxe",16000,4,1,四
 "揇腰跤仔","nàm-iéu-gáu-è","nàm-iéu-gáu-è","namieugaue","nige",16000,4,1,四
 "無鹹無淡","mǒ-hǎm-mǒ-tám","mǒ-hǎm-mǒ-tám","mohammotam","mhmt",16000,4,1,四
 "花膣花蓼","fá-zíi-fá-liáu","fá-zíi-fá-liáu","faziifaliau","fzfl",16000,4,1,四

@@ -54,6 +54,7 @@ node dictionary/sources/official/hakspring/extract_and_build.js [--lect 四]
 `splitReadingVariants` in `extract_and_build.js` splits a reading field on the notes HakSpring lists (`data/annotations.md` §3, `scripts/build_supp_dict.py` `READING_NOTES` / `DROP_NOTES`, kept in step):
 
 - Another reading, kept: 又俗音 又讀 又音 俗音 特殊音 特 又 文 白 (`特diǒng` → `diǒng`).
+- A MOE 特 / 特殊音 reading keeps its own row even when it differs from another reading only in tone (骨髓 `gùd-súi` and 特 `gùd-sǔi`; maintainer 2026-10-21). Every other reading is keyed by headword + toneless spelling, so readings that differ only in tone collapse into one row; the certification 【】 variants among them wait for the variant bits (Obs `dialects` Phase 1).
 - A contraction or a sandhi form, dropped: 合音(讀), 小稱變調讀(本調為), (為)後字變調(讀), 本調為 (`lǒi-hi 合音lí 合音lói` → `lǒi-hi`).
 
 Build HakSpring data from its `main` (`HAKSPRING_ROOT` unset). Still open (Obs `IME` C8): `/` and `、` in readings and headwords, `…` / `－－` / digits in headwords, stray `ˊˇˋ` in certification readings.
