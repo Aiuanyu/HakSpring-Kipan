@@ -1082,7 +1082,8 @@ mod tests {
         };
         let tl = separated(SyllableSeparator::None, config_tl_mode_hanji_first(false));
         let shaped = filter(&state, rows(), 0, 0, 10, &tl).unwrap();
-        assert_eq!(shaped.predictions[0].text, "tâiuân");
+        // hakfa: None 會讀毋著个所在加撇號（phonetics::hpp）。
+        assert_eq!(shaped.predictions[0].text, "tâi'uân");
         assert_eq!(shaped.predictions[0].tl, "tâi-uân");
         assert_eq!(shaped.predictions[1].text, "hōo\u{00b7}guá");
         assert_eq!(shaped.predictions[1].tl, "hōo--guá");
@@ -1096,7 +1097,7 @@ mod tests {
 
         let poj = separated(SyllableSeparator::None, config_poj_mode());
         let shaped = filter(&state, rows(), 0, 0, 10, &poj).unwrap();
-        assert_eq!(shaped.predictions[0].text, "tâioân");
+        assert_eq!(shaped.predictions[0].text, "tâi'oân");
         assert_eq!(shaped.predictions[0].tl, "tâi-uân");
     }
 

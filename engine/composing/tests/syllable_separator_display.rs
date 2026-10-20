@@ -114,7 +114,8 @@ fn separator_rewrites_the_dictionary_hyphen_but_keeps_the_identity_keys() {
     assert_eq!(cell_with_hanji(&cells, "台灣").1, "tâi uân", "Space");
     let cells = fetch("taiuan", "tl", SyllableSeparator::None, vec![]);
     let taiuan = cell_with_hanji(&cells, "台灣");
-    assert_eq!(taiuan.1, "tâiuân", "rendered roman");
+    // hakfa: None 會讀毋著个所在加撇號（phonetics::hpp）。
+    assert_eq!(taiuan.1, "tâi'uân", "rendered roman");
     assert_eq!(taiuan.2, "台灣", "display_text (詞頻 key) untouched");
     assert_eq!(
         taiuan.3, "tâi-uân",
@@ -152,7 +153,7 @@ fn separator_applies_after_the_poj_presentation_pass() {
     );
     let cells = fetch("taioan", "poj", SyllableSeparator::None, vec![]);
     let taiuan = cell_with_hanji(&cells, "台灣");
-    assert_eq!(taiuan.1, "tâioân", "POJ spelling, no hyphen");
+    assert_eq!(taiuan.1, "tâi'oân", "POJ spelling, no hyphen");
     assert_eq!(taiuan.3, "tâi-uân", "canonical TL keeps the hyphen");
 }
 
@@ -177,7 +178,7 @@ fn separator_leaves_a_typed_hyphen_in_the_literal_alone() {
     let _lock = engine_install_lock();
     install_fixture();
     for (separator, rendered) in [
-        (SyllableSeparator::None, "tâiuân"),
+        (SyllableSeparator::None, "tâi'uân"), // hakfa: phonetics::hpp
         (SyllableSeparator::Space, "tâi uân"),
     ] {
         let cells = fetch("tai-uan", "tl", separator, vec![]);

@@ -206,7 +206,7 @@ enum GeneratedTaigiStrings {
         .settingsSyllableSeparator: "音節分隔",
         .settingsSyllableSeparatorSpace: "空白",
         .settingsSyllableSeparatorNone: "無",
-        .settingsSyllableSeparatorInfo: "音節中間用連字符（tâi-uân）、空白（tâi uân）抑是無分隔（tâiuân）。後兩種輕聲 -- 改用 ·。",
+        .settingsSyllableSeparatorInfo: "音節中間用連字符（í-ien）、空白（í ien），抑係無分隔（í'ien）。無分隔个時節，會讀毋著个所在自動加撇號 '。",
         .settingsLiteralRomanCandidate: "當咧拍 个 字放第一个",
         .settingsLiteralRomanCandidateInfo: "候選詞列第一格顯示你拍 个 羅馬字，點撳抑是撳 Enter 送出。關閉了後單淨會當用 Enter 送出。",
         .settingsAutoCapitalization: "自動大本字",

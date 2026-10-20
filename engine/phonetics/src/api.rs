@@ -573,6 +573,9 @@ pub fn syllable_joiner_display(roman: &str, joiner: &str) -> String {
         let closes_word = matches!(chars.peek(), None | Some(' '));
         let joiner = if opens_word || closes_word {
             ""
+        } else if joiner.is_empty() && run_len == 1 {
+            // hakfa: None = HagPinPlus 連寫，會讀毋著个所在加撇號（crate::hpp）。
+            crate::hpp::hpp_boundary(&out, chars.clone().collect::<String>().as_str())
         } else {
             joiner
         };
@@ -777,7 +780,8 @@ mod tests {
     #[test]
     fn syllable_joiner_display_none_drops_hyphens_and_dots_the_khinsiann_marker() {
         let none = |roman| syllable_joiner_display(roman, "");
-        assert_eq!(none("tâi-uân"), "tâiuân");
+        // hakfa: None = HagPinPlus 連寫，會讀毋著个所在加撇號（crate::hpp）。
+        assert_eq!(none("tâi-uân"), "tâi'uân");
         assert_eq!(none("tshit-niû-má-senn"), "tshitniûmásenn");
         assert_eq!(none("hōo--guá"), "hōo\u{00b7}guá");
         assert_eq!(none("--ah"), "\u{00b7}ah");
@@ -787,7 +791,7 @@ mod tests {
         assert_eq!(none("a----b"), "a\u{00b7}\u{00b7}b");
         // Word boundaries and hyphen-free input are left alone.
         assert_eq!(none("tâi gí"), "tâi gí");
-        assert_eq!(none("keng-lâm su-īⁿ"), "kenglâm suīⁿ");
+        assert_eq!(none("keng-lâm su-īⁿ"), "kenglâm su'īⁿ");
     }
 
     #[test]

@@ -294,11 +294,21 @@ fn push_boundary(
     syllable_joiner: Option<&str>,
 ) {
     let run = typed_separator_run(&next.raw_text);
+    // hakfa: Syllable Separator None = HagPinPlus 連寫，兩隻音節中間會讀毋著
+    // 就加撇號（phonetics::hpp）。淨管單一隻 `-` 抑是無打 `-` 个邊界。
+    let hpp = syllable_joiner == Some("") && run.len() <= 1;
     if run.is_empty() {
         s.push_str(default);
+        if hpp && default.is_empty() {
+            s.push_str(phonetics::hpp::hpp_boundary(s, text.of(next)));
+        }
         return;
     }
     let rendered = text.of(next);
+    if hpp && !rendered.starts_with('-') && !rendered.starts_with('·') {
+        s.push_str(phonetics::hpp::hpp_boundary(s, rendered));
+        return;
+    }
     if rendered.starts_with('-') {
         return;
     }
@@ -1116,7 +1126,8 @@ mod tests {
         assert_eq!(
             nailed_prefix_with_oracle(&n, SegmentText::Display, true, Some(""), |h, n| n == 2
                 && h == "台灣"),
-            "taiuan lang"
+            // hakfa: None 會讀毋著个所在加撇號（phonetics::hpp）。
+            "tai'uan lang"
         );
         assert_eq!(
             nailed_prefix_with_oracle(&n, SegmentText::Display, true, Some(" "), |h, n| n == 2

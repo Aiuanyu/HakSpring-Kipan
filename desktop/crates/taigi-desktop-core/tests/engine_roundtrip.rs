@@ -624,3 +624,26 @@ fn hakfa_shorter_syllable_listed_when_coda_is_next_onset() {
         "heddui must not list he: {candidates:?}"
     );
 }
+
+/// Syllable Separator None is HagPinPlus run-together writing: an apostrophe
+/// where the joined form would be misread (docs/hakfa/hpp-apostrophe.md).
+#[test]
+fn hakfa_none_separator_writes_hpp_apostrophe() {
+    let _engine = engine();
+    let settings = EngineSettings::default();
+    let generation = fresh_generation();
+    compose("iien", &settings, generation);
+    let candidates = engine::fetch_at_pos(&settings, generation, 0)
+        .expect("fetch")
+        .candidates
+        .expect("continuous");
+    engine::reset(generation);
+    let romans: Vec<(&str, &str)> = candidates
+        .iter()
+        .filter_map(|c| Some((c.hanji.as_deref()?, c.roman.as_str())))
+        .collect();
+    assert!(
+        romans.contains(&("醫院", "í'ien")),
+        "醫院 should render í'ien under the default separator: {romans:?}"
+    );
+}

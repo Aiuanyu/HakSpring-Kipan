@@ -24,6 +24,7 @@ mod punctuation;
 mod syllable;
 mod tables;
 pub mod hakfa_tables;
+pub mod hpp;
 mod tl;
 mod tone_variations;
 mod tps;
