@@ -50,7 +50,24 @@ Writing in the vault — only when asked, and following `hub-template.md`:
 
 - **Open an issue** for work handed to a cloud agent, or for a user report. The body stands alone: goal, the decisions that apply (pasted, not linked to the vault), acceptance criteria, likely files.
 - **One logical change per PR and per commit.** Do not bundle a platform, i18n, dictionary data and tooling into one commit.
-- **Commit messages and PR descriptions are in Hakfa** — Hakfa Hanji（客語漢字）, the maintainer's decision for this fork. Keep the Conventional Commits prefix `type(scope):` in English and identifiers as they are in the code. The body says what changed, why, and which platforms were built and tested. Exceptions: a PR to upstream TaigiKeyboard is in English; an upstream merge commit keeps upstream's own messages.
+- **Commit messages and PR descriptions are in Hakfa** — Hakfa Hanji（客語漢字）, the maintainer's decision for this fork.
+    - **【鐵則】必須使用臺灣客家語（Hakfa）撰寫**：使用四縣／海陸等共通詞彙（如「个」、「摎」、「在」、「肚底／裡肚」、「單淨」、「無共樣」、「毋使」等）。嚴禁誤用臺灣話／閩南語詞彙（如「干焦」、「無仝」、「佮」、「佇」、「親像」等）或純華語長篇文言。保持客源翠專案文化自覺與語言一致性。
+    - Keep the Conventional Commits prefix `type(scope):` in English and identifiers as they are in the code. The body says what changed, why, and which platforms were built and tested. Exceptions: a PR to upstream TaigiKeyboard is in English; an upstream merge commit keeps upstream's own messages.
+- **Commit Message 審核與提交流程**：
+    1. 先分析專案 Git 目前 staged 的 diff，歸納此次更新內容。
+    2. 依對話記憶提及不同 AI 模型，分別列出每個 AI 模型的分工及貢獻。
+    3. 先寫在專案根目錄的臨時 `commit_msg.txt` 中，供平哥審閱、直接編輯。
+    4. Commit message **毋使寫來 Obsidian 筆記裡肚**（避免筆記內容過度冗長繁雜、重複堆疊已存在於 git log 或專案檔案的內容）。
+    5. 平哥審核完成告知定稿後，再根據 `commit_msg.txt` 執行 commit。
+        - 絕對要小心避免那種會卡住終端機狀態的指令。
+        - 愛細膩莫 commit 著 `commit_msg.txt`；commit 煞後，暫存檔案愛提掉（清理）。
+- **貢獻者樣板 (Co-authors Template)**：
+```
+Co-authored-by: Opus 4.6 <Opus4.6@Antigravity>
+Co-authored-by: Sonnet 4.6 <Sonnet4.6@Antigravity>
+Co-authored-by: Gemini 3.1 Pro <Gemini-3-1-Pro@Antigravity>
+Signed-off-by: GHSRobert <robertus0617@gmail.com> (Commit Helper: Gemini 3 Flash <Gemini-3-Flash@Antigravity>)
+```
 - After a PR merges, a local agent with the vault adds one line to the hub (what changed + PR URL).
 
 ### Reporting
