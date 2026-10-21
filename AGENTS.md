@@ -61,12 +61,10 @@ Writing in the vault — only when asked, and following `hub-template.md`:
     5. 平哥審核完成告知定稿後，再根據 `commit_msg.txt` 執行 commit。
         - 絕對要小心避免那種會卡住終端機狀態的指令。
         - 愛細膩莫 commit 著 `commit_msg.txt`；commit 煞後，暫存檔案愛提掉（清理）。
-- **貢獻者樣板 (Co-authors Template)**：
+- **貢獻者樣板 (Co-authors Template)**（請依實際參與該次工作的 AI 角色與模型動態填寫，作者簽名一律使用 GitHub noreply 匿名信箱）：
 ```
-Co-authored-by: Opus 4.6 <Opus4.6@Antigravity>
-Co-authored-by: Sonnet 4.6 <Sonnet4.6@Antigravity>
-Co-authored-by: Gemini 3.1 Pro <Gemini-3-1-Pro@Antigravity>
-Signed-off-by: GHSRobert <robertus0617@gmail.com> (Commit Helper: Gemini 3 Flash <Gemini-3-Flash@Antigravity>)
+Co-authored-by: <AI Model Name> <<model-id>@Antigravity>
+Signed-off-by: GHSRobert Ciang <93833368+Aiuanyu@users.noreply.github.com> (Commit Helper: <Commit Helper Model> <<helper-id>@Antigravity>)
 ```
 - After a PR merges, a local agent with the vault adds one line to the hub (what changed + PR URL).
 

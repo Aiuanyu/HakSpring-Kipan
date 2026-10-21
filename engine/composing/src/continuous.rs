@@ -147,7 +147,7 @@ pub(crate) fn synth_consumed_span(
 /// the engine-owned continuous casing of Codex pre-impl 2A locus =
 /// candidate construction — the single source of candidate casing (the
 /// platform `SuggestionCaseTransformer`s it bypassed were removed 2026-10-04).
-fn raw_segment_letter_case(raw_seg: &str) -> phonetics::case_transform::LetterCase {
+pub(crate) fn raw_segment_letter_case(raw_seg: &str) -> phonetics::case_transform::LetterCase {
     use phonetics::case_transform::LetterCase;
     let mut alphas = raw_seg.chars().filter(|c| c.is_alphabetic());
     let Some(first) = alphas.next() else {

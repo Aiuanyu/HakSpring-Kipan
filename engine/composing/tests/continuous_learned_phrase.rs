@@ -109,6 +109,20 @@ fn final_commit_of_hanji_picks_learns_the_joined_phrase() {
 }
 
 #[test]
+fn final_commit_preserves_casing_of_each_nailed_segment_for_learned_phrases() {
+    let _lock = engine_install_lock();
+    install(&fixture_rows(), FIXTURE_SYLLABLES);
+    // User types "Ki" (capitalized) + "khilai", picks 記 then 起來
+    let mut e = engine_in_continuous("Kikhilai");
+    let mid = e.apply_learning(pick((Some("記"), "kì", 2, 1)), &config_tl());
+    assert!(mid.learned.is_none());
+
+    let fin = e.apply_learning(pick((Some("起來"), "khí-lâi", 6, 2)), &config_tl());
+    // First segment "Ki" was typed with capital K -> learned phrase preserves capital "Kì"
+    assert_eq!(fin.learned, phrase("記起來", "Kì khí-lâi"));
+}
+
+#[test]
 fn only_a_dictionary_compound_run_learns_its_hyphens() {
     // USER 2026-09-23: `tsotsintshutkhau` picked 做 → 進 → 出 → 口 learned
     // `tsò-tsìn-tshut-kháu`, but 做 and 進出口 are two words.

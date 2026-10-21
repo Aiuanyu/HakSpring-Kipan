@@ -942,13 +942,20 @@ fn nail_segment(
     }
     let mut new_nailed = nailed.clone();
     let new_pending = raw[consumed_bytes..].to_string();
+    let raw_seg = &raw[..consumed_bytes];
+    let case = crate::continuous::raw_segment_letter_case(raw_seg);
+    let association_tl = if case != phonetics::case_transform::LetterCase::Lowercased {
+        phonetics::case_transform::raise_case(&association_tl, case, phonetics::InputMode::Tl)
+    } else {
+        association_tl
+    };
     // R2: the NextWord `roman` arg — canonical TL when the platform sent
     // it, else the raw committed slice (legacy / TPS-OOV fallback). Used
     // for whichever single effect this commit fires below (final OR mid).
-    let next_word_roman = association_roman(&association_tl, &raw[..consumed_bytes]);
+    let next_word_roman = association_roman(&association_tl, raw_seg);
     let segment = picked_segment(
         &new_nailed,
-        raw[..consumed_bytes].to_string(),
+        raw_seg.to_string(),
         display_text,
         canonical.clone(),
         association_tl,

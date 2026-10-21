@@ -17,7 +17,7 @@ use crate::common::{
     build_dictionary_fst, build_syllables_fst, build_tkdb_v4, config, empty_association_bin,
     fetch_at_pos_response, fetch_hanji, fetch_hanji_with_custom, install_lexicon, Row,
 };
-use lexicon::CustomEntry;
+use lexicon::{CustomEntry, LearnedEntry};
 use test_support::{engine_install_lock, write_temp};
 
 /// Abbreviation-only rows under `mk` beyond the ones that are also partial
@@ -217,6 +217,48 @@ fn uppercase_buffer_recases_the_abbreviated_roman() {
         .find(|c| c.hanji.as_deref() == Some("鎖匙"))
         .expect("鎖匙");
     assert_eq!(sosi.roman, "SÓ-SÎ");
+}
+
+#[test]
+fn lowercase_buffer_preserves_learned_and_custom_capitalization_in_abbreviation() {
+    let _lock = engine_install_lock();
+    install_fixture();
+    let fetch_with_user_rows = |raw: &str| {
+        fetch_at_pos_response(
+            &config("tl"),
+            raw,
+            Fetch {
+                custom: vec![CustomEntry {
+                    roman: "Mí-Tǒi".into(),
+                    hanji: Some("美臺".into()),
+                }],
+                learned: vec![LearnedEntry {
+                    hanji: "江瑋平".into(),
+                    canonical_tl: "Góng Ví-pǐn".into(),
+                }],
+                ..Fetch::default()
+            },
+        )
+        .continuous
+        .map(|c| c.candidates)
+        .unwrap_or_default()
+    };
+
+    // User types lowercase "gvp", learned phrase with capital "Góng Vípǐn" must preserve capitalization
+    let cands_gvp = fetch_with_user_rows("gvp");
+    let gvp = cands_gvp
+        .iter()
+        .find(|c| c.hanji.as_deref() == Some("江瑋平"))
+        .expect("江瑋平 via learned abbrev:gvp");
+    assert_eq!(gvp.roman, "Góng Ví-pǐn");
+
+    // User types lowercase "mt", custom entry with capital "Mí-Tǒi" must preserve capitalization
+    let cands_mt = fetch_with_user_rows("mt");
+    let mt = cands_mt
+        .iter()
+        .find(|c| c.hanji.as_deref() == Some("美臺"))
+        .expect("美臺 via custom abbrev:mt");
+    assert_eq!(mt.roman, "Mí-Tǒi");
 }
 
 #[test]
