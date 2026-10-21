@@ -57,6 +57,17 @@ node dictionary/sources/official/hakspring/extract_and_build.js [--lect 四]
 - A MOE 特 / 特殊音 reading keeps its own row even when it differs from another reading only in tone (骨髓 `gùd-súi` and 特 `gùd-sǔi`; maintainer 2026-10-21). Every other reading is keyed by headword + toneless spelling, so readings that differ only in tone collapse into one row; the certification 【】 variants among them wait for the variant bits (Obs `dialects` Phase 1).
 - A contraction or a sandhi form, dropped: 合音(讀), 小稱變調讀(本調為), (為)後字變調(讀), 本調為 (`lǒi-hi 合音lí 合音lói` → `lǒi-hi`).
 
+`/` and parentheses in readings (`expandReadingAlternatives`, `expandParens`), decided by **syllable count = headword length** (Hanji, □, Bopomofo count; punctuation and ASCII do not):
+
+- ` / ` with spaces (HakSpring's MOE display column) → whole-reading alternatives.
+- Tight `a/b`: if the tokens already match the headword length, each token's `/` is that syllable's alternatives (開始 `kói-cìi/sìi` → `kói-cìi`, `kói-sìi`; product over syllables); else if every `/` piece matches, whole-reading alternatives (溜走 `tiu-zèu/liu-zèu`).
+- Twice the headword length → two whole readings joined by `-`, then the syllable `/` expansion (佢等 `ǐ-dén-ǐ-nén`; 哪仔 `nai-è-lai/nai-é` → `nai-è`, `lai-é`, `nai-é`).
+- Neither → printed at the end of the build, not guessed (`/` rows are dropped).
+- Headword with a parenthesised synonym and a reading without parentheses (usually a 【】 variant): the reading goes to whichever side its syllable count fits (調羹仔（湯匙）【tiǎu/těu gáng è】 → 調羹仔 only; 帖（帖仔）【tiàb è】 → 帖仔 only). A side with no countable characters (digits) keeps the old behaviour: both.
+- Headword without parentheses, reading with them: a parenthesis glued to a syllable is that syllable's alternative (`ngǎi dén(nén)`); a spaced one is a whole-reading alternative when its syllable count equals the headword length (`ngǎi dén (ngǎi nén)`), else a one-syllable alternative of the syllable before it (`ngǎi dén (nén) tai gá`).
+
+Readings that differ only in tone still collapse into one row (except MOE 特, above).
+
 Build HakSpring data from its `main` (`HAKSPRING_ROOT` unset). Still open (Obs `IME` C8): `/` and `、` in readings and headwords, `…` / `－－` / digits in headwords, stray `ˊˇˋ` in certification readings.
 
 ## Sub-lect readings (planned)

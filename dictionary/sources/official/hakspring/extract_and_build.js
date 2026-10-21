@@ -136,6 +136,34 @@ function splitReadingVariants(phonetic) {
  */
 function expandParens(word, phonetic) {
   const res = [];
+  // 詞目無括號、讀音有括號：括號係讀音个另一讀（照客源翠 scripts/build_supp_dict.py expand_parens）。
+  // 黏等音節个（𠊎等 ngǎi dén(nén)、饒平 má(ma)）係該隻音節个另一讀；前背有空白个，
+  // 用音節數分：內容音節數＝字數係整詞換（ngǎi dén (ngǎi nén)），一隻音節係換前一隻（ngǎi dén (nén)）。Obs IME C8-6
+  if (!/[（(]/.test(word) && /[（(]/.test(phonetic)) {
+    const SYL = '[A-Za-z\u00C0-\u024F\u0300-\u036F]+';
+    const tight = new RegExp(`(${SYL})[（(]([^）)\\s]+)[）)]`, 'g');
+    if (tight.test(phonetic)) {
+      const outer = phonetic.replace(tight, '$1');
+      const inner = phonetic.replace(tight, '$2');
+      return [{ word, phonetic: outer }, { word, phonetic: inner }];
+    }
+    const spaced = phonetic.match(/^(.*?)\s+[（(]([^）)]+)[）)](.*)$/);
+    const n = headwordLength(word);
+    if (spaced && n > 0 && !/[（(]/.test(spaced[3])) {
+      const [, pre, content, post] = spaced;
+      const outer = `${pre} ${post}`.trim();
+      const preToks = readingTokens(pre);
+      if (readingTokens(outer).length === n) {
+        if (readingTokens(content).length === n) {
+          return [{ word, phonetic: outer }, { word, phonetic: content.trim() }];
+        }
+        if (readingTokens(content).length === 1 && preToks.length > 0) {
+          const inner = [...preToks.slice(0, -1), content.trim(), post.trim()].filter(Boolean).join(' ');
+          return [{ word, phonetic: outer }, { word, phonetic: inner }];
+        }
+      }
+    }
+  }
   const mWord = word.match(/^(.*?)[（\(](.*?)[）\)](.*?)$/);
   const mPhon = phonetic.match(/^(.*?)[（\(](.*?)[）\)](.*?)$/);
 
@@ -149,8 +177,16 @@ function expandParens(word, phonetic) {
   } else if (mWord && !mPhon) {
     const w1 = (mWord[1] + mWord[3]).trim();
     const w2 = mWord[2].trim();
-    if (w1 && phonetic) res.push({ word: w1, phonetic });
-    if (w2 && phonetic) res.push({ word: w2, phonetic });
+    // 讀音無括號（多半係【】變體）：音節數對得著哪隻詞目就分哪隻，
+    // 毋好兩隻都分（調羹仔（湯匙）【tiǎu/těu gáng è】、帖（帖仔）【tiàb è】）。Obs IME C8-6
+    // 有一邊無算得着个字（數字詞 8（八））照舊兩邊都分，數字詞收毋收等 C8 第 5 項
+    const m = readingTokens(phonetic).length;
+    const n1 = headwordLength(w1), n2 = headwordLength(w2);
+    const fits1 = n1 === m;
+    const fits2 = n2 === m;
+    const both = fits1 === fits2 || n1 === 0 || n2 === 0;
+    if (w1 && phonetic && (both || fits1)) res.push({ word: w1, phonetic });
+    if (w2 && phonetic && (both || fits2)) res.push({ word: w2, phonetic });
   } else {
     const cleanW = word.replace(/[（\(\)）]/g, '').trim();
     const cleanP = phonetic.replace(/[（\(\)）]/g, '').trim();
@@ -159,12 +195,64 @@ function expandParens(word, phonetic) {
   return res;
 }
 
+// 讀音欄看毋懂、毋好猜个，建置尾印出來分人工看
+const readingProblems = [];
+
+/** 詞目个字數：漢字、□、注音……都算，標點、空白、ASCII 毋算。 */
+function headwordLength(word) {
+  return Array.from(word).filter(c => !/[\s\x00-\x7f、，。…－—（）()「」]/.test(c)).length;
+}
+
+function readingTokens(phonetic) {
+  return phonetic.trim().split(/[\s\-]+/).filter(Boolean);
+}
+
+/** 每隻音節个 a/b 展開做全部組合 */
+function expandSyllableSlashes(tokens) {
+  return tokens.reduce((acc, tok) => {
+    const opts = tok.split('/').filter(Boolean);
+    return acc.flatMap(prefix => opts.map(o => [...prefix, o]));
+  }, [[]]).map(t => t.join('-'));
+}
+
+/**
+ * 讀音欄个 `/` 有兩種意思（認證寫个時節淨顧人目）：單音節換（開始 kói-cìi/sìi）
+ * 抑係整詞換（溜走 tiu-zèu/liu-zèu）。用「音節數＝詞目字數」判斷。
+ * 另外有用 `-` 串兩隻整詞讀音个（佢等 ǐ-dén-ǐ-nén、哪仔 nai-è-lai/nai-é）：
+ * 音節數係字數兩倍，切做兩隻整詞再展開。
+ * 客源翠教典顯示欄个 ` / `（前後有空白）一定係整詞換。Obs IME C8-5、C8-6。
+ */
+function expandReadingAlternatives(word, phonetic) {
+  if (/\s\/\s/.test(phonetic)) {
+    return phonetic.split(/\s+\/\s+/).flatMap(p => expandReadingAlternatives(word, p));
+  }
+  const n = headwordLength(word);
+  const toks = readingTokens(phonetic);
+  if (n === 0 || toks.length === 0) return [phonetic];
+  const hasSlash = phonetic.includes('/');
+  if (toks.length === n) return hasSlash ? expandSyllableSlashes(toks) : [phonetic];
+  if (hasSlash) {
+    const whole = phonetic.split('/').map(p => p.trim());
+    if (whole.every(p => readingTokens(p).length === n)) return whole;
+  }
+  if (toks.length === 2 * n) {
+    return [toks.slice(0, n), toks.slice(n)].flatMap(expandSyllableSlashes);
+  }
+  if (hasSlash || toks.length === 2 * n) {
+    readingProblems.push(`${word}\t${phonetic}`);
+    return hasSlash ? [] : [phonetic];
+  }
+  return [phonetic];
+}
+
 function processWordPhoneticPairs(word, rawPhonetic) {
   const readings = splitReadingVariants(rawPhonetic);
   const pairs = [];
   for (const r of readings) {
     for (const pair of expandParens(word, r.phonetic)) {
-      pairs.push({ ...pair, special: r.special });
+      // 、 並列（今下、現下）還吂處理（C8 第 4 項），照舊
+      const alts = pair.word.includes('、') ? [pair.phonetic] : expandReadingAlternatives(pair.word, pair.phonetic);
+      for (const phonetic of alts) pairs.push({ ...pair, phonetic, special: r.special });
     }
   }
   return pairs;
@@ -421,6 +509,10 @@ for (const r of records) {
   csvLines.push(`"${r.word}","${r.tl}","${r.tl_num}","${r.tl_notone}","${r.tl_abbrev}",${r.freq},${r.syllable_count},${r.bitmask},${LECT_KEY}`);
 }
 fs.writeFileSync(csvPath, csvLines.join('\n'), 'utf8');
+if (readingProblems.length) {
+  console.log(`  ⚠ 讀音看毋懂、毋好猜个 ${readingProblems.length} 筆（Obs IME C8-6，愛人工看）：`);
+  for (const p of [...new Set(readingProblems)]) console.log(`    ${p}`);
+}
 console.log(`  ✓ 已輸出 CSV 至 ${csvPath}`);
 
 // -------------------------------------------------------------
