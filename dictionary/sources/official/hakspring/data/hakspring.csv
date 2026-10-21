@@ -131,7 +131,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "粗","cú","cú","cu","",50000,1,3,四
 "重","cúng","cúng","cung","",50000,1,3,四
 "低","dái","dái","dai","",50000,1,3,四
-"…兜","...déu","...déu","deu","",50000,1,2,四
 "多","dó","dó","do","",50000,1,3,四
 "短","dòn","dòn","don","",50000,1,3,四
 "肚飢","dù-gí","dù-gí","dugi","dg",50000,2,3,四
@@ -526,9 +525,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "暗晡","am-bú","am-bú","ambu","ab",50000,2,3,四
 "暗晡頭","am-bú-těu","am-bú-těu","ambuteu","abt",50000,3,3,四
 "恁","àn","àn","an","",50000,1,3,四
-"…背","...boi","...boi","boi","",50000,1,2,四
-"拜…","bai...","bai...","bai","",50000,1,2,四
-"禮拜…","lí-bai...","lí-bai...","libai","lb",50000,2,2,四
 "北","bèd","bèd","bed","",50000,1,3,四
 "昨晡日","có-bú-ngìd","có-bú-ngìd","cobungid","cbng",50000,3,3,四
 "逐","dàg","dàg","dag","",50000,1,3,四
@@ -539,11 +535,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "裡肚","dí-dù","dí-dù","didu","dd",50000,2,3,四
 "當","dóng","dóng","dong","",50000,1,3,四
 "蓋","goi","goi","goi","",50000,1,3,四
-"當在該…","dóng-di-ge...","dóng-di-ge...","dongdige","ddg",50000,3,2,四
-"當在該…","dóng-té-ge...","dóng-té-ge...","dongtege","dtg",50000,3,2,四
 "當晝","dóng-zu","dóng-zu","dongzu","dz",50000,2,3,四
 "當晝頭","dóng-zu-těu","dóng-zu-těu","dongzuteu","dzt",50000,3,3,四
-"…肚","...dù","...dù","du","",50000,1,2,四
 "東","dúng","dúng","dung","",50000,1,3,四
 "今晡日","gím-bú-ngìd","gím-bú-ngìd","gimbungid","gbng",50000,3,3,四
 "今晡日","gín-bú-ngìd","gín-bú-ngìd","ginbungid","gbng",50000,3,2,四
@@ -551,7 +544,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "今年","gín-ngiěn","gín-ngiěn","ginngien","gng",50000,2,3,四
 "今年","gín-ngiǎn","gín-ngiǎn","ginngian","gng",50000,2,2,四
 "久","giù","giù","giu","",50000,1,3,四
-"…下","...há","...há","ha","",50000,1,2,四
 "下背","há-boi","há-boi","haboi","hb",50000,2,3,四
 "下晝","há-zu","há-zu","hazu","hz",50000,2,3,四
 "還","hǎn","hǎn","han","",50000,1,3,四
@@ -585,7 +577,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "外背","ngo-boi","ngo-boi","ngoboi","ngb",50000,2,3,四
 "外背","no-boi","no-boi","noboi","nb",50000,2,3,四
 "外背","lo-boi","lo-boi","loboi","lb",50000,2,2,四
-"…片","...pièn","...pièn","pien","",50000,1,2,四
 "前年","qiěn-ngiěn","qiěn-ngiěn","qienngien","qng",50000,2,3,四
 "前年","qiěn-ngiǎn","qiěn-ngiǎn","qienngian","qng",50000,2,2,四
 "盡","qin","qin","qin","",50000,1,3,四
@@ -1379,8 +1370,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "冬至","dúng-zii","dúng-zii","dungzii","dz",45000,2,2,四
 "恁樣","àn-ngiǒng","àn-ngiǒng","anngiong","ang",45000,2,3,四
 "恁仔","àn-ě","àn-ě","ane","ae",45000,2,2,四
-"…等","...dén","...dén","den","",45000,1,2,四
-"…等","...nén","...nén","nen","",45000,1,2,四
 "𫣆兜","én-déu","én-déu","endeu","ed",45000,2,3,四
 "𠊎等","ngǎi-dén","ngǎi-dén","ngaiden","ngd",45000,2,3,四
 "𠊎等","ngǎi-nén","ngǎi-nén","ngainen","ngn",45000,2,2,四
@@ -1461,10 +1450,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "原本","ngiǎn-bùn","ngiǎn-bùn","ngianbun","ngb",45000,2,2,四
 "原來","ngiǎn-lǒi","ngiǎn-lǒi","ngianloi","ngl",45000,2,2,四
 "分","bún","bún","bun","",45000,1,3,四
-"…著","...dò","...dò","do","",45000,1,2,四
 "除了","cǔ-liàu","cǔ-liàu","culiau","cl",45000,2,2,四
-"除忒…以外","cǔ-tèd...-í-ngoi","cǔ-tèd...-í-ngoi","cutedingoi","cting",45000,4,2,四
-"除核…以外","cǔ-hèd...-í-ngoi","cǔ-hèd...-í-ngoi","cuhedingoi","ching",45000,4,2,四
 "都係","du-he","du-he","duhe","dh",45000,2,3,四
 "對","dui","dui","dui","",45000,1,2,四
 "幾多","gì-dó","gì-dó","gido","gd",45000,2,3,四
@@ -1481,7 +1467,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "因為","ín-vi","ín-vi","invi","iv",45000,2,3,四
 "樣仔","iong-è","iong-è","ionge","ie",45000,2,3,四
 "連","liěn","liěn","lien","",45000,1,3,四
-"毋單淨…還","m̌-dán-qiang...-hǎn","m̌-dán-qiang...-hǎn","mdanqianghan","mdqh",45000,4,2,四
 "毋過","m̌-go","m̌-go","mgo","mg",45000,2,3,四
 "若係","na-he","na-he","nahe","nh",45000,2,3,四
 "係講","he-gòng","he-gòng","hegong","hg",45000,2,3,四
@@ -1520,7 +1505,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "逐擺","dàg-bài","dàg-bài","dagbai","db",45000,2,3,四
 "每擺","mí-bài","mí-bài","mibai","mb",45000,2,2,四
 "單淨","dán-qiang","dán-qiang","danqiang","dq",45000,2,3,四
-"…頂","...dàng","...dàng","dang","",45000,1,2,四
 "到底","do-dài","do-dài","dodai","dd",45000,2,3,四
 "當時","dóng-sǐi","dóng-sǐi","dongsii","ds",45000,2,3,四
 "堵堵好","dù-dù-hò","dù-dù-hò","duduho","ddh",45000,3,3,四
@@ -1542,8 +1526,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "幾久","gìd-giù","gìd-giù","gidgiu","gg",45000,2,3,四
 "幾久","ìd-giù","ìd-giù","idgiu","ig",45000,2,3,四
 "緊","gìn","gìn","gin","",45000,1,3,四
-"緊…緊…","gìn...-gìn...","gìn...-gìn...","gingin","gg",45000,2,2,四
-"緊來緊…","gìn-lǒi-gìn...","gìn-lǒi-gìn...","ginloigin","glg",45000,3,2,四
 "過後","go-heu","go-heu","goheu","gh",45000,2,3,四
 "過忒年","go-tèd-ngiěn","go-tèd-ngiěn","gotedngien","gtng",45000,3,2,四
 "明年","mǎng-ngiěn","mǎng-ngiěn","mangngien","mng",45000,2,3,四
@@ -1566,7 +1548,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "現代","hian-toi","hian-toi","hiantoi","ht",45000,2,2,四
 "好得","hò-dèd","hò-dèd","hoded","hd",45000,2,3,四
 "好在","hò-cai","hò-cai","hocai","hc",45000,2,3,四
-"…項","...hong","...hong","hong","",45000,1,2,四
 "異","i","i","i","",45000,1,2,四
 "以前","í-qiěn","í-qiěn","iqien","iq",45000,2,3,四
 "一般","ìd-bán","ìd-bán","idban","ib",45000,2,3,四
@@ -2698,8 +2679,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "海軍","hòi-giún","hòi-giún","hoigiun","hg",40000,2,2,四
 "演習","ién-xib","ién-xib","ienxib","ix",40000,2,3,四
 "演習","ián-xib","ián-xib","ianxib","ix",40000,2,2,四
-"…院","...ien","...ien","ien","",40000,1,2,四
-"…院","...ian","...ian","ian","",40000,1,2,四
 "權利","kiěn-li","kiěn-li","kienli","kl",40000,2,3,四
 "權利","kiǎn-li","kiǎn-li","kianli","kl",40000,2,2,四
 "控告","kùng-go","kùng-go","kunggo","kg",40000,2,3,四
@@ -2987,8 +2966,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "該項","ge-hong","ge-hong","gehong","gh",40000,2,2,四
 "該息仔","ge-xìd-é","ge-xìd-é","gexide","gxe",40000,3,2,四
 "隔日","gàg-ngìd","gàg-ngìd","gagngid","gng",40000,2,3,四
-"見人就…","gien-ngǐn-qiu...","gien-ngǐn-qiu...","giennginqiu","gngq",40000,3,2,四
-"見人就…","gian-ngǐn-lu...","gian-ngǐn-lu...","giannginlu","gngl",40000,3,2,四
 "間肚","gién-dù","gién-dù","giendu","gd",40000,2,3,四
 "間肚項","gién-dù-hong","gién-dù-hong","gienduhong","gdh",40000,3,2,四
 "間肚仔","gién-dù-ě","gién-dù-ě","giendue","gde",40000,3,2,四
@@ -3021,8 +2998,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "一時","ìd-sǐi","ìd-sǐi","idsii","is",40000,2,3,四
 "一駁仔","ìd-bòg-ě","ìd-bòg-ě","idboge","ibe",40000,3,3,四
 "一生人","ìd-sén-ngǐn","ìd-sén-ngǐn","idsenngin","isng",40000,3,3,四
-"越來越…","ied-lǒi-ied...","ied-lǒi-ied...","iedloiied","ili",40000,3,2,四
-"越來越…","iad-lǒi-iad...","iad-lǒi-iad...","iadloiiad","ili",40000,3,2,四
 "勻勻仔","iǔn-iǔn-è","iǔn-iǔn-è","iuniune","iie",40000,3,3,四
 "輒常","jiab-sǒng","jiab-sǒng","jiabsong","js",40000,2,3,四
 "常常","sǒng-sǒng","sǒng-sǒng","songsong","ss",40000,2,3,四
@@ -3138,12 +3113,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "打白講","dà-pag-gòng","dà-pag-gòng","dapaggong","dpg",40000,3,3,四
 "講白來","gòng-pag-lǒi","gòng-pag-lǒi","gongpagloi","gpl",40000,3,2,四
 "互相","fu-xióng","fu-xióng","fuxiong","fx",40000,2,3,四
-"該…","ge...","ge...","ge","",40000,1,2,四
 "再過","zai-go","zai-go","zaigo","zg",40000,2,3,四
 "高不將","gó-bùd-jióng","gó-bùd-jióng","gobudjiong","gbj",40000,3,3,四
-"限勢…還","han-sii...-hǎn","han-sii...-hǎn","hansiihan","hsh",40000,3,2,四
-"限勢…還","han-sii...-vǎn","han-sii...-vǎn","hansiivan","hsv",40000,3,2,四
-"向…","hiong...","hiong...","hiong","",40000,1,2,四
 "一旦","ìd-dàn","ìd-dàn","iddan","id",40000,2,2,四
 "從旦","qiǔng-dàn","qiǔng-dàn","qiungdan","qd",40000,2,2,四
 "將就","jióng-qiu","jióng-qiu","jiongqiu","jq",40000,2,3,四
@@ -5891,7 +5862,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "半晝半暗","ban-zu-ban-am","ban-zu-ban-am","banzubanam","bzba",35000,4,3,四
 "半晝邊仔","ban-zu-bién-è","ban-zu-bién-è","banzubiene","bzbe",35000,4,3,四
 "挷後","báng-heu","báng-heu","bangheu","bh",35000,2,3,四
-"…邊仔","...bién-è","...bién-è","biene","be",35000,2,2,四
 "座頭前","co-těu-qiěn","co-těu-qiěn","coteuqien","ctq",35000,3,2,四
 "長久","cǒng-giù","cǒng-giù","conggiu","cg",35000,2,3,四
 "長年透天","cǒng-ngiěn-teu-tién","cǒng-ngiěn-teu-tién","congngienteutien","cngtt",35000,4,3,四
@@ -5985,7 +5955,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "無提無防","mǒ-tǐ-mǒ-fǒng","mǒ-tǐ-mǒ-fǒng","motimofong","mtmf",35000,4,2,四
 "無幾多時","mǒ-gìd-dó-sǐi","mǒ-gìd-dó-sǐi","mogiddosii","mgds",35000,4,2,四
 "無幾多時","mǒ-ìd-dó-sǐi","mǒ-ìd-dó-sǐi","moiddosii","mids",35000,4,2,四
-"罔…","mòng...","mòng...","mong","",35000,1,2,四
 "罔食","mòng-siid","mòng-siid","mongsiid","ms",35000,2,3,四
 "哪下","nai-ha","nai-ha","naiha","nh",35000,2,3,四
 "哪下仔","nai-ha-è","nai-ha-è","naihae","nhe",35000,3,3,四
@@ -6013,7 +5982,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "年尾人","ngiǎn-mí-ngǐn","ngiǎn-mí-ngǐn","ngianmingin","ngmng",35000,3,2,四
 "年頷下仔","ngiěn-ngàb-há-è","ngiěn-ngàb-há-è","ngienngabhae","ngnghe",35000,4,2,四
 "年頷下仔","ngiǎn-ngàb-há-é","ngiǎn-ngàb-há-é","ngianngabhae","ngnghe",35000,4,2,四
-"…外仔","...ngoi-è","...ngoi-è","ngoie","nge",35000,2,2,四
 "內肚","nui-dù","nui-dù","nuidu","nd",35000,2,3,四
 "曩日","nun-ngìd","nun-ngìd","nunngid","nng",35000,2,2,四
 "怕毋會","pa-m̌-voi","pa-m̌-voi","pamvoi","pmv",35000,3,2,四
@@ -6109,8 +6077,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "普普仔","pù-pù-ě","pù-pù-ě","pupue","ppe",35000,3,3,四
 "親像","qín-qiong","qín-qiong","qinqiong","qq",35000,2,3,四
 "續下來","sa-há-lǒi","sa-há-lǒi","sahaloi","shl",35000,3,2,四
-"成…","sǎng...","sǎng...","sang","",35000,1,2,四
-"論…","nun...","nun...","nun","",35000,1,2,四
 "十二月甘蔗","siib-ngi-ngied-gám-za","siib-ngi-ngied-gám-za","siibngingiedgamza","sngnggz",35000,4,2,四
 "十二月甘蔗","siib-ngi-ngiad-gám-za","siib-ngi-ngiad-gám-za","siibngingiadgamza","sngnggz",35000,4,2,四
 "十做九無成","siib-zo-giù-mǒ-sǎng","siib-zo-giù-mǒ-sǎng","siibzogiumosang","szgms",35000,4,2,四
@@ -6122,8 +6088,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "動啊著","túng-a-dò","túng-a-dò","tungado","tad",35000,3,3,四
 "會知","voi-dí","voi-dí","voidi","vd",35000,2,3,四
 "會得知","voi-dèd-dí","voi-dèd-dí","voideddi","vdd",35000,3,2,四
-"…正得","...zang-dèd","...zang-dèd","zangded","zd",35000,2,2,四
-"…正得","...nang-dèd","...nang-dèd","nangded","nd",35000,2,2,四
 "照理講","zeu-lí-gòng","zeu-lí-gòng","zeuligong","zlg",35000,3,2,四
 "做會毋知","zo-voi-m̌-dí","zo-voi-m̌-dí","zovoimdi","zvmd",35000,4,2,四
 "仰會毋知","ngiòng-voi-m̌-dí","ngiòng-voi-m̌-dí","ngiongvoimdi","ngvmd",35000,4,2,四

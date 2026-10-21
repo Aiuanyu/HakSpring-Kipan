@@ -359,7 +359,8 @@ function linePairs(parsed) {
       pairs.push(...assignVariantReadings(mainPairs, v.phonetic, parsed.main.word));
     }
   }
-  return pairs;
+  // 詞目有「…」个（…兜、拜…）係用法說明，毋做候選；歇後語个「－－」、阿拉伯數字詞先留（平哥 20261022，Obs IME C8 第 5 項）
+  return pairs.filter(p => !p.word.includes('…'));
 }
 
 /**
