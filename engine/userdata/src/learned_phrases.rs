@@ -51,8 +51,8 @@ impl LearnedPhraseStore {
     pub const MAX_ENTRIES: usize = 2_000;
     /// Largest `learn_count` a row can carry.
     pub const MAX_LEARN_COUNT: i64 = 1_000_000;
-    /// Rows per fetch (exact whole-buffer match; homophone phrases).
-    pub const KEYSTROKE_LIMIT: usize = 5;
+    /// Rows per fetch (relaxed to 25 for whole-buffer + sub-span phrase queries).
+    pub const KEYSTROKE_LIMIT: usize = 25;
 
     /// The cap is injectable ONLY so a test can reach it without writing
     /// 2000 rows.
@@ -150,10 +150,15 @@ impl LearnedPhraseStore {
         });
     }
 
-    /// The phrases whose derived key EQUALS `query_key` — the whole typed
-    /// buffer, not a prefix — for `composing::UserRows.learned`, most composed
-    /// first. Empty when the store cannot answer right now. Ported
-    /// from iOS `exactMatchSQL` / Android `EXACT_MATCH_SQL`.
+    /// The phrases matching `query_key` for `composing::UserRows.learned`.
+    ///
+    /// Two-phase separate query (R8-22 / C8-13):
+    /// 1. Prefix / Exact / Abbrev query: phrases starting at the beginning of the typed buffer
+    ///    (`k.key = ?3 OR ?3 LIKE k.key || '%'`) or matching an abbrev.
+    ///    Ordered by `learn_count DESC, length(k.key) DESC, updated_at DESC`.
+    /// 2. Substring / Infix query: phrases contained within a longer buffer (`instr(?3, k.key) > 0`).
+    ///    Ordered by `length(k.key) DESC, learn_count DESC` so multi-syllable phrases are not
+    ///    crowded out by single-syllable short words.
     pub fn rows_matching(
         &self,
         query_key: &CustomSearchKey,
@@ -161,15 +166,58 @@ impl LearnedPhraseStore {
     ) -> Vec<LearnedPhraseRow> {
         self.database
             .read(|connection| {
-                // Cached: the one statement the keystroke path runs here.
-                let mut statement = connection.prepare_cached(&format!(
-                    "SELECT p.hanzi, p.roman, p.learn_count\nFROM {TABLE_NAME} p\nJOIN {SEARCH_KEY_TABLE_NAME} k ON k.phrase_id = p.id\nWHERE k.family = ?1\n  AND ((k.form = ?2 AND instr(?3, k.key) > 0)\n    OR (k.form = 'abbrev' AND k.key = ?3))\nGROUP BY p.id\nORDER BY p.learn_count DESC, p.updated_at DESC\nLIMIT ?4;"
+                // 1. Prefix / Exact / Abbrev query:
+                // Phrases that match the whole input or anchor at the start of a longer buffer
+                // (`?3 LIKE k.key || '%'`), or an exact abbrev match. Learned phrases never
+                // prefix-extend from an incomplete key.
+                let mut prefix_stmt = connection.prepare_cached(&format!(
+                    "SELECT p.hanzi, p.roman, p.learn_count\n\
+                     FROM {TABLE_NAME} p\n\
+                     JOIN {SEARCH_KEY_TABLE_NAME} k ON k.phrase_id = p.id\n\
+                     WHERE k.family = ?1\n\
+                       AND ((k.form = ?2 AND ?3 LIKE k.key || '%')\n\
+                         OR (k.form = 'abbrev' AND k.key = ?3))\n\
+                     GROUP BY p.id\n\
+                     ORDER BY p.learn_count DESC, length(k.key) DESC, p.updated_at DESC\n\
+                     LIMIT ?4;"
                 ))?;
-                let rows = statement.query_map(
-                    params![query_key.family, query_key.form, query_key.key, limit as i64],
-                    decode_row,
-                )?;
-                rows.collect()
+                let mut rows: Vec<LearnedPhraseRow> = prefix_stmt
+                    .query_map(
+                        params![query_key.family, query_key.form, query_key.key, limit as i64],
+                        decode_row,
+                    )?
+                    .collect::<rusqlite::Result<_>>()?;
+
+                if rows.len() < limit {
+                    let mut seen: std::collections::HashSet<(String, String)> =
+                        rows.iter().map(|r| (r.hanji.clone(), r.canonical_tl.clone())).collect();
+                    let remaining = (limit - rows.len()) as i64;
+                    // 2. Substring / Infix query.
+                    let mut substr_stmt = connection.prepare_cached(&format!(
+                        "SELECT p.hanzi, p.roman, p.learn_count\n\
+                         FROM {TABLE_NAME} p\n\
+                         JOIN {SEARCH_KEY_TABLE_NAME} k ON k.phrase_id = p.id\n\
+                         WHERE k.family = ?1\n\
+                           AND k.form = ?2\n\
+                           AND instr(?3, k.key) > 0\n\
+                           AND ?3 NOT LIKE k.key || '%'\n\
+                           AND k.key NOT LIKE ?3 || '%'\n\
+                         GROUP BY p.id\n\
+                         ORDER BY length(k.key) DESC, p.learn_count DESC, p.updated_at DESC\n\
+                         LIMIT ?4;"
+                    ))?;
+                    let substr_rows = substr_stmt.query_map(
+                        params![query_key.family, query_key.form, query_key.key, remaining],
+                        decode_row,
+                    )?;
+                    for row in substr_rows {
+                        let row = row?;
+                        if seen.insert((row.hanji.clone(), row.canonical_tl.clone())) {
+                            rows.push(row);
+                        }
+                    }
+                }
+                Ok(rows)
             })
             .unwrap_or_default()
     }

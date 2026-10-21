@@ -131,8 +131,8 @@ pub struct CustomDictionaryStore {
 impl CustomDictionaryStore {
     /// Most entries one dictionary holds, on every platform.
     pub const MAX_ENTRIES: usize = 30_000;
-    /// What the keystroke path is handed — the iOS call site's 20.
-    pub const KEYSTROKE_LIMIT: usize = 20;
+    /// What the keystroke path is handed — relaxed to 50 for phrase queries.
+    pub const KEYSTROKE_LIMIT: usize = 50;
 
     /// `entry_limit` is injectable ONLY so a test can reach the cap without
     /// writing 30000 rows.
@@ -183,6 +183,13 @@ impl CustomDictionaryStore {
     /// several side rows, shortest matched key first so `limit` is spent on
     /// the words nearest the typed input before the long extensions the
     /// engine drops — that narrows the starvation, it cannot rule it out.
+    /// Two-phase separate query (R8-22 / C8-13):
+    /// 1. Prefix & Abbrev query: direct extensions of what the user is typing,
+    ///    ordered by shortest key first (`MIN(length(search_key.key))`).
+    /// 2. Substring / Infix query: phrases contained within a longer buffer
+    ///    (`instr(?3, key) > 0`). Ordered by LONGEST key first (`length(key) DESC`)
+    ///    so multi-syllable phrases and names are not crowded out by single-syllable
+    ///    short keys or false sub-phoneme matches.
     pub fn keystroke_rows(
         &self,
         query_key: &CustomSearchKey,
@@ -190,14 +197,60 @@ impl CustomDictionaryStore {
     ) -> Vec<CustomDictionaryRow> {
         self.database
             .read(|connection| {
-                let mut statement = connection.prepare_cached(&format!(
-                    "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\nFROM {TABLE_NAME} AS entry\nJOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\nWHERE search_key.family = ?1\n  AND ((search_key.form = ?2 AND (search_key.key LIKE ?3 || '%' OR instr(?3, search_key.key) > 0))\n    OR (search_key.form = 'abbrev' AND search_key.key = ?3))\nGROUP BY entry.id\nORDER BY MIN(length(search_key.key)), entry.roman, entry.id\nLIMIT ?4;"
+                // 1. Prefix / Exact / Extension / Abbrev query:
+                // Either the key extends the input (user is typing: `key LIKE ?3 || '%'`),
+                // or the key is anchored at the start of input (user typed past: `?3 LIKE key || '%'`),
+                // or exact abbreviation match.
+                let mut prefix_stmt = connection.prepare_cached(&format!(
+                    "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\n\
+                     FROM {TABLE_NAME} AS entry\n\
+                     JOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\n\
+                     WHERE search_key.family = ?1\n\
+                       AND ((search_key.form = ?2 AND (search_key.key LIKE ?3 || '%' OR ?3 LIKE search_key.key || '%'))\n\
+                         OR (search_key.form = 'abbrev' AND search_key.key = ?3))\n\
+                     GROUP BY entry.id\n\
+                     ORDER BY MIN(length(search_key.key)), entry.roman, entry.id\n\
+                     LIMIT ?4;"
                 ))?;
-                let rows = statement.query_map(
-                    params![query_key.family, query_key.form, query_key.key, limit as i64],
-                    decode_row,
-                )?;
-                rows.collect()
+                let mut rows: Vec<CustomDictionaryRow> = prefix_stmt
+                    .query_map(
+                        params![query_key.family, query_key.form, query_key.key, limit as i64],
+                        decode_row,
+                    )?
+                    .collect::<rusqlite::Result<_>>()?;
+
+                if rows.len() < limit {
+                    let mut seen_ids: std::collections::HashSet<String> =
+                        rows.iter().map(|r| r.id.clone()).collect();
+                    let remaining = (limit - rows.len()) as i64;
+                    // 2. Substring / Infix query: phrases contained inside the buffer (not anchored at start).
+                    // Longer phrases take precedence (`length DESC`) to prevent short syllables
+                    // from exhausting the quota.
+                    let mut substr_stmt = connection.prepare_cached(&format!(
+                        "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\n\
+                         FROM {TABLE_NAME} AS entry\n\
+                         JOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\n\
+                         WHERE search_key.family = ?1\n\
+                           AND search_key.form = ?2\n\
+                           AND instr(?3, search_key.key) > 0\n\
+                           AND ?3 NOT LIKE search_key.key || '%'\n\
+                           AND search_key.key NOT LIKE ?3 || '%'\n\
+                         GROUP BY entry.id\n\
+                         ORDER BY length(search_key.key) DESC, entry.roman, entry.id\n\
+                         LIMIT ?4;"
+                    ))?;
+                    let substr_rows = substr_stmt.query_map(
+                        params![query_key.family, query_key.form, query_key.key, remaining],
+                        decode_row,
+                    )?;
+                    for row in substr_rows {
+                        let row = row?;
+                        if seen_ids.insert(row.id.clone()) {
+                            rows.push(row);
+                        }
+                    }
+                }
+                Ok(rows)
             })
             .unwrap_or_default()
     }

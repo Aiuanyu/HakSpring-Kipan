@@ -302,6 +302,42 @@ fn keystroke_rows_match_an_abbreviation_whole_and_the_shortest_key_first() {
 }
 
 #[test]
+fn keystroke_rows_two_phase_query_prefers_prefix_and_longer_infix_words() {
+    // R8-22 / C8-13: Substring matches within a sentence buffer must prioritize
+    // longer phrases over short single syllables, preventing short syllables
+    // (or cross-syllable false matches like `an` inside `tiaugang`) from
+    // crowding out multi-syllable personal names or custom phrases.
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        Arc::new(derive_custom_search_keys),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    store
+        .upsert(&CustomDictionaryRow::new("tân kiàn-tiong", "陳建中"))
+        .unwrap();
+    store
+        .upsert(&CustomDictionaryRow::new("kiàn", "建"))
+        .unwrap();
+    store
+        .upsert(&CustomDictionaryRow::new("an", "安"))
+        .unwrap();
+
+    // Query key "xxtankiantiongyy": none of them are prefixes; all 3 are infixes.
+    // Length-descending order puts 陳建中 (12) first, then 建 (4), then 安 (2).
+    let rows = store.keystroke_rows(&query_key("xxtankiantiongyy", "tl"), 2);
+    // With limit 2, the 2 longer entries survive; the 1-syllable "安" is left out!
+    assert_eq!(hanji_of(&rows), ["陳建中", "建"]);
+
+    // If prefix matches exist, prefix matches take absolute priority.
+    store
+        .upsert(&CustomDictionaryRow::new("tsin", "真"))
+        .unwrap();
+    let prefix_rows = store.keystroke_rows(&query_key("tsinxxtankiantiongyy", "tl"), 2);
+    assert_eq!(hanji_of(&prefix_rows), ["真", "陳建中"]);
+}
+
+#[test]
 fn editing_the_romanization_drops_the_old_keys_and_deleting_removes_the_entry() {
     // trace: `CustomDictionaryStore::upsert` replaces an id's keys; `delete`.
     let directory = scratch();

@@ -332,17 +332,17 @@ mod tests {
 
     #[test]
     fn buffer_rows_hand_the_keystroke_path_at_most_its_limits() {
-        // trace: 21 custom rows `tâi-uân` / 台灣0..20 and 6 learned phrases
-        // `tâi-uân` / 台灣0..5 all key `taiuan` (tl); raw "taiuan" prefix-
-        // matches the custom rows (KEYSTROKE_LIMIT 20) and equals the learned
-        // key (KEYSTROKE_LIMIT 5).
+        // trace: 55 custom rows `tâi-uân` / 台灣0..54 and 30 learned phrases
+        // `tâi-uân` / 台灣0..29 all key `taiuan` (tl); raw "taiuan" prefix-
+        // matches the custom rows (KEYSTROKE_LIMIT 50) and equals the learned
+        // key (KEYSTROKE_LIMIT 25).
         let directory = tempfile::tempdir().unwrap();
         let stores = UserDataStores::at(
             userdata::UserDataPaths::in_directory(directory.path()),
             JournalMode::Delete,
         );
         stores.open_blocking();
-        for index in 0..21 {
+        for index in 0..55 {
             stores
                 .custom_dictionary
                 .upsert(&CustomDictionaryRow::new(
@@ -350,14 +350,14 @@ mod tests {
                     &format!("台灣{index}"),
                 ))
                 .unwrap();
-            if index < 6 {
+            if index < 30 {
                 stores
                     .learned_phrases
                     .learn_phrase(&format!("台灣{index}"), "tâi-uân");
             }
         }
         // Flushes the queued learns.
-        assert_eq!(stores.learned_phrases.all_rows().unwrap().len(), 6);
+        assert_eq!(stores.learned_phrases.all_rows().unwrap().len(), 30);
         let config = AppConfig {
             input_mode: "tl".into(),
             ..AppConfig::default()
@@ -365,14 +365,15 @@ mod tests {
 
         let rows = buffer_rows(&stores, "taiuan", &config, false);
         assert_eq!(rows.custom.len(), CustomDictionaryStore::KEYSTROKE_LIMIT);
-        assert_eq!(rows.custom.len(), 20);
-        assert_eq!(rows.learned.len(), 5);
+        assert_eq!(rows.custom.len(), 50);
+        assert_eq!(rows.learned.len(), LearnedPhraseStore::KEYSTROKE_LIMIT);
+        assert_eq!(rows.learned.len(), 25);
 
         let disabled = buffer_rows(&stores, "taiuan", &config, true);
         assert!(disabled.custom.is_empty(), "the user turned it off");
         assert_eq!(
             disabled.learned.len(),
-            5,
+            25,
             "learning data is not the dictionary"
         );
     }
