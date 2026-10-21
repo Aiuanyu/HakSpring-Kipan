@@ -6,9 +6,9 @@ use ranking::{
 };
 
 use super::{
-    custom_abbreviation_matches, custom_reach, fused_custom_typed_key, ConsumedSpan,
-    ContinuousFetchCtx, CustomEntry, CustomReach, LearnedEntry, RawCandidate, COVERAGE_KIND_ABBREV,
-    COVERAGE_KIND_PARTIAL_PREFIX,
+    custom_abbreviation_matches, custom_reach, fused_custom_typed_key, reading_reaches_exact,
+    ConsumedSpan, ContinuousFetchCtx, CustomEntry, CustomReach, LearnedEntry, RawCandidate,
+    COVERAGE_KIND_ABBREV, COVERAGE_KIND_PARTIAL_PREFIX,
 };
 use crate::dictionary_reader::{DictionaryRecord, WALKER_COST_UNPRICED};
 
@@ -86,16 +86,24 @@ pub(super) fn merge_custom_dedupe_sort(
             |roman| match custom_reach(&fused_key, roman) {
                 CustomReach::Exact => true,
                 CustomReach::Extension => coverage_kind == COVERAGE_KIND_PARTIAL_PREFIX,
-                CustomReach::Unreached => false,
+                CustomReach::Unreached => reading_reaches_exact(&fused_key, roman),
             },
         );
     }
-    // Learned phrases (§50) — same whole-buffer span as a custom row; the
-    // `(canonical_tl, hanji, span)` dedupe below keeps the `dict.bin` / custom
+    // Learned phrases (§50) — same whole-buffer span as a custom row when the
+    // phrase matches the whole buffer (`reading_reaches_exact`); sub-span
+    // learned phrases are emitted per span in `fetch_candidates_for_keys_with_barriers`.
+    // The `(canonical_tl, hanji, span)` dedupe below keeps the `dict.bin` / custom
     // duplicate over it (lowest `source_tier_rank` wins, a learned row has
     // the default rank), so a learned pair that the dictionary also carries
     // is listed once, from the dictionary.
+    let fused_learned_key = typed_key.map(fused_custom_typed_key);
     for entry in ctx.learned {
+        if let Some(fused_key) = fused_learned_key.as_deref() {
+            if !reading_reaches_exact(fused_key, &entry.canonical_tl) {
+                continue;
+            }
+        }
         if !ctx.tone_pin.admits(None, &entry.canonical_tl) {
             continue;
         }

@@ -191,7 +191,7 @@ impl CustomDictionaryStore {
         self.database
             .read(|connection| {
                 let mut statement = connection.prepare_cached(&format!(
-                    "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\nFROM {TABLE_NAME} AS entry\nJOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\nWHERE search_key.family = ?1\n  AND ((search_key.form = ?2 AND search_key.key LIKE ?3 || '%')\n    OR (search_key.form = 'abbrev' AND search_key.key = ?3))\nGROUP BY entry.id\nORDER BY MIN(length(search_key.key)), entry.roman, entry.id\nLIMIT ?4;"
+                    "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\nFROM {TABLE_NAME} AS entry\nJOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\nWHERE search_key.family = ?1\n  AND ((search_key.form = ?2 AND (search_key.key LIKE ?3 || '%' OR instr(?3, search_key.key) > 0))\n    OR (search_key.form = 'abbrev' AND search_key.key = ?3))\nGROUP BY entry.id\nORDER BY MIN(length(search_key.key)), entry.roman, entry.id\nLIMIT ?4;"
                 ))?;
                 let rows = statement.query_map(
                     params![query_key.family, query_key.form, query_key.key, limit as i64],

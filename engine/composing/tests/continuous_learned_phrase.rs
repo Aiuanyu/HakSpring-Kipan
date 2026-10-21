@@ -865,3 +865,60 @@ fn a_custom_word_keeps_its_syllables_in_the_compound_run() {
     let fin = engine.apply_learning(commit(&custom), &cfg);
     assert_eq!(fin.learned, phrase("來記", "lâi kì-khí"));
 }
+
+#[test]
+fn subspan_learned_phrase_participates_in_walker_and_left_anchored_span_without_whole_buffer_leak()
+{
+    let _lock = engine_install_lock();
+    install(&fixture_rows(), FIXTURE_SYLLABLES);
+
+    // 1. Learned phrase at the start of a longer sentence (`kikhilailai`):
+    //    slot 0 walker synthesizes `記起來來`, and `記起來` is offered at its
+    //    left-anchored span `(0, 8)`, never stamped onto `(0, 11)`.
+    let resp = fetch_at_pos_response(
+        &config_tl(),
+        "kikhilailai",
+        with_learned(vec![learned("記起來", "kì-khí-lâi")]),
+    );
+    let cands = resp.continuous.expect("continuous carrier").candidates;
+    let first_hanji = cands
+        .iter()
+        .find(|c| c.hanji.is_some())
+        .expect("walker hanji candidate");
+    assert_eq!(
+        first_hanji.hanji.as_deref(),
+        Some("記起來來"),
+        "slot 0 walker uses learned 記起來; got {cands:?}"
+    );
+    assert_eq!(first_hanji.consumed_span_end, 11);
+    let kikhilai_cand = cands
+        .iter()
+        .find(|c| c.hanji.as_deref() == Some("記起來"))
+        .expect("記起來 offered at its left-anchored sub-span");
+    assert_eq!(kikhilai_cand.consumed_span_end, 8);
+
+    // 2. Learned phrase in the tail of a sentence (`laikikhilai`):
+    //    slot 0 walker synthesizes `來記起來`, and `記起來` is not falsely
+    //    stamped onto the whole buffer `(0, 11)`.
+    let resp_tail = fetch_at_pos_response(
+        &config_tl(),
+        "laikikhilai",
+        with_learned(vec![learned("記起來", "kì-khí-lâi")]),
+    );
+    let tail_cands = resp_tail.continuous.expect("continuous carrier").candidates;
+    let tail_first_hanji = tail_cands
+        .iter()
+        .find(|c| c.hanji.is_some())
+        .expect("walker hanji candidate");
+    assert_eq!(
+        tail_first_hanji.hanji.as_deref(),
+        Some("來記起來"),
+        "slot 0 walker uses learned 記起來 in the tail; got {tail_cands:?}"
+    );
+    assert!(
+        !tail_cands
+            .iter()
+            .any(|c| c.hanji.as_deref() == Some("記起來")),
+        "mid/tail learned phrase must not leak as a left-anchored candidate; got {tail_cands:?}"
+    );
+}

@@ -103,7 +103,7 @@ pub(super) fn handle_composing(
         )
     };
     let neutral = fetch(rows.clone(), context.clone());
-    let Some(frequency) = frequency_map(stores, &neutral) else {
+    let Some(frequency) = frequency_map(stores, &neutral, &rows) else {
         return Ok(neutral);
     };
     rows.frequency = frequency;
@@ -192,15 +192,27 @@ fn buffer_rows(
     }
 }
 
-/// The learned counts for the candidates `neutral` offers, deduped by the
+/// The learned counts for the candidates `neutral` offers and any user
+/// rows that may compete on mid-sentence walker edges, deduped by the
 /// key the engine ranks on; `None` when there is nothing to re-rank with.
-fn frequency_map(stores: &UserDataStores, neutral: &ComposingResponse) -> Option<FrequencyMap> {
+fn frequency_map(
+    stores: &UserDataStores,
+    neutral: &ComposingResponse,
+    user_rows: &UserRows,
+) -> Option<FrequencyMap> {
     let mut seen = HashSet::new();
     let words: Vec<String> = neutral
         .continuous
         .iter()
         .flat_map(|continuous| &continuous.candidates)
         .map(|candidate| candidate.display_text.as_str())
+        .chain(
+            user_rows
+                .custom
+                .iter()
+                .map(|entry| entry.hanji.as_deref().unwrap_or(&entry.roman)),
+        )
+        .chain(user_rows.learned.iter().map(|entry| entry.hanji.as_str()))
         .filter(|word| seen.insert(*word))
         .map(str::to_owned)
         .collect();
@@ -387,6 +399,8 @@ mod tests {
         let custom_count = |raw: &str| buffer_rows(&stores, raw, &config, false).custom.len();
         assert_eq!(custom_count("tkt"), 1);
         assert_eq!(custom_count("tk"), 0);
+        assert_eq!(custom_count("tkta"), 0);
         assert_eq!(custom_count("tankiant"), 1);
+        assert_eq!(custom_count("guatankiantiong"), 1);
     }
 }

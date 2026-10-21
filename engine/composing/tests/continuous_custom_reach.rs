@@ -10,7 +10,7 @@
 
 use crate::common::{
     build_dictionary_fst, build_syllables_fst, build_tkdb_v4, config, empty_association_bin,
-    fetch_cells, install_lexicon, selected, Fetch, Row, NOW_MS,
+    fetch_at_pos_response, fetch_cells, install_lexicon, selected, Fetch, Row, NOW_MS,
 };
 use lexicon::CustomEntry;
 use test_support::{engine_install_lock, write_temp};
@@ -226,4 +226,70 @@ fn a_custom_abbreviation_trails_the_full_syllable_rows() {
             "{input_mode}: readings first, then the custom abbreviations; got {cells:?}"
         );
     }
+}
+
+#[test]
+fn a_subspan_custom_word_surfaces_in_the_walker_and_at_its_left_anchored_span() {
+    // When the user types past a custom word (`liulamki` with custom `liǔ 瀏`),
+    // the custom word both wins its edge in the slot-0 whole-sentence walker
+    // (`瀏覽器`) and surfaces at its left-anchored sub-span `(0, 3)` (`瀏`)
+    // ahead of never-selected dictionary homophones (`留`).
+    let _lock = engine_install_lock();
+    let rows = [
+        Row {
+            toneless_key: "liu",
+            hanji: "留",
+            tl: "liǔ",
+            syll: 1,
+            freq: 3000,
+        },
+        Row {
+            toneless_key: "lam",
+            hanji: "覽",
+            tl: "lǎm",
+            syll: 1,
+            freq: 2000,
+        },
+        Row {
+            toneless_key: "ki",
+            hanji: "器",
+            tl: "kí",
+            syll: 1,
+            freq: 4000,
+        },
+    ];
+    install_with(&rows, &["liu3", "lam2", "ki2"]);
+    let resp = fetch_at_pos_response(
+        &config("tl"),
+        "liulamki",
+        Fetch {
+            now_ms: NOW_MS,
+            custom: vec![CustomEntry {
+                roman: "liǔ".into(),
+                hanji: Some("瀏".into()),
+            }],
+            ..Default::default()
+        },
+    );
+    let cands = resp.continuous.expect("continuous carrier").candidates;
+    let first_hanji = cands
+        .iter()
+        .find(|c| c.hanji.is_some())
+        .expect("walker hanji candidate");
+    assert_eq!(
+        first_hanji.hanji.as_deref(),
+        Some("瀏覽器"),
+        "slot 0 walker uses custom 瀏; got {cands:?}"
+    );
+    assert_eq!(first_hanji.consumed_span_end, 8);
+    let liu_span: Vec<&str> = cands
+        .iter()
+        .filter(|c| c.consumed_span_end == 3)
+        .filter_map(|c| c.hanji.as_deref())
+        .collect();
+    assert_eq!(
+        liu_span,
+        ["瀏", "留"],
+        "custom 瀏 surfaces at left-anchored span (0, 3) ahead of 留; got {cands:?}"
+    );
 }

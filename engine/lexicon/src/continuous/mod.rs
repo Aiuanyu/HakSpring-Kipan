@@ -781,7 +781,7 @@ pub fn fetch_candidates_for_keys_with_barriers(
     // `keys` is empty, so this fn's `keys.is_empty()` branch is dead
     // for production callers — but a future caller passing empty
     // `keys` + non-empty `custom` must still get the custom merge).
-    if keys.is_empty() && ctx.custom.is_empty() {
+    if keys.is_empty() && ctx.custom.is_empty() && ctx.learned.is_empty() {
         return Vec::new();
     }
 
@@ -800,6 +800,43 @@ pub fn fetch_candidates_for_keys_with_barriers(
         exact_candidates_for_key(key, final_only, tone_pin, *span, &filter, ctx, |cand| {
             out.push(cand)
         });
+        // Sub-span custom and learned entries: when the user keeps typing
+        // past a custom or learned word (`liulamki` with custom `liǔ 瀏`),
+        // offer the word at its left-anchored sub-span `*span` alongside the
+        // dictionary candidates for that span. Whole-buffer `(0, raw_len)`
+        // stays in `merge_custom_dedupe_sort` below.
+        if *span != (0, raw_len) && (!ctx.custom.is_empty() || !ctx.learned.is_empty()) {
+            let fused_key = fused_custom_typed_key(key);
+            for entry in ctx.custom {
+                if reading_reaches_exact(&fused_key, &entry.roman)
+                    && tone_pin.admits_custom(&entry.roman, ctx.mode)
+                {
+                    out.push(custom_entry_to_candidate(
+                        entry,
+                        *span,
+                        ctx.freq_map,
+                        ctx.now_ms,
+                        ctx.context,
+                        COVERAGE_KIND_FULL,
+                        ctx.mode,
+                    ));
+                }
+            }
+            for entry in ctx.learned {
+                if reading_reaches_exact(&fused_key, &entry.canonical_tl)
+                    && tone_pin.admits(None, &entry.canonical_tl)
+                {
+                    out.push(learned_entry_to_candidate(
+                        entry,
+                        *span,
+                        ctx.freq_map,
+                        ctx.now_ms,
+                        ctx.context,
+                        COVERAGE_KIND_FULL,
+                    ));
+                }
+            }
+        }
     }
     merge_custom_dedupe_sort(
         out,
@@ -1414,6 +1451,28 @@ pub(super) fn custom_reach(fused_key: &str, roman: &str) -> CustomReach {
     } else {
         CustomReach::Unreached
     }
+}
+
+/// Whether `roman` (`CustomEntry.roman` or `LearnedEntry.canonical_tl`)
+/// matches `fused_key` as a complete reading — either via [`custom_reach`]
+/// (which handles both numeric-tone and toneless faces) or via the
+/// nasal-`oo` alias respelling on a toneless key (`tl:hoonnhian` for
+/// `hònn-hiân`).
+pub(super) fn reading_reaches_exact(fused_key: &str, roman: &str) -> bool {
+    if custom_reach(fused_key, roman) == CustomReach::Exact {
+        return true;
+    }
+    let Some(reach) = SyllableReach::new(fused_key) else {
+        return false;
+    };
+    let body = &fused_key[reach.family.len()..];
+    matches!(
+        KeyFace::of(reach.family, body),
+        Some(KeyFace::TlNotone | KeyFace::PojNotone | KeyFace::TpsNotone)
+    ) && matches_continuous_toneless_key(
+        fused_key,
+        &phonetics::api::custom_search_reading(roman).to_lowercase(),
+    )
 }
 
 /// Whether one of the custom `roman`'s abbreviation search keys in

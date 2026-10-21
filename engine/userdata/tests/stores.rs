@@ -282,6 +282,17 @@ fn keystroke_rows_match_an_abbreviation_whole_and_the_shortest_key_first() {
     assert_eq!(hanji_of(&keystroke("t")), ["陳", "陳建中"]);
     assert_eq!(hanji_of(&keystroke("tkt")), ["陳建中"]);
     assert!(keystroke("tk").is_empty(), "an abbreviation matches whole");
+    assert!(
+        keystroke("tkta").is_empty(),
+        "an abbreviation never matches as a sub-span"
+    );
+    // A custom word whose `notone` key is a sub-span of a longer continuous
+    // buffer stays in the keystroke set so the walker and span-local fetch
+    // can offer it (`liǔ 瀏` inside `liulamki`).
+    store
+        .upsert(&CustomDictionaryRow::new("liǔ", "瀏"))
+        .unwrap();
+    assert_eq!(hanji_of(&keystroke("liulamki")), ["瀏"]);
     // The search page keeps prefix-matching the abbreviation, as the system
     // dictionary search does.
     assert_eq!(
@@ -703,9 +714,19 @@ fn learning_the_same_pair_twice_is_one_row_with_count_two_found_by_the_whole_buf
         learned_matches(&store, "kikhi", "tl").is_empty(),
         "a prefix must not match"
     );
+    assert_eq!(
+        learned_matches(&store, "kikhilaia", "tl"),
+        ["記起來"],
+        "a longer buffer containing the phrase matches for sub-span recall"
+    );
+    assert_eq!(
+        learned_matches(&store, "guakikhilaia", "tl"),
+        ["記起來"],
+        "a sentence containing the phrase mid-buffer matches for walker recall"
+    );
     assert!(
-        learned_matches(&store, "kikhilaia", "tl").is_empty(),
-        "a longer buffer must not match"
+        learned_matches(&store, "kkla", "tl").is_empty(),
+        "an abbreviation matches only when typed whole, never as a sub-span"
     );
 }
 
