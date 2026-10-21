@@ -18,7 +18,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 # The rustc the latest Ubuntu ships, so a distribution build can use it (#283);
 # the `msrv` job in .github/workflows/linux-build.yml holds it.

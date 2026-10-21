@@ -64,9 +64,9 @@
 	     `make version-desktop x.y.z`, which sets the same version on Windows in
 	     the same pass. -->
 	<key>CFBundleShortVersionString</key>
-	<string>0.0.2</string>
+	<string>0.0.3</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>3</string>
 	<key>InputMethodConnectionName</key>
 	<string>net.aiuanyu.inputmethod.HakSpring-Kipan_Connection</string>
 	<key>InputMethodServerControllerClass</key>

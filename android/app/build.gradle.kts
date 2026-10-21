@@ -44,7 +44,7 @@ android {
         // Android at once by `make version-mobile x.y.z` (the mobile train;
         // macOS + Windows are the separately numbered desktop train).
         versionCode = (System.currentTimeMillis() / 60_000L).toInt()
-        versionName = "0.0.2"
+        versionName = "0.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
