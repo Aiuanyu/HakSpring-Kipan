@@ -222,9 +222,9 @@ function expandSyllableSlashes(tokens) {
  * 音節數係字數兩倍，切做兩隻整詞再展開。
  * 客源翠教典顯示欄个 ` / `（前後有空白）一定係整詞換。Obs IME C8-5、C8-6。
  */
-function expandReadingAlternatives(word, phonetic) {
+function expandReadingAlternatives(word, phonetic, quiet = false) {
   if (/\s\/\s/.test(phonetic)) {
-    return phonetic.split(/\s+\/\s+/).flatMap(p => expandReadingAlternatives(word, p));
+    return phonetic.split(/\s+\/\s+/).flatMap(p => expandReadingAlternatives(word, p, quiet));
   }
   const n = headwordLength(word);
   const toks = readingTokens(phonetic);
@@ -239,20 +239,124 @@ function expandReadingAlternatives(word, phonetic) {
     return [toks.slice(0, n), toks.slice(n)].flatMap(expandSyllableSlashes);
   }
   if (hasSlash || toks.length === 2 * n) {
-    readingProblems.push(`${word}\t${phonetic}`);
+    if (!quiet) readingProblems.push(`${word}\t${phonetic}`);
     return hasSlash ? [] : [phonetic];
   }
   return [phonetic];
+}
+
+/**
+ * 、 並列个詞目摎讀音照順序配（今下、現下 gím/gín-ha、hien-ha）。
+ * 數量無共樣、抑係音節數對毋著个，印出來分人工看。
+ * 詞目有「，」个係一句話（俗諺），毋拆，淨拿忒讀音裡个標點。Obs IME C8-8
+ */
+function splitListedPair(word, phonetic) {
+  if (/[，,]/.test(word)) {
+    return [{ word, phonetic: phonetic.replace(/[、，,]/g, ' ').replace(/\s+/g, ' ').trim() }];
+  }
+  if (!word.includes('、')) return [{ word, phonetic }];
+  const words = word.split('、').map(w => w.trim()).filter(Boolean);
+  const phons = phonetic.split('、').map(p => p.trim()).filter(Boolean);
+  if (words.length === phons.length) {
+    return words.map((w, i) => ({ word: w, phonetic: phons[i] }));
+  }
+  readingProblems.push(`${word}\t${phonetic}`);
+  return [];
 }
 
 function processWordPhoneticPairs(word, rawPhonetic) {
   const readings = splitReadingVariants(rawPhonetic);
   const pairs = [];
   for (const r of readings) {
-    for (const pair of expandParens(word, r.phonetic)) {
-      // 、 並列（今下、現下）還吂處理（C8 第 4 項），照舊
-      const alts = pair.word.includes('、') ? [pair.phonetic] : expandReadingAlternatives(pair.word, pair.phonetic);
-      for (const phonetic of alts) pairs.push({ ...pair, phonetic, special: r.special });
+    for (const parenPair of expandParens(word, r.phonetic)) {
+      for (const pair of splitListedPair(parenPair.word, parenPair.phonetic)) {
+        for (const phonetic of expandReadingAlternatives(pair.word, pair.phonetic)) {
+          pairs.push({ ...pair, phonetic, special: r.special });
+        }
+      }
+    }
+  }
+  return pairs;
+}
+
+/** 拿忒調符、空白摎連字號个讀音，比相像用 */
+function tonelessKey(phonetic) {
+  return readingTokens(phonetic).map(removeTone).join('');
+}
+
+function editDistance(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return d[a.length][b.length];
+}
+
+/**
+ * 【】變體淨有讀音（南四縣 zùi mí）：係同一隻詞个另一種腔口讀法，所以分「音節數共樣、
+ * 主讀音上相像」个詞目。盡尾（第一尾、最尾）【zùi mí】→ 最尾，毋係盡尾；
+ * 本來（原本、原來）【ngiǎn bùn、ngiǎn lǒi】→ 原本、原來。Obs IME C8-8
+ */
+function assignVariantReadings(mainPairs, variantPhonetic, lineWord) {
+  const out = [];
+  for (const r of splitReadingVariants(variantPhonetic)) {
+    // 讀音个 、 摎括號拆做一隻一隻讀音
+    // 先拆括號，正拆 、（括號肚裡可能有 、；variant-parser 也會將兩組【】合做幾組括號：
+    // 個零月 ge lǎng ngiad (ge nǎng ngiad) (ge go ngiad、zàg go ngiad)）
+    const groups = [...r.phonetic.matchAll(/[（(]([^）)]+)[）)]/g)].map(g => g[1].trim());
+    const outerText = r.phonetic.replace(/\s*[（(][^）)]+[）)]/g, ' ').trim();
+    const parts = [outerText, ...groups];
+    const pieces = parts.flatMap(p => p.split('、')).map(p => p.trim()).filter(Boolean);
+    for (const piece of pieces) {
+      let best = [];
+      let bestDist = Infinity;
+      for (const t of mainPairs) {
+        // 音節數愛啱啱好（逐音節 / 抑係整詞 /），毋用「兩倍切兩隻」該條：帖（帖仔）【tiàb è】係帖仔个
+        const n = headwordLength(t.word);
+        const fits = readingTokens(piece).length === n
+          || (piece.includes('/') && piece.split('/').every(p => readingTokens(p).length === n));
+        if (!fits) continue;
+        const alts = expandReadingAlternatives(t.word, piece, true);
+        if (alts.length === 0) continue;
+        const dist = editDistance(tonelessKey(alts[0]), tonelessKey(t.phonetic));
+        if (dist < bestDist) { bestDist = dist; best = [t.word]; }
+        else if (dist === bestDist && !best.includes(t.word)) best.push(t.word);
+      }
+      // 共樣相像、主讀音也共樣（屋下（屋家）vùg ká【lùg ká】）：兩隻都分
+      if (best.length > 1) {
+        const mains = new Set(best.map(w => mainPairs.filter(t => t.word === w).map(t => tonelessKey(t.phonetic)).sort().join('|')));
+        if (mains.size === 1) {
+          for (const w of best) for (const phonetic of expandReadingAlternatives(w, piece, true)) out.push({ word: w, phonetic, special: r.special });
+          continue;
+        }
+      }
+      if (best.length !== 1) {
+        readingProblems.push(`${lineWord}【${piece}】\t${best.length ? '相像个有 ' + best.join('／') : '無詞目對得著'}`);
+        continue;
+      }
+      for (const phonetic of expandReadingAlternatives(best[0], piece)) {
+        out.push({ word: best[0], phonetic, special: r.special });
+      }
+    }
+  }
+  return out;
+}
+
+/** 一行資料（主讀音＋【】變體）个全部（詞目, 讀音） */
+function linePairs(parsed) {
+  const pairs = [];
+  const mainPairs = (parsed.main && parsed.main.word && parsed.main.phonetic)
+    ? processWordPhoneticPairs(parsed.main.word, parsed.main.phonetic) : [];
+  pairs.push(...mainPairs);
+  for (const v of parsed.variants) {
+    if (!v.phonetic) continue;
+    if (v.word) {
+      pairs.push(...processWordPhoneticPairs(v.word, v.phonetic));
+    } else if (mainPairs.length) {
+      pairs.push(...assignVariantReadings(mainPairs, v.phonetic, parsed.main.word));
     }
   }
   return pairs;
@@ -319,16 +423,7 @@ for (const cf of certFiles) {
 
     // 透過客源翠 variant-parser 展開變體
     const parsed = getLineVariants(row);
-    const pairs = [];
-    if (parsed.main && parsed.main.word && parsed.main.phonetic) {
-      pairs.push(...processWordPhoneticPairs(parsed.main.word, parsed.main.phonetic));
-    }
-    for (const v of parsed.variants) {
-      const w = v.word || (parsed.main ? parsed.main.word : '');
-      if (w && v.phonetic) {
-        pairs.push(...processWordPhoneticPairs(w, v.phonetic));
-      }
-    }
+    const pairs = linePairs(parsed);
 
     for (const pair of pairs) {
       const tokens = pair.phonetic.trim().split(/[\s\-]+/);
@@ -380,16 +475,7 @@ if (fs.existsSync(gipJsonPath)) {
     };
 
     const parsed = getLineVariants(row);
-    const pairs = [];
-    if (parsed.main && parsed.main.word && parsed.main.phonetic) {
-      pairs.push(...processWordPhoneticPairs(parsed.main.word, parsed.main.phonetic));
-    }
-    for (const v of parsed.variants) {
-      const w = v.word || (parsed.main ? parsed.main.word : '');
-      if (w && v.phonetic) {
-        pairs.push(...processWordPhoneticPairs(w, v.phonetic));
-      }
-    }
+    const pairs = linePairs(parsed);
 
     for (const pair of pairs) {
       const tokens = pair.phonetic.trim().split(/[\s\-]+/);

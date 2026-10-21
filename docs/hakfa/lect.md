@@ -66,6 +66,9 @@ node dictionary/sources/official/hakspring/extract_and_build.js [--lect 四]
 - Headword with a parenthesised synonym and a reading without parentheses (usually a 【】 variant): the reading goes to whichever side its syllable count fits (調羹仔（湯匙）【tiǎu/těu gáng è】 → 調羹仔 only; 帖（帖仔）【tiàb è】 → 帖仔 only). A side with no countable characters (digits) keeps the old behaviour: both.
 - Headword without parentheses, reading with them: a parenthesis glued to a syllable is that syllable's alternative (`ngǎi dén(nén)`); a spaced one is a whole-reading alternative when its syllable count equals the headword length (`ngǎi dén (ngǎi nén)`), else a one-syllable alternative of the syllable before it (`ngǎi dén (nén) tai gá`).
 
+- `、` lists (`splitListedPair`): headword items and reading items pair by position (今下、現下 `gím/gín-ha、hien-ha`); unequal counts are printed, not guessed. A headword with `，` is one saying: not split, punctuation dropped from the reading.
+- Reading-only 【】 variants (`assignVariantReadings`; `variant-parser` gives `word: ''`): a variant is the same word in another sub-lect, so each variant reading (after splitting its parentheses, then its `、`) goes to the main headword with the same syllable count whose main reading is closest (toneless edit distance). 盡尾（第一尾、最尾）【zùi mí】 → 最尾; 本來（原本、原來）【ngiǎn bùn、ngiǎn lǒi】 → 原本, 原來; 打單（買票）【mái peu】 → 買票. A tie goes to all tied headwords only when their main readings are identical (屋下（屋家）`vùg ká`【lùg ká】), else it is printed. Variants with their own headword (美濃 【皺波螺風】) are processed as their own line.
+
 Readings that differ only in tone still collapse into one row (except MOE 特, above).
 
 Build HakSpring data from its `main` (`HAKSPRING_ROOT` unset). Still open (Obs `IME` C8): `/` and `、` in readings and headwords, `…` / `－－` / digits in headwords, stray `ˊˇˋ` in certification readings.
