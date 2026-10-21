@@ -277,6 +277,29 @@
         "ja": "漢字／ローマ字を切り替える"
       }
     },
+    "toggleOutputBothScripts": {
+      "comment": "Toggle Annotate in Brackets (output both scripts).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host",
+          "extension"
+        ]
+      },
+      "values": {
+        "hanji": "切換括號標註",
+        "tailo": "Tshiat-uānn kuat-hō phiau-tsù",
+        "poj": "Chhiat-ōaⁿ koat-hō phiau-chù",
+        "en": "Toggle Annotate in Brackets",
+        "ja": "括弧で併記の切り替え"
+      }
+    },
     "back": {
       "comment": "Back-navigation a11y contentDescription for the TopAppBar navigationIcon on Android host sub-screens. Android-only: iOS uses the system NavigationStack back button (OS-locale, not overridable to the in-app picker). Custom in-app nav controls — including the main-app tab titles (i18n_nav_tab*) — follow the display-language picker; only the OS-provided system back affordance stays on the OS locale.",
       "scope": {

@@ -164,6 +164,13 @@ impl CandidateDisplayMode {
         matches!(self, Self::Combined) || (stored && self.shows_hanji())
     }
 
+    /// Effective both-scripts output flag for a stored switch.
+    /// `RomanOnly` has no hanji to lead with, so annotate in brackets is disabled.
+    /// CROSS-PLATFORM INVARIANT — mirrors iOS / Android / macOS.
+    pub const fn effective_output_both_scripts(self, stored: bool) -> bool {
+        stored && self.shows_hanji()
+    }
+
     /// Whether a typed punctuation key becomes full-width (`，` for `,`) for a
     /// stored swap flag — the stored flag masked by the display mode, NOT the
     /// candidate projection above, which `Combined` forces on while the swap
@@ -283,6 +290,10 @@ pub struct EngineSettings {
     /// (`SettingsDocument::engine_settings`), never the raw document bool —
     /// the raw one stays untouched so leaving either mode restores it.
     pub is_hanji_first: bool,
+    /// Annotate in Brackets (`output_both_scripts` on the wire): when on, committing
+    /// a Hanji-first composition appends the romanization in brackets (e.g. `發燒 (fàdséu)`).
+    /// Derives through `CandidateDisplayMode::effective_output_both_scripts`.
+    pub is_output_both_scripts: bool,
     /// `CandidateDisplayMode::effective_full_width_punctuation(stored)` —
     /// read by the composing intent executor's `document_punctuation`.
     pub is_full_width_punctuation: bool,
@@ -336,6 +347,7 @@ impl EngineSettings {
         Self {
             input_mode: InputMode::Tl,
             is_hanji_first: MODE.effective_hanji_first(STORED_SWAP),
+            is_output_both_scripts: MODE.effective_output_both_scripts(false),
             is_full_width_punctuation: MODE.effective_full_width_punctuation(STORED_SWAP),
             candidate_display_mode: MODE,
             is_literal_roman_candidate_enabled: false,

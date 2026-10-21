@@ -20,6 +20,7 @@ enum class StringKey(
     COMMON_OTHER(R.string.i18n_common_other),
     COMMON_EDIT(R.string.i18n_common_edit),
     COMMON_TOGGLE_TRANSLATE_SWAPPED(R.string.i18n_common_toggleTranslateSwapped),
+    COMMON_TOGGLE_OUTPUT_BOTH_SCRIPTS(R.string.i18n_common_toggleOutputBothScripts),
     COMMON_BACK(R.string.i18n_common_back),
     COMMON_VIEW_WEBSITE(R.string.i18n_common_viewWebsite),
     COMMON_EXPORT_FAILED(R.string.i18n_common_exportFailed),

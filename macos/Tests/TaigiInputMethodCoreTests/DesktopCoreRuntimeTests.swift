@@ -133,7 +133,7 @@ final class DesktopCoreRuntimeTests: XCTestCase {
     /// stores, each with the default `SettingsStore` reads when it is absent.
     func testWhitelist_matchesSettingsStoreDefaults() throws {
         let booleans = [
-            Keys.isHanjiFirst, Keys.isAutoSpaceEnabled, Keys.isCandidateWindowEnabled,
+            Keys.isHanjiFirst, Keys.isOutputBothScripts, Keys.isAutoSpaceEnabled, Keys.isCandidateWindowEnabled,
             Keys.isLiteralRomanCandidateEnabled, Keys.isNasalMarkerUppercaseEnabled, Keys.isCustomDictEnabled,
             Keys.isKautianEnabled, Keys.isTaigitvEnabled, Keys.isItaigiEnabled, Keys.isSitbutEnabled,
             Keys.isTaihoaEnabled, Keys.isTaijitEnabled, Keys.isKunggeEnabled, Keys.isSttiEnabled,

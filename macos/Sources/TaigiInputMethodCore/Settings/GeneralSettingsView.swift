@@ -46,6 +46,9 @@ struct GeneralSettingsView: View {
     @AppStorage(SettingsStore.Keys.isHanjiFirst.name)
     private var isHanjiFirst = SettingsStore.Keys.isHanjiFirst.defaultValue
 
+    @AppStorage(SettingsStore.Keys.isOutputBothScripts.name)
+    private var isOutputBothScripts = SettingsStore.Keys.isOutputBothScripts.defaultValue
+
     @AppStorage(SettingsStore.Keys.candidateDisplayMode.name)
     private var candidateDisplayMode = SettingsStore.Keys.candidateDisplayMode.defaultValue
 
@@ -140,6 +143,9 @@ struct GeneralSettingsView: View {
                     Text(language.string(.settingsOutputScriptRoman)).tag(false)
                 }
                 .disabled(!candidateDisplayMode.allowsSwapToggle)
+
+                Toggle(language.string(.settingsOutputBothScripts), isOn: $isOutputBothScripts)
+                    .disabled(!candidateDisplayMode.showsHanji)
 
                 // Syllable Separator (§49), directly under Output Script — it describes
                 // that output's shape.

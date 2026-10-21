@@ -78,8 +78,18 @@
     },
     "outputBothScripts": {
       "comment": "Toggle label: annotate committed text with the other script in brackets.",
-      "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
+      "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
       "values": { "hanji": "括號標註", "tailo": "Kuat-hō phiau-tsù", "poj": "Koat-hō phiau-chù", "en": "Annotate in Brackets", "ja": "括弧で併記" }
+    },
+    "outputBothScriptsOn": {
+      "comment": "HUD flash text when Annotate in Brackets is turned on via shortcut.",
+      "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host", "extension"] },
+      "values": { "hanji": "漢字 (Lô-má-jī)", "tailo": "Hàn-jī (Lô-má-jī)", "poj": "Hàn-jī (Lô-má-jī)", "en": "Hanji (Romanization)", "ja": "漢字 (ローマ字)" }
+    },
+    "outputBothScriptsOff": {
+      "comment": "HUD flash text when Annotate in Brackets is turned off via shortcut.",
+      "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host", "extension"] },
+      "values": { "hanji": "單一文字", "tailo": "Tan-it bûn-jī", "poj": "Tan-it bûn-jī", "en": "Single Script", "ja": "単一文字" }
     },
     "inputScript": {
       "comment": "Desktop General pane: label of the TL / POJ picker (USER 2026-09-18: \"input/output script\"), paired with outputScript below. Mobile keeps inputMode (Input Mode) — its picker also holds TPS.",

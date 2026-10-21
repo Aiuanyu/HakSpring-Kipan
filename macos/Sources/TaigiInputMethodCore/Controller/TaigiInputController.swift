@@ -772,6 +772,14 @@ public final class TaigiInputController: IMKInputController {
             if settings.candidateDisplayMode == .sideBySide, !wasListOnScreen {
                 flash(settings.storedIsHanjiFirst ? .settingsOutputScriptHanji : .settingsOutputScriptRoman)
             }
+        case .toggleOutputBothScripts:
+            guard settings.candidateDisplayMode.showsHanji else { return }
+            let wasListOnScreen = isCandidateListOnScreen
+            settings.storedIsOutputBothScripts.toggle()
+            representCandidates(refetch: false)
+            if !wasListOnScreen {
+                flash(settings.storedIsOutputBothScripts ? .settingsOutputBothScriptsOn : .settingsOutputBothScriptsOff)
+            }
         case .cycleCandidateDisplayMode:
             // Inert only under TPS (gated above). Only the setting is
             // written here — the open bar is re-fetched by the observation

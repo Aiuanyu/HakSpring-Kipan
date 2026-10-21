@@ -68,6 +68,10 @@ final class SettingsStore: @unchecked Sendable {
             name: "isTranslateSwapped",
             defaultValue: EngineSettings.defaults.isHanjiFirst,
         )
+        static let isOutputBothScripts = SettingsKey(
+            name: "outputBothScripts",
+            defaultValue: EngineSettings.defaults.isOutputBothScripts,
+        )
         /// Both scripts side by side, or the romanization alone. Stored as the
         /// enum's raw value like `inputMode`; the swap key above is left
         /// untouched by it — switching back restores whatever it holds.
@@ -581,6 +585,7 @@ final class SettingsStore: @unchecked Sendable {
             Keys.isTpsKeyboardShown.name,
             Keys.toneInputScheme.name,
             Keys.isHanjiFirst.name,
+            Keys.isOutputBothScripts.name,
             Keys.isAutoSpaceEnabled.name,
             Keys.isCandidateWindowEnabled.name,
             Keys.isLiteralRomanCandidateEnabled.name,
@@ -720,6 +725,17 @@ final class SettingsStore: @unchecked Sendable {
     var storedIsHanjiFirst: Bool {
         get { bool(Keys.isHanjiFirst) }
         set { userDefaults.set(newValue, forKey: Keys.isHanjiFirst.name) }
+    }
+
+    /// `isOutputBothScripts` (Annotate in Brackets).
+    var storedIsOutputBothScripts: Bool {
+        get { bool(Keys.isOutputBothScripts) }
+        set { userDefaults.set(newValue, forKey: Keys.isOutputBothScripts.name) }
+    }
+
+    /// Derived both-scripts flag through the candidate display mode.
+    var isOutputBothScripts: Bool {
+        candidateDisplayMode.effectiveOutputBothScripts(stored: storedIsOutputBothScripts)
     }
 
     /// Whether committing a word auto-inserts a trailing space. Read by the

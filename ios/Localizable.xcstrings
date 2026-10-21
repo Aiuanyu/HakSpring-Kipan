@@ -487,6 +487,24 @@
         }
       }
     },
+    "i18n_common_toggleOutputBothScripts": {
+      "comment": "Toggle Annotate in Brackets (output both scripts).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle Annotate in Brackets"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "括弧で併記の切り替え"
+          }
+        }
+      }
+    },
     "i18n_common_toggleTranslateSwapped": {
       "comment": "Flip which script is committed / shown first: desktop shortcut-recorder row (切換 rather than 輸出, USER 2026-09-10), mobile candidate-overlay display-swap button a11y label. Merged 2026-09-20 from desktop.shortcutToggleTranslateSwapped / keyboard.translateToggle.",
       "extractionState": "manual",

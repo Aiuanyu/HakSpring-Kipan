@@ -61,7 +61,7 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(
             labels(),
             [
-                "切換台羅/白話字", "切換方音符號", "切換漢字/羅馬字", "切換羅馬字顯示", "拍開符號選單", "拍開 Telex 說明",
+                "切換台羅/白話字", "切換方音符號", "切換漢字/羅馬字", "切換括號標註", "切換羅馬字顯示", "拍開符號選單", "拍開 Telex 說明",
                 "顯示方音符號小齒盤", "拍開設定選單",
             ],
         )
@@ -71,6 +71,7 @@ final class ShortcutActionsTests: XCTestCase {
                 "台羅／白話字を切り替える",
                 "方音符号を切り替える",
                 "漢字／ローマ字を切り替える",
+                "括弧で併記の切り替え",
                 "候補の表示を切り替え",
                 "記号メニューを開く",
                 "Telex の説明を開く",
@@ -104,6 +105,10 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(
             ShortcutAction.toggleTranslateSwapped.defaultShortcut,
             KeyboardShortcuts.Shortcut(.backtick),
+        )
+        XCTAssertEqual(
+            ShortcutAction.toggleOutputBothScripts.defaultShortcut,
+            KeyboardShortcuts.Shortcut(.b, modifiers: [.control, .command]),
         )
         XCTAssertEqual(
             ShortcutAction.cycleCandidateDisplayMode.defaultShortcut,
@@ -189,6 +194,7 @@ final class ShortcutActionsTests: XCTestCase {
                 KeyboardShortcuts.Shortcut(.c, modifiers: [.control, .command]),
                 KeyboardShortcuts.Shortcut(.p, modifiers: [.control, .command]),
                 KeyboardShortcuts.Shortcut(.backtick),
+                KeyboardShortcuts.Shortcut(.b, modifiers: [.control, .command]),
                 KeyboardShortcuts.Shortcut(.h, modifiers: [.control, .command]),
                 KeyboardShortcuts.Shortcut(.comma, modifiers: [.control, .command]),
                 KeyboardShortcuts.Shortcut(.slash, modifiers: [.control, .command]),
@@ -203,7 +209,7 @@ final class ShortcutActionsTests: XCTestCase {
     func testTheInertActions_underEachMode_matchTheCore() {
         XCTAssertEqual(
             ShortcutAction.allCases.filter { $0.isInert(under: .tps) },
-            [.toggleTranslateSwapped, .cycleCandidateDisplayMode, .showTelexGuide],
+            [.toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode, .showTelexGuide],
         )
         for mode in [InputMode.tl, .poj] {
             XCTAssertEqual(ShortcutAction.allCases.filter { $0.isInert(under: mode) }, [.showTpsKeyboard], "\(mode)")

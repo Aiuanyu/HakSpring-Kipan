@@ -30,6 +30,8 @@ object L10n {
         @Composable get() = stringRes(StringKey.COMMON_EDIT)
     val commonToggleTranslateSwapped: String
         @Composable get() = stringRes(StringKey.COMMON_TOGGLE_TRANSLATE_SWAPPED)
+    val commonToggleOutputBothScripts: String
+        @Composable get() = stringRes(StringKey.COMMON_TOGGLE_OUTPUT_BOTH_SCRIPTS)
     val commonBack: String
         @Composable get() = stringRes(StringKey.COMMON_BACK)
     val commonViewWebsite: String

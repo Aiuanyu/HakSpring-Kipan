@@ -68,6 +68,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.isAutoSpaceEnabled, SettingsStore.Keys.isAutoSpaceEnabled.defaultValue)
         XCTAssertEqual(store.isCandidateWindowEnabled, SettingsStore.Keys.isCandidateWindowEnabled.defaultValue)
         for key in [
+            SettingsStore.Keys.isOutputBothScripts,
             SettingsStore.Keys.isLiteralRomanCandidateEnabled,
             SettingsStore.Keys.isNasalMarkerUppercaseEnabled,
         ] {
@@ -229,6 +230,7 @@ final class SettingsStoreTests: XCTestCase {
     func testKeys_matchTheIOSSpellings() {
         XCTAssertEqual(SettingsStore.Keys.inputMode.name, "inputMode")
         XCTAssertEqual(SettingsStore.Keys.isHanjiFirst.name, "isTranslateSwapped")
+        XCTAssertEqual(SettingsStore.Keys.isOutputBothScripts.name, "outputBothScripts")
         XCTAssertEqual(SettingsStore.Keys.displayLanguage.name, "displayLanguage")
     }
 

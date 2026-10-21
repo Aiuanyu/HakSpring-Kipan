@@ -14,6 +14,7 @@
     "other": { "hakha": "其他" },
     "edit": { "hakha": "編輯" },
     "toggleTranslateSwapped": { "hakha": "切換漢字/羅馬字" },
+    "toggleOutputBothScripts": { "hakha": "切換括號標註" },
     "back": { "hakha": "倒轉去" },
     "viewWebsite": { "hakha": "官方網站" },
     "exportFailed": { "hakha": "匯出失敗" },

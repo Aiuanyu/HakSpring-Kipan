@@ -339,10 +339,13 @@ impl SettingsDocument {
         let candidate_display_mode: CandidateDisplayMode =
             self.choice(&keys::CANDIDATE_DISPLAY_MODE);
         let stored_swap = self.bool(&keys::IS_HANJI_FIRST);
+        let stored_output_both = self.bool(&keys::IS_OUTPUT_BOTH_SCRIPTS);
         let input_mode: InputMode = self.choice(&keys::INPUT_MODE);
         EngineSettings {
             input_mode,
             is_hanji_first: candidate_display_mode.effective_hanji_first(stored_swap),
+            is_output_both_scripts: candidate_display_mode
+                .effective_output_both_scripts(stored_output_both),
             // Full width always under TPS, as on mobile
             // (`ios/.../SharedSettings.swift` `isFullWidthPunctuation`).
             is_full_width_punctuation: input_mode == InputMode::Tps
@@ -864,6 +867,7 @@ mod tests {
         let expected = EngineSettings {
             input_mode: InputMode::Poj,
             is_hanji_first: false,
+            is_output_both_scripts: false,
             is_full_width_punctuation: false,
             candidate_display_mode: CandidateDisplayMode::SideBySide,
             is_literal_roman_candidate_enabled: true,

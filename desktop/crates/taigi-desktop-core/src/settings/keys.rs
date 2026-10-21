@@ -45,9 +45,9 @@ pub const LAST_ROMANIZATION_MODE: SettingsKey<Romanization> =
 pub const TPS_KEYBOARD_SHOWN: SettingsKey<bool> = SettingsKey::new("tpsKeyboardShown", false);
 pub const IS_HANJI_FIRST: SettingsKey<bool> =
     SettingsKey::new("isTranslateSwapped", ENGINE_DEFAULTS.is_hanji_first);
-// RETIRED 2026-09-30: `outputBothScripts` (Annotate in Brackets). No desktop
-// UI ever wrote it; mobile keeps its own key and UI. A hand-edited `true` in an
-// existing `settings.json` is now inert, so the spelling stays reserved.
+/// Annotate in Brackets (outputBothScripts). Emitted with a Hanji commit when on.
+pub const IS_OUTPUT_BOTH_SCRIPTS: SettingsKey<bool> =
+    SettingsKey::new("outputBothScripts", ENGINE_DEFAULTS.is_output_both_scripts);
 /// What a candidate cell shows. Same key and raw strings on every platform
 /// (`SharedSettings.swift` `candidateDisplayMode`). The swap toggle above
 /// keeps its own storage while this is `romanOnly`; the derived value lives
@@ -277,13 +277,14 @@ pub const CLEARED_COMPOSING_CHORD: &str = "";
 /// user), not the update bookkeeping, not the remembered pane. macOS keeps a
 /// Swift twin: `SettingsStore.swift` `resetGeneralSettings`. The input mode
 /// takes the romanization TPS returns to and the TPS key panel with it.
-pub const GENERAL_KEYS: [&str; 11] = [
+pub const GENERAL_KEYS: [&str; 12] = [
     INPUT_MODE.name,
     KEYBOARD_LAYOUT.name,
     LAST_ROMANIZATION_MODE.name,
     TPS_KEYBOARD_SHOWN.name,
     TONE_INPUT_SCHEME.name,
     IS_HANJI_FIRST.name,
+    IS_OUTPUT_BOTH_SCRIPTS.name,
     IS_AUTO_SPACE_ENABLED.name,
     IS_CANDIDATE_WINDOW_ENABLED.name,
     IS_LITERAL_ROMAN_CANDIDATE_ENABLED.name,

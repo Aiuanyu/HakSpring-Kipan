@@ -54,6 +54,12 @@ enum CandidateDisplayMode: String, CaseIterable, Sendable {
         self != .romanOnly
     }
 
+    /// Effective both-scripts output flag for a stored switch.
+    /// CROSS-PLATFORM INVARIANT — mirrors iOS / Android / desktop-core.
+    func effectiveOutputBothScripts(stored: Bool) -> Bool {
+        stored && showsHanji
+    }
+
     /// The mode after this one, in the order the Appearance picker lists them, and
     /// round again from the end — what the cycle shortcut steps through, so
     /// the key and the picker agree on what "next" is.
@@ -126,6 +132,11 @@ struct EngineSettings: Sendable {
     /// install commits.
     let isHanjiFirst: Bool
 
+    /// Annotate in Brackets (`output_both_scripts` on the wire): when on, committing
+    /// a Hanji-first composition appends the romanization in brackets (e.g. `發燒 (fàdséu)`).
+    /// CROSS-PLATFORM INVARIANT — mirrors iOS `SharedSettings.isOutputBothScripts`.
+    let isOutputBothScripts: Bool
+
     /// How the candidate window renders the pair. Sent to the engine as
     /// `AppConfig.candidate_display_mode`, which is what collapses
     /// same-romanization rows under `.romanOnly`
@@ -183,6 +194,7 @@ struct EngineSettings: Sendable {
     static let defaults = EngineSettings(
         inputMode: .tl,
         isHanjiFirst: true,
+        isOutputBothScripts: false,
         candidateDisplayMode: .sideBySide,
         isLiteralRomanCandidateEnabled: false,
         syllableSeparator: .noSeparator,

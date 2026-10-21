@@ -14,6 +14,7 @@ enum StringKey: String {
     case commonOther = "i18n_common_other"
     case commonEdit = "i18n_common_edit"
     case commonToggleTranslateSwapped = "i18n_common_toggleTranslateSwapped"
+    case commonToggleOutputBothScripts = "i18n_common_toggleOutputBothScripts"
     case commonViewWebsite = "i18n_common_viewWebsite"
     case commonExportFailed = "i18n_common_exportFailed"
     case commonImportFailed = "i18n_common_importFailed"

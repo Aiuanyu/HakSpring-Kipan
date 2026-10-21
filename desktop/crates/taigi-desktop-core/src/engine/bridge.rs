@@ -109,6 +109,7 @@ pub(super) fn app_config(settings: &EngineSettings) -> AppConfig {
         oo_doubletap_enabled: true,
         nn_doubletap_enabled: true,
         is_hanji_first: settings.is_hanji_first,
+        output_both_scripts: settings.is_output_both_scripts,
         candidate_display_mode: settings.candidate_display_mode.wire() as i32,
         syllable_separator: settings.syllable_separator.wire() as i32,
         force_lowercase_nasal_marker: !settings.is_nasal_marker_uppercase_enabled,
@@ -209,19 +210,22 @@ mod tests {
     fn app_config_carries_the_swap_flag() {
         let settings = EngineSettings {
             is_hanji_first: true,
+            is_output_both_scripts: true,
             ..EngineSettings::default()
         };
         let swapped = app_config(&settings);
         assert!(swapped.is_hanji_first);
         assert!(
-            !swapped.output_both_scripts,
-            "desktop has no Annotate in Brackets: the wire field stays at its default"
+            swapped.output_both_scripts,
+            "desktop carries Annotate in Brackets when enabled"
         );
         let roman_first = EngineSettings {
             is_hanji_first: false,
+            is_output_both_scripts: false,
             ..EngineSettings::default()
         };
         assert!(!app_config(&roman_first).is_hanji_first);
+        assert!(!app_config(&roman_first).output_both_scripts);
     }
 
     #[test]

@@ -76,6 +76,12 @@ extension KeyboardShortcuts.Name {
         initial: .init(.backtick),
     )
 
+    /// Toggle Annotate in Brackets (output both scripts). B for Brackets / Both scripts.
+    static let toggleOutputBothScripts = Self(
+        "toggleOutputBothScripts",
+        initial: .init(.b, modifiers: [.control, .command]),
+    )
+
     /// The way round the Candidate Display picker from the keyboard (USER 2026-09-02):
     /// the backtick above is inert outside Hanji–Romanization Pairing, so a user in Hanji with Romanization or Romanization Only
     /// had no key that led back. H for Hàn-Lô, the thing being switched — a
@@ -144,6 +150,8 @@ enum ShortcutAction: CaseIterable, Sendable {
     /// Into TPS and back to the romanization last used.
     case toggleTps
     case toggleTranslateSwapped
+    /// Toggles Annotate in Brackets (output both scripts).
+    case toggleOutputBothScripts
     /// Steps the Candidate Display picker one place: Hanji–Romanization Pairing → Hanji with Romanization → Romanization Only → Hanji–Romanization Pairing.
     case cycleCandidateDisplayMode
     /// Opens the symbol picker over the caret.
@@ -164,7 +172,7 @@ enum ShortcutAction: CaseIterable, Sendable {
     /// and the settings window. Each block keeps `allCases`' order. Mirrors
     /// desktop-core `ShortcutAction::GROUPS` / `GROUP_TITLES`.
     static let groups: [(title: StringKey, actions: [ShortcutAction])] = [
-        (.settingsOutputScriptRoman, [.toggleRomanization, .toggleTranslateSwapped, .cycleCandidateDisplayMode]),
+        (.settingsOutputScriptRoman, [.toggleRomanization, .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode]),
         (.settingsTpsMode, [.toggleTps, .showTpsKeyboard]),
         (.commonOther, [.showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
     ]
@@ -175,6 +183,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleTps: .toggleTps
         case .cycleCandidateDisplayMode: .cycleCandidateDisplayMode
         case .toggleTranslateSwapped: .toggleTranslateSwapped
+        case .toggleOutputBothScripts: .toggleOutputBothScripts
         case .showSymbolPicker: .showSymbolPicker
         case .openLastSettingsPane: .openLastSettingsPane
         case .showTelexGuide: .showTelexGuide
@@ -201,7 +210,7 @@ enum ShortcutAction: CaseIterable, Sendable {
     /// not another.
     func isInert(under mode: InputMode) -> Bool {
         switch self {
-        case .toggleTranslateSwapped, .cycleCandidateDisplayMode, .showTelexGuide: mode == .tps
+        case .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode, .showTelexGuide: mode == .tps
         case .showTpsKeyboard: mode != .tps
         case .toggleRomanization, .toggleTps, .showSymbolPicker, .openLastSettingsPane: false
         }
@@ -230,6 +239,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleTps: language.string(.desktopShortcutToggleTps)
         case .cycleCandidateDisplayMode: language.string(.desktopShortcutCycleCandidateDisplayMode)
         case .toggleTranslateSwapped: language.string(.commonToggleTranslateSwapped)
+        case .toggleOutputBothScripts: language.string(.commonToggleOutputBothScripts)
         case .showSymbolPicker: language.string(.desktopShortcutShowSymbolPicker)
         case .openLastSettingsPane: language.string(.desktopShortcutOpenSettings)
         case .showTelexGuide: language.string(.desktopShortcutShowTelexGuide)
@@ -303,8 +313,8 @@ enum ShortcutHotkeys {
             // pane that is belongs to the settings window, not to a chord —
             // the named panes are reached from the menu bar now.
             openSettings(on: nil, in: SettingsStore())
-        case .toggleRomanization, .toggleTps, .toggleTranslateSwapped, .cycleCandidateDisplayMode,
-             .showTelexGuide, .showTpsKeyboard:
+        case .toggleRomanization, .toggleTps, .toggleTranslateSwapped, .toggleOutputBothScripts,
+             .cycleCandidateDisplayMode, .showTelexGuide, .showTpsKeyboard:
             ComposingSessionCoordinator.shared.performShortcutAction(action)
         case .showSymbolPicker:
             // Never registered, so never fires (`firesFromTheKeyPath`).
