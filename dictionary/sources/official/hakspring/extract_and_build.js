@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { walkerCost } = require('./tkdb_v4');
+const { walkerCost, boostFrequency } = require('./tkdb_v4');
 
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
 // HAKSPRING_ROOT overrides the HakSpring checkout, e.g. a worktree whose data is not on main yet.
@@ -434,21 +434,22 @@ for (const cf of certFiles) {
       const hyphenatedPhonetic = tokens.join('-');
       // 客話聲母縮寫（多字母聲母長度優先，單音節詞留空）
       const fusedAbbrev = deriveHakfaAbbrev(notoneSylls);
-      const key = pair.word + '|' + fusedNotone;
+      let word = pair.word;
+      // 客話正字規範：個人 ge-ngǐn -> 个人 ge-ngǐn，保留個人 gòg-ngǐn
+      if (word === '個人' && fusedNotone === 'gengin') {
+        word = '个人';
+      }
+      const key = word + '|' + fusedNotone;
 
-      if (!map.has(key) || map.get(key).freq < cf.freq) {
-        let freq = cf.freq;
-        // 客語第一高頻結構助詞/量詞「个 (ge)」賦予特級頻率（55000，高於一般基礎級 50000）
-        if (pair.word === '个' && fusedNotone === 'ge') {
-          freq = 55000;
-        }
+      const boostedFreq = boostFrequency(word, cf.freq);
+      if (!map.has(key) || map.get(key).freq < boostedFreq) {
         map.set(key, {
-          word: pair.word,
+          word: word,
           tl: hyphenatedPhonetic,
           tl_num: hyphenatedPhonetic,
           tl_notone: fusedNotone,
           tl_abbrev: fusedAbbrev,
-          freq: freq,
+          freq: boostedFreq,
           syllable_count: Math.min(notoneSylls.length, 4),
           syllables: notoneSylls,
           bitmask: CERT_BITMASK
@@ -491,13 +492,19 @@ if (fs.existsSync(gipJsonPath)) {
       const hyphenatedPhonetic = tokens.join('-');
       // 客話聲母縮寫（多字母聲母長度優先，單音節詞留空）
       const fusedAbbrev = deriveHakfaAbbrev(notoneSylls);
+      let word = pair.word;
+      // 客話正字規範：個人 ge-ngǐn -> 个人 ge-ngǐn，保留個人 gòg-ngǐn
+      if (word === '個人' && fusedNotone === 'gengin') {
+        word = '个人';
+      }
       // 「特」讀音：淨差聲調也另外一筆（鍵加帶調讀音）；共一隻帶調讀音就併
-      const plainKey = pair.word + '|' + fusedNotone;
+      const plainKey = word + '|' + fusedNotone;
       const samePlain = map.has(plainKey) && map.get(plainKey).tl.normalize('NFC') === hyphenatedPhonetic.normalize('NFC');
       const key = pair.special && !samePlain
-        ? pair.word + '|' + fusedNotone + '|' + hyphenatedPhonetic.normalize('NFC')
+        ? word + '|' + fusedNotone + '|' + hyphenatedPhonetic.normalize('NFC')
         : plainKey;
-      const freq = Math.max(100, gipDefaultFreq - pair.word.length * 1000);
+      const baseFreq = Math.max(100, gipDefaultFreq - word.length * 1000);
+      const freq = boostFrequency(word, baseFreq);
 
       if (map.has(key)) {
         // Also in the certification lists: the certification reading and frequency stay,
@@ -505,7 +512,7 @@ if (fs.existsSync(gipJsonPath)) {
         map.get(key).bitmask |= KAUTIAN_BITMASK;
       } else {
         map.set(key, {
-          word: pair.word,
+          word: word,
           tl: hyphenatedPhonetic,
           tl_num: hyphenatedPhonetic,
           tl_notone: fusedNotone,
@@ -660,7 +667,7 @@ for (let i = 0; i < records.length; i++) {
   recBuf.writeUInt8(tlBuf.length, 7);       // tl_len
   recBuf.writeUInt8(r.syllable_count, 8);   // syllable_count
   recBuf.writeUInt16LE(r.subtag, 9);       // kautian_subtag: 1 (KAUTIAN_SUBTAG_MAIN_BIT: has_main = true); supplement 0; lect in bits 13-15
-  recBuf.writeUInt16LE(walkerCost(r.freq), 11); // walker_cost (v4), see tkdb_v4.js
+  recBuf.writeUInt16LE(walkerCost(r.word, r.freq), 11); // walker_cost (v4), see tkdb_v4.js
   hanziBuf.copy(recBuf, 13);
   tlBuf.copy(recBuf, 13 + hanziBuf.length);
 

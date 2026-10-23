@@ -13,18 +13,67 @@
  */
 
 const fs = require('fs');
+const path = require('path');
+
+const UNIGRAMS_PATH = path.join(__dirname, 'data/hakfa_unigrams.json');
+let hakfaUnigrams = null;
+let totalTokens = 255177;
+let vocabSize = 21653;
+
+if (fs.existsSync(UNIGRAMS_PATH)) {
+  try {
+    const raw = JSON.parse(fs.readFileSync(UNIGRAMS_PATH, 'utf8'));
+    hakfaUnigrams = raw.unigrams || {};
+    if (raw.metadata) {
+      totalTokens = raw.metadata.total_tokens || totalTokens;
+      vocabSize = raw.metadata.vocabulary_size || vocabSize;
+    }
+  } catch (e) {
+    console.warn('載入 hakfa_unigrams.json 失敗，回退至 baseline：', e);
+  }
+}
 
 const CORPUS_TOTAL_FREQ = 13056588;
 const MILLI_NATS_PER_NAT = 1000;
 const V3_FIXED_PREFIX = 11; // bitmask u16, frequency u32, hanzi_len u8, tl_len u8, syllable_count u8, kautian_subtag u16
 const HEADER_SIZE = 16;
 
-function walkerCost(frequency) {
+/**
+ * 依據客話 Unigram 語言模型（以 Lidstone add-alpha Informed Prior 平滑）計算 walker_cost
+ * 若無語料則回退至原頻率公式。
+ */
+function walkerCost(word, frequency) {
+  if (hakfaUnigrams) {
+    let prior = 0.02;
+    if (frequency >= 50000) prior = 1.0;
+    else if (frequency >= 45000) prior = 0.6;
+    else if (frequency >= 40000) prior = 0.3;
+    else if (frequency >= 35000) prior = 0.15;
+    else if (frequency >= 30000) prior = 0.05;
+    else if (frequency < 10000) prior = 0.001; // 補字典
+
+    const count = (hakfaUnigrams[word] || 0) + prior;
+    const prob = count / (totalTokens + 0.5 * vocabSize);
+    const cost = Math.round(-Math.log(prob) * MILLI_NATS_PER_NAT);
+    return Math.max(0, Math.min(0xfffe, cost));
+  }
+
+  // Fallback baseline
   const cost = Math.round((Math.log(CORPUS_TOTAL_FREQ) - Math.log(1 + frequency)) * MILLI_NATS_PER_NAT);
   if (!(cost >= 0 && cost < 0xffff)) {
     throw new Error(`walker_cost ${cost} for frequency ${frequency} is outside u16 (0xffff is "unpriced")`);
   }
   return cost;
+}
+
+/**
+ * 依據客話語料真實出現次數，提供候選詞頻率加成 (LM Frequency Boost)
+ */
+function boostFrequency(word, baseFreq) {
+  if (!hakfaUnigrams || !hakfaUnigrams[word]) return baseFreq;
+  const count = hakfaUnigrams[word];
+  const boost = Math.min(8000, Math.round(Math.log2(1 + count) * 550));
+  return baseFreq + boost;
 }
 
 /** v3 record → v4 record: insert walker_cost u16 after kautian_subtag. */
@@ -60,7 +109,7 @@ function upgradeFile(path) {
   console.log(`  ✓ ${path}: TKDB v3 → v4 (${count} records)`);
 }
 
-module.exports = { walkerCost, V3_FIXED_PREFIX };
+module.exports = { walkerCost, boostFrequency, V3_FIXED_PREFIX };
 
 if (require.main === module) {
   if (process.argv.length !== 3) {
