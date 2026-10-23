@@ -41,7 +41,7 @@
   {
     "id": "r8_24_intro_self",
     "category": "personal_name",
-    "description": "平哥姓名介紹句（含自訂單字瑋 Ví 與學習詞江瑋平）",
+    "description": "江瑋平姓名介紹句（含自訂單字瑋 Ví 與學習詞江瑋平）",
     "input": "ngagemiangeonzogongvipin",
     "expected_hanji": "吾个名仔安做江瑋平",
     "expected_roman": "Ngá ge miǎng-è ón-zo Góng Vípǐn",
@@ -276,7 +276,7 @@
   {
     "id": "r8_26_iu_gang_xin_e",
     "category": "problem_case",
-    "description": "平哥 20261023 回報有問題：有更新吔",
+    "description": "使用者實測回報有問題：有更新吔",
     "input": "iugangxine",
     "expected_hanji": "有更新吔",
     "expected_roman": "iú gáng xín è"

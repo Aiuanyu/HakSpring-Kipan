@@ -17,7 +17,7 @@ const { walkerCost } = require('./tkdb_v4');
 
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
 // HAKSPRING_ROOT overrides the HakSpring checkout, e.g. a worktree whose data is not on main yet.
-const HAKSPRING_ROOT = process.env.HAKSPRING_ROOT || '/Users/gjrobert/NAS/projects/HakSpring';
+const HAKSPRING_ROOT = process.env.HAKSPRING_ROOT || path.resolve(REPO_ROOT, '../HakSpring');
 const HAKSPRING_DATA = path.join(HAKSPRING_ROOT, 'data');
 const FST_BUILDER = path.join(REPO_ROOT, 'engine/target/debug/fst-builder');
 
@@ -106,7 +106,7 @@ function convertToneValuesToDiacritics(str) {
 // 另一隻正式讀音：拆開、全部收（「特」：教典特殊音，177 條，例 長 特diǒng）
 const READING_NOTES = ['又俗音', '又讀', '又音', '俗音', '特殊音', '特', '又', '文', '白'];
 // 合音、變調後个讀法，毋係字本身个讀音：拆開、丟忒
-// 教典「特」：特殊讀音。摎主讀音淨差聲調也愛另外留一筆，毋好併（平哥 20261021）
+// 教典「特」：特殊讀音。摎主讀音淨差聲調也愛另外留一筆，毋好併
 const SPECIAL_NOTES = ['特殊音', '特'];
 const DROP_NOTES = ['小稱變調讀本調為', '小稱變調讀', '為後字變調', '後字變調讀', '後字變調',
   '本調為', '合音讀', '合音'];
@@ -359,7 +359,7 @@ function linePairs(parsed) {
       pairs.push(...assignVariantReadings(mainPairs, v.phonetic, parsed.main.word));
     }
   }
-  // 詞目有「…」个（…兜、拜…）係用法說明，毋做候選；歇後語个「－－」、阿拉伯數字詞先留（平哥 20261022，Obs IME C8 第 5 項）
+  // 詞目有「…」个（…兜、拜…）係用法說明，毋做候選；歇後語个「－－」、阿拉伯數字詞先留
   return pairs.filter(p => !p.word.includes('…'));
 }
 
@@ -437,13 +437,18 @@ for (const cf of certFiles) {
       const key = pair.word + '|' + fusedNotone;
 
       if (!map.has(key) || map.get(key).freq < cf.freq) {
+        let freq = cf.freq;
+        // 客語第一高頻結構助詞/量詞「个 (ge)」賦予特級頻率（55000，高於一般基礎級 50000）
+        if (pair.word === '个' && fusedNotone === 'ge') {
+          freq = 55000;
+        }
         map.set(key, {
           word: pair.word,
           tl: hyphenatedPhonetic,
           tl_num: hyphenatedPhonetic,
           tl_notone: fusedNotone,
           tl_abbrev: fusedAbbrev,
-          freq: cf.freq,
+          freq: freq,
           syllable_count: Math.min(notoneSylls.length, 4),
           syllables: notoneSylls,
           bitmask: CERT_BITMASK
@@ -583,7 +588,7 @@ for (const r of records) {
     throw new Error(`[Assertion Error] 教典詞條 "${r.word}" 無子集位元`);
   }
 }
-// 依照詞頻排序
+// 依照詞頻排序（客語第一助詞「个」因被賦予 55000 特級頻率，自然名列前茅）
 records.sort((a, b) => b.freq - a.freq);
 console.log(`  ✓ 總計詞庫筆數 (認證 + 教典): ${records.length} 筆`);
 
