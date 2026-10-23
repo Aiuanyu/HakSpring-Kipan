@@ -147,19 +147,19 @@ fn create_test_cases() -> Vec<TestCase> {
     vec![
         TestCase {
             id: "r2_13_phrase1".into(),
-            name: "平哥實測句：想法".into(),
+            name: "實測句：想法".into(),
             input: "siongfad".into(),
             expected_meaning: "想法".into(),
         },
         TestCase {
             id: "r2_13_phrase2".into(),
-            name: "平哥實測句：跈時行".into(),
+            name: "實測句：跈時行".into(),
             input: "tensihang".into(),
             expected_meaning: "跈時行 (趕流行)".into(),
         },
         TestCase {
             id: "r2_13_phrase3".into(),
-            name: "平哥實測句：顛顛倒倒".into(),
+            name: "實測句：顛顛倒倒".into(),
             input: "diandiandodo".into(),
             expected_meaning: "顛顛倒倒".into(),
         },
@@ -198,6 +198,60 @@ fn create_test_cases() -> Vec<TestCase> {
             name: "首字母簡拼測試：kp".into(),
             input: "kp".into(),
             expected_meaning: "企盤 (簡拼)".into(),
+        },
+        TestCase {
+            id: "udhr_1_part1".into(),
+            name: "世界人權宣言：所有个人生來自由".into(),
+            input: "soiugenginsangloiciiiu".into(),
+            expected_meaning: "所有个人生來自由".into(),
+        },
+        TestCase {
+            id: "udhr_1_part2".into(),
+            name: "世界人權宣言：在尊嚴摎權利上一律平等".into(),
+            input: "caizunngiamlaukianlisongidludpinden".into(),
+            expected_meaning: "在尊嚴摎權利上一律平等".into(),
+        },
+        TestCase {
+            id: "bible_love_patience".into(),
+            name: "聖經保羅愛篇：愛係恆久忍耐又有恩慈".into(),
+            input: "oihehengiungiunnaiiuiuencii".into(),
+            expected_meaning: "愛係恆久忍耐又有恩慈".into(),
+        },
+        TestCase {
+            id: "bible_love_not_boast".into(),
+            name: "聖經保羅愛篇：愛係毋嫉妒毋自誇毋張狂".into(),
+            input: "oihemqidduoihemciikuamzongkong".into(),
+            expected_meaning: "愛係毋嫉妒毋自誇毋張狂".into(),
+        },
+        TestCase {
+            id: "bible_love_endures".into(),
+            name: "聖經保羅愛篇：凡事包容凡事相信凡事盼望凡事忍耐".into(),
+            input: "famsiibauiungfamsiixiongxinfamsiipanmongfamsiingiunnai".into(),
+            expected_meaning: "凡事包容凡事相信凡事盼望凡事忍耐".into(),
+        },
+        TestCase {
+            id: "bible_love_never_fails".into(),
+            name: "聖經保羅愛篇：愛係永無停息".into(),
+            input: "oiheiungmotinsed".into(),
+            expected_meaning: "愛係永無停息".into(),
+        },
+        TestCase {
+            id: "r8_24_intro_self".into(),
+            name: "R8-24實測句：吾个名仔安做江瑋平".into(),
+            input: "ngagemiangeonzogongvipin".into(),
+            expected_meaning: "吾个名仔安做江瑋平".into(),
+        },
+        TestCase {
+            id: "r8_24_intro_cui".into(),
+            name: "R8-24實測句：吾个名仔安做劉源翠".into(),
+            input: "ngagemiangeonzoliungiencui".into(),
+            expected_meaning: "吾个名仔安做劉源翠".into(),
+        },
+        TestCase {
+            id: "r8_24_intro_wife".into(),
+            name: "R8-24實測句：吾餔娘該名仔安做張廖千毓".into(),
+            input: "ngabungionggemiangeonzozongliauqieniug".into(),
+            expected_meaning: "吾餔娘該名仔安做張廖千毓".into(),
         },
     ]
 }

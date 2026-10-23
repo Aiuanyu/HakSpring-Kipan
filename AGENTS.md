@@ -56,9 +56,9 @@ Writing in the vault — only when asked, and following `hub-template.md`:
 - **Commit Message 審核與提交流程**：
     1. 先分析專案 Git 目前 staged 的 diff，歸納此次更新內容。
     2. 依對話記憶提及不同 AI 模型，分別列出每個 AI 模型的分工及貢獻。
-    3. 先寫在專案根目錄的臨時 `commit_msg.txt` 中，供平哥審閱、直接編輯。
+    3. 先寫在專案根目錄的臨時 `commit_msg.txt` 中，供維護者審閱、直接編輯。
     4. Commit message **毋使寫來 Obsidian 筆記裡肚**（避免筆記內容過度冗長繁雜、重複堆疊已存在於 git log 或專案檔案的內容）。
-    5. 平哥審核完成告知定稿後，再根據 `commit_msg.txt` 執行 commit。
+    5. 維護者審核完成告知定稿後，再根據 `commit_msg.txt` 執行 commit。
         - 絕對要小心避免那種會卡住終端機狀態的指令。
         - 愛細膩莫 commit 著 `commit_msg.txt`；commit 煞後，暫存檔案愛提掉（清理）。
 - **貢獻者樣板 (Co-authors Template)**：commit 最尾照下背寫。
@@ -161,7 +161,7 @@ Canonical: `docs/BUILDING.md` §4–5; rationale and timings: `docs/architecture
 - Code, comments and docs in **English** (Kipan exception: commit messages and PR descriptions are in Hakfa — § Issues, PRs, commits). Living docs name UI labels by their i18n `en` value. CJK only for Taigi content (phonetic / Hanji examples, test data, proper names of dictionaries and fonts). Dated snapshots (`docs/reports/**`, `docs/releases/**`) are frozen.
 - Conventional Commits `type(scope): subject`; one PR per logical change; say which platforms you built and tested.
 - `changelog/` is edited only at release time.
-- No personal identifiers in tracked files, commits or PRs (`CONTRIBUTING.md` § Secrets).
+- No personal identifiers or private chat nicknames (for the maintainer or AI assistants — do not even list the specific nicknames as examples in tracked files) or local `/Users/<name>/…` paths in dictionary data, tracked files, code comments, docs, commits or PRs (`CONTRIBUTING.md` § Secrets).
 
 ## References
 

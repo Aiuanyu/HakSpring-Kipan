@@ -16,7 +16,7 @@ MAGIC = b"TKDB"
 VERSION = 3
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-HAKSPRING_DATA = Path("/Users/gjrobert/NAS/projects/HakSpring/data")
+HAKSPRING_DATA = REPO_ROOT.parent / "HakSpring" / "data"
 OUTPUT_DIR = REPO_ROOT / "output" / "hakfa"
 FST_BUILDER = REPO_ROOT / "engine" / "target" / "debug" / "fst-builder"
 
