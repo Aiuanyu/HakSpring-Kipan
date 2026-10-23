@@ -25,3 +25,10 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+
+[features]
+default = []
+# Optional linkage to the engine's user-data stores (SQLite).
+# Keeps the library pure by default, but allows test binaries like `evaluate_golden`
+# to run with active custom dictionary and learning record databases.
+user-data = ["dispatch/user-data"]

@@ -1,0 +1,284 @@
+[
+  {
+    "id": "r8_24_ge_bias",
+    "category": "problem_case",
+    "description": "連打个出該問題（常用連詞个 vs 該）",
+    "input": "zuizuieuge",
+    "expected_hanji": "最主要个",
+    "expected_roman": "zui zù-ieu ge"
+  },
+  {
+    "id": "r8_24_lau_ranking",
+    "category": "problem_case",
+    "description": "連詞摎 láu 被動詞落踩過之排序問題",
+    "input": "ngailaugi",
+    "expected_hanji": "𠊎摎佢",
+    "expected_roman": "ngǎi láu gǐ"
+  },
+  {
+    "id": "r5_1_dui_oi_fibo",
+    "category": "historical_bug",
+    "description": "R5-1 跨界連打壓制修復驗證句",
+    "input": "iaheduioigefibo",
+    "expected_hanji": "這係對愛个回報",
+    "expected_roman": "Ià he dui oi ge fǐ-bo"
+  },
+  {
+    "id": "r8_17_browser",
+    "category": "custom_word",
+    "description": "子區間自訂詞瀏 liǔ 參與連打合成瀏覽器",
+    "input": "liulamhi",
+    "expected_hanji": "瀏覽器",
+    "expected_roman": "liǔ-lam-hi",
+    "requires_custom": [
+      {
+        "word": "瀏",
+        "reading": "liǔ",
+        "raw_tl": "liu"
+      }
+    ]
+  },
+  {
+    "id": "r8_24_intro_self",
+    "category": "personal_name",
+    "description": "平哥姓名介紹句（含自訂單字瑋 Ví 與學習詞江瑋平）",
+    "input": "ngagemiangeonzogongvipin",
+    "expected_hanji": "吾个名仔安做江瑋平",
+    "expected_roman": "Ngá ge miǎng-è ón-zo Góng Vípǐn",
+    "requires_custom": [
+      {
+        "word": "瑋",
+        "reading": "Ví",
+        "raw_tl": "vi"
+      }
+    ],
+    "requires_learned": [
+      {
+        "phrase": "江瑋平",
+        "reading": "Góng Vípǐn",
+        "raw_tl": "gongvipin"
+      }
+    ]
+  },
+  {
+    "id": "r8_24_intro_cui",
+    "category": "personal_name",
+    "description": "劉源翠姓名介紹句",
+    "input": "ngagemiangeonzoliungiencui",
+    "expected_hanji": "吾个名仔安做劉源翠",
+    "expected_roman": "Ngá ge miǎng-è ón-zo Liǔ Ngiěncui",
+    "requires_learned": [
+      {
+        "phrase": "劉源翠",
+        "reading": "Liǔ Ngiěncui",
+        "raw_tl": "liungiencui"
+      }
+    ]
+  },
+  {
+    "id": "r8_24_intro_wife",
+    "category": "personal_name",
+    "description": "歐陽秋月姓名介紹句（測試四字複姓學詞連打）",
+    "input": "ngabungionggemiangeonzoeuiongqiungied",
+    "expected_hanji": "吾餔娘个名仔安做歐陽秋月",
+    "expected_roman": "Ngá bú-ngiǒng ge miǎng-è ón-zo Éu-iǒng Qiú-ngied",
+    "requires_learned": [
+      {
+        "phrase": "歐陽秋月",
+        "reading": "Éu-iǒng Qiú-ngied",
+        "raw_tl": "euiongqiungied"
+      }
+    ]
+  },
+  {
+    "id": "issue_mayor_sim",
+    "category": "custom_word",
+    "description": "補字典沈 Sìim 參與連打",
+    "input": "ngigesiizongsiimbagiong",
+    "expected_hanji": "你个市長沈伯洋",
+    "expected_roman": "Ngǐ ge sii-zòng Sìim Bàg'iǒng"
+  },
+  {
+    "id": "issue_bu_sii_dien",
+    "category": "problem_case",
+    "description": "補字典學詞連打",
+    "input": "busiidien",
+    "expected_hanji": "補字典",
+    "expected_roman": "bù-sii-dièn",
+    "requires_learned": [
+      {
+        "phrase": "補字典",
+        "reading": "bù-sii-dièn",
+        "raw_tl": "busiidien"
+      }
+    ]
+  },
+  {
+    "id": "issue_tiaugang",
+    "category": "problem_case",
+    "description": "調羹仔名詞連打",
+    "input": "tiaugange",
+    "expected_hanji": "調羹仔",
+    "expected_roman": "tiǎu-gáng-è"
+  },
+  {
+    "id": "udhr_article_1_p1",
+    "category": "classical_text",
+    "description": "世界人權宣言第一條前段（正字个，非個人）",
+    "input": "soiugenginsangloiciiiu",
+    "expected_hanji": "所有个人生來自由",
+    "expected_roman": "sò-iú ge ngǐn sáng-lǒi cii-iǔ"
+  },
+  {
+    "id": "udhr_article_1_p2",
+    "category": "classical_text",
+    "description": "世界人權宣言第一條後段（連詞摎，非落）",
+    "input": "tezunngiamlaukianlisongidludpinden",
+    "expected_hanji": "在尊嚴摎權利上一律平等",
+    "expected_roman": "té zún-ngiǎm láu kiǎn-li song ìd-lud pǐn-dèn"
+  },
+  {
+    "id": "bible_love_1",
+    "category": "classical_text",
+    "description": "現代客語聖經愛篇：有愛心就會有吞忍㧯慈悲",
+    "input": "iuoiximqiuvoiutunngiunlauciibi",
+    "expected_hanji": "有愛心就會有吞忍摎慈悲",
+    "expected_roman": "iú oi-xím qiu voi iú tún-ngiún láu cǐi-bí"
+  },
+  {
+    "id": "bible_love_2",
+    "category": "classical_text",
+    "description": "現代客語聖經愛篇：有愛心就毋會嫉妒",
+    "input": "iuoiximqiumvoiqiddu",
+    "expected_hanji": "有愛心就毋會嫉妒",
+    "expected_roman": "iú oi-xím qiu m̌-voi qìd-du"
+  },
+  {
+    "id": "bible_love_3",
+    "category": "classical_text",
+    "description": "現代客語聖經愛篇：毋會誇口毋會驕傲",
+    "input": "mvoikuakieumvoigieungau",
+    "expected_hanji": "毋會誇口毋會驕傲",
+    "expected_roman": "m̌-voi kuá-kièu m̌-voi giéu-ngau"
+  },
+  {
+    "id": "bible_love_4",
+    "category": "classical_text",
+    "description": "現代客語聖經愛篇：愛心永遠存在",
+    "input": "oiximiuniencuncai",
+    "expected_hanji": "愛心永遠存在",
+    "expected_roman": "oi-xím iùn-ièn cǔn-cai"
+  },
+  {
+    "id": "daily_eat_rice",
+    "category": "daily_life",
+    "description": "日常生活問候：食飽無",
+    "input": "siidbaumang",
+    "expected_hanji": "食飽吂",
+    "expected_roman": "siid-bàu-mǎng"
+  },
+  {
+    "id": "daily_go_home",
+    "category": "daily_life",
+    "description": "日常生活句：轉屋下",
+    "input": "zonvugka",
+    "expected_hanji": "轉屋下",
+    "expected_roman": "zòn-vùg-ká"
+  },
+  {
+    "id": "daily_drink_tea",
+    "category": "daily_life",
+    "description": "客家待客句：請來食茶",
+    "input": "qiangloisiidca",
+    "expected_hanji": "請來食茶",
+    "expected_roman": "qiàng lǒi siid-cǎ"
+  },
+  {
+    "id": "daily_where_to_go",
+    "category": "daily_life",
+    "description": "日常生活問候：你愛去哪",
+    "input": "ngioihinai",
+    "expected_hanji": "你愛去哪",
+    "expected_roman": "ň oi hi nài"
+  },
+  {
+    "id": "daily_thank_you",
+    "category": "daily_life",
+    "description": "日常生活問候：恁多謝",
+    "input": "anziise",
+    "expected_hanji": "恁仔細",
+    "expected_roman": "àn zìi-se"
+  },
+  {
+    "id": "daily_good_morning",
+    "category": "daily_life",
+    "description": "日常生活問候：恁早",
+    "input": "anzo",
+    "expected_hanji": "恁早",
+    "expected_roman": "àn-zò"
+  },
+  {
+    "id": "daily_working_hard",
+    "category": "daily_life",
+    "description": "日常生活句：打拚",
+    "input": "dabiang",
+    "expected_hanji": "打拚",
+    "expected_roman": "dà-biang"
+  },
+  {
+    "id": "daily_market",
+    "category": "daily_life",
+    "description": "日常生活句：去街仔",
+    "input": "higiaie",
+    "expected_hanji": "去街仔",
+    "expected_roman": "hi giái-è"
+  },
+  {
+    "id": "daily_speak_hakfa",
+    "category": "daily_life",
+    "description": "核心族語句：大家共下講客話",
+    "input": "taigakiunghagonghagfa",
+    "expected_hanji": "大家共下講客話",
+    "expected_roman": "tai-gá kiung-ha gòng hàg-fa"
+  },
+  {
+    "id": "idiom_xiongfab",
+    "category": "idiom",
+    "description": "常用名詞：想法（四縣 xiongfab）",
+    "input": "xiongfab",
+    "expected_hanji": "想法",
+    "expected_roman": "xiòng-fàb"
+  },
+  {
+    "id": "idiom_tensihang",
+    "category": "idiom",
+    "description": "客語特色熟語：跈時行",
+    "input": "tensiihang",
+    "expected_hanji": "跈時行",
+    "expected_roman": "těn-sǐi-hǎng"
+  },
+  {
+    "id": "idiom_diandiandodo",
+    "category": "idiom",
+    "description": "客語疊字熟語：顛顛倒倒",
+    "input": "diendiendodo",
+    "expected_hanji": "顛顛倒倒",
+    "expected_roman": "dién-dién-do-do"
+  },
+  {
+    "id": "proverb_diedtong",
+    "category": "idiom",
+    "description": "客語經典熟語：跌斷腳骨顛倒勇",
+    "input": "diedtongiogguddiendoiung",
+    "expected_hanji": "跌斷腳骨顛倒勇",
+    "expected_roman": "dièd-tón-giòg-gùd-dién-do-iùng"
+  },
+  {
+    "id": "r8_26_iu_gang_xin_e",
+    "category": "problem_case",
+    "description": "平哥 20261023 回報有問題：有更新吔",
+    "input": "iugangxine",
+    "expected_hanji": "有更新吔",
+    "expected_roman": "iú gáng xín è"
+  }
+]
