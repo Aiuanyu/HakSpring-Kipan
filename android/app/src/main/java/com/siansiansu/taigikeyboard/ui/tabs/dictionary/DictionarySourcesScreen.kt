@@ -104,7 +104,7 @@ fun DictionarySourcesScreen(
                         label = L10n.commonMoeDict,
                         checked = moeEnabled,
                         description = L10n.dictionaryMoeDescription,
-                        url = "https://hakspring.pages.dev/",
+                        url = "https://hakkadict.moe.edu.tw/",
                         onCheckedChange = {
                             moeEnabled = it
                             prefs.moeDictEnabled = it

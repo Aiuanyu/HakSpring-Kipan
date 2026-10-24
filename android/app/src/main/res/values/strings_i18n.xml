@@ -87,7 +87,7 @@
     <string name="i18n_dictionary_moeDescription">教育部《臺灣客語辭典》：收四縣、海陸、大埔、饒平、詔安、南四縣六腔个詞目、讀音、釋義摎例句。</string>
     <string name="i18n_dictionary_newwordDescription">客家委員會客語能力認證基礎級到高級个詞彙，客源翠整理。</string>
     <string name="i18n_dictionary_sttiDescription">對 106 年開始，共語文、數學、社會、自然科學、藝術、綜合活動、科技、健康摎體育這 8 大領域 个 學科術語編做客話。</string>
-    <string name="i18n_dictionary_kunggeDescription">教典無獨立收錄个單字，由客源翠程式自動補音</string>
+    <string name="i18n_dictionary_kunggeDescription">教典未獨立建字，愛灣語客源翠程式自動補音</string>
     <string name="i18n_dictionary_lkkDescription">李江却客話文教基金會漢羅合用建議用字。</string>
     <string name="i18n_dictionary_devDescription">補充政府機關、常見人名、行政區、數字、時間、日期摎其他教典較少收錄 个 詞。</string>
     <string name="i18n_dictionary_iTaigiDescription">一个群眾編輯 个 開放客話辭典</string>
