@@ -15,4 +15,14 @@ public interface ImportBackupOrBuilder extends
    * @return The backup.
    */
   com.google.protobuf.ByteString getBackup();
+
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 2;</code>
+   * @return The lect.
+   */
+  int getLect();
 }

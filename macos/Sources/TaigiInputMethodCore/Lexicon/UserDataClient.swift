@@ -88,6 +88,13 @@ protocol UserDataClient: Sendable {
 }
 
 extension UserDataClient {
+    /// Hakfa fork (D5): this client acting on the learning stores of `lect` (a lect code). A client
+    /// with no lects (a test double) is its own answer.
+    func scoped(to _: UInt32) -> any UserDataClient { self }
+
+    /// How much each lect has learned; a client that cannot say reports nothing.
+    func countLearning() throws -> [Taigi_Engine_LectLearningCount] { [] }
+
     /// Doubles that do not exercise it need not state it.
     func syncLects(dryRun _: Bool) throws -> Taigi_Engine_LectsSynced {
         throw UserDataClientError.engineUnavailable(op: "syncLects")
@@ -96,6 +103,21 @@ extension UserDataClient {
 
 /// The shipped client: the engine's user-data ops.
 struct EngineUserDataClient: UserDataClient {
+    /// Hakfa fork (D5): the lect whose learning stores the learning-record calls act on
+    /// (0 = 四縣, the original files).
+    var lect: UInt32 = 0
+
+    func scoped(to lect: UInt32) -> any UserDataClient {
+        EngineUserDataClient(lect: lect)
+    }
+
+    func countLearning() throws -> [Taigi_Engine_LectLearningCount] {
+        guard let counts = RustEngineBridge.countLearning() else {
+            throw UserDataClientError.engineUnavailable(op: "countLearning")
+        }
+        return counts.lects
+    }
+
     /// The largest file an import reads. CROSS-PLATFORM INVARIANT — the
     /// engine refuses the same size (`engine/userdata/src/csv.rs`); checked
     /// here too so a huge file is refused before it is read into memory.
@@ -168,6 +190,7 @@ struct EngineUserDataClient: UserDataClient {
             $0.frequency = true
             $0.association = true
             $0.learnedPhrases = true
+            $0.lect = lect
         }
     }
 
@@ -184,6 +207,7 @@ struct EngineUserDataClient: UserDataClient {
             filter: filter,
             limit: limit,
             offset: offset,
+            lect: lect,
         ) else { throw UserDataClientError.engineUnavailable(op: "learningRecordsList") }
         return UserDataListing(
             rows: page.records,
@@ -194,21 +218,21 @@ struct EngineUserDataClient: UserDataClient {
     }
 
     func setLearningRecordCount(_ record: Taigi_Engine_LearningRecord, count: Int) throws -> Bool {
-        guard let saved = RustEngineBridge.learningRecordSetCount(record, count: count) else {
+        guard let saved = RustEngineBridge.learningRecordSetCount(record, count: count, lect: lect) else {
             throw UserDataClientError.engineUnavailable(op: "learningRecordSetCount")
         }
         return saved.hasRecord
     }
 
     func deleteLearningRecord(_ record: Taigi_Engine_LearningRecord) throws -> Bool {
-        guard let removed = RustEngineBridge.learningRecordDelete(record) else {
+        guard let removed = RustEngineBridge.learningRecordDelete(record, lect: lect) else {
             throw UserDataClientError.engineUnavailable(op: "learningRecordDelete")
         }
         return removed
     }
 
     func addLearningRecordToCustomDictionary(_ record: Taigi_Engine_LearningRecord) throws {
-        guard let added = RustEngineBridge.learningRecordAddToCustomDictionary(record) else {
+        guard let added = RustEngineBridge.learningRecordAddToCustomDictionary(record, lect: lect) else {
             throw UserDataClientError.engineUnavailable(op: "learningRecordAddToCustomDictionary")
         }
         guard added.refusal == .none else { throw UserDataClientError.refused(detail: added.detail) }

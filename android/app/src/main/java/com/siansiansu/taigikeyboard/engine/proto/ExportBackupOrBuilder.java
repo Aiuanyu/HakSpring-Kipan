@@ -33,4 +33,14 @@ public interface ExportBackupOrBuilder extends
    */
   com.google.protobuf.ByteString
       getAppVersionBytes();
+
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 3;</code>
+   * @return The lect.
+   */
+  int getLect();
 }

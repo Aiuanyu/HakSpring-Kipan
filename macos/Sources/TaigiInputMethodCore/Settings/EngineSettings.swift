@@ -43,6 +43,15 @@ enum Lect: String, CaseIterable, Sendable {
         return self
     }
 
+    /// The lect code the dictionary and the user-data files use (desktop-core `Lect::code`).
+    var code: UInt32 {
+        switch self {
+        case .xiien: 1
+        case .namxiian: 6
+        case .hoiliug: 2
+        }
+    }
+
     /// What the mode flash says: the Chinese name with its HagPinPlus in brackets, the same shape
     /// as the other HUD texts (`諸夏字 (Lǒmásii)`), so it reads the same in every display
     /// language. Syllable separator "None" with the apostrophe rule: `Xi'ien` (xi + ien).

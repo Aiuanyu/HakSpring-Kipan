@@ -36,6 +36,7 @@ public  final class UserDataRequest extends
     DELETE_LEARNING_RECORD(14),
     ADD_LEARNING_RECORD_TO_CUSTOM_DICTIONARY(15),
     SYNC_LECTS(16),
+    COUNT_LEARNING(17),
     METHOD_NOT_SET(0);
     private final int value;
     private MethodCase(int value) {
@@ -67,6 +68,7 @@ public  final class UserDataRequest extends
         case 14: return DELETE_LEARNING_RECORD;
         case 15: return ADD_LEARNING_RECORD_TO_CUSTOM_DICTIONARY;
         case 16: return SYNC_LECTS;
+        case 17: return COUNT_LEARNING;
         case 0: return METHOD_NOT_SET;
         default: return null;
       }
@@ -903,6 +905,56 @@ public  final class UserDataRequest extends
    */
   private void clearSyncLects() {
     if (methodCase_ == 16) {
+      methodCase_ = 0;
+      method_ = null;
+    }
+  }
+
+  public static final int COUNT_LEARNING_FIELD_NUMBER = 17;
+  /**
+   * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+   */
+  @java.lang.Override
+  public boolean hasCountLearning() {
+    return methodCase_ == 17;
+  }
+  /**
+   * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.CountLearning getCountLearning() {
+    if (methodCase_ == 17) {
+       return (com.siansiansu.taigikeyboard.engine.proto.CountLearning) method_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.CountLearning.getDefaultInstance();
+  }
+  /**
+   * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+   */
+  private void setCountLearning(com.siansiansu.taigikeyboard.engine.proto.CountLearning value) {
+    java.util.Objects.requireNonNull(value);
+    method_ = value;
+    methodCase_ = 17;
+  }
+  /**
+   * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+   */
+  private void mergeCountLearning(com.siansiansu.taigikeyboard.engine.proto.CountLearning value) {
+    java.util.Objects.requireNonNull(value);
+    if (methodCase_ == 17 &&
+        method_ != com.siansiansu.taigikeyboard.engine.proto.CountLearning.getDefaultInstance()) {
+      method_ = com.siansiansu.taigikeyboard.engine.proto.CountLearning.newBuilder((com.siansiansu.taigikeyboard.engine.proto.CountLearning) method_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      method_ = value;
+    }
+    methodCase_ = 17;
+  }
+  /**
+   * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+   */
+  private void clearCountLearning() {
+    if (methodCase_ == 17) {
       methodCase_ = 0;
       method_ = null;
     }
@@ -1809,6 +1861,54 @@ public  final class UserDataRequest extends
       return this;
     }
 
+    /**
+     * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+     */
+    @java.lang.Override
+    public boolean hasCountLearning() {
+      return instance.hasCountLearning();
+    }
+    /**
+     * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.CountLearning getCountLearning() {
+      return instance.getCountLearning();
+    }
+    /**
+     * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+     */
+    public Builder setCountLearning(com.siansiansu.taigikeyboard.engine.proto.CountLearning value) {
+      copyOnWrite();
+      instance.setCountLearning(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+     */
+    public Builder setCountLearning(
+        com.siansiansu.taigikeyboard.engine.proto.CountLearning.Builder builderForValue) {
+      copyOnWrite();
+      instance.setCountLearning(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+     */
+    public Builder mergeCountLearning(com.siansiansu.taigikeyboard.engine.proto.CountLearning value) {
+      copyOnWrite();
+      instance.mergeCountLearning(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+     */
+    public Builder clearCountLearning() {
+      copyOnWrite();
+      instance.clearCountLearning();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.UserDataRequest)
   }
   @java.lang.Override
@@ -1843,12 +1943,13 @@ public  final class UserDataRequest extends
             com.siansiansu.taigikeyboard.engine.proto.DeleteLearningRecord.class,
             com.siansiansu.taigikeyboard.engine.proto.AddLearningRecordToCustomDictionary.class,
             com.siansiansu.taigikeyboard.engine.proto.SyncLects.class,
+            com.siansiansu.taigikeyboard.engine.proto.CountLearning.class,
           };
           java.lang.String info =
-              "\u0000\u0010\u0001\u0000\u0001\u0010\u0010\u0000\u0000\u0000\u0001<\u0000\u0002<" +
+              "\u0000\u0011\u0001\u0000\u0001\u0011\u0011\u0000\u0000\u0000\u0001<\u0000\u0002<" +
               "\u0000\u0003<\u0000\u0004<\u0000\u0005<\u0000\u0006<\u0000\u0007<\u0000\b<\u0000" +
               "\t<\u0000\n<\u0000\u000b<\u0000\f<\u0000\r<\u0000\u000e<\u0000\u000f<\u0000\u0010" +
-              "<\u0000";
+              "<\u0000\u0011<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

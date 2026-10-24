@@ -88,8 +88,10 @@ extension RustEngineBridge {
         filter: String,
         limit: Int,
         offset: Int,
+        lect: UInt32 = 0,
     ) -> Taigi_Engine_LearningRecords? {
         var list = Taigi_Engine_ListLearningRecords()
+        list.lect = lect
         list.kind = kind
         list.order = order
         list.filter = filter
@@ -107,8 +109,10 @@ extension RustEngineBridge {
     static func learningRecordSetCount(
         _ record: Taigi_Engine_LearningRecord,
         count: Int,
+        lect: UInt32 = 0,
     ) -> Taigi_Engine_LearningRecordSaved? {
         var set = Taigi_Engine_SetLearningRecordCount()
+        set.lect = lect
         set.record = record
         set.count = Int64(count)
         guard case let .learningRecordSaved(saved)? = userDataResult(
@@ -119,8 +123,9 @@ extension RustEngineBridge {
     }
 
     /// False when the row is gone.
-    static func learningRecordDelete(_ record: Taigi_Engine_LearningRecord) -> Bool? {
+    static func learningRecordDelete(_ record: Taigi_Engine_LearningRecord, lect: UInt32 = 0) -> Bool? {
         var delete = Taigi_Engine_DeleteLearningRecord()
+        delete.lect = lect
         delete.record = record
         guard case let .learningRecordDeleted(deleted)? = userDataResult(
             .deleteLearningRecord(delete),
@@ -135,8 +140,10 @@ extension RustEngineBridge {
     /// request.
     static func learningRecordAddToCustomDictionary(
         _ record: Taigi_Engine_LearningRecord,
+        lect: UInt32 = 0,
     ) -> Taigi_Engine_LearningRecordAddedToCustomDictionary? {
         var add = Taigi_Engine_AddLearningRecordToCustomDictionary()
+        add.lect = lect
         add.record = record
         guard case let .learningRecordAddedToCustomDictionary(added)? = userDataResult(
             .addLearningRecordToCustomDictionary(add),
@@ -155,6 +162,16 @@ extension RustEngineBridge {
             return nil
         }
         return synced
+    }
+
+    /// Hakfa fork (D5): how much each lect has learned; empty `lects` means every built lect.
+    static func countLearning(lects: [UInt32] = []) -> Taigi_Engine_LearningCounts? {
+        var count = Taigi_Engine_CountLearning()
+        count.lects = lects
+        guard case let .learningCounts(counts)? = userDataResult(.countLearning(count), op: "countLearning") else {
+            return nil
+        }
+        return counts
     }
 
     /// `nil` for a failed round-trip, a refusal (a request before the open),

@@ -317,6 +317,8 @@ pub fn list_learning_page(
             limit: clamped(page_size),
             offset: clamped(page * page_size),
             order: order as i32,
+            // Hakfa fork: Windows and Linux have no lect picker; 0 = 四縣, the original files.
+            lect: 0,
         }),
         op,
     )? {
@@ -342,6 +344,7 @@ pub fn set_learning_record_count(
         user_data_request::Method::SetLearningRecordCount(SetLearningRecordCount {
             record: Some(record),
             count,
+            lect: 0,
         }),
         op,
     )? {
@@ -356,6 +359,7 @@ pub fn delete_learning_record(record: LearningRecord) -> Result<bool, UserDataEr
     match page_request(
         user_data_request::Method::DeleteLearningRecord(DeleteLearningRecord {
             record: Some(record),
+            lect: 0,
         }),
         op,
     )? {
@@ -376,6 +380,7 @@ pub fn add_learning_record_to_custom_dictionary(
         user_data_request::Method::AddLearningRecordToCustomDictionary(
             AddLearningRecordToCustomDictionary {
                 record: Some(record),
+                lect: 0,
             },
         ),
         op,

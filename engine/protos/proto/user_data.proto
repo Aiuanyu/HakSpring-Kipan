@@ -33,6 +33,7 @@ message UserDataRequest {
     AddLearningRecordToCustomDictionary add_learning_record_to_custom_dictionary = 15;
     // Hakfa fork: 各腔互學.
     SyncLects sync_lects = 16;
+    CountLearning count_learning = 17;
   }
 }
 
@@ -54,6 +55,7 @@ message UserDataResponse {
     LearningRecordDeleted learning_record_deleted = 14;
     LearningRecordAddedToCustomDictionary learning_record_added_to_custom_dictionary = 15;
     LectsSynced lects_synced = 16;
+    LearningCounts learning_counts = 17;
   }
 }
 
@@ -113,6 +115,8 @@ message ResetUserData {
   bool association = 2;
   bool custom_dictionary = 3;
   bool learned_phrases = 4;
+  // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+  uint32 lect = 5;
 }
 
 // Every selected store is attempted: one that cannot be emptied is no
@@ -274,6 +278,8 @@ message CustomCsvExported { bytes csv = 1; }
 message ExportBackup {
   string platform = 1;
   string app_version = 2;
+  // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+  uint32 lect = 3;
 }
 
 message BackupExported { bytes backup = 1; }
@@ -282,7 +288,11 @@ message BackupExported { bytes backup = 1; }
 // words already there are skipped and the import stops at the dictionary's
 // cap; counts keep the larger of the two; bigram readings are normalized
 // to TL. Old and cross-platform backups are read leniently.
-message ImportBackup { bytes backup = 1; }
+message ImportBackup {
+  bytes backup = 1;
+  // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+  uint32 lect = 2;
+}
 
 enum BackupRefusal {
   BACKUP_REFUSAL_NONE = 0;
@@ -361,6 +371,8 @@ message ListLearningRecords {
   uint32 limit = 3;
   uint32 offset = 4;
   LearningRecordOrder order = 5;
+  // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+  uint32 lect = 6;
 }
 
 // Counted and read in one read transaction.
@@ -380,6 +392,8 @@ message LearningRecords {
 message SetLearningRecordCount {
   LearningRecord record = 1;
   int64 count = 2;
+  // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+  uint32 lect = 3;
 }
 
 // The row as stored now; absent when it is gone (deleted, evicted, or its
@@ -388,7 +402,11 @@ message LearningRecordSaved { optional LearningRecord record = 1; }
 
 // Forgets one row, matched as `SetLearningRecordCount` matches it. The
 // keyboard learns it again on the next pick.
-message DeleteLearningRecord { LearningRecord record = 1; }
+message DeleteLearningRecord {
+  LearningRecord record = 1;
+  // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+  uint32 lect = 2;
+}
 
 message LearningRecordDeleted { bool removed = 1; }
 
@@ -405,7 +423,11 @@ message LearningRecordDeleted { bool removed = 1; }
 // derives no search key), and a refused add keeps the row. A row whose
 // `can_add_to_custom_dictionary` the engine would answer false (an
 // association, or no Hanji) is `FAIL_INVARIANT`.
-message AddLearningRecordToCustomDictionary { LearningRecord record = 1; }
+message AddLearningRecordToCustomDictionary {
+  LearningRecord record = 1;
+  // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+  uint32 lect = 2;
+}
 
 message LearningRecordAddedToCustomDictionary {
   CustomDictionaryRefusal refusal = 1;
@@ -447,3 +469,16 @@ message LectsSynced {
   // The first few skips, for the preview to show why (capped).
   repeated SyncSkip skipped_examples = 7;
 }
+
+// Hakfa fork: how much each lect has learned (Obs IME data-ui D5), for the Learning Records page.
+// `lects` are lect codes (empty = every built lect: 四縣, 南四縣, 海陸).
+message CountLearning { repeated uint32 lects = 1; }
+
+message LectLearningCount {
+  uint32 lect = 1;
+  uint32 frequency = 2;       // word-frequency rows
+  uint32 learned_phrases = 3; // learned-phrase rows
+  uint32 association = 4;     // next-word association rows
+}
+
+message LearningCounts { repeated LectLearningCount lects = 1; }

@@ -51,6 +51,44 @@ public  final class ImportBackup extends
     backup_ = getDefaultInstance().getBackup();
   }
 
+  public static final int LECT_FIELD_NUMBER = 2;
+  private int lect_;
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 2;</code>
+   * @return The lect.
+   */
+  @java.lang.Override
+  public int getLect() {
+    return lect_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 2;</code>
+   * @param value The lect to set.
+   */
+  private void setLect(int value) {
+
+    lect_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 2;</code>
+   */
+  private void clearLect() {
+
+    lect_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.ImportBackup parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -183,6 +221,46 @@ public  final class ImportBackup extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+     * </pre>
+     *
+     * <code>uint32 lect = 2;</code>
+     * @return The lect.
+     */
+    @java.lang.Override
+    public int getLect() {
+      return instance.getLect();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+     * </pre>
+     *
+     * <code>uint32 lect = 2;</code>
+     * @param value The lect to set.
+     * @return This builder for chaining.
+     */
+    public Builder setLect(int value) {
+      copyOnWrite();
+      instance.setLect(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+     * </pre>
+     *
+     * <code>uint32 lect = 2;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearLect() {
+      copyOnWrite();
+      instance.clearLect();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.ImportBackup)
   }
   @java.lang.Override
@@ -200,9 +278,11 @@ public  final class ImportBackup extends
       case BUILD_MESSAGE_INFO: {
           java.lang.Object[] objects = new java.lang.Object[] {
             "backup_",
+            "lect_",
           };
           java.lang.String info =
-              "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\n";
+              "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\n\u0002\u000b" +
+              "";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

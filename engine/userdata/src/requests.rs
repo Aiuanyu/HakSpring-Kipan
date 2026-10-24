@@ -105,7 +105,10 @@ impl UserDataHandle {
             }
             // Hakfa fork: answered by `engine/dispatch` (it sees the dictionary too).
             // Answered by `handle` before a page request is looked at.
-            Method::Open(_) | Method::RecordUsage(_) | Method::SyncLects(_) => {
+            Method::Open(_)
+            | Method::RecordUsage(_)
+            | Method::SyncLects(_)
+            | Method::CountLearning(_) => {
                 return Err(RequestError::Invalid("not a page request"));
             }
         })
@@ -701,6 +704,7 @@ mod tests {
                     kind: 9,
                     ..LearningRecord::default()
                 }),
+                lect: 0,
             },
         ));
     }
@@ -736,6 +740,7 @@ mod tests {
                 user_data_request::Method::AddLearningRecordToCustomDictionary(
                     protos::engine::AddLearningRecordToCustomDictionary {
                         record: Some(record),
+                        lect: 0,
                     },
                 ),
             ),
@@ -917,6 +922,7 @@ mod tests {
                 protos::engine::SetLearningRecordCount {
                     record: Some(row),
                     count: 7,
+                    lect: 0,
                 },
             ),
         ) {
@@ -1058,6 +1064,7 @@ mod tests {
             user_data_request::Method::ExportBackup(ExportBackup {
                 platform: "linux".into(),
                 app_version: "3.6.10".into(),
+                lect: 0,
             }),
         ) {
             user_data_response::Result::BackupExported(exported) => exported.backup,
@@ -1071,7 +1078,7 @@ mod tests {
             .unwrap();
         let restore = |bytes: Vec<u8>| match call(
             &target,
-            user_data_request::Method::ImportBackup(ImportBackup { backup: bytes }),
+            user_data_request::Method::ImportBackup(ImportBackup { backup: bytes, lect: 0 }),
         ) {
             user_data_response::Result::BackupImported(imported) => imported,
             other => panic!("expected an import, got {other:?}"),

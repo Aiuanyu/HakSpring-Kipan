@@ -67,10 +67,33 @@ final class LearningRecordsPageModel {
         set { list.selectedID = newValue }
     }
 
-    private let client: any UserDataClient
+    private let baseClient: any UserDataClient
+
+    /// Hakfa fork (D5): which lect's learning stores the page shows and acts on. The original
+    /// files are 四縣's. A new lect makes every load in flight stale and drops the selection
+    /// (row ids are per store).
+    var lect: Lect = .xiien {
+        didSet {
+            if oldValue != lect {
+                list.invalidate()
+                list.selectedID = nil
+            }
+        }
+    }
+
+    /// Hakfa fork (D5): how much each lect has learned, to see where the data is.
+    private(set) var counts: [Taigi_Engine_LectLearningCount] = []
+
+    /// The client for the lect on screen.
+    private var client: any UserDataClient { baseClient.scoped(to: lect.code) }
 
     init(client: any UserDataClient) {
-        self.client = client
+        baseClient = client
+    }
+
+    /// Hakfa fork (D5): reads the per-lect counts; a client that cannot say leaves them empty.
+    func loadCounts() async {
+        counts = (try? await UserDataRequests.run(on: baseClient) { try $0.countLearning() }) ?? []
     }
 
     func pageBackward() async {
@@ -85,6 +108,7 @@ final class LearningRecordsPageModel {
 
     /// Reloads the page on screen, of the kind and in the order picked now.
     func load() async {
+        Task { await loadCounts() }
         let load = list.beginLoad()
         let (kind, order, filter, offset) = (kind, order, filter, load.offset)
         do {
@@ -226,6 +250,26 @@ struct LearningRecordsPage: View {
 
     var body: some View {
         Form {
+            // Hakfa fork (D5): learning data is kept per lect; pick whose to look at.
+            Section {
+                Picker("腔別", selection: $model.lect) {
+                    ForEach(Lect.allCases, id: \.self) { lect in
+                        Text(lect.displayName).tag(lect)
+                    }
+                }
+                ForEach(Lect.allCases, id: \.self) { lect in
+                    if let count = model.counts.first(where: { $0.lect == lect.code }) {
+                        LabeledContent(lect.displayName) {
+                            Text("詞頻 \(count.frequency)　詞組 \(count.learnedPhrases)　關聯 \(count.association)")
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            } header: {
+                Text("學習資料（分腔）")
+            }
+
             Section {
                 Picker(language.string(.dictionaryLearningRecords), selection: $model.kind) {
                     Text(language.string(.dictionaryLearningRecordsFrequency))
@@ -274,10 +318,14 @@ struct LearningRecordsPage: View {
                 WideActionRow(titleKey: .dictionaryClearLearningRecords, role: .destructive) {
                     Task { await model.clearAll() }
                 }
+            } footer: {
+                // Hakfa fork (D5): learning data is per lect, so the button empties the lect picked above.
+                Text("只刪上面所選腔別（\(model.lect.displayName)）个學習記錄，別腔無影響。")
             }
         }
         .formStyle(.grouped)
         .reloadWhenFilterSettles(model.filter) { await model.loadFirstPage() }
+        .onChange(of: model.lect) { showFromFirstPage() }
         .onChange(of: model.kind) { showFromFirstPage() }
         .onChange(of: model.order) { showFromFirstPage() }
         .alert(

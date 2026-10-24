@@ -64,7 +64,15 @@ impl UserDataHandle {
                 self.record_usage(usage)?;
                 user_data_response::Result::UsageRecorded(UsageRecorded {})
             }
-            page => Self::handle_page(self.settled_stores()?, page)?,
+            // Hakfa fork: how much each lect has learned.
+            user_data_request::Method::CountLearning(count) => {
+                user_data_response::Result::LearningCounts(self.count_learning(count)?)
+            }
+            // Hakfa fork: a page acts on the learning stores of the lect it names.
+            page => {
+                let stores = self.settled_stores_for_lect(requested_lect(page))?;
+                Self::handle_page(&stores, page)?
+            }
         };
         Ok(UserDataResponse {
             result: Some(result),
@@ -147,6 +155,43 @@ impl UserDataHandle {
             .ok_or(RequestError::Invalid("user data is not open yet"))
     }
 
+    /// Hakfa fork: [`Self::settled_stores`] for `lect`: the base set for 四縣 (lect 0 or 1), or that
+    /// lect's own learning files, opened here and now (a page may read them at once).
+    fn settled_stores_for_lect(&self, lect: u32) -> Result<Arc<UserDataStores>, RequestError> {
+        self.settled_stores()?;
+        let stores = self
+            .stores_for_lect(lect)
+            .ok_or(RequestError::Invalid("user data is not open yet"))?;
+        stores.frequency.open_blocking();
+        stores.association.open_blocking();
+        stores.learned_phrases.open_blocking();
+        Ok(stores)
+    }
+
+    /// Hakfa fork: the rows of each lect's three learning stores.
+    fn count_learning(
+        &self,
+        count: &protos::engine::CountLearning,
+    ) -> Result<protos::engine::LearningCounts, RequestError> {
+        let lects: Vec<u32> = if count.lects.is_empty() {
+            vec![1, 6, 2]
+        } else {
+            count.lects.clone()
+        };
+        let mut counts = Vec::new();
+        for lect in lects {
+            let stores = self.settled_stores_for_lect(lect)?;
+            let rows = |len: Option<usize>| u32::try_from(len.unwrap_or(0)).unwrap_or(u32::MAX);
+            counts.push(protos::engine::LectLearningCount {
+                lect,
+                frequency: rows(stores.frequency.all_rows().map(|r| r.len())),
+                learned_phrases: rows(stores.learned_phrases.all_rows().map(|r| r.len())),
+                association: rows(stores.association.all_rows().map(|r| r.len())),
+            });
+        }
+        Ok(protos::engine::LearningCounts { lects: counts })
+    }
+
     /// The open stores once they have finished opening — for the pages'
     /// requests (`requests.rs::handle_page`), which run off the key path and must
     /// not read or edit a custom dictionary still being taken over or re-derived
@@ -158,6 +203,21 @@ impl UserDataHandle {
             .ok_or(RequestError::Invalid("user data is not open yet"))?;
         finish_open(&opened.stores, &opened.initialized);
         Ok(&opened.stores)
+    }
+}
+
+/// Hakfa fork: the lect a page request names (0 when it names none: 四縣).
+fn requested_lect(method: &user_data_request::Method) -> u32 {
+    use user_data_request::Method;
+    match method {
+        Method::Reset(reset) => reset.lect,
+        Method::ExportBackup(export) => export.lect,
+        Method::ImportBackup(import) => import.lect,
+        Method::ListLearningRecords(list) => list.lect,
+        Method::SetLearningRecordCount(set) => set.lect,
+        Method::DeleteLearningRecord(delete) => delete.lect,
+        Method::AddLearningRecordToCustomDictionary(add) => add.lect,
+        _ => 0,
     }
 }
 
@@ -358,5 +418,69 @@ pub(crate) mod tests {
             assert!(directory.path().join(name).exists(), "{name}");
         }
         assert!(!directory.path().join("custom_dictionary.hoiliug.db").exists());
+    }
+
+    fn answer(handle: &UserDataHandle, method: user_data_request::Method) -> user_data_response::Result {
+        handle
+            .handle(&UserDataRequest { method: Some(method) })
+            .unwrap()
+            .result
+            .unwrap()
+    }
+
+    #[test]
+    fn a_page_acts_on_the_stores_of_the_lect_it_names() {
+        // Hakfa fork (D5): list, count and clear per lect; the original files are 四縣's.
+        use protos::engine::{
+            CountLearning, LearningRecordKind, ListLearningRecords, ResetUserData,
+        };
+        let directory = tempfile::tempdir().unwrap();
+        let handle = UserDataHandle::new();
+        opened(handle.handle(&open_request(directory.path())).unwrap());
+        handle.stores_for_lect(1).unwrap().frequency.record("海", "hòi");
+        handle.stores_for_lect(1).unwrap().frequency.record("山", "sân");
+        handle.stores_for_lect(2).unwrap().frequency.record("海", "hói");
+
+        let list = |lect| {
+            match answer(
+                &handle,
+                user_data_request::Method::ListLearningRecords(ListLearningRecords {
+                    kind: LearningRecordKind::Frequency as i32,
+                    limit: 50,
+                    lect,
+                    ..ListLearningRecords::default()
+                }),
+            ) {
+                user_data_response::Result::LearningRecords(records) => records
+                    .records
+                    .into_iter()
+                    .map(|record| (record.text, record.tl))
+                    .collect::<Vec<_>>(),
+                other => panic!("expected records, got {other:?}"),
+            }
+        };
+        assert_eq!(list(0).len(), 2, "no lect named = 四縣");
+        assert_eq!(list(1), list(0));
+        assert_eq!(list(2), vec![("海".to_owned(), "hói".to_owned())]);
+        assert!(list(6).is_empty(), "南四縣 has learned nothing yet");
+
+        let counts = match answer(&handle, user_data_request::Method::CountLearning(CountLearning::default())) {
+            user_data_response::Result::LearningCounts(counts) => counts,
+            other => panic!("expected counts, got {other:?}"),
+        };
+        let frequency: Vec<(u32, u32)> = counts.lects.iter().map(|c| (c.lect, c.frequency)).collect();
+        assert_eq!(frequency, vec![(1, 2), (6, 0), (2, 1)]);
+
+        // clearing 海陸 leaves 四縣 alone
+        answer(
+            &handle,
+            user_data_request::Method::Reset(ResetUserData {
+                frequency: true,
+                lect: 2,
+                ..ResetUserData::default()
+            }),
+        );
+        assert!(list(2).is_empty());
+        assert_eq!(list(1).len(), 2);
     }
 }

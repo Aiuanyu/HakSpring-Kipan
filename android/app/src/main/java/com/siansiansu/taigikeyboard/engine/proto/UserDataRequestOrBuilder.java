@@ -194,5 +194,16 @@ public interface UserDataRequestOrBuilder extends
    */
   com.siansiansu.taigikeyboard.engine.proto.SyncLects getSyncLects();
 
+  /**
+   * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+   * @return Whether the countLearning field is set.
+   */
+  boolean hasCountLearning();
+  /**
+   * <code>.taigi.engine.CountLearning count_learning = 17;</code>
+   * @return The countLearning.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.CountLearning getCountLearning();
+
   public com.siansiansu.taigikeyboard.engine.proto.UserDataRequest.MethodCase getMethodCase();
 }

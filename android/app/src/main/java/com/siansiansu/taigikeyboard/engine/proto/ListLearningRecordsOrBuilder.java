@@ -55,4 +55,14 @@ public interface ListLearningRecordsOrBuilder extends
    * @return The order.
    */
   com.siansiansu.taigikeyboard.engine.proto.LearningRecordOrder getOrder();
+
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 6;</code>
+   * @return The lect.
+   */
+  int getLect();
 }

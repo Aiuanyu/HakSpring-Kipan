@@ -186,5 +186,16 @@ public interface UserDataResponseOrBuilder extends
    */
   com.siansiansu.taigikeyboard.engine.proto.LectsSynced getLectsSynced();
 
+  /**
+   * <code>.taigi.engine.LearningCounts learning_counts = 17;</code>
+   * @return Whether the learningCounts field is set.
+   */
+  boolean hasLearningCounts();
+  /**
+   * <code>.taigi.engine.LearningCounts learning_counts = 17;</code>
+   * @return The learningCounts.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.LearningCounts getLearningCounts();
+
   public com.siansiansu.taigikeyboard.engine.proto.UserDataResponse.ResultCase getResultCase();
 }

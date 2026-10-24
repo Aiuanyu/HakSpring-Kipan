@@ -46,6 +46,20 @@ final class LearningRecordsPageTests: XCTestCase {
         XCTAssertEqual(client.lastLearningRecordsQuery?.filter, "ji")
     }
 
+    /// Hakfa fork (D5): learning data is per lect. The page opens on 四縣, and picking another lect
+    /// drops the selection (row ids are per store) and makes the load in flight stale.
+    func testPickingAnotherLect_dropsTheSelection() async throws {
+        let (model, _) = makeModel([record(.frequency, id: 1)])
+        XCTAssertEqual(model.lect, .xiien)
+        await model.load()
+        model.selectedRowID = 1
+
+        model.lect = .hoiliug
+
+        XCTAssertNil(model.selectedRowID)
+        XCTAssertEqual(Lect.allCases.map(\.code), [1, 6, 2])
+    }
+
     /// One store's rows only: a phrase never shows under word frequency.
     func testRows_comeFromTheKindPicked() async throws {
         let (model, _) = makeModel([record(.frequency, id: 1), record(.learnedPhrase, id: 2)])

@@ -126,6 +126,44 @@ public  final class ResetUserData extends
     learnedPhrases_ = false;
   }
 
+  public static final int LECT_FIELD_NUMBER = 5;
+  private int lect_;
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 5;</code>
+   * @return The lect.
+   */
+  @java.lang.Override
+  public int getLect() {
+    return lect_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 5;</code>
+   * @param value The lect to set.
+   */
+  private void setLect(int value) {
+
+    lect_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 5;</code>
+   */
+  private void clearLect() {
+
+    lect_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.ResetUserData parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -341,6 +379,46 @@ public  final class ResetUserData extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+     * </pre>
+     *
+     * <code>uint32 lect = 5;</code>
+     * @return The lect.
+     */
+    @java.lang.Override
+    public int getLect() {
+      return instance.getLect();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+     * </pre>
+     *
+     * <code>uint32 lect = 5;</code>
+     * @param value The lect to set.
+     * @return This builder for chaining.
+     */
+    public Builder setLect(int value) {
+      copyOnWrite();
+      instance.setLect(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+     * </pre>
+     *
+     * <code>uint32 lect = 5;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearLect() {
+      copyOnWrite();
+      instance.clearLect();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.ResetUserData)
   }
   @java.lang.Override
@@ -361,10 +439,11 @@ public  final class ResetUserData extends
             "association_",
             "customDictionary_",
             "learnedPhrases_",
+            "lect_",
           };
           java.lang.String info =
-              "\u0000\u0004\u0000\u0000\u0001\u0004\u0004\u0000\u0000\u0000\u0001\u0007\u0002\u0007" +
-              "\u0003\u0007\u0004\u0007";
+              "\u0000\u0005\u0000\u0000\u0001\u0005\u0005\u0000\u0000\u0000\u0001\u0007\u0002\u0007" +
+              "\u0003\u0007\u0004\u0007\u0005\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

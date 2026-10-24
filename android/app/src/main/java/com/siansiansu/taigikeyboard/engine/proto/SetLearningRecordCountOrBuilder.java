@@ -26,4 +26,14 @@ public interface SetLearningRecordCountOrBuilder extends
    * @return The count.
    */
   long getCount();
+
+  /**
+   * <pre>
+   * Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
+   * </pre>
+   *
+   * <code>uint32 lect = 3;</code>
+   * @return The lect.
+   */
+  int getLect();
 }

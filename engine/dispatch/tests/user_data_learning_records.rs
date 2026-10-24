@@ -68,6 +68,7 @@ fn a_counted_pick_is_listed_edited_and_deleted_over_the_wire() {
         user_data_request::Method::SetLearningRecordCount(SetLearningRecordCount {
             record: Some(record.clone()),
             count: 25,
+            lect: 0,
         }),
     )) {
         user_data_response::Result::LearningRecordSaved(saved) => {
@@ -85,6 +86,7 @@ fn a_counted_pick_is_listed_edited_and_deleted_over_the_wire() {
     match answer(user_data(user_data_request::Method::DeleteLearningRecord(
         DeleteLearningRecord {
             record: Some(record),
+            lect: 0,
         },
     ))) {
         user_data_response::Result::LearningRecordDeleted(deleted) => assert!(deleted.removed),
