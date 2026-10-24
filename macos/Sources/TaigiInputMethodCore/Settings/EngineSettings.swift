@@ -20,6 +20,32 @@ enum InputMode: String, CaseIterable, Sendable {
     }
 }
 
+/// Hakfa fork: which lect (腔) the dictionary answers in. Raw values are the lect's Hakka
+/// self-names, desktop-core's `Lect::raw` (`settings/choices.rs`), which reads the stored value
+/// from the settings snapshot and sends the code on `DictionarySourceToggles.lect`.
+/// Order = the cycle shortcut's order.
+enum Lect: String, CaseIterable, Sendable {
+    case xiien
+    case hoiliug
+
+    /// The lect after this one, round again from the end — what the cycle shortcut steps
+    /// through (desktop-core `Lect::next`).
+    var next: Lect {
+        let all = Self.allCases
+        let index = all.firstIndex(of: self) ?? all.startIndex
+        return all[(index + 1) % all.count]
+    }
+
+    /// What the mode flash and the shortcut row say: the Hakka self-name beside the
+    /// Chinese name, so the HUD reads the same in every display language.
+    var displayName: String {
+        switch self {
+        case .xiien: "四縣 xiien"
+        case .hoiliug: "海陸 hoiliug"
+        }
+    }
+}
+
 /// What asked for an input-mode change — desktop-core's `InputModeRequest`,
 /// which answers it (`SettingsStore.switchInputMode(_:)`).
 enum InputModeSwitch: Sendable, Equatable {

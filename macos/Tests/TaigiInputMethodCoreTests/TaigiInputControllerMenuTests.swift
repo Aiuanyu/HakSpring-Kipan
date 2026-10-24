@@ -82,7 +82,7 @@ final class TaigiInputControllerMenuTests: XCTestCase {
         // The literal oracle for this surface: the copy is the authored Hanji.
         XCTAssertEqual(
             items.map(\.title),
-            ["切換台羅/白話字", "切換方音符號", "切換羅馬字顯示", "顯示方音符號小齒盤", "", "台語齒盤設定", "", "檢查更新", "關於齒盤"],
+            ["切換腔頭", "切換台羅/白話字", "切換方音符號", "切換羅馬字顯示", "顯示方音符號小齒盤", "", "台語齒盤設定", "", "檢查更新", "關於齒盤"],
         )
         XCTAssertEqual(items.filter(\.isSeparatorItem).count, 2)
         XCTAssertFalse(try XCTUnwrap(items.first).isSeparatorItem)
@@ -90,8 +90,8 @@ final class TaigiInputControllerMenuTests: XCTestCase {
         XCTAssertEqual(
             items.filter { !$0.isSeparatorItem }.map(\.action),
             [
-                Self.toggleRomanization, Self.toggleTps, Self.cycleCandidateDisplayMode, Self.showTpsKeyboard,
-                Self.openSettings, Self.checkForUpdates, Self.showAbout,
+                Self.cycleLect, Self.toggleRomanization, Self.toggleTps, Self.cycleCandidateDisplayMode,
+                Self.showTpsKeyboard, Self.openSettings, Self.checkForUpdates, Self.showAbout,
             ],
         )
     }
@@ -115,7 +115,7 @@ final class TaigiInputControllerMenuTests: XCTestCase {
         let menu = try menu()
 
         for (action, key) in [
-            (Self.toggleRomanization, "c"), (Self.toggleTps, "p"), (Self.cycleCandidateDisplayMode, "h"),
+            (Self.cycleLect, "l"), (Self.toggleRomanization, "c"), (Self.toggleTps, "p"), (Self.cycleCandidateDisplayMode, "h"),
             (Self.showTpsKeyboard, "j"),
         ] {
             let row = try item(action: action, in: menu)
@@ -238,8 +238,8 @@ final class TaigiInputControllerMenuTests: XCTestCase {
     /// the Shortcuts pane is a key taken from the host that no surface admits to.
     func testOnlyTheShortcutRows_claimAKey() throws {
         let shortcutRows = [
-            Self.toggleRomanization, Self.toggleTps, Self.cycleCandidateDisplayMode, Self.showTpsKeyboard,
-            Self.openSettings,
+            Self.cycleLect, Self.toggleRomanization, Self.toggleTps, Self.cycleCandidateDisplayMode,
+            Self.showTpsKeyboard, Self.openSettings,
         ]
         for row in try menu().items where !row.keyEquivalent.isEmpty {
             XCTAssertTrue(
@@ -353,6 +353,7 @@ final class TaigiInputControllerMenuTests: XCTestCase {
 
     private static let checkForUpdates = Selector(("checkForUpdates:"))
     private static let showAbout = Selector(("showAbout:"))
+    private static let cycleLect = Selector(("cycleLect:"))
     private static let toggleRomanization = Selector(("toggleRomanization:"))
     private static let toggleTps = Selector(("toggleTps:"))
     private static let cycleCandidateDisplayMode = Selector(("cycleCandidateDisplayMode:"))

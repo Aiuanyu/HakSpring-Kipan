@@ -49,6 +49,16 @@ final class ShortcutActionsTests: XCTestCase {
         )
     }
 
+    /// Hakfa fork: the lect cycle steps 四縣 → 海陸 → 四縣, and its raw values are the spellings
+    /// desktop-core's `Lect::raw` reads back from the settings snapshot.
+    func testLect_cyclesAndSpellsLikeTheCore() {
+        XCTAssertEqual(Lect.xiien.next, .hoiliug)
+        XCTAssertEqual(Lect.hoiliug.next, .xiien)
+        XCTAssertEqual(Lect.allCases.map(\.rawValue), ["xiien", "hoiliug"])
+        XCTAssertEqual(SettingsStore.Keys.lect.name, "lect")
+        XCTAssertEqual(SettingsStore.Keys.lect.defaultValue, .xiien)
+    }
+
     func testEveryAction_hasItsOwnLabel() {
         let rows = labels()
 
@@ -61,13 +71,14 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(
             labels(),
             [
-                "切換台羅/白話字", "切換方音符號", "切換漢字/羅馬字", "切換括號標註", "切換羅馬字顯示", "拍開符號選單", "拍開 Telex 說明",
+                "切換腔頭", "切換台羅/白話字", "切換方音符號", "切換漢字/羅馬字", "切換括號標註", "切換羅馬字顯示", "拍開符號選單", "拍開 Telex 說明",
                 "顯示方音符號小齒盤", "拍開設定選單",
             ],
         )
         XCTAssertEqual(
             labels(.japanese),
             [
+                "切換腔頭",
                 "台羅／白話字を切り替える",
                 "方音符号を切り替える",
                 "漢字／ローマ字を切り替える",
@@ -79,7 +90,7 @@ final class ShortcutActionsTests: XCTestCase {
                 "設定メニューを開く",
             ],
         )
-        XCTAssertEqual(labels(.english).first, "Switch Tâi-lô or Pe̍h-ōe-jī")
+        XCTAssertEqual(labels(.english).dropFirst().first, "Switch Tâi-lô or Pe̍h-ōe-jī")
         // The trap this replaced: composing a row from the setting's own label produced a doubled
         // verb — "括弧で併記を切り替える", "Toggle Annotate in Brackets".
         XCTAssertFalse(labels(.japanese).contains { $0.contains("併記を切り替えるを") })
@@ -191,6 +202,7 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(
             ShortcutAction.allCases.map(\.defaultShortcut),
             [
+                KeyboardShortcuts.Shortcut(.l, modifiers: [.control, .command]),
                 KeyboardShortcuts.Shortcut(.c, modifiers: [.control, .command]),
                 KeyboardShortcuts.Shortcut(.p, modifiers: [.control, .command]),
                 KeyboardShortcuts.Shortcut(.backtick),

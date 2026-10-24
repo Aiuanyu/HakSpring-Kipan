@@ -20,6 +20,43 @@ pub trait SettingChoice: Copy + PartialEq + std::fmt::Debug + 'static {
     }
 }
 
+/// Hakfa fork: which lect (腔) the dictionary answers in. The code is the one written in
+/// the dictionary (`docs/hakfa/lect.md`) and sent as `DictionarySourceToggles.lect`; the
+/// stored spelling is the lect's Hakka self-name (`IME/names`: 四縣 `xiien`, 海陸 `hoiliug`).
+/// macOS keeps a Swift twin: `Lect` in `EngineSettings.swift`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Lect {
+    Xiien,
+    Hoiliug,
+}
+
+impl Lect {
+    /// The lect code in `kautian_subtag` bits 13-15 and on the wire.
+    pub const fn code(self) -> u32 {
+        match self {
+            Self::Xiien => 1,
+            Self::Hoiliug => 2,
+        }
+    }
+
+    /// The lect the cycle shortcut steps to: round the picker order, back to the first.
+    pub fn next(self) -> Self {
+        let index = Self::ALL.iter().position(|lect| *lect == self).unwrap_or(0);
+        Self::ALL[(index + 1) % Self::ALL.len()]
+    }
+}
+
+impl SettingChoice for Lect {
+    const ALL: &'static [Self] = &[Self::Xiien, Self::Hoiliug];
+    const DEFAULT: Self = Self::Xiien;
+    fn raw(self) -> &'static str {
+        match self {
+            Self::Xiien => "xiien",
+            Self::Hoiliug => "hoiliug",
+        }
+    }
+}
+
 /// The candidate window's layout. Order = the Appearance pane's pop-up:
 /// expandable, horizontal, vertical. macOS keeps a Swift twin:
 /// `SettingsStore.swift` `Keys.candidateLayout` and the layout picker in

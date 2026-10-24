@@ -72,6 +72,9 @@ final class SettingsStore: @unchecked Sendable {
             name: "outputBothScripts",
             defaultValue: EngineSettings.defaults.isOutputBothScripts,
         )
+        /// Hakfa fork: the lect the dictionary answers in, stored as the enum's raw value.
+        /// Not removed by the General pane's reset, like the display language.
+        static let lect = SettingsKey(name: "lect", defaultValue: Lect.xiien)
         /// Both scripts side by side, or the romanization alone. Stored as the
         /// enum's raw value like `inputMode`; the swap key above is left
         /// untouched by it — switching back restores whatever it holds.
@@ -701,6 +704,13 @@ final class SettingsStore: @unchecked Sendable {
     var hasOfferedUpdateNotifications: Bool {
         get { bool(Keys.hasOfferedUpdateNotifications) }
         set { userDefaults.set(newValue, forKey: Keys.hasOfferedUpdateNotifications.name) }
+    }
+
+    /// Hakfa fork: the lect the dictionary answers in. Desktop-core reads the same key from the
+    /// settings snapshot (`Lect` in `choices.rs`), so a write here is all a switch needs.
+    var lect: Lect {
+        get { choice(Keys.lect) }
+        set { userDefaults.set(newValue.rawValue, forKey: Keys.lect.name) }
     }
 
     /// How the candidate window renders each `(Hanji, romanization)` pair. Written by

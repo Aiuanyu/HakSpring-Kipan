@@ -33,7 +33,7 @@ pub mod update_schedule;
 
 pub use choices::{
     AppearanceMode, CandidateFontChoice, CandidateFontSelection, CandidateLayout,
-    CandidateSizeChoice, CustomFontId, InstalledFontId, KeyboardLayout, SettingChoice,
+    CandidateSizeChoice, CustomFontId, InstalledFontId, KeyboardLayout, Lect, SettingChoice,
     SettingsPane,
 };
 pub use document::{SettingsDocument, SettingsKey};

@@ -202,6 +202,12 @@ public final class TaigiInputController: IMKInputController {
     @MainActor
     private var displayModeObservation: AnyObject?
 
+    /// Hakfa fork: KVO on the lect, armed and released with `displayModeObservation`. A lect
+    /// written from outside the session (the chord in another session, `defaults write`)
+    /// changes which candidates exist, so an open bar is fetched again.
+    @MainActor
+    private var lectObservation: AnyObject?
+
     /// KVO on the Show Candidate Window key, armed and released with `displayModeObservation`:
     /// a flip mid-composition takes an open window down (off) or fetches
     /// one for the composition as it stands (on), rather than waiting for
@@ -279,6 +285,12 @@ public final class TaigiInputController: IMKInputController {
             // a `defaults write` from outside the process reaches the bar too.
             controller.displayModeObservation = controller.settings.observeChanges(
                 of: SettingsStore.Keys.candidateDisplayMode,
+                onMainActor: { [weak controller] in
+                    controller?.representCandidates(refetch: true)
+                },
+            )
+            controller.lectObservation = controller.settings.observeChanges(
+                of: SettingsStore.Keys.lect,
                 onMainActor: { [weak controller] in
                     controller?.representCandidates(refetch: true)
                 },
@@ -495,6 +507,11 @@ public final class TaigiInputController: IMKInputController {
             // (USER 2026-09-20: "very few people use it").
             let shortcuts = [
                 shortcutRow(
+                    .cycleLect,
+                    label: ShortcutAction.cycleLect.label(language),
+                    selector: #selector(cycleLect(_:)),
+                ),
+                shortcutRow(
                     .toggleRomanization,
                     label: ShortcutAction.toggleRomanization.label(language),
                     selector: #selector(toggleRomanization(_:)),
@@ -619,6 +636,11 @@ public final class TaigiInputController: IMKInputController {
     @objc
     private func toggleRomanization(_: Any!) {
         performGlobalShortcut(.toggleRomanization)
+    }
+
+    @objc
+    private func cycleLect(_: Any!) {
+        performGlobalShortcut(.cycleLect)
     }
 
     @objc
@@ -794,6 +816,14 @@ public final class TaigiInputController: IMKInputController {
             let next = settings.candidateDisplayMode.next
             settings.candidateDisplayMode = next
             flash(next.displayNameKey)
+        case .cycleLect:
+            // Hakfa fork. Only the setting is written: the lect observation `activateServer`
+            // armed refetches an open bar (the Candidate Display cycle's path), and the
+            // flash names the lect, since the bar changes its words with no other notice.
+            // Not inert under TPS — the lect decides which dictionary answers there too.
+            let next = settings.lect.next
+            settings.lect = next
+            flash(literal: next.displayName)
         case .showTelexGuide:
             // Spelled for the romanization in use — `z` is `ts` under TL
             // and `ch` under POJ — and owned by this session, so the key
@@ -1031,7 +1061,12 @@ public final class TaigiInputController: IMKInputController {
     /// announcing a mode nothing here owns.
     @MainActor
     private func flash(_ mode: StringKey) {
-        let text = displayLanguage.string(mode)
+        flash(literal: displayLanguage.string(mode))
+    }
+
+    /// Hakfa fork: the same flash for text that is not an i18n key (a lect's name).
+    @MainActor
+    private func flash(literal text: String) {
         if let modeFlashOverride {
             modeFlashOverride(text)
         } else {
@@ -1390,6 +1425,7 @@ public final class TaigiInputController: IMKInputController {
         finishComposition(into: client)
         backend.release(sessionToken, settings: settings)
         displayModeObservation = nil
+        lectObservation = nil
         candidateWindowObservation = nil
         inputModeObservation = nil
         keyboardLayoutObservation = nil

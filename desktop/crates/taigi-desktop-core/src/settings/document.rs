@@ -398,6 +398,7 @@ impl SettingsDocument {
                 name_appendix: self.bool(&keys::IS_KAUTIAN_NAME_APPENDIX_ENABLED),
                 alt_reading: self.bool(&keys::IS_KAUTIAN_ALT_READING_ENABLED),
             },
+            lect: self.choice(&keys::LECT),
         }
     }
 }
@@ -983,5 +984,20 @@ mod tests {
         doc.reset_general();
         assert!(!doc.contains(keys::LAST_ROMANIZATION_MODE.name));
         assert!(!doc.contains(keys::INPUT_MODE.name));
+    }
+
+    #[test]
+    fn lect_reads_the_stored_choice_and_defaults_to_xiien() {
+        use crate::settings::Lect;
+        let mut doc = SettingsDocument::default();
+        assert_eq!(doc.dictionary_sources().lect, Lect::Xiien);
+        doc.set_choice(&keys::LECT, Lect::Hoiliug);
+        assert_eq!(doc.dictionary_sources().lect, Lect::Hoiliug);
+        assert_eq!(doc.engine_settings().dictionary_sources.lect, Lect::Hoiliug);
+        // a spelling no version knows reads as the default, never as nothing
+        doc.set_raw_string(keys::LECT.name, "nonsense");
+        assert_eq!(doc.dictionary_sources().lect, Lect::Xiien);
+        assert_eq!(Lect::Xiien.next(), Lect::Hoiliug);
+        assert_eq!(Lect::Hoiliug.next(), Lect::Xiien);
     }
 }

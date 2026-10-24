@@ -3,7 +3,7 @@
 //! (`macos/Sources/TaigiInputMethodCore/Settings/EngineSettings.swift`,
 //! `DictionarySourceToggles.swift`).
 
-use super::choices::SettingChoice;
+use super::choices::{Lect, SettingChoice};
 
 /// What the user types: one of the two romanizations, or TPS (方音符號), which
 /// is not a romanization — its keys type glyphs on the Dachen-based layout
@@ -399,6 +399,8 @@ pub struct DictionarySourceToggles {
     /// Always populated: an absent subcollection message tells the engine to
     /// skip the gate (`lexicon.proto` `DictionarySourceToggles.kautian_subcollections`).
     pub kautian_subcollections: KautianSubcollections,
+    /// Hakfa fork: the lect the dictionary answers in (`DictionarySourceToggles.lect` on the wire).
+    pub lect: Lect,
 }
 
 impl DictionarySourceToggles {
@@ -420,6 +422,7 @@ impl DictionarySourceToggles {
         lkk: true,
         dev: true,
         kautian_subcollections: KautianSubcollections::DEFAULT,
+        lect: Lect::DEFAULT,
     };
 }
 

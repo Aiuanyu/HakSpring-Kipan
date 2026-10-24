@@ -17,7 +17,7 @@
 //! fresh install types with, so the cross-platform alignment has one home.
 
 use super::choices::{
-    AppearanceMode, CandidateFontChoice, CandidateLayout, CandidateSizeChoice, KeyboardLayout,
+    AppearanceMode, CandidateFontChoice, CandidateLayout, CandidateSizeChoice, KeyboardLayout, Lect,
     SettingChoice, SettingsPane,
 };
 use super::document::SettingsKey;
@@ -60,6 +60,10 @@ pub const IS_LITERAL_ROMAN_CANDIDATE_ENABLED: SettingsKey<bool> = SettingsKey::n
     "literalRomanCandidateEnabled",
     ENGINE_DEFAULTS.is_literal_roman_candidate_enabled,
 );
+/// Hakfa fork: the lect the dictionary answers in (四縣 `xiien`, 海陸 `hoiliug`).
+/// Not in `GENERAL_KEYS`: the General pane's reset must not switch lect under the user, like the
+/// display language. Read by the key path (`key_path.rs`) so macOS sends it in the snapshot.
+pub const LECT: SettingsKey<Lect> = SettingsKey::new("lect", ENGINE_DEFAULTS.dictionary_sources.lect);
 pub const SYLLABLE_SEPARATOR: SettingsKey<SyllableSeparator> =
     SettingsKey::new("syllableSeparator", ENGINE_DEFAULTS.syllable_separator);
 /// RETIRED 2026-10-06: the No Hyphens switch, replaced by `SYLLABLE_SEPARATOR`.

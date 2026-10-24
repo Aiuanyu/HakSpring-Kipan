@@ -36,9 +36,18 @@ The wanted lect rides **wire bits 27–29** of `enabled_sources_bitmask` (`WIRE_
 
 ## One merged dictionary
 
-`node dictionary/sources/official/hakspring/extract_and_build.js --lect all` runs the extraction once per lect (child process `--dump-records`), concatenates, sorts by frequency (ties: Sixian first) and encodes one `dictionary.bin`. Until a platform sends the lect, it writes to `dictionary/output/hakfa-all/` and `data/hakspring-all.csv` and does not touch `assets/dictionaries`. `--lect 四` and `--lect 海` still build one lect alone (Sixian overwrites the shipped files, other lects write `hakfa-<id>/`). Lect ids are the Hakka names: `xiien`, `hoiliug`.
+`node dictionary/sources/official/hakspring/extract_and_build.js` (no argument, same as `--lect all`) runs the extraction once per lect (child process `--dump-records`), concatenates, sorts by frequency (ties: Sixian first) and encodes one `dictionary.bin`. That is the shipped dictionary: it overwrites `assets/dictionaries`, `output/hakfa`, `dictionary/output/hakfa` and writes `dictionary/output/hakfa-all`. `--lect 四` and `--lect 海` build one lect alone for debugging and write `dictionary/output/hakfa-<id>/` and `data/hakspring-<id>.csv` only. Lect ids are the Hakka names: `xiien`, `hoiliug`.
+
+Build from the HakSpring (客源翠) `main` data: set `HAKSPRING_ROOT` to a checkout of `main` when the usual checkout sits on a feature branch (its `data/supp` can carry rows `main` does not have yet).
 
 Test: `engine/lexicon/tests/hakfa_lect.rs` opens the merged dictionary (skips if not built) and checks that lect 1 + lect 2 = every row, lect 0 = every row, lect 3 = none.
+
+## The lect setting
+
+- desktop-core: `Lect` (`settings/choices.rs`, stored `xiien` / `hoiliug`), key `lect` (`settings/keys.rs`), default Sixian. It is a key-path setting, so macOS carries it in the settings snapshot; `dictionary_toggles` sends `DictionarySourceToggles.lect = Lect::code()`. The General pane's reset does not touch it.
+- macOS: `Lect` and `SettingsStore.lect` (Swift twins), shortcut `cycleLect` (**⌃⌘L**, first row of the Shortcuts pane and the input-method menu), the mode flash names the lect (`四縣 xiien` / `海陸 hoiliug`). An open candidate bar is fetched again.
+- Android: sends lect 1 (`LexiconBridge.kt`) until it has a setting; lect 0 would mix every lect.
+- Windows / Linux: the lect setting exists in desktop-core (default Sixian) but they have no shortcut or picker for it yet.
 
 ## Ranking
 

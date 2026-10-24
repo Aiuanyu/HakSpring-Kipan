@@ -72,6 +72,8 @@ pub fn key_path_settings() -> Vec<KeyPathSetting> {
         KeyPathSetting::choice(keys::TONE_INPUT_SCHEME),
         KeyPathSetting::choice(keys::CANDIDATE_DISPLAY_MODE),
         KeyPathSetting::choice(keys::SYLLABLE_SEPARATOR),
+        // Hakfa fork: the lect rides every dictionary request (`DictionarySourceToggles.lect`).
+        KeyPathSetting::choice(keys::LECT),
     ]
     .into_iter()
     .chain(switches)
@@ -102,6 +104,7 @@ mod tests {
             .chain(&[
                 keys::CANDIDATE_DISPLAY_MODE.name,
                 keys::IS_CUSTOM_DICT_ENABLED.name,
+                keys::LECT.name,
             ])
             .map(|name| (*name).to_owned())
             .chain(

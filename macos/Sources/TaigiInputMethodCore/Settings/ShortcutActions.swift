@@ -101,6 +101,13 @@ extension KeyboardShortcuts.Name {
         initial: .init(.h, modifiers: [.control, .command]),
     )
 
+    /// Hakfa fork: steps the lect (四縣 → 海陸 → 四縣). ⌃⌘L — L for lect, in the ⌃⌘ family of
+    /// the other switches; not ⌃⌘Q, which is the system's lock screen.
+    static let cycleLect = Self(
+        "cycleLect",
+        initial: .init(.l, modifiers: [.control, .command]),
+    )
+
     /// The Telex key table, on demand (USER 2026-09-09): the legend under the
     /// Tone Keys picker was a wall of text in a pane the user is not in while
     /// typing, so it became a floating card any key dismisses
@@ -146,6 +153,9 @@ extension KeyboardShortcuts.Name {
 /// Output Script, Candidate Display — then the windows a key raises, the ones used while
 /// typing first and the settings window last.
 enum ShortcutAction: CaseIterable, Sendable {
+    /// Hakfa fork: steps the lect (四縣 ↔ 海陸), flashing its name. First, so it leads the
+    /// Shortcuts pane and the menu: switching lect is the Hakfa input method's first switch.
+    case cycleLect
     case toggleRomanization
     /// Into TPS and back to the romanization last used.
     case toggleTps
@@ -172,7 +182,7 @@ enum ShortcutAction: CaseIterable, Sendable {
     /// and the settings window. Each block keeps `allCases`' order. Mirrors
     /// desktop-core `ShortcutAction::GROUPS` / `GROUP_TITLES`.
     static let groups: [(title: StringKey, actions: [ShortcutAction])] = [
-        (.settingsOutputScriptRoman, [.toggleRomanization, .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode]),
+        (.settingsOutputScriptRoman, [.cycleLect, .toggleRomanization, .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode]),
         (.settingsTpsMode, [.toggleTps, .showTpsKeyboard]),
         (.commonOther, [.showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
     ]
@@ -182,6 +192,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleRomanization: .toggleRomanization
         case .toggleTps: .toggleTps
         case .cycleCandidateDisplayMode: .cycleCandidateDisplayMode
+        case .cycleLect: .cycleLect
         case .toggleTranslateSwapped: .toggleTranslateSwapped
         case .toggleOutputBothScripts: .toggleOutputBothScripts
         case .showSymbolPicker: .showSymbolPicker
@@ -212,7 +223,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         switch self {
         case .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode, .showTelexGuide: mode == .tps
         case .showTpsKeyboard: mode != .tps
-        case .toggleRomanization, .toggleTps, .showSymbolPicker, .openLastSettingsPane: false
+        case .toggleRomanization, .toggleTps, .cycleLect, .showSymbolPicker, .openLastSettingsPane: false
         }
     }
 
@@ -238,6 +249,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleRomanization: language.string(.desktopShortcutToggleRomanization)
         case .toggleTps: language.string(.desktopShortcutToggleTps)
         case .cycleCandidateDisplayMode: language.string(.desktopShortcutCycleCandidateDisplayMode)
+        case .cycleLect: "切換腔頭"
         case .toggleTranslateSwapped: language.string(.commonToggleTranslateSwapped)
         case .toggleOutputBothScripts: language.string(.commonToggleOutputBothScripts)
         case .showSymbolPicker: language.string(.desktopShortcutShowSymbolPicker)
@@ -314,7 +326,7 @@ enum ShortcutHotkeys {
             // the named panes are reached from the menu bar now.
             openSettings(on: nil, in: SettingsStore())
         case .toggleRomanization, .toggleTps, .toggleTranslateSwapped, .toggleOutputBothScripts,
-             .cycleCandidateDisplayMode, .showTelexGuide, .showTpsKeyboard:
+             .cycleCandidateDisplayMode, .cycleLect, .showTelexGuide, .showTpsKeyboard:
             ComposingSessionCoordinator.shared.performShortcutAction(action)
         case .showSymbolPicker:
             // Never registered, so never fires (`firesFromTheKeyPath`).

@@ -208,9 +208,8 @@ pub(crate) fn dictionary_toggles(toggles: &DictionarySourceToggles) -> WireDicti
             name_appendix: subcollections.name_appendix,
             alt_reading: subcollections.alt_reading,
         }),
-        // Hakfa fork: the Windows/Linux settings do not carry the lect yet (0 = every lect,
-        // the pre-lect behaviour). macOS and Android send theirs from their own settings.
-        lect: 0,
+        // Hakfa fork: the lect the dictionary answers in (1 四縣, 2 海陸).
+        lect: toggles.lect.code(),
     }
 }
 
@@ -410,6 +409,7 @@ mod tests {
                     name_appendix: _,
                     alt_reading: _,
                 },
+            lect: _,
         } = DictionarySourceToggles::DEFAULT;
         vec![
             source!(kautian),
@@ -503,5 +503,15 @@ mod tests {
         );
         assert_eq!(DictionarySource::from_code(0), None);
         assert_eq!(DictionarySource::from_code(999), None);
+    }
+
+    #[test]
+    fn the_lect_goes_to_the_wire_as_its_dictionary_code() {
+        use crate::settings::Lect;
+        let toggles = DictionarySourceToggles::DEFAULT;
+        assert_eq!(toggles.lect, Lect::Xiien, "a fresh install answers in 四縣");
+        assert_eq!(dictionary_toggles(&toggles).lect, 1);
+        let hailu = DictionarySourceToggles { lect: Lect::Hoiliug, ..toggles };
+        assert_eq!(dictionary_toggles(&hailu).lect, 2);
     }
 }
