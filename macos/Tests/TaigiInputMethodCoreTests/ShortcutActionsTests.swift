@@ -60,7 +60,7 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(Lect.xiien.next(among: [.xiien, .hoiliug]), .hoiliug)
         XCTAssertEqual(Lect.xiien.next(among: [.xiien]), .xiien)
         XCTAssertEqual(Lect.allCases.map(\.rawValue), ["xiien", "namxiian", "hoiliug"])
-        XCTAssertEqual(Lect.allCases.map(\.displayName), ["四縣 (Xi'ien)", "南四縣 (Namxiian)", "海陸 (Hóiliug)"])
+        XCTAssertEqual(Lect.allCases.map(\.displayName), ["四縣 (Xi'ien)", "南四縣 (Nǎm Xi'ian)", "海陸 (Hóiliug)"])
         XCTAssertEqual(SettingsStore.Keys.lect.name, "lect")
         XCTAssertEqual(SettingsStore.Keys.lect.defaultValue, .xiien)
     }

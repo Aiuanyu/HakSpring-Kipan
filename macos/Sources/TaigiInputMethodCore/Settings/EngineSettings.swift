@@ -49,7 +49,7 @@ enum Lect: String, CaseIterable, Sendable {
     var displayName: String {
         switch self {
         case .xiien: "四縣 (Xi'ien)"
-        case .namxiian: "南四縣 (Namxiian)"
+        case .namxiian: "南四縣 (Nǎm Xi'ian)"
         case .hoiliug: "海陸 (Hóiliug)"
         }
     }
