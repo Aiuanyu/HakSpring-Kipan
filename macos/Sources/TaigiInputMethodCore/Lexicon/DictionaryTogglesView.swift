@@ -14,108 +14,29 @@ struct DictionaryTogglesView: View {
 
     @AppStorage(SettingsStore.Keys.isKautianEnabled.name)
     private var isKautianEnabled = SettingsStore.Keys.isKautianEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isSttiEnabled.name)
-    private var isSttiEnabled = SettingsStore.Keys.isSttiEnabled.defaultValue
 
-    @AppStorage(SettingsStore.Keys.isItaigiEnabled.name)
-    private var isItaigiEnabled = SettingsStore.Keys.isItaigiEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isTaijitEnabled.name)
-    private var isTaijitEnabled = SettingsStore.Keys.isTaijitEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isTaihoaEnabled.name)
-    private var isTaihoaEnabled = SettingsStore.Keys.isTaihoaEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isSitbutEnabled.name)
-    private var isSitbutEnabled = SettingsStore.Keys.isSitbutEnabled.defaultValue
-
-    @AppStorage(SettingsStore.Keys.isVariantEnabled.name)
-    private var isVariantEnabled = SettingsStore.Keys.isVariantEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKhiinEnabled.name)
-    private var isKhiinEnabled = SettingsStore.Keys.isKhiinEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKhpooEnabled.name)
-    private var isKhpooEnabled = SettingsStore.Keys.isKhpooEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isLkkEnabled.name)
-    private var isLkkEnabled = SettingsStore.Keys.isLkkEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isDevEnabled.name)
-    private var isDevEnabled = SettingsStore.Keys.isDevEnabled.defaultValue
-
-    @AppStorage(SettingsStore.Keys.isKautianAccentLukangEnabled.name)
-    private var isLukangEnabled = SettingsStore.Keys.isKautianAccentLukangEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentSansiaEnabled.name)
-    private var isSansiaEnabled = SettingsStore.Keys.isKautianAccentSansiaEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentTaipakEnabled.name)
-    private var isTaipakEnabled = SettingsStore.Keys.isKautianAccentTaipakEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentGilanEnabled.name)
-    private var isGilanEnabled = SettingsStore.Keys.isKautianAccentGilanEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentTainanEnabled.name)
-    private var isTainanEnabled = SettingsStore.Keys.isKautianAccentTainanEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentKaohsiungEnabled.name)
-    private var isKaohsiungEnabled = SettingsStore.Keys.isKautianAccentKaohsiungEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentKinmenEnabled.name)
-    private var isKinmenEnabled = SettingsStore.Keys.isKautianAccentKinmenEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentMakungEnabled.name)
-    private var isMakungEnabled = SettingsStore.Keys.isKautianAccentMakungEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentSintikEnabled.name)
-    private var isSintikEnabled = SettingsStore.Keys.isKautianAccentSintikEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAccentTaichungEnabled.name)
-    private var isTaichungEnabled = SettingsStore.Keys.isKautianAccentTaichungEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianNameAppendixEnabled.name)
-    private var isNameAppendixEnabled = SettingsStore.Keys.isKautianNameAppendixEnabled.defaultValue
-    @AppStorage(SettingsStore.Keys.isKautianAltReadingEnabled.name)
-    private var isAltReadingEnabled = SettingsStore.Keys.isKautianAltReadingEnabled.defaultValue
-
+    // Hakfa fork (Obs IME data-ui D1): only the sources that exist in this keyboard are listed.
+    // The upstream Taigi dictionaries (iTaigi, plant names, Taiwanese-Japanese, Tai-Hua, STTI,
+    // the accent and appendix sub-options, Khiin / variant / LKK characters, the supplement
+    // word list) have no Hakka data, so a switch for them would do nothing. Their stored values
+    // stay as they were and the engine still reads them; they simply cannot be changed here.
+    // The per-lect sub-options for the MOE dictionary and the certification list are D2.
     var body: some View {
         Form {
             Section {
                 Toggle(language.string(.commonMoeDict), isOn: $isKautianEnabled)
-                Group {
-                    Toggle(language.string(.dictionaryKautianAltReading), isOn: $isAltReadingEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentLukang), isOn: $isLukangEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentSansia), isOn: $isSansiaEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentTaipak), isOn: $isTaipakEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentGilan), isOn: $isGilanEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentTainan), isOn: $isTainanEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentKaohsiung), isOn: $isKaohsiungEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentKinmen), isOn: $isKinmenEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentMakung), isOn: $isMakungEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentSintik), isOn: $isSintikEnabled)
-                    Toggle(language.string(.dictionaryKautianAccentTaichung), isOn: $isTaichungEnabled)
-                    Toggle(language.string(.dictionaryKautianNameAppendix), isOn: $isNameAppendixEnabled)
-                }
-                .padding(.leading, Metrics.subcollectionIndent)
-                // Disabled, not cleared: the master switch says whether this
-                // dictionary is searched at all, and turning it back on has to
-                // return the accents the user had chosen rather than all of them.
-                .disabled(!isKautianEnabled)
 
                 // hakfa: bit 1 (taigitv) is the certification word lists, locked on;
                 // desktop-core `SettingsDocument::dictionary_sources` forces it on for the engine too.
                 Toggle(language.string(.commonNewwordDict), isOn: .constant(true))
                     .disabled(true)
-                Toggle(language.string(.commonSttiDict), isOn: $isSttiEnabled)
-            } header: {
-                Text(language.string(.dictionaryMoeSectionTitle))
-            }
 
-            Section {
-                Toggle(language.string(.commonITaigiDict), isOn: $isItaigiEnabled)
-                Toggle(language.string(.commonTaiwanJapanDict), isOn: $isTaijitEnabled)
-                Toggle(language.string(.commonTaiHuaDict), isOn: $isTaihoaEnabled)
-                Toggle(language.string(.commonTaiwanPlantDict), isOn: $isSitbutEnabled)
-            } header: {
-                Text(language.string(.dictionaryOtherSectionTitle))
-            }
-
-            Section {
                 // hakfa: bit 6 (kungge) is the HakSpring character supplement, locked on;
                 // desktop-core `SettingsDocument::dictionary_sources` forces it on for the engine too.
                 Toggle(language.string(.commonKunggeDict), isOn: .constant(true))
                     .disabled(true)
-                Toggle(language.string(.dictionaryVariantDictionary), isOn: $isVariantEnabled)
-                Toggle(language.string(.dictionaryKhiin), isOn: $isKhiinEnabled)
-                Toggle(language.string(.commonAccentDict), isOn: $isKhpooEnabled)
-                Toggle(language.string(.dictionaryLkkDict), isOn: $isLkkEnabled)
-                Toggle(language.string(.dictionaryDevSupplementDict), isOn: $isDevEnabled)
             } header: {
-                Text(language.string(.dictionarySupplementSectionTitle))
+                Text(language.string(.dictionaryMoeSectionTitle))
             }
 
             // Its own section, at the end, drawn the way the Shortcuts and Appearance
@@ -137,7 +58,4 @@ struct DictionaryTogglesView: View {
         SettingsStore().resetDictionarySources()
     }
 
-    private enum Metrics {
-        static let subcollectionIndent: CGFloat = 16
-    }
 }

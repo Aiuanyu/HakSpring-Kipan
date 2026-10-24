@@ -18,7 +18,7 @@
     <string name="i18n_common_viewWebsite">官方網站</string>
     <string name="i18n_common_exportFailed">匯出失敗</string>
     <string name="i18n_common_importFailed">匯入失敗</string>
-    <string name="i18n_common_moeDict">教育部臺灣客話常用詞辭典</string>
+    <string name="i18n_common_moeDict">教育部臺灣客語辭典</string>
     <string name="i18n_common_newwordDict">客語能力認證詞彙</string>
     <string name="i18n_common_kunggeDict">客源翠補字典</string>
     <string name="i18n_common_iTaigiDict">iTaigi愛客話</string>
@@ -57,7 +57,7 @@
     <string name="i18n_dictionary_fileTooLarge">檔案傷大（上限 5 MB）</string>
     <string name="i18n_dictionary_tooManyEntries">詞傷濟（上限 30,000 項）</string>
     <string name="i18n_dictionary_importExportTitle">匯入摎匯出</string>
-    <string name="i18n_dictionary_moeSectionTitle">教育部用字</string>
+    <string name="i18n_dictionary_moeSectionTitle">辭典來源</string>
     <string name="i18n_dictionary_otherSectionTitle">其他辭典</string>
     <string name="i18n_dictionary_supplementSectionTitle">補充資料</string>
     <string name="i18n_dictionary_lkkDict">漢羅合用建議用字</string>
@@ -84,10 +84,10 @@
     <string name="i18n_dictionary_importBackup">一擺全入</string>
     <string name="i18n_dictionary_importBackupResult">匯入 %1$d 項自訂詞、%2$d 項詞頻、%3$d 項詞關聯</string>
     <string name="i18n_dictionary_backupPrivacyWarning">備份包含自訂詞、詞頻摎詞關聯紀錄，可能有私人內容，請妥當保管。</string>
-    <string name="i18n_dictionary_moeDescription">客話、華語攏會當尋，詞目摎例句有發音通聽，學習較利便。閣有分類、部首筆劃索引摎附錄。</string>
+    <string name="i18n_dictionary_moeDescription">教育部《臺灣客語辭典》：收四縣、海陸、大埔、饒平、詔安、南四縣六腔个詞目、讀音、釋義摎例句。</string>
     <string name="i18n_dictionary_newwordDescription">客家委員會客語能力認證基礎級到高級个詞彙，客源翠整理。</string>
     <string name="i18n_dictionary_sttiDescription">對 106 年開始，共語文、數學、社會、自然科學、藝術、綜合活動、科技、健康摎體育這 8 大領域 个 學科術語編做客話。</string>
-    <string name="i18n_dictionary_kunggeDescription">教典未獨立建字，愛灣語客源翠程式自動補音</string>
+    <string name="i18n_dictionary_kunggeDescription">教典無獨立收錄个單字，由客源翠程式自動補音</string>
     <string name="i18n_dictionary_lkkDescription">李江却客話文教基金會漢羅合用建議用字。</string>
     <string name="i18n_dictionary_devDescription">補充政府機關、常見人名、行政區、數字、時間、日期摎其他教典較少收錄 个 詞。</string>
     <string name="i18n_dictionary_iTaigiDescription">一个群眾編輯 个 開放客話辭典</string>

@@ -19,7 +19,7 @@
     "viewWebsite": { "hakha": "官方網站" },
     "exportFailed": { "hakha": "匯出失敗" },
     "importFailed": { "hakha": "匯入失敗" },
-    "moeDict": { "hakha": "教育部臺灣客話常用詞辭典" },
+    "moeDict": { "hakha": "教育部臺灣客語辭典", "en": "MOE Dictionary of Taiwan Hakka" },
     "newwordDict": { "hakha": "客語能力認證詞彙", "en": "Hakfa Proficiency Certification Word Lists" },
     "kunggeDict": { "hakha": "客源翠補字典", "en": "HakSpring Character Supplement" },
     "iTaigiDict": { "hakha": "iTaigi愛客話" },
