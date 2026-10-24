@@ -156,6 +156,9 @@ internal fun dictionaryTogglesProto(toggles: RustEngineBridge.DictionaryToggles)
         .setKhiin(toggles.khiin)
         .setLkk(toggles.lkk)
         .setDev(toggles.dev)
+        // Hakfa fork: the merged dictionary carries every lect; Android has no lect setting yet,
+        // so it asks for 四縣 (1). 0 would mix every lect's readings into one list.
+        .setLect(1)
         // Always set the subcollection message (Android ships the toggles)
         // so the engine runs the gate; absence would signal legacy all-on
         // (DD5). Mirrors iOS RustEngineBridge togglesProto mapping.

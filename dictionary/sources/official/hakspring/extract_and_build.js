@@ -40,15 +40,15 @@ const LECTS = {
   '海': { code: 2, name: '海陸', id: 'hoiliug' },
 };
 
-// `--lect 四|海`  單腔（照舊：四縣覆蓋出貨檔，別的腔寫自己的檔）
-// `--lect all`    全腔合併成一份詞庫（M1，Obs IME queue「切換腔頭最短路」）：每腔各跑一次
-//                 （`--dump-records` 子程序），再合併、排序、編碼。引擎讀得著腔號之前，寫去 hakfa-all，毋蓋出貨檔。
+// （無參數）／`--lect all`  全腔合併成一份詞庫，這就係出貨詞庫：每腔各跑一次
+//                 （`--dump-records` 子程序），再合併、排序、編碼，寫去出貨資料夾摎 hakfa-all。
+// `--lect 四|海`  單腔，除錯用：寫去自家个 hakfa-<id>，毋蓋出貨檔。
 // `--dump-records F`  內部用：萃取完个詞條寫成 JSON 就停。
 const ALL_LECTS = 'all';
 
 function parseLectArg(argv) {
   const i = argv.indexOf('--lect');
-  const lectKey = i === -1 ? '四' : argv[i + 1];
+  const lectKey = i === -1 ? ALL_LECTS : argv[i + 1];
   if (lectKey !== ALL_LECTS && !LECTS[lectKey]) {
     throw new Error(`--lect ${lectKey}: unsupported lect, expected one of ${Object.keys(LECTS).join(' ')} ${ALL_LECTS}`);
   }
@@ -62,7 +62,7 @@ const LECT_KEY = parseLectArg(process.argv.slice(2));
 const DUMP_RECORDS_PATH = parseOptArg(process.argv.slice(2), '--dump-records');
 const IS_ALL = LECT_KEY === ALL_LECTS;
 const LECT = IS_ALL ? { code: 0, name: '全腔', id: 'all' } : LECTS[LECT_KEY];
-const isShipLect = LECT_KEY === '四'; // 出貨腔：覆蓋 assets/dictionaries
+const isShipLect = IS_ALL; // 全腔合併詞庫就係出貨詞庫：覆蓋 assets/dictionaries
 const LECT_KEY_BY_CODE = Object.fromEntries(Object.entries(LECTS).map(([k, v]) => [v.code, k]));
 
 // 聲調與母音映射表
@@ -690,6 +690,7 @@ console.log('\n▶ [2/4] 建置 dictionary.bin (TKDB v4)...');
 const outDirs = isShipLect ? [
   path.join(REPO_ROOT, 'output/hakfa'),
   path.join(REPO_ROOT, 'dictionary/output/hakfa'),
+  path.join(REPO_ROOT, 'dictionary/output/hakfa-all'),
   path.join(REPO_ROOT, 'assets/dictionaries')
 ] : [path.join(REPO_ROOT, `dictionary/output/hakfa-${LECT.id}`)];
 for (const d of outDirs) {
