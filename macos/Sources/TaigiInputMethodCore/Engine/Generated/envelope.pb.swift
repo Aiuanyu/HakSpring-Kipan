@@ -277,6 +277,11 @@ public nonisolated struct Taigi_Engine_AppConfig: Sendable {
   /// Syllable Separator as stored, without the TPS fold.
   public var syllableSeparator: Taigi_Engine_SyllableSeparator = .unspecified
 
+  /// Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
+  /// as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
+  /// column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+  public var lect: UInt32 = 0
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -505,7 +510,7 @@ nonisolated extension Taigi_Engine_SyllableSeparator: SwiftProtobuf._ProtoNamePr
 
 nonisolated extension Taigi_Engine_AppConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".AppConfig"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{2}input_mode\0\u{3}oo_doubletap_enabled\0\u{3}nn_doubletap_enabled\0\u{3}is_hanji_first\0\u{4}\u{3}output_both_scripts\0\u{3}candidate_display_mode\0\u{4}\u{2}force_lowercase_nasal_marker\0\u{3}tps_or_maps_to_er\0\u{3}hanji_conversion\0\u{3}syllable_separator\0\u{b}tone_mode\0\u{b}is_association_recording_enabled\0\u{b}platform_id\0\u{b}hyphenless_roman\0\u{c}\u{1}\u{1}\u{c}\u{6}\u{1}\u{c}\u{7}\u{1}\u{c}\u{a}\u{1}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{2}input_mode\0\u{3}oo_doubletap_enabled\0\u{3}nn_doubletap_enabled\0\u{3}is_hanji_first\0\u{4}\u{3}output_both_scripts\0\u{3}candidate_display_mode\0\u{4}\u{2}force_lowercase_nasal_marker\0\u{3}tps_or_maps_to_er\0\u{3}hanji_conversion\0\u{3}syllable_separator\0\u{1}lect\0\u{b}tone_mode\0\u{b}is_association_recording_enabled\0\u{b}platform_id\0\u{b}hyphenless_roman\0\u{c}\u{1}\u{1}\u{c}\u{6}\u{1}\u{c}\u{7}\u{1}\u{c}\u{a}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -523,6 +528,7 @@ nonisolated extension Taigi_Engine_AppConfig: SwiftProtobuf.Message, SwiftProtob
       case 12: try { try decoder.decodeSingularBoolField(value: &self.tpsOrMapsToEr) }()
       case 13: try { try decoder.decodeSingularMessageField(value: &self._hanjiConversion) }()
       case 14: try { try decoder.decodeSingularEnumField(value: &self.syllableSeparator) }()
+      case 15: try { try decoder.decodeSingularUInt32Field(value: &self.lect) }()
       default: break
       }
     }
@@ -563,6 +569,9 @@ nonisolated extension Taigi_Engine_AppConfig: SwiftProtobuf.Message, SwiftProtob
     if self.syllableSeparator != .unspecified {
       try visitor.visitSingularEnumField(value: self.syllableSeparator, fieldNumber: 14)
     }
+    if self.lect != 0 {
+      try visitor.visitSingularUInt32Field(value: self.lect, fieldNumber: 15)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -577,6 +586,7 @@ nonisolated extension Taigi_Engine_AppConfig: SwiftProtobuf.Message, SwiftProtob
     if lhs.tpsOrMapsToEr != rhs.tpsOrMapsToEr {return false}
     if lhs._hanjiConversion != rhs._hanjiConversion {return false}
     if lhs.syllableSeparator != rhs.syllableSeparator {return false}
+    if lhs.lect != rhs.lect {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

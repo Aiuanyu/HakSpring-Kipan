@@ -26,6 +26,16 @@ use userdata::{
 // The limit a platform may check before the read is the codec's own.
 const _: () = assert!(crate::CUSTOM_CSV_MAX_FILE_BYTES == CustomDictionaryCSV::MAX_FILE_SIZE_BYTES);
 
+/// Hakfa fork, interim (Obs IME dialects M6): the learning stores (`user_frequency.db`,
+/// `learned_phrases.db`, `user_association.db`) have no lect column yet, so what was learned
+/// under 四縣 would surface in every other lect with the wrong tones, and what 海陸 teaches
+/// would pollute 四縣. Until they are lect-aware, only 四縣 (lect 1, or 0 from a platform that
+/// sends none) reads or writes them; the other lects type from the bundled dictionary alone.
+/// The custom dictionary is the user's own explicit entries and stays visible in every lect.
+fn learns_in(config: &AppConfig) -> bool {
+    config.lect <= 1
+}
+
 /// Answers one user-data request — the `UserData` arm of `crate::run`.
 pub(crate) fn respond(id: u32, request: &UserDataRequest) -> Response {
     let (error, payload) = match UserDataHandle::instance().handle(request) {
@@ -64,20 +74,24 @@ pub(super) fn handle_composing(
     generation: u64,
 ) -> Result<ComposingResponse, ComposingError> {
     let composing = composing::EngineHandle::instance();
+    let learns = learns_in(config);
     let Some(composing_request::Method::FetchAtPos(sent)) = request.method.as_ref() else {
         let frequency = StoredFrequency { stores };
-        let applied = composing.handle_ranked(request, config, generation, Some(&frequency))?;
-        if let Some(learned) = applied.learned {
-            stores
-                .learned_phrases
-                .learn_phrase(&learned.hanji, &learned.canonical_tl);
-        }
-        if let Some(usage) = applied.usage {
-            stores.record_usage(
-                &usage.display_text,
-                &usage.canonical_tl,
-                usage.hanji.as_deref(),
-            );
+        let ranking: Option<&dyn ConversionFrequency> = learns.then_some(&frequency);
+        let applied = composing.handle_ranked(request, config, generation, ranking)?;
+        if learns {
+            if let Some(learned) = applied.learned {
+                stores
+                    .learned_phrases
+                    .learn_phrase(&learned.hanji, &learned.canonical_tl);
+            }
+            if let Some(usage) = applied.usage {
+                stores.record_usage(
+                    &usage.display_text,
+                    &usage.canonical_tl,
+                    usage.hanji.as_deref(),
+                );
+            }
         }
         return Ok(applied.response);
     };
@@ -93,8 +107,9 @@ pub(super) fn handle_composing(
         &snapshot.listed_raw,
         config,
         sent.custom_dictionary_disabled,
+        learns,
     );
-    let context = context_ranks(stores, &snapshot, sent.now_ms);
+    let context = context_ranks(stores, &snapshot, sent.now_ms, learns);
     let fetch = |rows, context| {
         composing::requests::query(
             &composing::requests::fetch_at_pos_intent(sent, rows, context),
@@ -103,7 +118,7 @@ pub(super) fn handle_composing(
         )
     };
     let neutral = fetch(rows.clone(), context.clone());
-    let Some(frequency) = frequency_map(stores, &neutral, &rows) else {
+    let Some(frequency) = learns.then(|| frequency_map(stores, &neutral, &rows)).flatten() else {
         return Ok(neutral);
     };
     rows.frequency = frequency;
@@ -139,10 +154,15 @@ impl ConversionFrequency for StoredFrequency<'_> {
 /// The continuations of the word the pending tail follows (§56): the
 /// user's learned bigrams (`user_association.db`, the §24 Hanji-keyed
 /// recall, best evidence first) over the bundled ones.
-fn context_ranks(stores: &UserDataStores, snapshot: &PendingSnapshot, now_ms: i64) -> ContextRanks {
+fn context_ranks(
+    stores: &UserDataStores,
+    snapshot: &PendingSnapshot,
+    now_ms: i64,
+    learns: bool,
+) -> ContextRanks {
     let previous = crate::context::context_word(snapshot, now_ms);
     let mut ranks = crate::context::bundled_ranks(previous.as_ref());
-    if let Some((word, word_tl)) = previous {
+    if let Some((word, word_tl)) = previous.filter(|_| learns) {
         let rows = stores
             .association
             .rows_following(&word, &word_tl, crate::context::CONTEXT_ROWS)
@@ -162,6 +182,7 @@ fn buffer_rows(
     raw: &str,
     config: &AppConfig,
     custom_dictionary_disabled: bool,
+    learns: bool,
 ) -> UserRows {
     let Some(key) = (!raw.is_empty())
         .then(|| phonetics::api::derive_custom_query_key(raw, &config.input_mode))
@@ -179,12 +200,16 @@ fn buffer_rows(
             .map(custom_entry)
             .collect()
     };
-    let learned = stores
-        .learned_phrases
-        .rows_matching(&key, LearnedPhraseStore::KEYSTROKE_LIMIT)
-        .into_iter()
-        .map(learned_entry)
-        .collect();
+    let learned = if learns {
+        stores
+            .learned_phrases
+            .rows_matching(&key, LearnedPhraseStore::KEYSTROKE_LIMIT)
+            .into_iter()
+            .map(learned_entry)
+            .collect()
+    } else {
+        Vec::new()
+    };
     UserRows {
         custom,
         learned,
@@ -250,14 +275,21 @@ pub(super) fn handle_nextword(
     config: &AppConfig,
     generation: u64,
 ) -> Result<NextWordResponse, NextWordError> {
-    let user_rows = following_rows(stores, &request);
+    let learns = learns_in(config);
+    let user_rows = if learns {
+        following_rows(stores, &request)
+    } else {
+        Vec::new()
+    };
     let request = crate::predict::expand_predict_next(request, user_rows);
     let nextword::Handled {
         response,
         associations,
     } = nextword::EngineHandle::instance().handle_recording(&request, config, generation)?;
     let pairs: Vec<AssociationPair> = associations.into_iter().map(association_pair).collect();
-    stores.association.record(&pairs);
+    if learns {
+        stores.association.record(&pairs);
+    }
     Ok(response)
 }
 
@@ -363,19 +395,55 @@ mod tests {
             ..AppConfig::default()
         };
 
-        let rows = buffer_rows(&stores, "taiuan", &config, false);
+        let rows = buffer_rows(&stores, "taiuan", &config, false, true);
         assert_eq!(rows.custom.len(), CustomDictionaryStore::KEYSTROKE_LIMIT);
         assert_eq!(rows.custom.len(), 50);
         assert_eq!(rows.learned.len(), LearnedPhraseStore::KEYSTROKE_LIMIT);
         assert_eq!(rows.learned.len(), 25);
 
-        let disabled = buffer_rows(&stores, "taiuan", &config, true);
+        let disabled = buffer_rows(&stores, "taiuan", &config, true, true);
         assert!(disabled.custom.is_empty(), "the user turned it off");
         assert_eq!(
             disabled.learned.len(),
             25,
             "learning data is not the dictionary"
         );
+    }
+
+    #[test]
+    fn only_lect_one_or_none_learns() {
+        // Hakfa fork, interim: lect 0 (no lect sent) is 四縣; any other lect does not touch
+        // the learning stores until they carry a lect column (Obs IME dialects M6).
+        let in_lect = |lect| learns_in(&AppConfig { lect, ..AppConfig::default() });
+        assert!(in_lect(0));
+        assert!(in_lect(1));
+        assert!(!in_lect(2));
+        assert!(!in_lect(7));
+    }
+
+    #[test]
+    fn a_lect_that_does_not_learn_hands_over_no_learned_rows_but_keeps_the_custom_ones() {
+        let directory = tempfile::tempdir().unwrap();
+        let stores = UserDataStores::at(
+            userdata::UserDataPaths::in_directory(directory.path()),
+            JournalMode::Delete,
+        );
+        stores.open_blocking();
+        stores
+            .custom_dictionary
+            .upsert(&CustomDictionaryRow::new("tâi-uân", "台灣"))
+            .unwrap();
+        stores.learned_phrases.learn_phrase("台灣", "tâi-uân");
+        assert_eq!(stores.learned_phrases.all_rows().unwrap().len(), 1);
+        let config = AppConfig {
+            input_mode: "tl".into(),
+            lect: 2,
+            ..AppConfig::default()
+        };
+
+        let rows = buffer_rows(&stores, "taiuan", &config, false, learns_in(&config));
+        assert_eq!(rows.custom.len(), 1, "the user's own entries stay");
+        assert!(rows.learned.is_empty(), "what 四縣 learned is not 海陸's");
     }
 
     #[test]
@@ -397,7 +465,7 @@ mod tests {
             input_mode: "tl".into(),
             ..AppConfig::default()
         };
-        let custom_count = |raw: &str| buffer_rows(&stores, raw, &config, false).custom.len();
+        let custom_count = |raw: &str| buffer_rows(&stores, raw, &config, false, true).custom.len();
         assert_eq!(custom_count("tkt"), 1);
         assert_eq!(custom_count("tk"), 0);
         assert_eq!(custom_count("tkta"), 0);

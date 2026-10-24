@@ -504,6 +504,50 @@ public  final class AppConfig extends
     syllableSeparator_ = 0;
   }
 
+  public static final int LECT_FIELD_NUMBER = 15;
+  private int lect_;
+  /**
+   * <pre>
+   * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
+   * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
+   * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+   * </pre>
+   *
+   * <code>uint32 lect = 15;</code>
+   * @return The lect.
+   */
+  @java.lang.Override
+  public int getLect() {
+    return lect_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
+   * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
+   * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+   * </pre>
+   *
+   * <code>uint32 lect = 15;</code>
+   * @param value The lect to set.
+   */
+  private void setLect(int value) {
+
+    lect_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
+   * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
+   * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+   * </pre>
+   *
+   * <code>uint32 lect = 15;</code>
+   */
+  private void clearLect() {
+
+    lect_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.AppConfig parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1116,6 +1160,52 @@ public  final class AppConfig extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
+     * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
+     * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+     * </pre>
+     *
+     * <code>uint32 lect = 15;</code>
+     * @return The lect.
+     */
+    @java.lang.Override
+    public int getLect() {
+      return instance.getLect();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
+     * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
+     * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+     * </pre>
+     *
+     * <code>uint32 lect = 15;</code>
+     * @param value The lect to set.
+     * @return This builder for chaining.
+     */
+    public Builder setLect(int value) {
+      copyOnWrite();
+      instance.setLect(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
+     * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
+     * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+     * </pre>
+     *
+     * <code>uint32 lect = 15;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearLect() {
+      copyOnWrite();
+      instance.clearLect();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.AppConfig)
   }
   @java.lang.Override
@@ -1143,10 +1233,12 @@ public  final class AppConfig extends
             "tpsOrMapsToEr_",
             "hanjiConversion_",
             "syllableSeparator_",
+            "lect_",
           };
           java.lang.String info =
-              "\u0000\n\u0000\u0001\u0002\u000e\n\u0000\u0000\u0000\u0002\u0208\u0003\u0007\u0004" +
-              "\u0007\u0005\u0007\b\u0007\t\f\u000b\u0007\f\u0007\r\u1009\u0000\u000e\f";
+              "\u0000\u000b\u0000\u0001\u0002\u000f\u000b\u0000\u0000\u0000\u0002\u0208\u0003\u0007" +
+              "\u0004\u0007\u0005\u0007\b\u0007\t\f\u000b\u0007\f\u0007\r\u1009\u0000\u000e\f\u000f" +
+              "\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

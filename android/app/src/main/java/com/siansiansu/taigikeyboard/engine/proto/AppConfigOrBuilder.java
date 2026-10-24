@@ -129,4 +129,16 @@ public interface AppConfigOrBuilder extends
    * @return The syllableSeparator.
    */
   com.siansiansu.taigikeyboard.engine.proto.SyllableSeparator getSyllableSeparator();
+
+  /**
+   * <pre>
+   * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
+   * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
+   * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+   * </pre>
+   *
+   * <code>uint32 lect = 15;</code>
+   * @return The lect.
+   */
+  int getLect();
 }

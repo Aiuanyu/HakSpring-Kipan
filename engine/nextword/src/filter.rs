@@ -299,6 +299,7 @@ mod tests {
             force_lowercase_nasal_marker: false,
             tps_or_maps_to_er: false,
             hanji_conversion: None,
+            lect: 0,
         }
     }
 
@@ -314,6 +315,7 @@ mod tests {
             force_lowercase_nasal_marker: false,
             tps_or_maps_to_er: false,
             hanji_conversion: None,
+            lect: 0,
         }
     }
 
