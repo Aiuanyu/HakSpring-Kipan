@@ -66,6 +66,41 @@ impl UserDataStores {
         }
     }
 
+    /// Hakfa fork: the stores for another lect — its own frequency, association and
+    /// learned-phrase files at `paths` (`UserDataPaths::for_lect`), sharing this set's custom
+    /// dictionary (one file, one open, already taken over). Nothing is opened yet:
+    /// [`Self::open_learning`].
+    pub fn for_lect(&self, paths: UserDataPaths, journal: JournalMode) -> Self {
+        let derive_search_keys: SearchKeyDeriver = Arc::new(derive_custom_search_keys);
+        Self {
+            frequency: Arc::new(UserFrequencyStore::new(
+                paths.frequency,
+                journal,
+                UserFrequencyStore::shipped_capacity(),
+            )),
+            association: Arc::new(UserAssociationStore::new(
+                paths.association,
+                journal,
+                UserAssociationStore::shipped_capacity(),
+            )),
+            custom_dictionary: Arc::clone(&self.custom_dictionary),
+            learned_phrases: Arc::new(LearnedPhraseStore::new(
+                paths.learned_phrases,
+                journal,
+                derive_search_keys,
+                LearnedPhraseStore::MAX_ENTRIES,
+            )),
+        }
+    }
+
+    /// Opens the three learning stores only, off the calling thread — the custom dictionary
+    /// a [`Self::for_lect`] set shares is opened (and taken over) by the base set.
+    pub fn open_learning(&self) {
+        self.frequency.open();
+        self.association.open();
+        self.learned_phrases.open();
+    }
+
     /// Opens all of them, off the calling thread. Safe to call more than
     /// once — each store opens its file exactly once.
     pub fn open(&self) {

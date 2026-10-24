@@ -36,8 +36,8 @@ pub(crate) fn handle_composing(
     generation: u64,
 ) -> Result<ComposingResponse, ComposingError> {
     #[cfg(feature = "user-data")]
-    if let Some(stores) = userdata::UserDataHandle::instance().stores() {
-        return with_stores::handle_composing(stores, request, config, generation);
+    if let Some(stores) = userdata::UserDataHandle::instance().stores_for_lect(config.lect) {
+        return with_stores::handle_composing(&stores, request, config, generation);
     }
     crate::context::handle_composing_without_stores(request, config, generation)
 }
@@ -49,8 +49,8 @@ pub(crate) fn handle_nextword(
     generation: u64,
 ) -> Result<NextWordResponse, NextWordError> {
     #[cfg(feature = "user-data")]
-    if let Some(stores) = userdata::UserDataHandle::instance().stores() {
-        return with_stores::handle_nextword(stores, request, config, generation);
+    if let Some(stores) = userdata::UserDataHandle::instance().stores_for_lect(config.lect) {
+        return with_stores::handle_nextword(&stores, request, config, generation);
     }
     nextword::EngineHandle::instance().handle(
         &crate::predict::expand_predict_next(request, Vec::new()),

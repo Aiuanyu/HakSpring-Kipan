@@ -151,6 +151,8 @@ final class DesktopCoreRuntimeTests: XCTestCase {
             Keys.candidateDisplayMode.name: .text(Keys.candidateDisplayMode.defaultValue.rawValue),
             Keys.syllableSeparator.name: .text(Keys.syllableSeparator.defaultValue.rawValue),
             Keys.toneInputScheme.name: .text(Keys.toneInputScheme.defaultValue.rawValue),
+            // Hakfa fork: the lect rides every dictionary request.
+            Keys.lect.name: .text(Keys.lect.defaultValue.rawValue),
         ]
         for key in booleans {
             expected[key.name] = .boolean(key.defaultValue)

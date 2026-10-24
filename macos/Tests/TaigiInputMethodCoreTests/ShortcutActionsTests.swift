@@ -55,6 +55,7 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(Lect.xiien.next, .hoiliug)
         XCTAssertEqual(Lect.hoiliug.next, .xiien)
         XCTAssertEqual(Lect.allCases.map(\.rawValue), ["xiien", "hoiliug"])
+        XCTAssertEqual(Lect.allCases.map(\.displayName), ["四縣 (Xi'ien)", "海陸 (Hóiliug)"])
         XCTAssertEqual(SettingsStore.Keys.lect.name, "lect")
         XCTAssertEqual(SettingsStore.Keys.lect.defaultValue, .xiien)
     }

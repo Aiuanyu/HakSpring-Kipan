@@ -36,12 +36,13 @@ enum Lect: String, CaseIterable, Sendable {
         return all[(index + 1) % all.count]
     }
 
-    /// What the mode flash and the shortcut row say: the Hakka self-name beside the
-    /// Chinese name, so the HUD reads the same in every display language.
+    /// What the mode flash says: the Chinese name with its HagPinPlus in brackets, the same shape
+    /// as the other HUD texts (`諸夏字 (Lǒmásii)`), so it reads the same in every display
+    /// language. Syllable separator "None" with the apostrophe rule: `Xi'ien` (xi + ien).
     var displayName: String {
         switch self {
-        case .xiien: "四縣 xiien"
-        case .hoiliug: "海陸 hoiliug"
+        case .xiien: "四縣 (Xi'ien)"
+        case .hoiliug: "海陸 (Hóiliug)"
         }
     }
 }

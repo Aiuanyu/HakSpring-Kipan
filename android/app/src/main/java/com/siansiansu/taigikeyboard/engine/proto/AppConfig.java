@@ -509,8 +509,8 @@ public  final class AppConfig extends
   /**
    * <pre>
    * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
-   * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
-   * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+   * as 四縣). Picks the learning stores (frequency, learned phrases, associations): 四縣 keeps
+   * the original files, every other lect has its own (`userdata::UserDataHandle::stores_for_lect`).
    * </pre>
    *
    * <code>uint32 lect = 15;</code>
@@ -523,8 +523,8 @@ public  final class AppConfig extends
   /**
    * <pre>
    * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
-   * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
-   * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+   * as 四縣). Picks the learning stores (frequency, learned phrases, associations): 四縣 keeps
+   * the original files, every other lect has its own (`userdata::UserDataHandle::stores_for_lect`).
    * </pre>
    *
    * <code>uint32 lect = 15;</code>
@@ -537,8 +537,8 @@ public  final class AppConfig extends
   /**
    * <pre>
    * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
-   * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
-   * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+   * as 四縣). Picks the learning stores (frequency, learned phrases, associations): 四縣 keeps
+   * the original files, every other lect has its own (`userdata::UserDataHandle::stores_for_lect`).
    * </pre>
    *
    * <code>uint32 lect = 15;</code>
@@ -1163,8 +1163,8 @@ public  final class AppConfig extends
     /**
      * <pre>
      * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
-     * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
-     * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+     * as 四縣). Picks the learning stores (frequency, learned phrases, associations): 四縣 keeps
+     * the original files, every other lect has its own (`userdata::UserDataHandle::stores_for_lect`).
      * </pre>
      *
      * <code>uint32 lect = 15;</code>
@@ -1177,8 +1177,8 @@ public  final class AppConfig extends
     /**
      * <pre>
      * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
-     * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
-     * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+     * as 四縣). Picks the learning stores (frequency, learned phrases, associations): 四縣 keeps
+     * the original files, every other lect has its own (`userdata::UserDataHandle::stores_for_lect`).
      * </pre>
      *
      * <code>uint32 lect = 15;</code>
@@ -1193,8 +1193,8 @@ public  final class AppConfig extends
     /**
      * <pre>
      * Hakfa fork: the lect the user is typing in (1 四縣, 2 海陸, …; 0 = platform sends none, read
-     * as 四縣). The user's learning data (frequency, learned phrases, associations) has no lect
-     * column yet, so `engine/dispatch` reads and writes it only for lect 0/1 (Obs IME dialects M6).
+     * as 四縣). Picks the learning stores (frequency, learned phrases, associations): 四縣 keeps
+     * the original files, every other lect has its own (`userdata::UserDataHandle::stores_for_lect`).
      * </pre>
      *
      * <code>uint32 lect = 15;</code>

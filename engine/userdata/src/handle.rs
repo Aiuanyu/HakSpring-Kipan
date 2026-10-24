@@ -4,7 +4,8 @@
 //! files live is the platform's. Plan: `docs/architecture/user-data-engine-roadmap.md`.
 
 use std::path::PathBuf;
-use std::sync::{Arc, Once, OnceLock};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex, Once, OnceLock};
 
 use protos::engine::{
     user_data_request, user_data_response, OpenUserData, UsageRecorded, UserDataJournal,
@@ -22,6 +23,9 @@ struct Opened {
     /// once however many callers wait on it, on whichever
     /// thread gets there first.
     initialized: Arc<Once>,
+    /// Hakfa fork: the learning stores of the lects other than 四縣, opened on first use
+    /// (`stores_for_lect`). 四縣 is `stores` itself.
+    lects: Mutex<HashMap<u32, Arc<UserDataStores>>>,
 }
 
 /// The stores this process opened. Set once, then read without a lock: from
@@ -71,6 +75,28 @@ impl UserDataHandle {
         self.opened.get().map(|opened| &*opened.stores)
     }
 
+    /// Hakfa fork: the stores `lect` learns into. 0 and 1 (四縣) are the base set, with the
+    /// file names that existed before lects; any other lect gets its own frequency,
+    /// association and learned-phrase files (`UserDataPaths::for_lect`), created and opened on
+    /// first use, sharing the one custom dictionary. A learned word of one lect is invisible
+    /// to the others. `None` until the platform opens the stores. Never blocks (a first use
+    /// queues its writes behind the file's open, like the base set does).
+    pub fn stores_for_lect(&self, lect: u32) -> Option<Arc<UserDataStores>> {
+        let opened = self.opened.get()?;
+        if crate::paths::lect_file_suffix(lect).is_none() {
+            return Some(Arc::clone(&opened.stores));
+        }
+        let mut lects = opened.lects.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let stores = lects.entry(lect).or_insert_with(|| {
+            let stores = opened
+                .stores
+                .for_lect(opened.paths.for_lect(lect), opened.journal);
+            stores.open_learning();
+            Arc::new(stores)
+        });
+        Some(Arc::clone(stores))
+    }
+
     fn open(&self, open: &OpenUserData) -> Result<UserDataOpened, RequestError> {
         let paths = requested_paths(open)?;
         let journal = journal(open.journal());
@@ -86,6 +112,7 @@ impl UserDataHandle {
                 journal,
                 stores: Arc::new(stores),
                 initialized: Arc::new(Once::new()),
+                lects: Mutex::new(HashMap::new()),
             }
         });
         if opened.paths != paths || opened.journal != journal {
@@ -295,5 +322,39 @@ pub(crate) mod tests {
             !directory.path().join("user_association.db").exists(),
             "and the directory's own slot stays empty"
         );
+    }
+
+    #[test]
+    fn lect_zero_and_one_are_the_base_stores_and_another_lect_has_its_own_files() {
+        // Hakfa fork: what 四縣 learned before lects existed stays 四縣's (same files), and
+        // 海陸 learns into files of its own, so neither sees the other's words.
+        let directory = tempfile::tempdir().unwrap();
+        let handle = UserDataHandle::new();
+        assert!(handle.stores_for_lect(2).is_none(), "nothing before the open");
+        opened(handle.handle(&open_request(directory.path())).unwrap());
+
+        let sixian = handle.stores_for_lect(1).unwrap();
+        assert!(Arc::ptr_eq(&sixian, &handle.stores_for_lect(0).unwrap()));
+        let hailu = handle.stores_for_lect(2).unwrap();
+        assert!(!Arc::ptr_eq(&sixian, &hailu));
+        assert!(
+            Arc::ptr_eq(&hailu, &handle.stores_for_lect(2).unwrap()),
+            "opened once, kept"
+        );
+        assert!(Arc::ptr_eq(&sixian.custom_dictionary, &hailu.custom_dictionary));
+
+        sixian.frequency.record("海陸", "hòi-liùg");
+        sixian.learned_phrases.learn_phrase("海陸", "hòi-liùg");
+        hailu.frequency.record("海", "hói");
+        assert_eq!(sixian.frequency.all_rows().unwrap().len(), 1);
+        assert_eq!(hailu.frequency.all_rows().unwrap().len(), 1);
+        assert_eq!(hailu.frequency.all_rows().unwrap()[0].word, "海");
+        assert_eq!(sixian.learned_phrases.all_rows().unwrap().len(), 1);
+        assert!(hailu.learned_phrases.all_rows().unwrap().is_empty());
+
+        for name in ["user_frequency.db", "user_frequency.hoiliug.db", "learned_phrases.hoiliug.db", "user_association.hoiliug.db"] {
+            assert!(directory.path().join(name).exists(), "{name}");
+        }
+        assert!(!directory.path().join("custom_dictionary.hoiliug.db").exists());
     }
 }
