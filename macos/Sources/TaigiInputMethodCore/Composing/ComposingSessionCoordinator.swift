@@ -38,6 +38,12 @@ struct ComposingSessionToken: Hashable, Sendable {
 @MainActor
 protocol ShortcutActionTarget: AnyObject {
     func performShortcutAction(_ action: ShortcutAction)
+    /// Hakfa fork: flash the lect being typed in, once, on arriving from another input method.
+    func flashLectOnArrival()
+}
+
+extension ShortcutActionTarget {
+    func flashLectOnArrival() {}
 }
 
 /// Which input session is focused — the one that drives the process's one
@@ -125,6 +131,14 @@ final class ComposingSessionCoordinator {
             return
         }
         shortcutTarget.performShortcutAction(action)
+    }
+
+    /// Hakfa fork: asks the focused session to flash the current lect. False when no session is
+    /// armed yet (the flash then waits for `activateServer`).
+    func flashLectOnArrival() -> Bool {
+        guard let shortcutTarget else { return false }
+        shortcutTarget.flashLectOnArrival()
+        return true
     }
 
     /// Silent when nothing is armed: every release would otherwise disarm what

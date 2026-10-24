@@ -281,6 +281,10 @@ public final class TaigiInputController: IMKInputController {
             ComposingSessionCoordinator.shared.registerShortcutTarget(
                 controller, for: controller.sessionToken,
             )
+            // Hakfa fork: arriving from another input method flashes the lect once.
+            if InputSourceArrival.consumePending() {
+                controller.flashLectOnArrival()
+            }
             // Key-scoped KVO through the store rather than a notification, so
             // a `defaults write` from outside the process reaches the bar too.
             controller.displayModeObservation = controller.settings.observeChanges(
@@ -1065,6 +1069,11 @@ public final class TaigiInputController: IMKInputController {
     }
 
     /// Hakfa fork: the same flash for text that is not an i18n key (a lect's name).
+    @MainActor
+    func flashLectOnArrival() {
+        flash(literal: settings.lect.displayName)
+    }
+
     @MainActor
     private func flash(literal text: String) {
         if let modeFlashOverride {

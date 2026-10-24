@@ -33,6 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // From here on, a font installed or removed behind this process — Font
         // Book, or the user's own import — drops what was resolved in it.
         FontRegistryObserver.install()
+        // Hakfa fork: the lect flash when the user arrives from another input method.
+        InputSourceArrival.install()
         // The user's own typeface, if one is selected: registered here so the
         // first candidate window of the session draws in it rather than in the
         // system face, and so that nothing on the keystroke path has to. Only
