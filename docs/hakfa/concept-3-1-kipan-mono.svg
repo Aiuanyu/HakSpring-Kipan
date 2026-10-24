@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="100%" height="100%">
+  <!-- 構想 3-1 方案 3A 的 Android 13 主題圖示（monochrome）專用單色版。
+       系統只看透明度、整個重新上色，所以鍵帽做實心剪影，「h」、兩片嫩芽、兩顆露珠挖成透明。
+       與彩色版同一個 108×108 dp 畫布、同樣往下平移 1.7 dp，tools/hakfa/build-kipan-icons.py 直接渲染。
+       「h」的筆畫比彩色版粗（6.2，彩色版 3.6～4.0），小尺寸時挖空處才看得清楚。 -->
+  <defs>
+    <mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="108" height="108">
+      <rect width="108" height="108" fill="white"/>
+      <g transform="translate(0 1.7)" fill="black" stroke="black" stroke-linecap="round">
+        <path d="M 36.8 38.0 L 36.8 64.8" stroke-width="6.2" fill="none"/>
+        <path d="M 36.8 51.0 C 41.2 42.4, 57.2 42.4, 60.2 51.0 L 60.2 64.8" stroke-width="6.2" fill="none"/>
+        <path d="M 60.0 48.2 C 62.2 40.6, 66.8 35.2, 70.6 35.0 C 69.4 41.0, 65.2 44.8, 60.0 48.2 Z" stroke="none"/>
+        <path d="M 61.2 46.0 C 56.2 40.8, 58.4 32.4, 63.6 30.2 C 64.8 36.0, 63.2 41.8, 61.2 46.0 Z" stroke="none"/>
+        <circle cx="71.2" cy="31.2" r="2.1" stroke="none"/>
+        <circle cx="75.2" cy="35.5" r="1.55" stroke="none"/>
+      </g>
+    </mask>
+  </defs>
+  <g mask="url(#cut)" fill="#000000">
+    <g transform="translate(0 1.7)">
+      <rect x="23.8" y="23.8" width="60.4" height="57.4" rx="23.2"/>
+      <rect x="26.0" y="22.8" width="56.0" height="54.0" rx="20.8"/>
+    </g>
+  </g>
+</svg>

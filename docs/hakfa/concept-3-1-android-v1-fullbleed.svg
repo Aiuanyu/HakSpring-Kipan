@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="100%" height="100%">
+  <!-- 方案一 (V1)：隨形滿版立體鍵帽 (Adaptive Full-Bleed Keycap Dish)
+       108x108 dp 畫布，72 dp 可見區 (18..90)，66 dp 安全圓 (r=33 dp)。
+       背景即為深翠綠鍵帽立體底座 (100% 滿版)，中央為 61 dp 立體凹槽頂面與淡紫灰微光環。 -->
+  <defs>
+    <linearGradient id="v1_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#215643"/>
+      <stop offset="55%" stop-color="#173d2f"/>
+      <stop offset="100%" stop-color="#0d231b"/>
+    </linearGradient>
+    <linearGradient id="v1_dish" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#2a6b53"/>
+      <stop offset="100%" stop-color="#153025"/>
+    </linearGradient>
+    <linearGradient id="v1_rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eae3f1" stop-opacity="0.75"/>
+      <stop offset="50%" stop-color="#678c3f" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#aa96b7" stop-opacity="0.65"/>
+    </linearGradient>
+    <linearGradient id="v1_h" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eafbd0"/>
+      <stop offset="45%" stop-color="#d2dfd0"/>
+      <stop offset="100%" stop-color="#aa96b7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Background Layer (108x108 dp Full-Bleed Keycap Skirt) -->
+  <rect width="108" height="108" fill="url(#v1_bg)"/>
+
+  <!-- 2. Foreground Layer (Strictly within r <= 32.8 dp of center 54,54) -->
+  <!-- Lower 3D keycap step shadow -->
+  <circle cx="54" cy="55.6" r="30.8" fill="#091510" opacity="0.85"/>
+  <!-- Mid keycap bevel body -->
+  <circle cx="54" cy="54.2" r="30.8" fill="#183f31" stroke="#245d48" stroke-width="1.2"/>
+  <!-- Top concave keycap dish -->
+  <circle cx="54" cy="52.4" r="29.2" fill="url(#v1_dish)" stroke="url(#v1_rim)" stroke-width="1.8"/>
+  <!-- Subtle inner moss ring -->
+  <circle cx="54" cy="52.4" r="26.8" fill="none" stroke="#678c3f" stroke-width="0.9" opacity="0.55"/>
+
+  <!-- Tactile Homing Bar (底部空白鍵定位線) -->
+  <path d="M 41 72.5 L 67 72.5" stroke="#eae3f1" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- H/h Cursor & Spring Arch (放大飽滿置中) -->
+  <path d="M 39.5 34.5 L 39.5 65.5" stroke="#eafbd0" stroke-width="4.4" stroke-linecap="round"/>
+  <path d="M 39.5 50.5 C 44.5 40.5, 62.5 40.5, 65.5 50.5 L 65.5 65.5" stroke="url(#v1_h)" stroke-width="4.0" stroke-linecap="round" fill="none"/>
+  <path d="M 39.5 53.5 L 65.5 53.5" stroke="#aa96b7" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- Sprouting Leaves & Dewdrops (貼合 r <= 32.5 dp 安全圓弧) -->
+  <path d="M 65.5 46.5 C 68.0 36.5, 75.0 29.5, 79.5 30.0 C 78.2 37.8, 72.5 42.2, 65.5 46.5 Z" fill="#eafbd0"/>
+  <path d="M 66.8 44.2 C 60.5 37.8, 63.0 27.5, 69.2 25.2 C 70.5 32.5, 68.8 39.5, 66.8 44.2 Z" fill="#678c3f"/>
+  <circle cx="74.5" cy="25.8" r="2.0" fill="#eafbd0"/>
+  <circle cx="80.2" cy="34.8" r="1.5" fill="#eae3f1"/>
+</svg>
