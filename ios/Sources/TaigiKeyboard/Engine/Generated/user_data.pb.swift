@@ -246,6 +246,49 @@ public nonisolated enum Taigi_Engine_LearningRecordOrder: SwiftProtobuf.Enum, Sw
 
 }
 
+/// Why a word was not copied to a lect.
+public nonisolated enum Taigi_Engine_SyncSkipReason: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+
+  /// the target lect's dictionary has no such Hanji
+  case syncSkipMissing // = 1
+
+  /// the target lect's dictionary reads it more than one way
+  case syncSkipAmbiguous // = 2
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .syncSkipMissing
+    case 2: self = .syncSkipAmbiguous
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .syncSkipMissing: return 1
+    case .syncSkipAmbiguous: return 2
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Taigi_Engine_SyncSkipReason] = [
+    .unspecified,
+    .syncSkipMissing,
+    .syncSkipAmbiguous,
+  ]
+
+}
+
 public nonisolated struct Taigi_Engine_UserDataRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -373,6 +416,15 @@ public nonisolated struct Taigi_Engine_UserDataRequest: Sendable {
     set {method = .addLearningRecordToCustomDictionary(newValue)}
   }
 
+  /// Hakfa fork: 各腔互學.
+  public var syncLects: Taigi_Engine_SyncLects {
+    get {
+      if case .syncLects(let v)? = method {return v}
+      return Taigi_Engine_SyncLects()
+    }
+    set {method = .syncLects(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public nonisolated enum OneOf_Method: Equatable, Sendable {
@@ -391,6 +443,8 @@ public nonisolated struct Taigi_Engine_UserDataRequest: Sendable {
     case setLearningRecordCount(Taigi_Engine_SetLearningRecordCount)
     case deleteLearningRecord(Taigi_Engine_DeleteLearningRecord)
     case addLearningRecordToCustomDictionary(Taigi_Engine_AddLearningRecordToCustomDictionary)
+    /// Hakfa fork: 各腔互學.
+    case syncLects(Taigi_Engine_SyncLects)
 
   }
 
@@ -524,6 +578,14 @@ public nonisolated struct Taigi_Engine_UserDataResponse: Sendable {
     set {result = .learningRecordAddedToCustomDictionary(newValue)}
   }
 
+  public var lectsSynced: Taigi_Engine_LectsSynced {
+    get {
+      if case .lectsSynced(let v)? = result {return v}
+      return Taigi_Engine_LectsSynced()
+    }
+    set {result = .lectsSynced(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public nonisolated enum OneOf_Result: Equatable, Sendable {
@@ -542,6 +604,7 @@ public nonisolated struct Taigi_Engine_UserDataResponse: Sendable {
     case learningRecordSaved(Taigi_Engine_LearningRecordSaved)
     case learningRecordDeleted(Taigi_Engine_LearningRecordDeleted)
     case learningRecordAddedToCustomDictionary(Taigi_Engine_LearningRecordAddedToCustomDictionary)
+    case lectsSynced(Taigi_Engine_LectsSynced)
 
   }
 
@@ -1176,6 +1239,70 @@ public nonisolated struct Taigi_Engine_LearningRecordAddedToCustomDictionary: Se
   public init() {}
 }
 
+/// Hakfa fork: 各腔互學 (Obs IME data-ui D3). What the user learned in one lect (learned phrases
+/// and word counts) is offered to every other lect: a word is copied when the target lect's
+/// dictionary has the same Hanji with exactly ONE reading; no such Hanji, or several readings
+/// (a polyphonic word), and it is skipped. A copy counts as one use and never overwrites what the
+/// target lect learned itself. `lects` are the lect codes to even out (empty = every built lect);
+/// `dry_run` counts without writing, for the preview.
+public nonisolated struct Taigi_Engine_SyncLects: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var lects: [UInt32] = []
+
+  public var dryRun: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Taigi_Engine_SyncSkip: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var hanji: String = String()
+
+  public var targetLect: UInt32 = 0
+
+  public var reason: Taigi_Engine_SyncSkipReason = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Taigi_Engine_LectsSynced: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var dryRun: Bool = false
+
+  /// learned phrases written (or that would be)
+  public var addedPhrases: UInt32 = 0
+
+  /// word counts written (or that would be)
+  public var addedWords: UInt32 = 0
+
+  /// the target lect already had it
+  public var alreadyPresent: UInt32 = 0
+
+  public var skippedMissing: UInt32 = 0
+
+  public var skippedAmbiguous: UInt32 = 0
+
+  /// The first few skips, for the preview to show why (capped).
+  public var skippedExamples: [Taigi_Engine_SyncSkip] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate nonisolated let _protobuf_package = "taigi.engine"
@@ -1200,9 +1327,13 @@ nonisolated extension Taigi_Engine_LearningRecordOrder: SwiftProtobuf._ProtoName
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0LEARNING_RECORD_ORDER_MOST_USED\0\u{1}LEARNING_RECORD_ORDER_MOST_RECENT\0")
 }
 
+nonisolated extension Taigi_Engine_SyncSkipReason: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SYNC_SKIP_REASON_UNSPECIFIED\0\u{1}SYNC_SKIP_MISSING\0\u{1}SYNC_SKIP_AMBIGUOUS\0")
+}
+
 nonisolated extension Taigi_Engine_UserDataRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UserDataRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}open\0\u{1}reset\0\u{3}record_usage\0\u{3}list_custom_entries\0\u{3}save_custom_entry\0\u{3}delete_custom_entry\0\u{3}import_custom_csv\0\u{3}export_custom_csv\0\u{3}export_backup\0\u{3}import_backup\0\u{3}search_custom_entries\0\u{3}list_learning_records\0\u{3}set_learning_record_count\0\u{3}delete_learning_record\0\u{3}add_learning_record_to_custom_dictionary\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}open\0\u{1}reset\0\u{3}record_usage\0\u{3}list_custom_entries\0\u{3}save_custom_entry\0\u{3}delete_custom_entry\0\u{3}import_custom_csv\0\u{3}export_custom_csv\0\u{3}export_backup\0\u{3}import_backup\0\u{3}search_custom_entries\0\u{3}list_learning_records\0\u{3}set_learning_record_count\0\u{3}delete_learning_record\0\u{3}add_learning_record_to_custom_dictionary\0\u{3}sync_lects\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1405,6 +1536,19 @@ nonisolated extension Taigi_Engine_UserDataRequest: SwiftProtobuf.Message, Swift
           self.method = .addLearningRecordToCustomDictionary(v)
         }
       }()
+      case 16: try {
+        var v: Taigi_Engine_SyncLects?
+        var hadOneofValue = false
+        if let current = self.method {
+          hadOneofValue = true
+          if case .syncLects(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.method = .syncLects(v)
+        }
+      }()
       default: break
       }
     }
@@ -1476,6 +1620,10 @@ nonisolated extension Taigi_Engine_UserDataRequest: SwiftProtobuf.Message, Swift
       guard case .addLearningRecordToCustomDictionary(let v)? = self.method else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 15)
     }()
+    case .syncLects?: try {
+      guard case .syncLects(let v)? = self.method else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 16)
+    }()
     case nil: break
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -1490,7 +1638,7 @@ nonisolated extension Taigi_Engine_UserDataRequest: SwiftProtobuf.Message, Swift
 
 nonisolated extension Taigi_Engine_UserDataResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UserDataResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}opened\0\u{1}reset\0\u{3}usage_recorded\0\u{3}custom_entries\0\u{3}custom_entry_saved\0\u{3}custom_entry_deleted\0\u{3}custom_csv_imported\0\u{3}custom_csv_exported\0\u{3}backup_exported\0\u{3}backup_imported\0\u{3}custom_entry_matches\0\u{3}learning_records\0\u{3}learning_record_saved\0\u{3}learning_record_deleted\0\u{3}learning_record_added_to_custom_dictionary\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}opened\0\u{1}reset\0\u{3}usage_recorded\0\u{3}custom_entries\0\u{3}custom_entry_saved\0\u{3}custom_entry_deleted\0\u{3}custom_csv_imported\0\u{3}custom_csv_exported\0\u{3}backup_exported\0\u{3}backup_imported\0\u{3}custom_entry_matches\0\u{3}learning_records\0\u{3}learning_record_saved\0\u{3}learning_record_deleted\0\u{3}learning_record_added_to_custom_dictionary\0\u{3}lects_synced\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1693,6 +1841,19 @@ nonisolated extension Taigi_Engine_UserDataResponse: SwiftProtobuf.Message, Swif
           self.result = .learningRecordAddedToCustomDictionary(v)
         }
       }()
+      case 16: try {
+        var v: Taigi_Engine_LectsSynced?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .lectsSynced(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .lectsSynced(v)
+        }
+      }()
       default: break
       }
     }
@@ -1763,6 +1924,10 @@ nonisolated extension Taigi_Engine_UserDataResponse: SwiftProtobuf.Message, Swif
     case .learningRecordAddedToCustomDictionary?: try {
       guard case .learningRecordAddedToCustomDictionary(let v)? = self.result else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 15)
+    }()
+    case .lectsSynced?: try {
+      guard case .lectsSynced(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 16)
     }()
     case nil: break
     }
@@ -2932,6 +3097,141 @@ nonisolated extension Taigi_Engine_LearningRecordAddedToCustomDictionary: SwiftP
   public static func ==(lhs: Taigi_Engine_LearningRecordAddedToCustomDictionary, rhs: Taigi_Engine_LearningRecordAddedToCustomDictionary) -> Bool {
     if lhs.refusal != rhs.refusal {return false}
     if lhs.detail != rhs.detail {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_SyncLects: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SyncLects"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}lects\0\u{3}dry_run\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedUInt32Field(value: &self.lects) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.dryRun) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.lects.isEmpty {
+      try visitor.visitPackedUInt32Field(value: self.lects, fieldNumber: 1)
+    }
+    if self.dryRun != false {
+      try visitor.visitSingularBoolField(value: self.dryRun, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_SyncLects, rhs: Taigi_Engine_SyncLects) -> Bool {
+    if lhs.lects != rhs.lects {return false}
+    if lhs.dryRun != rhs.dryRun {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_SyncSkip: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SyncSkip"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}hanji\0\u{3}target_lect\0\u{1}reason\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.hanji) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.targetLect) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self.reason) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.hanji.isEmpty {
+      try visitor.visitSingularStringField(value: self.hanji, fieldNumber: 1)
+    }
+    if self.targetLect != 0 {
+      try visitor.visitSingularUInt32Field(value: self.targetLect, fieldNumber: 2)
+    }
+    if self.reason != .unspecified {
+      try visitor.visitSingularEnumField(value: self.reason, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_SyncSkip, rhs: Taigi_Engine_SyncSkip) -> Bool {
+    if lhs.hanji != rhs.hanji {return false}
+    if lhs.targetLect != rhs.targetLect {return false}
+    if lhs.reason != rhs.reason {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_LectsSynced: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".LectsSynced"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}dry_run\0\u{3}added_phrases\0\u{3}added_words\0\u{3}already_present\0\u{3}skipped_missing\0\u{3}skipped_ambiguous\0\u{3}skipped_examples\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.dryRun) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.addedPhrases) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.addedWords) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.alreadyPresent) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.skippedMissing) }()
+      case 6: try { try decoder.decodeSingularUInt32Field(value: &self.skippedAmbiguous) }()
+      case 7: try { try decoder.decodeRepeatedMessageField(value: &self.skippedExamples) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.dryRun != false {
+      try visitor.visitSingularBoolField(value: self.dryRun, fieldNumber: 1)
+    }
+    if self.addedPhrases != 0 {
+      try visitor.visitSingularUInt32Field(value: self.addedPhrases, fieldNumber: 2)
+    }
+    if self.addedWords != 0 {
+      try visitor.visitSingularUInt32Field(value: self.addedWords, fieldNumber: 3)
+    }
+    if self.alreadyPresent != 0 {
+      try visitor.visitSingularUInt32Field(value: self.alreadyPresent, fieldNumber: 4)
+    }
+    if self.skippedMissing != 0 {
+      try visitor.visitSingularUInt32Field(value: self.skippedMissing, fieldNumber: 5)
+    }
+    if self.skippedAmbiguous != 0 {
+      try visitor.visitSingularUInt32Field(value: self.skippedAmbiguous, fieldNumber: 6)
+    }
+    if !self.skippedExamples.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.skippedExamples, fieldNumber: 7)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_LectsSynced, rhs: Taigi_Engine_LectsSynced) -> Bool {
+    if lhs.dryRun != rhs.dryRun {return false}
+    if lhs.addedPhrases != rhs.addedPhrases {return false}
+    if lhs.addedWords != rhs.addedWords {return false}
+    if lhs.alreadyPresent != rhs.alreadyPresent {return false}
+    if lhs.skippedMissing != rhs.skippedMissing {return false}
+    if lhs.skippedAmbiguous != rhs.skippedAmbiguous {return false}
+    if lhs.skippedExamples != rhs.skippedExamples {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

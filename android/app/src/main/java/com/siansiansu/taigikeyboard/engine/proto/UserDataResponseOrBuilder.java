@@ -175,5 +175,16 @@ public interface UserDataResponseOrBuilder extends
    */
   com.siansiansu.taigikeyboard.engine.proto.LearningRecordAddedToCustomDictionary getLearningRecordAddedToCustomDictionary();
 
+  /**
+   * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+   * @return Whether the lectsSynced field is set.
+   */
+  boolean hasLectsSynced();
+  /**
+   * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+   * @return The lectsSynced.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.LectsSynced getLectsSynced();
+
   public com.siansiansu.taigikeyboard.engine.proto.UserDataResponse.ResultCase getResultCase();
 }

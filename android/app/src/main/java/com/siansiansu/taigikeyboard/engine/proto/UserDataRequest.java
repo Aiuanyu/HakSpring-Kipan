@@ -35,6 +35,7 @@ public  final class UserDataRequest extends
     SET_LEARNING_RECORD_COUNT(13),
     DELETE_LEARNING_RECORD(14),
     ADD_LEARNING_RECORD_TO_CUSTOM_DICTIONARY(15),
+    SYNC_LECTS(16),
     METHOD_NOT_SET(0);
     private final int value;
     private MethodCase(int value) {
@@ -65,6 +66,7 @@ public  final class UserDataRequest extends
         case 13: return SET_LEARNING_RECORD_COUNT;
         case 14: return DELETE_LEARNING_RECORD;
         case 15: return ADD_LEARNING_RECORD_TO_CUSTOM_DICTIONARY;
+        case 16: return SYNC_LECTS;
         case 0: return METHOD_NOT_SET;
         default: return null;
       }
@@ -831,6 +833,76 @@ public  final class UserDataRequest extends
    */
   private void clearAddLearningRecordToCustomDictionary() {
     if (methodCase_ == 15) {
+      methodCase_ = 0;
+      method_ = null;
+    }
+  }
+
+  public static final int SYNC_LECTS_FIELD_NUMBER = 16;
+  /**
+   * <pre>
+   * Hakfa fork: 各腔互學.
+   * </pre>
+   *
+   * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+   */
+  @java.lang.Override
+  public boolean hasSyncLects() {
+    return methodCase_ == 16;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: 各腔互學.
+   * </pre>
+   *
+   * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.SyncLects getSyncLects() {
+    if (methodCase_ == 16) {
+       return (com.siansiansu.taigikeyboard.engine.proto.SyncLects) method_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.SyncLects.getDefaultInstance();
+  }
+  /**
+   * <pre>
+   * Hakfa fork: 各腔互學.
+   * </pre>
+   *
+   * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+   */
+  private void setSyncLects(com.siansiansu.taigikeyboard.engine.proto.SyncLects value) {
+    java.util.Objects.requireNonNull(value);
+    method_ = value;
+    methodCase_ = 16;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: 各腔互學.
+   * </pre>
+   *
+   * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+   */
+  private void mergeSyncLects(com.siansiansu.taigikeyboard.engine.proto.SyncLects value) {
+    java.util.Objects.requireNonNull(value);
+    if (methodCase_ == 16 &&
+        method_ != com.siansiansu.taigikeyboard.engine.proto.SyncLects.getDefaultInstance()) {
+      method_ = com.siansiansu.taigikeyboard.engine.proto.SyncLects.newBuilder((com.siansiansu.taigikeyboard.engine.proto.SyncLects) method_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      method_ = value;
+    }
+    methodCase_ = 16;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: 各腔互學.
+   * </pre>
+   *
+   * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+   */
+  private void clearSyncLects() {
+    if (methodCase_ == 16) {
       methodCase_ = 0;
       method_ = null;
     }
@@ -1665,6 +1737,78 @@ public  final class UserDataRequest extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: 各腔互學.
+     * </pre>
+     *
+     * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+     */
+    @java.lang.Override
+    public boolean hasSyncLects() {
+      return instance.hasSyncLects();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: 各腔互學.
+     * </pre>
+     *
+     * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.SyncLects getSyncLects() {
+      return instance.getSyncLects();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: 各腔互學.
+     * </pre>
+     *
+     * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+     */
+    public Builder setSyncLects(com.siansiansu.taigikeyboard.engine.proto.SyncLects value) {
+      copyOnWrite();
+      instance.setSyncLects(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: 各腔互學.
+     * </pre>
+     *
+     * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+     */
+    public Builder setSyncLects(
+        com.siansiansu.taigikeyboard.engine.proto.SyncLects.Builder builderForValue) {
+      copyOnWrite();
+      instance.setSyncLects(builderForValue.build());
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: 各腔互學.
+     * </pre>
+     *
+     * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+     */
+    public Builder mergeSyncLects(com.siansiansu.taigikeyboard.engine.proto.SyncLects value) {
+      copyOnWrite();
+      instance.mergeSyncLects(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: 各腔互學.
+     * </pre>
+     *
+     * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+     */
+    public Builder clearSyncLects() {
+      copyOnWrite();
+      instance.clearSyncLects();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.UserDataRequest)
   }
   @java.lang.Override
@@ -1698,11 +1842,13 @@ public  final class UserDataRequest extends
             com.siansiansu.taigikeyboard.engine.proto.SetLearningRecordCount.class,
             com.siansiansu.taigikeyboard.engine.proto.DeleteLearningRecord.class,
             com.siansiansu.taigikeyboard.engine.proto.AddLearningRecordToCustomDictionary.class,
+            com.siansiansu.taigikeyboard.engine.proto.SyncLects.class,
           };
           java.lang.String info =
-              "\u0000\u000f\u0001\u0000\u0001\u000f\u000f\u0000\u0000\u0000\u0001<\u0000\u0002<" +
+              "\u0000\u0010\u0001\u0000\u0001\u0010\u0010\u0000\u0000\u0000\u0001<\u0000\u0002<" +
               "\u0000\u0003<\u0000\u0004<\u0000\u0005<\u0000\u0006<\u0000\u0007<\u0000\b<\u0000" +
-              "\t<\u0000\n<\u0000\u000b<\u0000\f<\u0000\r<\u0000\u000e<\u0000\u000f<\u0000";
+              "\t<\u0000\n<\u0000\u000b<\u0000\f<\u0000\r<\u0000\u000e<\u0000\u000f<\u0000\u0010" +
+              "<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

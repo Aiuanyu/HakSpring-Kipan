@@ -175,5 +175,24 @@ public interface UserDataRequestOrBuilder extends
    */
   com.siansiansu.taigikeyboard.engine.proto.AddLearningRecordToCustomDictionary getAddLearningRecordToCustomDictionary();
 
+  /**
+   * <pre>
+   * Hakfa fork: 各腔互學.
+   * </pre>
+   *
+   * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+   * @return Whether the syncLects field is set.
+   */
+  boolean hasSyncLects();
+  /**
+   * <pre>
+   * Hakfa fork: 各腔互學.
+   * </pre>
+   *
+   * <code>.taigi.engine.SyncLects sync_lects = 16;</code>
+   * @return The syncLects.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.SyncLects getSyncLects();
+
   public com.siansiansu.taigikeyboard.engine.proto.UserDataRequest.MethodCase getMethodCase();
 }

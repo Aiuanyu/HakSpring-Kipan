@@ -35,6 +35,7 @@ public  final class UserDataResponse extends
     LEARNING_RECORD_SAVED(13),
     LEARNING_RECORD_DELETED(14),
     LEARNING_RECORD_ADDED_TO_CUSTOM_DICTIONARY(15),
+    LECTS_SYNCED(16),
     RESULT_NOT_SET(0);
     private final int value;
     private ResultCase(int value) {
@@ -65,6 +66,7 @@ public  final class UserDataResponse extends
         case 13: return LEARNING_RECORD_SAVED;
         case 14: return LEARNING_RECORD_DELETED;
         case 15: return LEARNING_RECORD_ADDED_TO_CUSTOM_DICTIONARY;
+        case 16: return LECTS_SYNCED;
         case 0: return RESULT_NOT_SET;
         default: return null;
       }
@@ -831,6 +833,56 @@ public  final class UserDataResponse extends
    */
   private void clearLearningRecordAddedToCustomDictionary() {
     if (resultCase_ == 15) {
+      resultCase_ = 0;
+      result_ = null;
+    }
+  }
+
+  public static final int LECTS_SYNCED_FIELD_NUMBER = 16;
+  /**
+   * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+   */
+  @java.lang.Override
+  public boolean hasLectsSynced() {
+    return resultCase_ == 16;
+  }
+  /**
+   * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.LectsSynced getLectsSynced() {
+    if (resultCase_ == 16) {
+       return (com.siansiansu.taigikeyboard.engine.proto.LectsSynced) result_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.LectsSynced.getDefaultInstance();
+  }
+  /**
+   * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+   */
+  private void setLectsSynced(com.siansiansu.taigikeyboard.engine.proto.LectsSynced value) {
+    java.util.Objects.requireNonNull(value);
+    result_ = value;
+    resultCase_ = 16;
+  }
+  /**
+   * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+   */
+  private void mergeLectsSynced(com.siansiansu.taigikeyboard.engine.proto.LectsSynced value) {
+    java.util.Objects.requireNonNull(value);
+    if (resultCase_ == 16 &&
+        result_ != com.siansiansu.taigikeyboard.engine.proto.LectsSynced.getDefaultInstance()) {
+      result_ = com.siansiansu.taigikeyboard.engine.proto.LectsSynced.newBuilder((com.siansiansu.taigikeyboard.engine.proto.LectsSynced) result_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      result_ = value;
+    }
+    resultCase_ = 16;
+  }
+  /**
+   * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+   */
+  private void clearLectsSynced() {
+    if (resultCase_ == 16) {
       resultCase_ = 0;
       result_ = null;
     }
@@ -1665,6 +1717,54 @@ public  final class UserDataResponse extends
       return this;
     }
 
+    /**
+     * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+     */
+    @java.lang.Override
+    public boolean hasLectsSynced() {
+      return instance.hasLectsSynced();
+    }
+    /**
+     * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.LectsSynced getLectsSynced() {
+      return instance.getLectsSynced();
+    }
+    /**
+     * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+     */
+    public Builder setLectsSynced(com.siansiansu.taigikeyboard.engine.proto.LectsSynced value) {
+      copyOnWrite();
+      instance.setLectsSynced(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+     */
+    public Builder setLectsSynced(
+        com.siansiansu.taigikeyboard.engine.proto.LectsSynced.Builder builderForValue) {
+      copyOnWrite();
+      instance.setLectsSynced(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+     */
+    public Builder mergeLectsSynced(com.siansiansu.taigikeyboard.engine.proto.LectsSynced value) {
+      copyOnWrite();
+      instance.mergeLectsSynced(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.LectsSynced lects_synced = 16;</code>
+     */
+    public Builder clearLectsSynced() {
+      copyOnWrite();
+      instance.clearLectsSynced();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.UserDataResponse)
   }
   @java.lang.Override
@@ -1698,11 +1798,13 @@ public  final class UserDataResponse extends
             com.siansiansu.taigikeyboard.engine.proto.LearningRecordSaved.class,
             com.siansiansu.taigikeyboard.engine.proto.LearningRecordDeleted.class,
             com.siansiansu.taigikeyboard.engine.proto.LearningRecordAddedToCustomDictionary.class,
+            com.siansiansu.taigikeyboard.engine.proto.LectsSynced.class,
           };
           java.lang.String info =
-              "\u0000\u000f\u0001\u0000\u0001\u000f\u000f\u0000\u0000\u0000\u0001<\u0000\u0002<" +
+              "\u0000\u0010\u0001\u0000\u0001\u0010\u0010\u0000\u0000\u0000\u0001<\u0000\u0002<" +
               "\u0000\u0003<\u0000\u0004<\u0000\u0005<\u0000\u0006<\u0000\u0007<\u0000\b<\u0000" +
-              "\t<\u0000\n<\u0000\u000b<\u0000\f<\u0000\r<\u0000\u000e<\u0000\u000f<\u0000";
+              "\t<\u0000\n<\u0000\u000b<\u0000\f<\u0000\r<\u0000\u000e<\u0000\u000f<\u0000\u0010" +
+              "<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {
