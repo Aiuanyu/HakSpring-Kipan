@@ -36,7 +36,9 @@ pub struct UserDataHandle {
 }
 
 impl UserDataHandle {
-    pub(crate) const fn new() -> Self {
+    /// A handle of its own, for tests that must not share the process one (Hakfa fork: public for
+    /// `engine/dispatch`'s lect-sync tests).
+    pub const fn new() -> Self {
         Self {
             opened: OnceLock::new(),
         }

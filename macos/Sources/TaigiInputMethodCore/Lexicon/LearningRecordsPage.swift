@@ -57,6 +57,9 @@ final class LearningRecordsPageModel {
 
     var message: UserDataPageMessage?
 
+    /// Hakfa fork: the preview of 各腔互學, shown for the user to confirm; nil when none is pending.
+    var syncPreview: Taigi_Engine_LectsSynced?
+
     /// The table's selection, held by the list so a load drops it once its
     /// row is off screen (`UserDataPagedList.selectedID`).
     var selectedRowID: Taigi_Engine_LearningRecord.ID? {
@@ -138,6 +141,26 @@ final class LearningRecordsPageModel {
     func clearAll() async {
         await perform(failure: .dictionaryClearLearningRecordsFailed) {
             try $0.clearLearningRecords()
+            return true
+        }
+    }
+
+    /// Hakfa fork: 各腔互學, step one — counts what would be copied, writes nothing.
+    func previewSync() async {
+        guard beginWork() else { return }
+        defer { activity = .idle }
+        do {
+            syncPreview = try await UserDataRequests.run(on: client) { try $0.syncLects(dryRun: true) }
+        } catch {
+            message = .failure(.dictionaryLearningRecordsWriteFailed, error)
+        }
+    }
+
+    /// Hakfa fork: 各腔互學, step two — copies for real, then reloads the list.
+    func confirmSync() async {
+        syncPreview = nil
+        await perform { client in
+            _ = try client.syncLects(dryRun: false)
             return true
         }
     }
@@ -231,6 +254,22 @@ struct LearningRecordsPage: View {
                 }
             }
 
+            // Hakfa fork (Obs IME data-ui D3): offer what each lect learned to the others.
+            Section {
+                // Drawn like `WideActionRow` (which takes an i18n key; this label is Hakfa-only).
+                Button {
+                    Task { await model.previewSync() }
+                } label: {
+                    Text("各腔互學⋯")
+                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(Color.accentColor)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+            } footer: {
+                Text("把一腔學過个詞，共到別腔：別腔詞典有共隻漢字、又淨有一種讀音正共；毋確定个跳過。")
+            }
+
             Section {
                 WideActionRow(titleKey: .dictionaryClearLearningRecords, role: .destructive) {
                     Task { await model.clearAll() }
@@ -241,12 +280,35 @@ struct LearningRecordsPage: View {
         .reloadWhenFilterSettles(model.filter) { await model.loadFirstPage() }
         .onChange(of: model.kind) { showFromFirstPage() }
         .onChange(of: model.order) { showFromFirstPage() }
+        .alert(
+            "各腔互學",
+            isPresented: Binding(
+                get: { model.syncPreview != nil },
+                set: { if !$0 { model.syncPreview = nil } },
+            ),
+            presenting: model.syncPreview,
+        ) { _ in
+            Button("互學") { Task { await model.confirmSync() } }
+            Button(language.string(.commonCancel), role: .cancel) { model.syncPreview = nil }
+        } message: { preview in
+            Text(Self.syncSummary(preview))
+        }
         .sheet(item: $editing) { record in
             LearningRecordCountSheet(record: record) { count in
                 Task { await model.setCount(of: record, to: count) }
             }
         }
         .userDataPageChrome(activity: model.activity, message: $model.message)
+    }
+
+    /// What the preview says before anything is copied.
+    nonisolated static func syncSummary(_ preview: Taigi_Engine_LectsSynced) -> String {
+        let added = preview.addedWords + preview.addedPhrases
+        var lines = ["會增加 \(added) 筆（詞 \(preview.addedWords)、詞組 \(preview.addedPhrases)）。"]
+        if preview.alreadyPresent > 0 { lines.append("本來就有：\(preview.alreadyPresent) 筆。") }
+        if preview.skippedMissing > 0 { lines.append("目的腔無共隻漢字，跳過：\(preview.skippedMissing) 筆。") }
+        if preview.skippedAmbiguous > 0 { lines.append("目的腔有多種讀音，跳過：\(preview.skippedAmbiguous) 筆。") }
+        return lines.joined(separator: "\n")
     }
 
     /// Another kind or order: its first page, the filter kept. The model

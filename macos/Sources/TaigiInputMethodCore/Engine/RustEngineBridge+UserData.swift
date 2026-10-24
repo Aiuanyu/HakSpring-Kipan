@@ -145,6 +145,18 @@ extension RustEngineBridge {
         return added
     }
 
+    /// Hakfa fork: 各腔互學. `dryRun` only counts (the preview). `lects` are lect codes; empty means
+    /// every built lect.
+    static func syncLects(lects: [UInt32] = [], dryRun: Bool) -> Taigi_Engine_LectsSynced? {
+        var sync = Taigi_Engine_SyncLects()
+        sync.lects = lects
+        sync.dryRun = dryRun
+        guard case let .lectsSynced(synced)? = userDataResult(.syncLects(sync), op: "syncLects") else {
+            return nil
+        }
+        return synced
+    }
+
     /// `nil` for a failed round-trip, a refusal (a request before the open),
     /// or an answer of the wrong kind — the caller's `case let` rejects the
     /// last, and every one is logged.

@@ -392,6 +392,20 @@ pub fn add_learning_record_to_custom_dictionary(
     }
 }
 
+/// Hakfa fork: 各腔互學. Offers what each lect learned to the other lects whose dictionary reads
+/// the same Hanji one way (`dry_run` only counts, for the preview). `lects` are lect codes; empty
+/// means every built lect.
+pub fn sync_lects(lects: Vec<u32>, dry_run: bool) -> Result<protos::engine::LectsSynced, UserDataError> {
+    let op = "userDataSyncLects";
+    match page_request(
+        user_data_request::Method::SyncLects(protos::engine::SyncLects { lects, dry_run }),
+        op,
+    )? {
+        user_data_response::Result::LectsSynced(synced) => Ok(synced),
+        _ => Err(other_result(op)),
+    }
+}
+
 fn page_request(
     method: user_data_request::Method,
     op: &'static str,

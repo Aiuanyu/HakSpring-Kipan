@@ -31,6 +31,8 @@ message UserDataRequest {
     SetLearningRecordCount set_learning_record_count = 13;
     DeleteLearningRecord delete_learning_record = 14;
     AddLearningRecordToCustomDictionary add_learning_record_to_custom_dictionary = 15;
+    // Hakfa fork: 各腔互學.
+    SyncLects sync_lects = 16;
   }
 }
 
@@ -51,6 +53,7 @@ message UserDataResponse {
     LearningRecordSaved learning_record_saved = 13;
     LearningRecordDeleted learning_record_deleted = 14;
     LearningRecordAddedToCustomDictionary learning_record_added_to_custom_dictionary = 15;
+    LectsSynced lects_synced = 16;
   }
 }
 
@@ -408,4 +411,39 @@ message LearningRecordAddedToCustomDictionary {
   CustomDictionaryRefusal refusal = 1;
   // The refusal in English, for an alert's diagnostic line; empty when added.
   string detail = 2;
+}
+
+// Hakfa fork: 各腔互學 (Obs IME data-ui D3). What the user learned in one lect (learned phrases
+// and word counts) is offered to every other lect: a word is copied when the target lect's
+// dictionary has the same Hanji with exactly ONE reading; no such Hanji, or several readings
+// (a polyphonic word), and it is skipped. A copy counts as one use and never overwrites what the
+// target lect learned itself. `lects` are the lect codes to even out (empty = every built lect);
+// `dry_run` counts without writing, for the preview.
+message SyncLects {
+  repeated uint32 lects = 1;
+  bool dry_run = 2;
+}
+
+// Why a word was not copied to a lect.
+enum SyncSkipReason {
+  SYNC_SKIP_REASON_UNSPECIFIED = 0;
+  SYNC_SKIP_MISSING = 1;    // the target lect's dictionary has no such Hanji
+  SYNC_SKIP_AMBIGUOUS = 2;  // the target lect's dictionary reads it more than one way
+}
+
+message SyncSkip {
+  string hanji = 1;
+  uint32 target_lect = 2;
+  SyncSkipReason reason = 3;
+}
+
+message LectsSynced {
+  bool dry_run = 1;
+  uint32 added_phrases = 2;     // learned phrases written (or that would be)
+  uint32 added_words = 3;       // word counts written (or that would be)
+  uint32 already_present = 4;   // the target lect already had it
+  uint32 skipped_missing = 5;
+  uint32 skipped_ambiguous = 6;
+  // The first few skips, for the preview to show why (capped).
+  repeated SyncSkip skipped_examples = 7;
 }

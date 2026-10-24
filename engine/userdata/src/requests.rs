@@ -103,8 +103,9 @@ impl UserDataHandle {
                     stores, kind, record,
                 )?)
             }
+            // Hakfa fork: answered by `engine/dispatch` (it sees the dictionary too).
             // Answered by `handle` before a page request is looked at.
-            Method::Open(_) | Method::RecordUsage(_) => {
+            Method::Open(_) | Method::RecordUsage(_) | Method::SyncLects(_) => {
                 return Err(RequestError::Invalid("not a page request"));
             }
         })

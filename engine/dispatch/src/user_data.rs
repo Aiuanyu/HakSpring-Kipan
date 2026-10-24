@@ -7,6 +7,8 @@
 //! `docs/architecture/user-data-engine-roadmap.md`.
 
 #[cfg(feature = "user-data")]
+mod lect_sync;
+#[cfg(feature = "user-data")]
 mod with_stores;
 
 use composing::api::ComposingError;

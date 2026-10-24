@@ -98,3 +98,7 @@ Derived south Sixian / Meinong / Zhuolan / Taoyuan readings are produced by HakS
 - Rebuilt dictionary vs. the previous one: same 23,124 records in the same order with identical headwords, readings, frequency and walker cost; `dictionary.fst` and `syllables.fst` byte-identical. Only `bitmask` (certification-only 4,516 rows → `2`, both 4,931 → `3`) and the subtag lect bits differ.
 - Default-settings candidates for 24,166 inputs (every toneless key, every abbreviation, 800 random 2–3 word strings) are identical before and after, through `taigi-desktop-core`'s engine.
 - `engine_roundtrip.rs` `hakfa_cert_is_its_own_source`: 護理師 (`fulisii`, certification only) survives MOE off and disappears with bit 1 off at the engine.
+
+## Learning data across lects (各腔互學)
+
+Learned words and phrases live per lect (`user_frequency.<id>.db` and so on; 四縣 keeps the original names). `UserDataRequest.sync_lects` offers what each lect learned to the others (`engine/dispatch/src/user_data/lect_sync.rs`): a word is copied to a target lect only when the target's dictionary has the same Hanji with exactly one reading. A Hanji the target does not have, or reads several ways, is skipped, never guessed. A copy counts as one use and never raises what the target learned itself. Everything is read before anything is written, so a copy never echoes back. `dry_run` counts only (the preview). Answered in `dispatch`, not `userdata`, because it needs the lexicon. macOS: a row on the Learning Records page asks for the preview, then confirms. Not copied yet: next-word associations.

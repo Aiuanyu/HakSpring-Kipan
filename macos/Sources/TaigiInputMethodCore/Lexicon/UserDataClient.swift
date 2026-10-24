@@ -82,6 +82,16 @@ protocol UserDataClient: Sendable {
     /// a reading that cannot be searched) keeps the row and is thrown as
     /// `UserDataClientError.refused`.
     func addLearningRecordToCustomDictionary(_ record: Taigi_Engine_LearningRecord) throws
+    /// Hakfa fork: 各腔互學 — what each lect learned is offered to the others where the target
+    /// lect's dictionary reads the same Hanji one way. `dryRun` only counts.
+    func syncLects(dryRun: Bool) throws -> Taigi_Engine_LectsSynced
+}
+
+extension UserDataClient {
+    /// Doubles that do not exercise it need not state it.
+    func syncLects(dryRun _: Bool) throws -> Taigi_Engine_LectsSynced {
+        throw UserDataClientError.engineUnavailable(op: "syncLects")
+    }
 }
 
 /// The shipped client: the engine's user-data ops.
@@ -144,6 +154,13 @@ struct EngineUserDataClient: UserDataClient {
             imported: Int(imported.imported),
             skipped: Int(imported.skipped),
         )
+    }
+
+    func syncLects(dryRun: Bool) throws -> Taigi_Engine_LectsSynced {
+        guard let synced = RustEngineBridge.syncLects(dryRun: dryRun) else {
+            throw UserDataClientError.engineUnavailable(op: "syncLects")
+        }
+        return synced
     }
 
     func clearLearningRecords() throws {

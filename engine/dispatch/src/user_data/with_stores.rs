@@ -12,7 +12,7 @@ use composing::api::ComposingError;
 use composing::{ConversionFrequency, PendingSnapshot, UserRows};
 use nextword::NextWordError;
 use protos::engine::{
-    composing_request, next_word_request, response, AppConfig, ComposingRequest, ComposingResponse,
+    user_data_request, user_data_response, composing_request, next_word_request, response, AppConfig, ComposingRequest, ComposingResponse,
     ErrorCode, NextWordRequest, NextWordResponse, RawNextWordPrediction, Response, Source,
     UserDataRequest,
 };
@@ -28,6 +28,11 @@ const _: () = assert!(crate::CUSTOM_CSV_MAX_FILE_BYTES == CustomDictionaryCSV::M
 
 /// Answers one user-data request — the `UserData` arm of `crate::run`.
 pub(crate) fn respond(id: u32, request: &UserDataRequest) -> Response {
+    // Hakfa fork: 各腔互學 needs the dictionary as well as the stores, so it is answered here
+    // rather than in `userdata`, which does not see the lexicon.
+    if let Some(user_data_request::Method::SyncLects(sync)) = request.method.as_ref() {
+        return respond_sync_lects(id, sync);
+    }
     let (error, payload) = match UserDataHandle::instance().handle(request) {
         Ok(answer) => (ErrorCode::Ok, Some(response::Payload::UserData(answer))),
         Err(RequestError::Invalid(reason)) => {
@@ -44,6 +49,80 @@ pub(crate) fn respond(id: u32, request: &UserDataRequest) -> Response {
         error: error as i32,
         payload,
     }
+}
+
+/// The lect codes with data in the shipped dictionary (四縣, 南四縣, 海陸).
+const BUILT_LECTS: [u32; 3] = [1, 6, 2];
+
+/// Hakfa fork: 各腔互學. The dictionary's readings of a Hanji in one lect come from the lexicon's
+/// Hanji search with the lect gate (`Filter.lect`, wire bits 27-29) and the exact Hanji kept — the
+/// search also lists words that only start with it.
+fn respond_sync_lects(id: u32, sync: &protos::engine::SyncLects) -> Response {
+    let lects: Vec<u32> = if sync.lects.is_empty() {
+        BUILT_LECTS.to_vec()
+    } else {
+        sync.lects.clone()
+    };
+    let readings = |hanji: &str, lect: u32| -> Vec<String> {
+        let request = protos::engine::SearchByHanjiRequest {
+            query: hanji.to_owned(),
+            input_mode: protos::engine::InputMode::Tl as i32,
+            limit: 50,
+            enabled_sources_bitmask: 0x0FFF
+                | (1 << 12)
+                | (lect << userdata_lect_shift()),
+        };
+        lexicon::api::search_by_hanji(request)
+            .map(|response| {
+                response
+                    .rows
+                    .into_iter()
+                    .filter(|row| row.hanji.as_deref() == Some(hanji))
+                    .map(|row| row.roman)
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let Some(report) = super::lect_sync::sync(UserDataHandle::instance(), &lects, sync.dry_run, &readings)
+    else {
+        log::warn!("lect sync refused (id={id}): user data is not open yet");
+        return Response {
+            id,
+            error: ErrorCode::FailInvariant as i32,
+            payload: None,
+        };
+    };
+    let skipped_examples = report
+        .skipped_examples
+        .into_iter()
+        .map(|(hanji, target_lect, reason)| protos::engine::SyncSkip {
+            hanji,
+            target_lect,
+            reason: match reason {
+                super::lect_sync::SkipReason::Missing => protos::engine::SyncSkipReason::SyncSkipMissing,
+                super::lect_sync::SkipReason::Ambiguous => protos::engine::SyncSkipReason::SyncSkipAmbiguous,
+            } as i32,
+        })
+        .collect();
+    Response {
+        id,
+        error: ErrorCode::Ok as i32,
+        payload: Some(response::Payload::UserData(protos::engine::UserDataResponse {
+            result: Some(user_data_response::Result::LectsSynced(protos::engine::LectsSynced {
+                dry_run: sync.dry_run,
+                added_phrases: report.added_phrases,
+                added_words: report.added_words,
+                already_present: report.already_present,
+                skipped_missing: report.skipped_missing,
+                skipped_ambiguous: report.skipped_ambiguous,
+                skipped_examples,
+            })),
+        })),
+    }
+}
+
+fn userdata_lect_shift() -> u32 {
+    lexicon::dictionary_reader::WIRE_LECT_SHIFT
 }
 
 /// A composing request, answered with the open stores. `FetchAtPos` runs
