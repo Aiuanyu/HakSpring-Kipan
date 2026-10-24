@@ -804,7 +804,14 @@ public final class TaigiInputController: IMKInputController {
             settings.storedIsOutputBothScripts.toggle()
             representCandidates(refetch: false)
             if !wasListOnScreen {
-                flash(settings.storedIsOutputBothScripts ? .settingsOutputBothScriptsOn : .settingsOutputBothScriptsOff)
+                // Hakfa fork: the bracket HUD spells 羅馬字 in the lect being typed.
+                if settings.storedIsOutputBothScripts {
+                    flash(literal: settings.effectiveLect.localizingRomanScriptName(
+                        in: displayLanguage.string(.settingsOutputBothScriptsOn),
+                    ))
+                } else {
+                    flash(.settingsOutputBothScriptsOff)
+                }
             }
         case .cycleCandidateDisplayMode:
             // Inert only under TPS (gated above). Only the setting is

@@ -43,6 +43,22 @@ enum Lect: String, CaseIterable, Sendable {
         return self
     }
 
+    /// How this lect says 羅馬字 in HagPinPlus — the readings of 羅、馬、字 in its dictionary,
+    /// run together (四縣 lǒ·má·sii, 海陸 lo·mà·sīi; 南四縣 reads them as 四縣 does). The HUD that
+    /// names the script pair puts it in brackets.
+    var romanScriptName: String {
+        switch self {
+        case .xiien, .namxiian: "Lǒmásii"
+        case .hoiliug: "Lomàsīi"
+        }
+    }
+
+    /// `text` with the 四縣 spelling of 羅馬字 (what the Hakka UI strings are written with) changed to
+    /// this lect's. Text without it is unchanged, so other display languages pass through.
+    func localizingRomanScriptName(in text: String) -> String {
+        text.replacingOccurrences(of: Lect.xiien.romanScriptName, with: romanScriptName)
+    }
+
     /// The lect code the dictionary and the user-data files use (desktop-core `Lect::code`).
     var code: UInt32 {
         switch self {

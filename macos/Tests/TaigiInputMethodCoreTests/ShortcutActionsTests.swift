@@ -65,6 +65,16 @@ final class ShortcutActionsTests: XCTestCase {
         XCTAssertEqual(SettingsStore.Keys.lect.defaultValue, .xiien)
     }
 
+    /// Hakfa fork: the bracket-annotation HUD spells 羅馬字 in the lect being typed; text without the
+    /// 四縣 spelling (other display languages) is left as it is.
+    func testBracketHud_spellsTheRomanScriptInTheLectBeingTyped() {
+        let hakha = "諸夏字 (Lǒmásii)"
+        XCTAssertEqual(Lect.xiien.localizingRomanScriptName(in: hakha), "諸夏字 (Lǒmásii)")
+        XCTAssertEqual(Lect.namxiian.localizingRomanScriptName(in: hakha), "諸夏字 (Lǒmásii)")
+        XCTAssertEqual(Lect.hoiliug.localizingRomanScriptName(in: hakha), "諸夏字 (Lomàsīi)")
+        XCTAssertEqual(Lect.hoiliug.localizingRomanScriptName(in: "Hanji (Lo-má-jī)"), "Hanji (Lo-má-jī)")
+    }
+
     func testEveryAction_hasItsOwnLabel() {
         let rows = labels()
 
