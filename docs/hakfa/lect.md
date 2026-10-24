@@ -28,11 +28,17 @@ A word found in both MOE and the certification lists is one record with bits 0 a
 | 12 | upstream alternative reading (又唸作) — candidate for secondary readings split by `splitReadingVariants()`, not written yet |
 | **13–15** | **lect code** (Kipan) |
 
-Lect codes: `1` Sixian (四). Reserved: `2` Hailu, `3` Dapu, `4` Raoping, `5` Zhao'an. `0` means "no lect" and fails the build.
+Lect codes: `1` Sixian (四, `xiien`), `2` Hailu (海陸, `hoiliug`). Reserved: `3` Dapu, `4` Raoping, `5` Zhao'an. `0` means "no lect" and fails the build.
 
-The engine reader masks the subtag with `KAUTIAN_SUBTAG_USED_MASK` (bits 0–12), so the lect code is invisible to filtering today. Reading it requires widening that mask (upstream line in `engine/lexicon/src/dictionary_reader.rs`; keep the change small and commented).
+The engine reader keeps bits 13–15 (`KAUTIAN_SUBTAG_LECT_MASK`) in `DictionaryRecord.kautian_subtag`. They sit outside `KAUTIAN_SUBTAG_USED_MASK` (bits 0–12), so they never reach the subcollection AND. `DictionaryReader::passes_filter` has a lect gate: when the filter's `lect` is non-zero, a record whose lect is non-zero and different is dropped. A record with lect 0 (non-Hakfa data) and a filter with lect 0 (or the `u32::MAX` sentinel) match everything.
 
-The lect is not passed to the engine inside `enabled_sources_bitmask` (only bits 27–31 are free there); it will get its own settings field.
+The wanted lect rides **wire bits 27–29** of `enabled_sources_bitmask` (`WIRE_LECT_SHIFT`, `WIRE_LECT_MASK`; `0` = all lects, the behaviour before lects). Bits 30–31 are still free. If upstream starts using 27–29, move the lect to its own settings field; the change is confined to `Filter::from_enabled_bitmask` and the platform encoders.
+
+## One merged dictionary
+
+`node dictionary/sources/official/hakspring/extract_and_build.js --lect all` runs the extraction once per lect (child process `--dump-records`), concatenates, sorts by frequency (ties: Sixian first) and encodes one `dictionary.bin`. Until a platform sends the lect, it writes to `dictionary/output/hakfa-all/` and `data/hakspring-all.csv` and does not touch `assets/dictionaries`. `--lect 四` and `--lect 海` still build one lect alone (Sixian overwrites the shipped files, other lects write `hakfa-<id>/`). Lect ids are the Hakka names: `xiien`, `hoiliug`.
+
+Test: `engine/lexicon/tests/hakfa_lect.rs` opens the merged dictionary (skips if not built) and checks that lect 1 + lect 2 = every row, lect 0 = every row, lect 3 = none.
 
 ## Ranking
 

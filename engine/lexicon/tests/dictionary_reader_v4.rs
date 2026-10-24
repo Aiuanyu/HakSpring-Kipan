@@ -97,16 +97,19 @@ fn invariant_lex_v4_round_trip_kautian_subtag() {
 
 #[test]
 fn invariant_lex_v4_masks_reserved_subtag_bits_on_read() {
-    // Reserved bits 13-15 must be masked off on read so a future writer
-    // setting them can never corrupt the subcollection filter AND.
-    let rows: &[(u16, u32, u8, u16, &str, &str)] = &[(0x0001, 100, 1, 0xE001, "詞", "su")]; // reserved bits + main
+    // Hakfa fork: bits 13-15 are the lect code and survive the read (the lect gate needs
+    // them), but they sit outside `KAUTIAN_SUBTAG_USED_MASK`, so they can never corrupt the
+    // subcollection filter AND.
+    let rows: &[(u16, u32, u8, u16, &str, &str)] = &[(0x0001, 100, 1, 0xE001, "詞", "su")]; // lect bits + main
     let bytes = build_tkdb_v4_subtag(b"TKDB", rows);
     let path = write_temp("dictionary-reader-v4-reserved.bin", &bytes);
     let reader = DictionaryReader::open(&path).expect("v4 binary opens");
+    let subtag = reader.record(1).unwrap().kautian_subtag;
+    assert_eq!(subtag, 0xE001, "lect bits 13-15 kept");
     assert_eq!(
-        reader.record(1).unwrap().kautian_subtag,
+        subtag & lexicon::dictionary_reader::KAUTIAN_SUBTAG_USED_MASK,
         0x0001,
-        "reserved bits 13-15 masked off; only the main bit survives"
+        "only the main bit survives in the subcollection part"
     );
 }
 

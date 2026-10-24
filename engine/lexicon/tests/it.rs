@@ -9,6 +9,7 @@ mod association_v2;
 mod compound_hanji;
 mod dictionary_reader_v4;
 mod fused_toneless_key;
+mod hakfa_lect;
 mod parity;
 mod partial_prefix_syllable_reach;
 mod prefix_index_length_bands;

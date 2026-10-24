@@ -70,6 +70,16 @@ pub const WIRE_KAUTIAN_SUBCOLL_ACTIVE_BIT: u32 = 1 << 13;
 pub const WIRE_KAUTIAN_SUBCOLL_SHIFT: u32 = 14;
 pub const WIRE_KAUTIAN_SUBCOLL_MASK: u32 = KAUTIAN_SUBTAG_USED_MASK as u32;
 
+/// Hakfa fork (客源翠企盤): lect code (腔) in the kautian subtag's reserved top bits,
+/// 13-15 (1 = 四縣, 2 = 海陸, …; 0 = no lect, matches every lect). See `docs/hakfa/lect.md`.
+/// It is NOT part of `KAUTIAN_SUBTAG_USED_MASK`, so it can never reach the subcollection AND.
+pub const KAUTIAN_SUBTAG_LECT_SHIFT: u16 = 13;
+pub const KAUTIAN_SUBTAG_LECT_MASK: u16 = 0b111 << KAUTIAN_SUBTAG_LECT_SHIFT;
+/// Hakfa fork: the wanted lect rides wire bits 27-29 of `enabled_sources_bitmask`
+/// (0 = all lects, the pre-lect behaviour; the `u32::MAX` sentinel also means all).
+pub const WIRE_LECT_SHIFT: u32 = 27;
+pub const WIRE_LECT_MASK: u32 = 0b111;
+
 #[derive(Debug, Clone)]
 pub struct DictionaryRecord {
     // Source-attribution bitmask (13 bits: 12 source bits + the variant-marker bit).
@@ -118,6 +128,9 @@ pub struct Filter {
     /// Enabled kautian subcollections — 13-bit mask, SAME layout as the record
     /// subtag (main | accent[10] | name | alt_reading).
     pub kautian_subcoll_mask: u16,
+    /// Hakfa fork: wanted lect code (wire bits 27-29). 0 = every lect passes.
+    /// A record with lect 0 passes any lect, so non-Hakfa dictionaries are unaffected.
+    pub lect: u8,
 }
 
 impl Filter {
@@ -139,6 +152,11 @@ impl Filter {
                 != 0,
             kautian_subcoll_mask: ((enabled_sources_bitmask >> WIRE_KAUTIAN_SUBCOLL_SHIFT)
                 & WIRE_KAUTIAN_SUBCOLL_MASK) as u16,
+            lect: if enabled_sources_bitmask == u32::MAX {
+                0
+            } else {
+                ((enabled_sources_bitmask >> WIRE_LECT_SHIFT) & WIRE_LECT_MASK) as u8
+            },
         }
     }
 }
@@ -238,10 +256,11 @@ impl DictionaryReader {
         let syllable_count = bytes[pos];
         pos += 1;
         // v3: kautian subcollection subtag (2 bytes). The RECORD_FIXED_PREFIX
-        // bound checked above guarantees these 2 bytes are in range. Reserved
-        // bits (13-15) are masked off so they can never affect the filter AND.
-        let kautian_subtag =
-            u16::from_le_bytes(bytes[pos..pos + 2].try_into().ok()?) & KAUTIAN_SUBTAG_USED_MASK;
+        // bound checked above guarantees these 2 bytes are in range. Bits 13-15
+        // carry the Hakfa lect code (KAUTIAN_SUBTAG_LECT_MASK); they are kept
+        // here but can never reach the subcollection AND (its mask is 13 bits).
+        let kautian_subtag = u16::from_le_bytes(bytes[pos..pos + 2].try_into().ok()?)
+            & (KAUTIAN_SUBTAG_USED_MASK | KAUTIAN_SUBTAG_LECT_MASK);
         pos += 2;
         // v4: walker cost (2 bytes), inside the same RECORD_FIXED_PREFIX bound.
         let walker_cost = u16::from_le_bytes(bytes[pos..pos + 2].try_into().ok()?);
@@ -311,6 +330,13 @@ impl DictionaryReader {
         }
         if !filter.khiin && (record_bitmask & KHIIN_BIT) != 0 {
             return false;
+        }
+        // Hakfa fork: lect gate. A record with lect 0 (non-Hakfa data) matches every lect.
+        if filter.lect != 0 {
+            let record_lect = (record_subtag >> KAUTIAN_SUBTAG_LECT_SHIFT) as u8;
+            if record_lect != 0 && record_lect != filter.lect {
+                return false;
+            }
         }
         if filter.all_enabled {
             return true;
@@ -415,6 +441,49 @@ mod tests {
             DictionaryReader::effective_source_bitmask(TAIGITV, 0, &f),
             TAIGITV
         );
+    }
+
+    // Hakfa fork: lect gate (wire bits 27-29, record subtag bits 13-15).
+    const LECT_SIXIAN: u16 = 1 << KAUTIAN_SUBTAG_LECT_SHIFT;
+    const LECT_HAILU: u16 = 2 << KAUTIAN_SUBTAG_LECT_SHIFT;
+
+    fn wire_lect(lect: u32) -> u32 {
+        wire(SRC_KAUTIAN_DEV, false, 0) | (lect << WIRE_LECT_SHIFT)
+    }
+
+    #[test]
+    fn lect_gate_keeps_only_the_wanted_lect() {
+        let sixian = Filter::from_enabled_bitmask(wire_lect(1));
+        assert_eq!(sixian.lect, 1);
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_SIXIAN, &sixian));
+        assert!(!DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_HAILU, &sixian));
+        let hailu = Filter::from_enabled_bitmask(wire_lect(2));
+        assert!(!DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_SIXIAN, &hailu));
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_HAILU, &hailu));
+    }
+
+    #[test]
+    fn lect_zero_in_filter_or_record_matches_everything() {
+        let any = Filter::from_enabled_bitmask(wire_lect(0));
+        assert_eq!(any.lect, 0);
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_SIXIAN, &any));
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_HAILU, &any));
+        // a record with no lect (non-Hakfa data) passes a lect filter
+        let hailu = Filter::from_enabled_bitmask(wire_lect(2));
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN, &hailu));
+        // the u32::MAX sentinel means every lect
+        let all = Filter::from_enabled_bitmask(u32::MAX);
+        assert_eq!(all.lect, 0);
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_HAILU, &all));
+    }
+
+    #[test]
+    fn lect_bits_never_reach_the_subcollection_gate() {
+        // subcollection filtering on, only `name` enabled: a main-only Hailu row still drops
+        // its kautian contribution, exactly as a main-only Sixian row does.
+        let f = Filter::from_enabled_bitmask(wire(SRC_KAUTIAN_DEV, true, SUB_NAME) | (2 << WIRE_LECT_SHIFT));
+        assert!(!DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_HAILU, &f));
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_NAME | LECT_HAILU, &f));
     }
 
     #[test]
