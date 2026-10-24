@@ -75,6 +75,11 @@ final class SettingsStore: @unchecked Sendable {
         /// Hakfa fork: the lect the dictionary answers in, stored as the enum's raw value.
         /// Not removed by the General pane's reset, like the display language.
         static let lect = SettingsKey(name: "lect", defaultValue: Lect.xiien)
+        /// Whether a lect can be typed in: the Dictionary Sources pane's lect rows (desktop-core
+        /// `keys::lect_enabled`; the same names, which the settings snapshot carries).
+        static func lectEnabled(_ lect: Lect) -> SettingsKey<Bool> {
+            SettingsKey(name: "lectEnabled.\(lect.rawValue)", defaultValue: true)
+        }
         /// Both scripts side by side, or the romanization alone. Stored as the
         /// enum's raw value like `inputMode`; the swap key above is left
         /// untouched by it — switching back restores whatever it holds.
@@ -634,6 +639,9 @@ final class SettingsStore: @unchecked Sendable {
             Keys.isKautianNameAppendixEnabled.name,
             Keys.isKautianAltReadingEnabled.name,
         )
+        for lect in Lect.allCases {
+            userDefaults.removeObject(forKey: Keys.lectEnabled(lect).name)
+        }
     }
 
     /// Puts `names` back to "never touched".
@@ -711,6 +719,21 @@ final class SettingsStore: @unchecked Sendable {
     var lect: Lect {
         get { choice(Keys.lect) }
         set { userDefaults.set(newValue.rawValue, forKey: Keys.lect.name) }
+    }
+
+    /// The lects the Dictionary Sources pane has switched on, in the pane's order. With every row
+    /// off (a hand-edited preference) all of them count (desktop-core `available_lects`).
+    var availableLects: [Lect] {
+        let on = Lect.allCases.filter { bool(Keys.lectEnabled($0)) }
+        return on.isEmpty ? Lect.allCases : on
+    }
+
+    /// The lect the engine answers in: the stored one, or — when the pane has since switched it off —
+    /// the next available one. The stored choice is left alone, so switching the row back on
+    /// returns to it (desktop-core `effective_lect`).
+    var effectiveLect: Lect {
+        let available = availableLects
+        return available.contains(lect) ? lect : lect.next(among: available)
     }
 
     /// How the candidate window renders each `(Hanji, romanization)` pair. Written by

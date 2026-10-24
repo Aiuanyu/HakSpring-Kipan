@@ -15,21 +15,49 @@ struct DictionaryTogglesView: View {
     @AppStorage(SettingsStore.Keys.isKautianEnabled.name)
     private var isKautianEnabled = SettingsStore.Keys.isKautianEnabled.defaultValue
 
+    // Hakfa fork (Obs IME data-ui D2): which lects can be typed in. One switch per lect under the
+    // MOE dictionary; the certification list's rows below it follow them and cannot be changed.
+    @AppStorage(SettingsStore.Keys.lectEnabled(.xiien).name)
+    private var isXiienEnabled = SettingsStore.Keys.lectEnabled(.xiien).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.namxiian).name)
+    private var isNamxiianEnabled = SettingsStore.Keys.lectEnabled(.namxiian).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.hoiliug).name)
+    private var isHoiliugEnabled = SettingsStore.Keys.lectEnabled(.hoiliug).defaultValue
+
     // Hakfa fork (Obs IME data-ui D1): only the sources that exist in this keyboard are listed.
     // The upstream Taigi dictionaries (iTaigi, plant names, Taiwanese-Japanese, Tai-Hua, STTI,
     // the accent and appendix sub-options, Khiin / variant / LKK characters, the supplement
     // word list) have no Hakka data, so a switch for them would do nothing. Their stored values
     // stay as they were and the engine still reads them; they simply cannot be changed here.
-    // The per-lect sub-options for the MOE dictionary and the certification list are D2.
     var body: some View {
         Form {
             Section {
                 Toggle(language.string(.commonMoeDict), isOn: $isKautianEnabled)
+                Group {
+                    ForEach(Lect.allCases, id: \.self) { lect in
+                        Toggle(lect.displayName, isOn: enabledBinding(lect))
+                            // The last lect on stays on: the keyboard must have one to type in.
+                            .disabled(isOn(lect) && enabledCount == 1)
+                    }
+                }
+                .padding(.leading, Metrics.subcollectionIndent)
+                // Disabled, not cleared: the master switch says whether this
+                // dictionary is searched at all, and turning it back on has to
+                // return the lects the user had chosen rather than all of them.
+                .disabled(!isKautianEnabled)
 
                 // hakfa: bit 1 (taigitv) is the certification word lists, locked on;
                 // desktop-core `SettingsDocument::dictionary_sources` forces it on for the engine too.
                 Toggle(language.string(.commonNewwordDict), isOn: .constant(true))
                     .disabled(true)
+                // The certification list has five lects (no 南四縣 of its own): its 四縣 follows
+                // the MOE dictionary's 四縣 or 南四縣, the others follow the same lect.
+                Group {
+                    Toggle(Lect.xiien.displayName, isOn: .constant(isOn(.xiien) || isOn(.namxiian)))
+                    Toggle(Lect.hoiliug.displayName, isOn: .constant(isOn(.hoiliug)))
+                }
+                .padding(.leading, Metrics.subcollectionIndent)
+                .disabled(true)
 
                 // hakfa: bit 6 (kungge) is the HakSpring character supplement, locked on;
                 // desktop-core `SettingsDocument::dictionary_sources` forces it on for the engine too.
@@ -37,6 +65,8 @@ struct DictionaryTogglesView: View {
                     .disabled(true)
             } header: {
                 Text(language.string(.dictionaryMoeSectionTitle))
+            } footer: {
+                Text("客語能力認證詞彙跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸等其他腔同款。")
             }
 
             // Its own section, at the end, drawn the way the Shortcuts and Appearance
@@ -58,4 +88,27 @@ struct DictionaryTogglesView: View {
         SettingsStore().resetDictionarySources()
     }
 
+    private func isOn(_ lect: Lect) -> Bool {
+        switch lect {
+        case .xiien: isXiienEnabled
+        case .namxiian: isNamxiianEnabled
+        case .hoiliug: isHoiliugEnabled
+        }
+    }
+
+    private var enabledCount: Int {
+        Lect.allCases.filter(isOn).count
+    }
+
+    private func enabledBinding(_ lect: Lect) -> Binding<Bool> {
+        switch lect {
+        case .xiien: $isXiienEnabled
+        case .namxiian: $isNamxiianEnabled
+        case .hoiliug: $isHoiliugEnabled
+        }
+    }
+
+    private enum Metrics {
+        static let subcollectionIndent: CGFloat = 16
+    }
 }

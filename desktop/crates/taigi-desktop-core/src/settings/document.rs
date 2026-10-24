@@ -17,7 +17,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::choices::{KeyboardLayout, SettingChoice};
+use super::choices::{KeyboardLayout, Lect, SettingChoice};
 use super::engine_settings::{
     next_input_mode, CandidateDisplayMode, DictionarySourceToggles, EngineSettings, InputMode,
     InputModeRequest, KautianSubcollections, SyllableSeparator,
@@ -363,6 +363,35 @@ impl SettingsDocument {
         }
     }
 
+    /// Hakfa fork: the lects the Dictionary Sources pane has switched on, in the pane's order.
+    /// If every row is off (a hand-edited file) all of them count, so there is always a lect to
+    /// type in.
+    pub fn available_lects(&self) -> Vec<Lect> {
+        let on: Vec<Lect> = Lect::ALL
+            .iter()
+            .copied()
+            .filter(|lect| self.bool(&keys::lect_enabled(*lect)))
+            .collect();
+        if on.is_empty() {
+            Lect::ALL.to_vec()
+        } else {
+            on
+        }
+    }
+
+    /// Hakfa fork: the lect the engine answers in — the stored one, or, when the pane has since
+    /// switched that lect off, the next available one in the cycle order. The stored choice is
+    /// left alone, so switching the row back on returns to it.
+    pub fn effective_lect(&self) -> Lect {
+        let stored: Lect = self.choice(&keys::LECT);
+        let available = self.available_lects();
+        if available.contains(&stored) {
+            stored
+        } else {
+            stored.next_among(&available)
+        }
+    }
+
     /// Read as part of `engine_settings` so the toggles the engine filters
     /// by and the settings it composes under come from one instant.
     pub fn dictionary_sources(&self) -> DictionarySourceToggles {
@@ -398,7 +427,7 @@ impl SettingsDocument {
                 name_appendix: self.bool(&keys::IS_KAUTIAN_NAME_APPENDIX_ENABLED),
                 alt_reading: self.bool(&keys::IS_KAUTIAN_ALT_READING_ENABLED),
             },
-            lect: self.choice(&keys::LECT),
+            lect: self.effective_lect(),
         }
     }
 }
@@ -988,7 +1017,6 @@ mod tests {
 
     #[test]
     fn lect_reads_the_stored_choice_and_defaults_to_xiien() {
-        use crate::settings::Lect;
         let mut doc = SettingsDocument::default();
         assert_eq!(doc.dictionary_sources().lect, Lect::Xiien);
         doc.set_choice(&keys::LECT, Lect::Hoiliug);
@@ -997,7 +1025,48 @@ mod tests {
         // a spelling no version knows reads as the default, never as nothing
         doc.set_raw_string(keys::LECT.name, "nonsense");
         assert_eq!(doc.dictionary_sources().lect, Lect::Xiien);
-        assert_eq!(Lect::Xiien.next(), Lect::Hoiliug);
-        assert_eq!(Lect::Hoiliug.next(), Lect::Xiien);
+    }
+
+    #[test]
+    fn the_cycle_steps_through_the_available_lects_in_pane_order() {
+        let all = Lect::ALL;
+        assert_eq!(all, [Lect::Xiien, Lect::Namxiian, Lect::Hoiliug], "南四縣 is the second row");
+        assert_eq!(Lect::Xiien.next_among(all), Lect::Namxiian);
+        assert_eq!(Lect::Namxiian.next_among(all), Lect::Hoiliug);
+        assert_eq!(Lect::Hoiliug.next_among(all), Lect::Xiien);
+        // a lect switched off is skipped; with nothing else on, the lect stays
+        assert_eq!(Lect::Xiien.next_among(&[Lect::Xiien, Lect::Hoiliug]), Lect::Hoiliug);
+        assert_eq!(Lect::Xiien.next_among(&[Lect::Xiien]), Lect::Xiien);
+    }
+
+    #[test]
+    fn a_lect_switched_off_in_the_pane_is_not_typed_in_and_comes_back_when_switched_on() {
+        let mut doc = SettingsDocument::default();
+        assert_eq!(doc.available_lects(), Lect::ALL);
+        doc.set_choice(&keys::LECT, Lect::Hoiliug);
+        doc.set_bool(&keys::lect_enabled(Lect::Hoiliug), false);
+        assert_eq!(doc.available_lects(), [Lect::Xiien, Lect::Namxiian]);
+        assert_eq!(doc.effective_lect(), Lect::Xiien, "the next available one after 海陸");
+        assert_eq!(doc.dictionary_sources().lect, Lect::Xiien, "the engine gets the effective lect");
+        assert_eq!(doc.choice(&keys::LECT), Lect::Hoiliug, "the stored choice is not rewritten");
+        doc.set_bool(&keys::lect_enabled(Lect::Hoiliug), true);
+        assert_eq!(doc.effective_lect(), Lect::Hoiliug);
+    }
+
+    #[test]
+    fn with_every_lect_off_they_all_count() {
+        let mut doc = SettingsDocument::default();
+        for lect in Lect::ALL {
+            doc.set_bool(&keys::lect_enabled(*lect), false);
+        }
+        assert_eq!(doc.available_lects(), Lect::ALL);
+    }
+
+    #[test]
+    fn resetting_the_dictionary_sources_switches_every_lect_back_on() {
+        let mut doc = SettingsDocument::default();
+        doc.set_bool(&keys::lect_enabled(Lect::Namxiian), false);
+        doc.reset_dictionary_sources();
+        assert_eq!(doc.available_lects(), Lect::ALL);
     }
 }

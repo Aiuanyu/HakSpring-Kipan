@@ -28,6 +28,7 @@ pub fn lect_file_suffix(lect: u32) -> Option<String> {
     match lect {
         0 | 1 => None,
         2 => Some("hoiliug".to_owned()),
+        6 => Some("namxiian".to_owned()),
         other => Some(format!("lect{other}")),
     }
 }

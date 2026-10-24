@@ -32,8 +32,11 @@ fn each_lect_sees_only_its_own_rows_and_lect_zero_sees_all() {
     let total = reader.record_count();
     let sixian = count_passing(&reader, &filter_for(1));
     let hailu = count_passing(&reader, &filter_for(2));
-    assert!(sixian > 0 && hailu > 0, "both lects present");
-    assert_eq!(sixian + hailu, total, "every row belongs to exactly one lect");
+    let south_sixian = count_passing(&reader, &filter_for(6));
+    assert!(sixian > 0 && hailu > 0 && south_sixian > 0, "all three lects present");
+    assert_eq!(sixian + hailu + south_sixian, total, "every row belongs to exactly one lect");
     assert_eq!(count_passing(&reader, &filter_for(0)), total, "lect 0 = every lect");
-    assert_eq!(count_passing(&reader, &filter_for(3)), 0, "Dapu is not built yet");
+    for unbuilt in [3, 4, 5, 7] {
+        assert_eq!(count_passing(&reader, &filter_for(unbuilt)), 0, "lect {unbuilt} is not built yet");
+    }
 }

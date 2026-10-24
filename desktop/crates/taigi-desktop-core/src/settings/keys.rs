@@ -60,6 +60,16 @@ pub const IS_LITERAL_ROMAN_CANDIDATE_ENABLED: SettingsKey<bool> = SettingsKey::n
     "literalRomanCandidateEnabled",
     ENGINE_DEFAULTS.is_literal_roman_candidate_enabled,
 );
+/// Hakfa fork: whether `lect` is available to type in, from the Dictionary Sources pane (the MOE
+/// dictionary's lect rows; the certification list's rows follow them). Default on.
+pub const fn lect_enabled(lect: Lect) -> SettingsKey<bool> {
+    match lect {
+        Lect::Xiien => SettingsKey::new("lectEnabled.xiien", true),
+        Lect::Namxiian => SettingsKey::new("lectEnabled.namxiian", true),
+        Lect::Hoiliug => SettingsKey::new("lectEnabled.hoiliug", true),
+    }
+}
+
 /// Hakfa fork: the lect the dictionary answers in (四縣 `xiien`, 海陸 `hoiliug`).
 /// Not in `GENERAL_KEYS`: the General pane's reset must not switch lect under the user, like the
 /// display language. Read by the key path (`key_path.rs`) so macOS sends it in the snapshot.
@@ -307,7 +317,7 @@ pub const APPEARANCE_KEYS: [&str; 4] = [
 
 /// The 13 source toggles + 12 subcollection toggles the Dictionary Sources pane's reset
 /// removes (`SettingsStore.swift` `resetDictionarySources` is the macOS twin).
-pub const DICTIONARY_SOURCE_KEYS: [&str; 25] = [
+pub const DICTIONARY_SOURCE_KEYS: [&str; 28] = [
     IS_KAUTIAN_ENABLED.name,
     IS_TAIGITV_ENABLED.name,
     IS_ITAIGI_ENABLED.name,
@@ -333,6 +343,10 @@ pub const DICTIONARY_SOURCE_KEYS: [&str; 25] = [
     IS_KAUTIAN_ACCENT_TAICHUNG_ENABLED.name,
     IS_KAUTIAN_NAME_APPENDIX_ENABLED.name,
     IS_KAUTIAN_ALT_READING_ENABLED.name,
+    // Hakfa fork: the lect rows.
+    lect_enabled(Lect::Xiien).name,
+    lect_enabled(Lect::Namxiian).name,
+    lect_enabled(Lect::Hoiliug).name,
 ];
 
 #[cfg(test)]

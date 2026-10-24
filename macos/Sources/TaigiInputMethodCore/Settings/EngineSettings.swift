@@ -26,14 +26,21 @@ enum InputMode: String, CaseIterable, Sendable {
 /// Order = the cycle shortcut's order.
 enum Lect: String, CaseIterable, Sendable {
     case xiien
+    /// 南四縣: a lect of its own, second in the pane (USER 2026-10-25: the South Sixian community
+    /// fought for a sixth place in the MOE dictionary, so it is never folded under 四縣).
+    case namxiian
     case hoiliug
 
-    /// The lect after this one, round again from the end — what the cycle shortcut steps
-    /// through (desktop-core `Lect::next`).
-    var next: Lect {
+    /// The lect the cycle shortcut steps to among the `available` ones, round again from the end
+    /// (desktop-core `Lect::next_among`). Itself when nothing else is available.
+    func next(among available: [Lect]) -> Lect {
         let all = Self.allCases
-        let index = all.firstIndex(of: self) ?? all.startIndex
-        return all[(index + 1) % all.count]
+        let start = all.firstIndex(of: self) ?? all.startIndex
+        for step in 1 ... all.count {
+            let candidate = all[(start + step) % all.count]
+            if available.contains(candidate) { return candidate }
+        }
+        return self
     }
 
     /// What the mode flash says: the Chinese name with its HagPinPlus in brackets, the same shape
@@ -42,6 +49,7 @@ enum Lect: String, CaseIterable, Sendable {
     var displayName: String {
         switch self {
         case .xiien: "四縣 (Xi'ien)"
+        case .namxiian: "南四縣 (Namxiian)"
         case .hoiliug: "海陸 (Hóiliug)"
         }
     }

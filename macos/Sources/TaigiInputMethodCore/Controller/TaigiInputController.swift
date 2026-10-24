@@ -825,7 +825,7 @@ public final class TaigiInputController: IMKInputController {
             // armed refetches an open bar (the Candidate Display cycle's path), and the
             // flash names the lect, since the bar changes its words with no other notice.
             // Not inert under TPS — the lect decides which dictionary answers there too.
-            let next = settings.lect.next
+            let next = settings.effectiveLect.next(among: settings.availableLects)
             settings.lect = next
             flash(literal: next.displayName)
         case .showTelexGuide:
@@ -1071,7 +1071,7 @@ public final class TaigiInputController: IMKInputController {
     /// Hakfa fork: the same flash for text that is not an i18n key (a lect's name).
     @MainActor
     func flashLectOnArrival() {
-        flash(literal: settings.lect.displayName)
+        flash(literal: settings.effectiveLect.displayName)
     }
 
     @MainActor

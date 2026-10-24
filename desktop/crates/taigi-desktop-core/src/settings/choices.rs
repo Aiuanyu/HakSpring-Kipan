@@ -27,6 +27,10 @@ pub trait SettingChoice: Copy + PartialEq + std::fmt::Debug + 'static {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Lect {
     Xiien,
+    /// 南四縣: a lect of its own in the dictionary and in the settings, not a sub-choice of
+    /// 四縣 (USER 2026-10-25: the South Sixian community fought for a sixth place in the MOE
+    /// dictionary, so the settings must not fold it under 四縣).
+    Namxiian,
     Hoiliug,
 }
 
@@ -36,22 +40,29 @@ impl Lect {
         match self {
             Self::Xiien => 1,
             Self::Hoiliug => 2,
+            Self::Namxiian => 6,
         }
     }
 
-    /// The lect the cycle shortcut steps to: round the picker order, back to the first.
-    pub fn next(self) -> Self {
-        let index = Self::ALL.iter().position(|lect| *lect == self).unwrap_or(0);
-        Self::ALL[(index + 1) % Self::ALL.len()]
+    /// The lect the cycle shortcut steps to among the `available` ones (the picker order, round
+    /// again from the end). `self` itself when nothing else is available.
+    pub fn next_among(self, available: &[Self]) -> Self {
+        let start = Self::ALL.iter().position(|lect| *lect == self).unwrap_or(0);
+        (1..=Self::ALL.len())
+            .map(|step| Self::ALL[(start + step) % Self::ALL.len()])
+            .find(|lect| available.contains(lect))
+            .unwrap_or(self)
     }
 }
 
 impl SettingChoice for Lect {
-    const ALL: &'static [Self] = &[Self::Xiien, Self::Hoiliug];
+    /// The Dictionary Sources pane's order, and the cycle shortcut's.
+    const ALL: &'static [Self] = &[Self::Xiien, Self::Namxiian, Self::Hoiliug];
     const DEFAULT: Self = Self::Xiien;
     fn raw(self) -> &'static str {
         match self {
             Self::Xiien => "xiien",
+            Self::Namxiian => "namxiian",
             Self::Hoiliug => "hoiliug",
         }
     }

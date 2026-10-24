@@ -511,7 +511,9 @@ mod tests {
         let toggles = DictionarySourceToggles::DEFAULT;
         assert_eq!(toggles.lect, Lect::Xiien, "a fresh install answers in 四縣");
         assert_eq!(dictionary_toggles(&toggles).lect, 1);
-        let hailu = DictionarySourceToggles { lect: Lect::Hoiliug, ..toggles };
+        let hailu = DictionarySourceToggles { lect: Lect::Hoiliug, ..toggles.clone() };
         assert_eq!(dictionary_toggles(&hailu).lect, 2);
+        let south = DictionarySourceToggles { lect: Lect::Namxiian, ..toggles.clone() };
+        assert_eq!(dictionary_toggles(&south).lect, 6);
     }
 }

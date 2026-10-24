@@ -28,7 +28,7 @@ A word found in both MOE and the certification lists is one record with bits 0 a
 | 12 | upstream alternative reading (又唸作) — candidate for secondary readings split by `splitReadingVariants()`, not written yet |
 | **13–15** | **lect code** (Kipan) |
 
-Lect codes: `1` Sixian (四, `xiien`), `2` Hailu (海陸, `hoiliug`). Reserved: `3` Dapu, `4` Raoping, `5` Zhao'an. `0` means "no lect" and fails the build.
+Lect codes: `1` Sixian (四, `xiien`), `2` Hailu (海陸, `hoiliug`), `6` South Sixian (南, `namxiian`: its own lect, built from the MOE 南 volume and the 南 supplement, no certification list; the settings list it second, never as a sub-choice of Sixian). Reserved: `3` Dapu, `4` Raoping, `5` Zhao'an. `0` means "no lect" and fails the build.
 
 The engine reader keeps bits 13–15 (`KAUTIAN_SUBTAG_LECT_MASK`) in `DictionaryRecord.kautian_subtag`. They sit outside `KAUTIAN_SUBTAG_USED_MASK` (bits 0–12), so they never reach the subcollection AND. `DictionaryReader::passes_filter` has a lect gate: when the filter's `lect` is non-zero, a record whose lect is non-zero and different is dropped. A record with lect 0 (non-Hakfa data) and a filter with lect 0 (or the `u32::MAX` sentinel) match everything.
 
@@ -46,6 +46,7 @@ Test: `engine/lexicon/tests/hakfa_lect.rs` opens the merged dictionary (skips if
 
 - desktop-core: `Lect` (`settings/choices.rs`, stored `xiien` / `hoiliug`), key `lect` (`settings/keys.rs`), default Sixian. It is a key-path setting, so macOS carries it in the settings snapshot; `dictionary_toggles` sends `DictionarySourceToggles.lect = Lect::code()`. The General pane's reset does not touch it.
 - macOS: `Lect` and `SettingsStore.lect` (Swift twins), shortcut `cycleLect` (**⌃⌘L**, first row of the Shortcuts pane and the input-method menu), the mode flash names the lect (`四縣 xiien` / `海陸 hoiliug`). An open candidate bar is fetched again.
+- Which lects can be typed in: keys `lectEnabled.<id>` (`keys::lect_enabled`), one per lect, switched in the Dictionary Sources pane under the MOE dictionary (macOS `DictionaryTogglesView`). `SettingsDocument::available_lects` / `effective_lect` resolve the lect the engine gets: the stored one, or the next available one when its row was switched off (the stored choice is not rewritten). The cycle shortcut steps through the available lects only. The last lect on cannot be switched off. The certification rows under it are display-only and follow the MOE rows (certification Sixian is on if MOE Sixian or South Sixian is). No engine change: the engine still gets one lect.
 - Android: sends lect 1 (`LexiconBridge.kt`) until it has a setting; lect 0 would mix every lect.
 - Windows / Linux: the lect setting exists in desktop-core (default Sixian) but they have no shortcut or picker for it yet.
 

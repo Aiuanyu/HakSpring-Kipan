@@ -38,6 +38,10 @@ const LECT_SHIFT = 13;
 const LECTS = {
   '四': { code: 1, name: '四縣', id: 'xiien' },
   '海': { code: 2, name: '海陸', id: 'hoiliug' },
+  // 南四縣: its own lect in the dictionary (教典南 + 補字典南, no certification list), so the
+  // settings can list it as a lect of its own (Obs IME data-ui R). Code 6; 3-5 stay reserved for
+  // 大埔, 饒平, 詔安.
+  '南': { code: 6, name: '南四縣', id: 'namxiian' },
 };
 
 // （無參數）／`--lect all`  全腔合併成一份詞庫，這就係出貨詞庫：每腔各跑一次
@@ -97,6 +101,8 @@ const TONE_MARKS = {
 const LECT_TONES = {
   '四': { '24': 'acute', '11': 'caron', '31': 'grave', '55': 'none', '2': 'grave', '5': 'none' },
   '海': { '53': 'grave', '24': 'acute', '11': 'caron', '33': 'macron', '55': 'none', '2': 'grave', '5': 'none' },
+  // 南四縣 has the 四縣 tone values (tone_mapping.json dialect_maps only overrides 31, the same grave).
+  '南': { '24': 'acute', '11': 'caron', '31': 'grave', '55': 'none', '2': 'grave', '5': 'none' },
 };
 const TONE_VALUE_MAP = Object.fromEntries(
   Object.entries(LECT_TONES[LECT_KEY] || {}).map(([tone, mark]) => [tone, TONE_MARKS[mark]]));

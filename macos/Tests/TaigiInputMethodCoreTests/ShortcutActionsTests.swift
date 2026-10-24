@@ -52,10 +52,15 @@ final class ShortcutActionsTests: XCTestCase {
     /// Hakfa fork: the lect cycle steps 四縣 → 海陸 → 四縣, and its raw values are the spellings
     /// desktop-core's `Lect::raw` reads back from the settings snapshot.
     func testLect_cyclesAndSpellsLikeTheCore() {
-        XCTAssertEqual(Lect.xiien.next, .hoiliug)
-        XCTAssertEqual(Lect.hoiliug.next, .xiien)
-        XCTAssertEqual(Lect.allCases.map(\.rawValue), ["xiien", "hoiliug"])
-        XCTAssertEqual(Lect.allCases.map(\.displayName), ["四縣 (Xi'ien)", "海陸 (Hóiliug)"])
+        let all = Lect.allCases
+        XCTAssertEqual(Lect.xiien.next(among: all), .namxiian)
+        XCTAssertEqual(Lect.namxiian.next(among: all), .hoiliug)
+        XCTAssertEqual(Lect.hoiliug.next(among: all), .xiien)
+        // a lect switched off is skipped; with nothing else on, the lect stays
+        XCTAssertEqual(Lect.xiien.next(among: [.xiien, .hoiliug]), .hoiliug)
+        XCTAssertEqual(Lect.xiien.next(among: [.xiien]), .xiien)
+        XCTAssertEqual(Lect.allCases.map(\.rawValue), ["xiien", "namxiian", "hoiliug"])
+        XCTAssertEqual(Lect.allCases.map(\.displayName), ["四縣 (Xi'ien)", "南四縣 (Namxiian)", "海陸 (Hóiliug)"])
         XCTAssertEqual(SettingsStore.Keys.lect.name, "lect")
         XCTAssertEqual(SettingsStore.Keys.lect.defaultValue, .xiien)
     }

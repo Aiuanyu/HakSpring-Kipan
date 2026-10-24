@@ -5,7 +5,7 @@
 //! (macOS, `macos/crates/taigi-macos-ffi`) pushes exactly these, so a new
 //! key-path read adds its key here.
 
-use super::choices::SettingChoice;
+use super::choices::{Lect, SettingChoice};
 use super::dictionary_sources::{KAUTIAN_SUBCOLLECTIONS, MOE_OTHERS, OTHERS, SUPPLEMENTS};
 use super::{keys, SettingsKey};
 use crate::keys::ComposingAction;
@@ -52,6 +52,10 @@ pub fn key_path_settings() -> Vec<KeyPathSetting> {
         keys::IS_NASAL_MARKER_UPPERCASE_ENABLED,
         keys::IS_CUSTOM_DICT_ENABLED,
         keys::IS_KAUTIAN_ENABLED,
+        // Hakfa fork: which lects can be typed in (the effective lect is resolved from them).
+        keys::lect_enabled(Lect::Xiien),
+        keys::lect_enabled(Lect::Namxiian),
+        keys::lect_enabled(Lect::Hoiliug),
     ]
     .into_iter()
     .chain(
