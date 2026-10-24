@@ -160,4 +160,16 @@ public interface DictionarySourceTogglesOrBuilder extends
    * @return The kautianSubcollections.
    */
   com.siansiansu.taigikeyboard.engine.proto.KautianSubcollectionToggles getKautianSubcollections();
+
+  /**
+   * <pre>
+   * Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+   * `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+   * (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+   * </pre>
+   *
+   * <code>uint32 lect = 15;</code>
+   * @return The lect.
+   */
+  int getLect();
 }

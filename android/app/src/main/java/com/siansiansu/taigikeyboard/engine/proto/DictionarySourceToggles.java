@@ -601,6 +601,50 @@ public  final class DictionarySourceToggles extends
     bitField0_ = (bitField0_ & ~0x00000001);
   }
 
+  public static final int LECT_FIELD_NUMBER = 15;
+  private int lect_;
+  /**
+   * <pre>
+   * Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+   * `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+   * (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+   * </pre>
+   *
+   * <code>uint32 lect = 15;</code>
+   * @return The lect.
+   */
+  @java.lang.Override
+  public int getLect() {
+    return lect_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+   * `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+   * (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+   * </pre>
+   *
+   * <code>uint32 lect = 15;</code>
+   * @param value The lect to set.
+   */
+  private void setLect(int value) {
+
+    lect_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+   * `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+   * (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+   * </pre>
+   *
+   * <code>uint32 lect = 15;</code>
+   */
+  private void clearLect() {
+
+    lect_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.DictionarySourceToggles parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1313,6 +1357,52 @@ public  final class DictionarySourceToggles extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+     * `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+     * (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+     * </pre>
+     *
+     * <code>uint32 lect = 15;</code>
+     * @return The lect.
+     */
+    @java.lang.Override
+    public int getLect() {
+      return instance.getLect();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+     * `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+     * (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+     * </pre>
+     *
+     * <code>uint32 lect = 15;</code>
+     * @param value The lect to set.
+     * @return This builder for chaining.
+     */
+    public Builder setLect(int value) {
+      copyOnWrite();
+      instance.setLect(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+     * `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+     * (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+     * </pre>
+     *
+     * <code>uint32 lect = 15;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearLect() {
+      copyOnWrite();
+      instance.clearLect();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.DictionarySourceToggles)
   }
   @java.lang.Override
@@ -1344,11 +1434,12 @@ public  final class DictionarySourceToggles extends
             "lkk_",
             "kautianSubcollections_",
             "dev_",
+            "lect_",
           };
           java.lang.String info =
-              "\u0000\u000e\u0000\u0001\u0001\u000e\u000e\u0000\u0000\u0000\u0001\u0007\u0002\u0007" +
+              "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\u0007\u0002\u0007" +
               "\u0003\u0007\u0004\u0007\u0005\u0007\u0006\u0007\u0007\u0007\b\u0007\t\u0007\n\u0007" +
-              "\u000b\u0007\f\u0007\r\u1009\u0000\u000e\u0007";
+              "\u000b\u0007\f\u0007\r\u1009\u0000\u000e\u0007\u000f\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

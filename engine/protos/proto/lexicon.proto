@@ -265,6 +265,10 @@ message DictionarySourceToggles {
   // kautian subcollection toggles. Absent ⇒ engine skips the subcollection
   // gate (legacy all-on). Only meaningful when `kautian = true`.
   KautianSubcollectionToggles kautian_subcollections = 13;
+  // Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+  // `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+  // (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+  uint32 lect = 15;
 }
 
 // `KautianSubcollectionToggles` is the per-subcollection enable state for the

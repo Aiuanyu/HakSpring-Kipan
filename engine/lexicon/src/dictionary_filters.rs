@@ -18,7 +18,7 @@
 use crate::dictionary_reader::{
     KAUTIAN_SUBTAG_ACCENT_COUNT, KAUTIAN_SUBTAG_ACCENT_SHIFT, KAUTIAN_SUBTAG_ALT_READING_BIT,
     KAUTIAN_SUBTAG_MAIN_BIT, KAUTIAN_SUBTAG_NAME_BIT, WIRE_KAUTIAN_SUBCOLL_ACTIVE_BIT,
-    WIRE_KAUTIAN_SUBCOLL_MASK, WIRE_KAUTIAN_SUBCOLL_SHIFT,
+    WIRE_KAUTIAN_SUBCOLL_MASK, WIRE_KAUTIAN_SUBCOLL_SHIFT, WIRE_LECT_MASK, WIRE_LECT_SHIFT,
 };
 use protos::engine::{DictionaryFiltersResponse, DictionarySourceCode, DictionarySourceToggles};
 use DictionarySourceCode as C;
@@ -72,6 +72,8 @@ pub fn dictionary_filter_bitmask(t: &DictionarySourceToggles) -> u32 {
         mask |= 1 << 12;
     }
     mask |= encode_kautian_subcoll_wire(t);
+    // Hakfa fork: the wanted lect rides wire bits 27-29 (0 = every lect).
+    mask |= (t.lect & WIRE_LECT_MASK) << WIRE_LECT_SHIFT;
     mask
 }
 
@@ -182,6 +184,22 @@ mod tests {
     /// Low bits 0-12 are the source/variant region, asserted separately.
     const WIRE_HIGH_REGION: u32 = !0x1FFF;
 
+    #[test]
+    fn lect_rides_wire_bits_27_to_29_and_zero_changes_nothing() {
+        use crate::dictionary_reader::Filter;
+        let base = DictionarySourceToggles { kautian: true, ..all_off() };
+        let without = dictionary_filter_bitmask(&base);
+        assert_eq!(without >> WIRE_LECT_SHIFT, 0, "lect 0 leaves bits 27+ clear");
+        for lect in 1..=7u32 {
+            let with = dictionary_filter_bitmask(&DictionarySourceToggles { lect, ..base.clone() });
+            assert_eq!(with & !(WIRE_LECT_MASK << WIRE_LECT_SHIFT), without, "only the lect bits move");
+            assert_eq!(Filter::from_enabled_bitmask(with).lect as u32, lect);
+        }
+        // values above 7 are masked, never spill into bits 30-31
+        let wide = dictionary_filter_bitmask(&DictionarySourceToggles { lect: 0xFF, ..base });
+        assert_eq!(wide >> 30, 0);
+    }
+
     fn all_off() -> DictionarySourceToggles {
         DictionarySourceToggles::default()
     }
@@ -219,6 +237,7 @@ mod tests {
             lkk: true,
             dev: true,
             kautian_subcollections: None,
+            lect: 0,
         }
     }
 

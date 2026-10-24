@@ -208,6 +208,9 @@ pub(crate) fn dictionary_toggles(toggles: &DictionarySourceToggles) -> WireDicti
             name_appendix: subcollections.name_appendix,
             alt_reading: subcollections.alt_reading,
         }),
+        // Hakfa fork: the Windows/Linux settings do not carry the lect yet (0 = every lect,
+        // the pre-lect behaviour). macOS and Android send theirs from their own settings.
+        lect: 0,
     }
 }
 

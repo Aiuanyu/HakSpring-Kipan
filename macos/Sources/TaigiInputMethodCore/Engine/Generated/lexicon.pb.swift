@@ -659,6 +659,14 @@ public nonisolated struct Taigi_Engine_DictionarySourceToggles: @unchecked Senda
   /// Clears the value of `kautianSubcollections`. Subsequent reads from it will return its default value.
   public mutating func clearKautianSubcollections() {_uniqueStorage()._kautianSubcollections = nil}
 
+  /// Hakfa fork: wanted lect (1 四縣, 2 海陸, …; 0 = every lect, the pre-lect behaviour).
+  /// `compute_filters` packs it into wire bits 27-29 of the filter bitmask
+  /// (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
+  public var lect: UInt32 {
+    get {_storage._lect}
+    set {_uniqueStorage()._lect = newValue}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -1384,7 +1392,7 @@ nonisolated extension Taigi_Engine_TaigiWord: SwiftProtobuf.Message, SwiftProtob
 
 nonisolated extension Taigi_Engine_DictionarySourceToggles: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".DictionarySourceToggles"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}kautian\0\u{1}taigitv\0\u{1}itaigi\0\u{1}sitbut\0\u{1}taihoa\0\u{1}taijit\0\u{1}kungge\0\u{1}stti\0\u{1}khpoo\0\u{1}variant\0\u{1}khiin\0\u{1}lkk\0\u{3}kautian_subcollections\0\u{1}dev\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}kautian\0\u{1}taigitv\0\u{1}itaigi\0\u{1}sitbut\0\u{1}taihoa\0\u{1}taijit\0\u{1}kungge\0\u{1}stti\0\u{1}khpoo\0\u{1}variant\0\u{1}khiin\0\u{1}lkk\0\u{3}kautian_subcollections\0\u{1}dev\0\u{1}lect\0")
 
   fileprivate class _StorageClass {
     var _kautian: Bool = false
@@ -1401,6 +1409,7 @@ nonisolated extension Taigi_Engine_DictionarySourceToggles: SwiftProtobuf.Messag
     var _lkk: Bool = false
     var _dev: Bool = false
     var _kautianSubcollections: Taigi_Engine_KautianSubcollectionToggles? = nil
+    var _lect: UInt32 = 0
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1425,6 +1434,7 @@ nonisolated extension Taigi_Engine_DictionarySourceToggles: SwiftProtobuf.Messag
       _lkk = source._lkk
       _dev = source._dev
       _kautianSubcollections = source._kautianSubcollections
+      _lect = source._lect
     }
   }
 
@@ -1457,6 +1467,7 @@ nonisolated extension Taigi_Engine_DictionarySourceToggles: SwiftProtobuf.Messag
         case 12: try { try decoder.decodeSingularBoolField(value: &_storage._lkk) }()
         case 13: try { try decoder.decodeSingularMessageField(value: &_storage._kautianSubcollections) }()
         case 14: try { try decoder.decodeSingularBoolField(value: &_storage._dev) }()
+        case 15: try { try decoder.decodeSingularUInt32Field(value: &_storage._lect) }()
         default: break
         }
       }
@@ -1511,6 +1522,9 @@ nonisolated extension Taigi_Engine_DictionarySourceToggles: SwiftProtobuf.Messag
       if _storage._dev != false {
         try visitor.visitSingularBoolField(value: _storage._dev, fieldNumber: 14)
       }
+      if _storage._lect != 0 {
+        try visitor.visitSingularUInt32Field(value: _storage._lect, fieldNumber: 15)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1534,6 +1548,7 @@ nonisolated extension Taigi_Engine_DictionarySourceToggles: SwiftProtobuf.Messag
         if _storage._lkk != rhs_storage._lkk {return false}
         if _storage._dev != rhs_storage._dev {return false}
         if _storage._kautianSubcollections != rhs_storage._kautianSubcollections {return false}
+        if _storage._lect != rhs_storage._lect {return false}
         return true
       }
       if !storagesAreEqual {return false}
