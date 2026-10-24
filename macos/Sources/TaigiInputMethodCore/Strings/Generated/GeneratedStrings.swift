@@ -200,7 +200,7 @@ enum GeneratedStrings {
         .settingsOutputBothScriptsOff: "淨一種文字",
         .settingsInputScript: "輸入文字",
         .settingsOutputScript: "輸出文字",
-        .settingsOutputScriptHanji: "漢字",
+        .settingsOutputScriptHanji: "漢字／諸夏字",
         .settingsOutputScriptRoman: "羅馬字",
         .settingsSyllableSeparator: "音節分隔",
         .settingsSyllableSeparatorSpace: "空白",

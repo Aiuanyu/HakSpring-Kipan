@@ -169,7 +169,11 @@ fn buffer_rows(
     else {
         return UserRows::default();
     };
-    let custom = if custom_dictionary_disabled {
+    // Hakfa fork, interim: a custom entry has no lect yet, and its romanization is whatever the
+    // user typed under one lect (their own name in 四縣 tones shows up under 海陸 as a wrong
+    // reading). Until the entries carry a lect (the multi-lect table, Obs IME data-ui), they
+    // answer in 四縣 (lect 0 or 1) only.
+    let custom = if custom_dictionary_disabled || config.lect >= 2 {
         Vec::new()
     } else {
         stores
@@ -376,6 +380,31 @@ mod tests {
             25,
             "learning data is not the dictionary"
         );
+    }
+
+    #[test]
+    fn custom_entries_answer_in_sixian_only_until_they_carry_a_lect() {
+        let directory = tempfile::tempdir().unwrap();
+        let stores = UserDataStores::at(
+            userdata::UserDataPaths::in_directory(directory.path()),
+            JournalMode::Delete,
+        );
+        stores.open_blocking();
+        stores
+            .custom_dictionary
+            .upsert(&CustomDictionaryRow::new("vǐ", "瑋"))
+            .unwrap();
+        let rows_in = |lect| {
+            let config = AppConfig {
+                input_mode: "tl".into(),
+                lect,
+                ..AppConfig::default()
+            };
+            buffer_rows(&stores, "vi", &config, false).custom.len()
+        };
+        assert_eq!(rows_in(0), 1, "no lect sent reads as 四縣");
+        assert_eq!(rows_in(1), 1);
+        assert_eq!(rows_in(2), 0, "海陸 does not borrow a 四縣 reading");
     }
 
     #[test]

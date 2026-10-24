@@ -634,7 +634,7 @@ fn hakha(key: StringKey) -> Option<&'static str> {
         StringKey::SettingsOutputBothScriptsOff => "淨一種文字",
         StringKey::SettingsInputScript => "輸入文字",
         StringKey::SettingsOutputScript => "輸出文字",
-        StringKey::SettingsOutputScriptHanji => "漢字",
+        StringKey::SettingsOutputScriptHanji => "漢字／諸夏字",
         StringKey::SettingsOutputScriptRoman => "羅馬字",
         StringKey::SettingsSyllableSeparator => "音節分隔",
         StringKey::SettingsSyllableSeparatorSpace => "空白",

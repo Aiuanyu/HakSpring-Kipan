@@ -21,7 +21,7 @@
     "outputBothScriptsOff": { "hakha": "淨一種文字" },
     "inputScript": { "hakha": "輸入文字" },
     "outputScript": { "hakha": "輸出文字" },
-    "outputScriptHanji": { "hakha": "漢字" },
+    "outputScriptHanji": { "hakha": "漢字／諸夏字" },
     "outputScriptRoman": { "hakha": "羅馬字" },
     "syllableSeparator": { "hakha": "音節分隔" },
     "syllableSeparatorSpace": { "hakha": "空白" },
