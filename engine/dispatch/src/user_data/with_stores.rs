@@ -115,6 +115,7 @@ fn respond_sync_lects(id: u32, sync: &protos::engine::SyncLects) -> Response {
                 already_present: report.already_present,
                 skipped_missing: report.skipped_missing,
                 skipped_ambiguous: report.skipped_ambiguous,
+                composed: report.composed,
                 skipped_examples,
             })),
         })),

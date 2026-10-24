@@ -347,6 +347,47 @@ public  final class LectsSynced extends
     skippedExamples_.remove(index);
   }
 
+  public static final int COMPOSED_FIELD_NUMBER = 8;
+  private int composed_;
+  /**
+   * <pre>
+   * Of the additions (words and phrases), how many were composed from several dictionary words
+   * because the target lect's dictionary lacks the whole word.
+   * </pre>
+   *
+   * <code>uint32 composed = 8;</code>
+   * @return The composed.
+   */
+  @java.lang.Override
+  public int getComposed() {
+    return composed_;
+  }
+  /**
+   * <pre>
+   * Of the additions (words and phrases), how many were composed from several dictionary words
+   * because the target lect's dictionary lacks the whole word.
+   * </pre>
+   *
+   * <code>uint32 composed = 8;</code>
+   * @param value The composed to set.
+   */
+  private void setComposed(int value) {
+
+    composed_ = value;
+  }
+  /**
+   * <pre>
+   * Of the additions (words and phrases), how many were composed from several dictionary words
+   * because the target lect's dictionary lacks the whole word.
+   * </pre>
+   *
+   * <code>uint32 composed = 8;</code>
+   */
+  private void clearComposed() {
+
+    composed_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.LectsSynced parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -798,6 +839,49 @@ public  final class LectsSynced extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Of the additions (words and phrases), how many were composed from several dictionary words
+     * because the target lect's dictionary lacks the whole word.
+     * </pre>
+     *
+     * <code>uint32 composed = 8;</code>
+     * @return The composed.
+     */
+    @java.lang.Override
+    public int getComposed() {
+      return instance.getComposed();
+    }
+    /**
+     * <pre>
+     * Of the additions (words and phrases), how many were composed from several dictionary words
+     * because the target lect's dictionary lacks the whole word.
+     * </pre>
+     *
+     * <code>uint32 composed = 8;</code>
+     * @param value The composed to set.
+     * @return This builder for chaining.
+     */
+    public Builder setComposed(int value) {
+      copyOnWrite();
+      instance.setComposed(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Of the additions (words and phrases), how many were composed from several dictionary words
+     * because the target lect's dictionary lacks the whole word.
+     * </pre>
+     *
+     * <code>uint32 composed = 8;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearComposed() {
+      copyOnWrite();
+      instance.clearComposed();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.LectsSynced)
   }
   @java.lang.Override
@@ -822,10 +906,11 @@ public  final class LectsSynced extends
             "skippedAmbiguous_",
             "skippedExamples_",
             com.siansiansu.taigikeyboard.engine.proto.SyncSkip.class,
+            "composed_",
           };
           java.lang.String info =
-              "\u0000\u0007\u0000\u0000\u0001\u0007\u0007\u0000\u0001\u0000\u0001\u0007\u0002\u000b" +
-              "\u0003\u000b\u0004\u000b\u0005\u000b\u0006\u000b\u0007\u001b";
+              "\u0000\b\u0000\u0000\u0001\b\b\u0000\u0001\u0000\u0001\u0007\u0002\u000b\u0003\u000b" +
+              "\u0004\u000b\u0005\u000b\u0006\u000b\u0007\u001b\b\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

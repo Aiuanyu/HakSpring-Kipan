@@ -353,6 +353,7 @@ struct LearningRecordsPage: View {
     nonisolated static func syncSummary(_ preview: Taigi_Engine_LectsSynced) -> String {
         let added = preview.addedWords + preview.addedPhrases
         var lines = ["會增加 \(added) 筆（詞 \(preview.addedWords)、詞組 \(preview.addedPhrases)）。"]
+        if preview.composed > 0 { lines.append("其中 \(preview.composed) 筆係用目的腔詞典个詞組合出來个。") }
         if preview.alreadyPresent > 0 { lines.append("本來就有：\(preview.alreadyPresent) 筆。") }
         if preview.skippedMissing > 0 { lines.append("目的腔無共隻漢字，跳過：\(preview.skippedMissing) 筆。") }
         if preview.skippedAmbiguous > 0 { lines.append("目的腔有多種讀音，跳過：\(preview.skippedAmbiguous) 筆。") }

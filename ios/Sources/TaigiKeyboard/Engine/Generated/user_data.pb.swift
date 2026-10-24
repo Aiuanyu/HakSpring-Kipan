@@ -1337,6 +1337,10 @@ public nonisolated struct Taigi_Engine_LectsSynced: Sendable {
   /// The first few skips, for the preview to show why (capped).
   public var skippedExamples: [Taigi_Engine_SyncSkip] = []
 
+  /// Of the additions (words and phrases), how many were composed from several dictionary words
+  /// because the target lect's dictionary lacks the whole word.
+  public var composed: UInt32 = 0
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -3334,7 +3338,7 @@ nonisolated extension Taigi_Engine_SyncSkip: SwiftProtobuf.Message, SwiftProtobu
 
 nonisolated extension Taigi_Engine_LectsSynced: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".LectsSynced"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}dry_run\0\u{3}added_phrases\0\u{3}added_words\0\u{3}already_present\0\u{3}skipped_missing\0\u{3}skipped_ambiguous\0\u{3}skipped_examples\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}dry_run\0\u{3}added_phrases\0\u{3}added_words\0\u{3}already_present\0\u{3}skipped_missing\0\u{3}skipped_ambiguous\0\u{3}skipped_examples\0\u{1}composed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3349,6 +3353,7 @@ nonisolated extension Taigi_Engine_LectsSynced: SwiftProtobuf.Message, SwiftProt
       case 5: try { try decoder.decodeSingularUInt32Field(value: &self.skippedMissing) }()
       case 6: try { try decoder.decodeSingularUInt32Field(value: &self.skippedAmbiguous) }()
       case 7: try { try decoder.decodeRepeatedMessageField(value: &self.skippedExamples) }()
+      case 8: try { try decoder.decodeSingularUInt32Field(value: &self.composed) }()
       default: break
       }
     }
@@ -3376,6 +3381,9 @@ nonisolated extension Taigi_Engine_LectsSynced: SwiftProtobuf.Message, SwiftProt
     if !self.skippedExamples.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.skippedExamples, fieldNumber: 7)
     }
+    if self.composed != 0 {
+      try visitor.visitSingularUInt32Field(value: self.composed, fieldNumber: 8)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -3387,6 +3395,7 @@ nonisolated extension Taigi_Engine_LectsSynced: SwiftProtobuf.Message, SwiftProt
     if lhs.skippedMissing != rhs.skippedMissing {return false}
     if lhs.skippedAmbiguous != rhs.skippedAmbiguous {return false}
     if lhs.skippedExamples != rhs.skippedExamples {return false}
+    if lhs.composed != rhs.composed {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

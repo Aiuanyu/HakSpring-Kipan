@@ -83,4 +83,15 @@ public interface LectsSyncedOrBuilder extends
    * <code>repeated .taigi.engine.SyncSkip skipped_examples = 7;</code>
    */
   int getSkippedExamplesCount();
+
+  /**
+   * <pre>
+   * Of the additions (words and phrases), how many were composed from several dictionary words
+   * because the target lect's dictionary lacks the whole word.
+   * </pre>
+   *
+   * <code>uint32 composed = 8;</code>
+   * @return The composed.
+   */
+  int getComposed();
 }

@@ -56,4 +56,13 @@ fn what_one_lect_learned_reaches_the_other_with_the_other_lects_reading() {
 
     let again = sync(false);
     assert_eq!(again.added_words, 0, "nothing new the second time: {again:?}");
+
+    // A word that is no headword of any lect is composed from the target's dictionary words:
+    // 一下 was typed from 一 and 下.
+    sixian.frequency.record("一下", "ìd-ha");
+    let composed = sync(true);
+    assert!(composed.composed >= 1, "{composed:?}");
+    sync(false);
+    let rows = hailu.frequency.all_rows().unwrap();
+    assert!(rows.iter().any(|row| row.word == "一下"), "composed into 海陸: {rows:?}");
 }

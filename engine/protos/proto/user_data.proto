@@ -468,6 +468,9 @@ message LectsSynced {
   uint32 skipped_ambiguous = 6;
   // The first few skips, for the preview to show why (capped).
   repeated SyncSkip skipped_examples = 7;
+  // Of the additions (words and phrases), how many were composed from several dictionary words
+  // because the target lect's dictionary lacks the whole word.
+  uint32 composed = 8;
 }
 
 // Hakfa fork: how much each lect has learned (Obs IME data-ui D5), for the Learning Records page.
