@@ -60,6 +60,19 @@ final class LearningRecordsPageTests: XCTestCase {
         XCTAssertEqual(Lect.allCases.map(\.code), [1, 6, 2])
     }
 
+    /// Hakfa fork (D5) regression: `scoped(to:)` must dispatch to the shipped client's own version
+    /// when called through `any UserDataClient` (it was once only a protocol-extension method, so
+    /// the existential called the default that returned `self` and the lect picker changed
+    /// nothing on screen).
+    func testScopingThroughTheExistential_reachesTheShippedClient() {
+        let client: any UserDataClient = EngineUserDataClient()
+
+        let scoped = client.scoped(to: Lect.hoiliug.code)
+
+        XCTAssertEqual((scoped as? EngineUserDataClient)?.lect, Lect.hoiliug.code)
+        XCTAssertEqual((client as? EngineUserDataClient)?.lect, 0, "the original is untouched")
+    }
+
     /// One store's rows only: a phrase never shows under word frequency.
     func testRows_comeFromTheKindPicked() async throws {
         let (model, _) = makeModel([record(.frequency, id: 1), record(.learnedPhrase, id: 2)])

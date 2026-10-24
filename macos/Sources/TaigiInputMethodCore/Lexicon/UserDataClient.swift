@@ -85,14 +85,17 @@ protocol UserDataClient: Sendable {
     /// Hakfa fork: 各腔互學 — what each lect learned is offered to the others where the target
     /// lect's dictionary reads the same Hanji one way. `dryRun` only counts.
     func syncLects(dryRun: Bool) throws -> Taigi_Engine_LectsSynced
+    /// Hakfa fork (D5): this client acting on the learning stores of `lect` (a lect code). A client
+    /// with no lects (a test double) is its own answer. A protocol REQUIREMENT, not only an
+    /// extension method: the shipped client's own version must be the one `any UserDataClient` calls.
+    func scoped(to lect: UInt32) -> any UserDataClient
+    /// How much each lect has learned; a client that cannot say reports nothing.
+    func countLearning() throws -> [Taigi_Engine_LectLearningCount]
 }
 
 extension UserDataClient {
-    /// Hakfa fork (D5): this client acting on the learning stores of `lect` (a lect code). A client
-    /// with no lects (a test double) is its own answer.
     func scoped(to _: UInt32) -> any UserDataClient { self }
 
-    /// How much each lect has learned; a client that cannot say reports nothing.
     func countLearning() throws -> [Taigi_Engine_LectLearningCount] { [] }
 
     /// Doubles that do not exercise it need not state it.
