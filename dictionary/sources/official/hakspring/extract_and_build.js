@@ -33,22 +33,37 @@ const SUPP_BITMASK = 1 << 6;
 // Lects (腔). The lect code rides kautian_subtag bits 13-15, which the engine reader
 // masks off today (KAUTIAN_SUBTAG_USED_MASK in engine/lexicon/src/dictionary_reader.rs),
 // so writing it changes no filtering yet. Code 0 means "no lect" and fails the build.
-// Only 四 is wired so far; 海 needs its MOE tone-value table first (dialects Phase 1).
+// 四 ships today; 海 builds to its own output files (see OUT_SUFFIX) until the engine reads the lect code.
 const LECT_SHIFT = 13;
 const LECTS = {
-  '四': { code: 1, name: '四縣' },
+  '四': { code: 1, name: '四縣', id: 'xiien' },
+  '海': { code: 2, name: '海陸', id: 'hoiliug' },
 };
+
+// `--lect 四|海`  單腔（照舊：四縣覆蓋出貨檔，別的腔寫自己的檔）
+// `--lect all`    全腔合併成一份詞庫（M1，Obs IME queue「切換腔頭最短路」）：每腔各跑一次
+//                 （`--dump-records` 子程序），再合併、排序、編碼。引擎讀得著腔號之前，寫去 hakfa-all，毋蓋出貨檔。
+// `--dump-records F`  內部用：萃取完个詞條寫成 JSON 就停。
+const ALL_LECTS = 'all';
 
 function parseLectArg(argv) {
   const i = argv.indexOf('--lect');
   const lectKey = i === -1 ? '四' : argv[i + 1];
-  if (!LECTS[lectKey]) {
-    throw new Error(`--lect ${lectKey}: unsupported lect, expected one of ${Object.keys(LECTS).join(' ')}`);
+  if (lectKey !== ALL_LECTS && !LECTS[lectKey]) {
+    throw new Error(`--lect ${lectKey}: unsupported lect, expected one of ${Object.keys(LECTS).join(' ')} ${ALL_LECTS}`);
   }
   return lectKey;
 }
+function parseOptArg(argv, flag) {
+  const i = argv.indexOf(flag);
+  return i === -1 ? null : argv[i + 1];
+}
 const LECT_KEY = parseLectArg(process.argv.slice(2));
-const LECT = LECTS[LECT_KEY];
+const DUMP_RECORDS_PATH = parseOptArg(process.argv.slice(2), '--dump-records');
+const IS_ALL = LECT_KEY === ALL_LECTS;
+const LECT = IS_ALL ? { code: 0, name: '全腔', id: 'all' } : LECTS[LECT_KEY];
+const isShipLect = LECT_KEY === '四'; // 出貨腔：覆蓋 assets/dictionaries
+const LECT_KEY_BY_CODE = Object.fromEntries(Object.entries(LECTS).map(([k, v]) => [v.code, k]));
 
 // 聲調與母音映射表
 const VOWEL_MAP = {
@@ -70,19 +85,28 @@ function removeTone(syll) {
   return res.replace(/[^a-z]/g, '');
 }
 
-// 四縣調值轉 HagPinPlus 調符
-const TONE_VALUE_MAP = {
-  '24': { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú' },
-  '11': { a: 'ǎ', e: 'ě', i: 'ǐ', o: 'ǒ', u: 'ǔ' },
-  '31': { a: 'à', e: 'è', i: 'ì', o: 'ò', u: 'ù' },
-  '55': { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u' },
-  '2':  { a: 'à', e: 'è', i: 'ì', o: 'ò', u: 'ù' },
-  '5':  { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u' },
+// 調值轉 HagPinPlus 調符（照客源翠 tone_mapping.json default_tones，入聲 2／5 照韻尾分，免另外標）。
+// 四縣：24 á、11 ǎ、31 à、55 無標。海陸：53 à、24 á、11 ǎ、33 ā、55 無標。
+const TONE_MARKS = {
+  grave: { a: 'à', e: 'è', i: 'ì', o: 'ò', u: 'ù' },
+  acute: { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú' },
+  caron: { a: 'ǎ', e: 'ě', i: 'ǐ', o: 'ǒ', u: 'ǔ' },
+  macron: { a: 'ā', e: 'ē', i: 'ī', o: 'ō', u: 'ū' },
+  none: { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u' },
 };
+const LECT_TONES = {
+  '四': { '24': 'acute', '11': 'caron', '31': 'grave', '55': 'none', '2': 'grave', '5': 'none' },
+  '海': { '53': 'grave', '24': 'acute', '11': 'caron', '33': 'macron', '55': 'none', '2': 'grave', '5': 'none' },
+};
+const TONE_VALUE_MAP = Object.fromEntries(
+  Object.entries(LECT_TONES[LECT_KEY] || {}).map(([tone, mark]) => [tone, TONE_MARKS[mark]]));
+// 長調值排前面（53 先於 5），免得 5 吃掉 53 个頭。
+const TONE_RE = new RegExp(
+  '([a-zA-Z]+)(' + Object.keys(TONE_VALUE_MAP).sort((a, b) => b.length - a.length).join('|') + ')(?=[a-zA-Z]|\\b)', 'g');
 const VOWEL_ORDER = ['a', 'e', 'o', 'u', 'i'];
 
 function convertToneValuesToDiacritics(str) {
-  return str.replace(/([a-zA-Z]+)(24|11|31|55|[25])(?=[a-zA-Z]|\b)/g, (match, syll, tone) => {
+  return str.replace(TONE_RE, (match, syll, tone) => {
     const toneMap = TONE_VALUE_MAP[tone];
     if (!toneMap) return syll;
     let converted = syll;
@@ -115,6 +139,10 @@ const NOTE_SPLIT = new RegExp(
 
 function splitReadingVariants(phonetic) {
   if (!phonetic) return [];
+  // 方音符號調號 ˊˇˋ 係原始資料零星混入个雜訊（起屋 `hi ˋ vùg`，查詢欄正確係 hi55 vug2），拿忒
+  phonetic = phonetic.replace(/[\s\u00a0]*[ˊˇˋ]/g, '');
+  // 調值數字同音節中央隔空白（海陸 `ciam 33 shi`、`ngiag 5`），接返去
+  phonetic = phonetic.replace(/([a-zA-Z]) (\d{1,2})(?=\s|$)/g, '$1$2');
   const cleaned = convertToneValuesToDiacritics(phonetic);
   // split 有捕捉群組：[頭前, 註記, 讀音, 註記, 讀音, …]
   const parts = cleaned.split(new RegExp(NOTE_SPLIT.source, 'g'));
@@ -251,8 +279,8 @@ function expandReadingAlternatives(word, phonetic, quiet = false) {
  * 詞目有「，」个係一句話（俗諺），毋拆，淨拿忒讀音裡个標點。Obs IME C8-8
  */
 function splitListedPair(word, phonetic) {
-  if (/[，,]/.test(word)) {
-    return [{ word, phonetic: phonetic.replace(/[、，,]/g, ' ').replace(/\s+/g, ' ').trim() }];
+  if (/[，,；;]/.test(word)) {
+    return [{ word, phonetic: phonetic.replace(/[、，,；;]/g, ' ').replace(/\s+/g, ' ').trim() }];
   }
   if (!word.includes('、')) return [{ word, phonetic }];
   const words = word.split('、').map(w => w.trim()).filter(Boolean);
@@ -271,6 +299,12 @@ function processWordPhoneticPairs(word, rawPhonetic) {
     for (const parenPair of expandParens(word, r.phonetic)) {
       for (const pair of splitListedPair(parenPair.word, parenPair.phonetic)) {
         for (const phonetic of expandReadingAlternatives(pair.word, pair.phonetic)) {
+          // 調值轉過還有數字：調值表無收（教典海陸 fan31、han1155 voi5533、du324），印出來分人工看，毋收
+          // 也擋拉丁字母以外个記號（海陸教典 ˋ、「詞目刪除」、全形標點），毋擋會污染音節庫。
+          if (/[0-9]/.test(phonetic) || !/^[\p{Script=Latin}\p{M}\s\-.…]+$/u.test(phonetic)) {
+            readingProblems.push(`${pair.word}\t${phonetic}`);
+            continue;
+          }
           pairs.push({ ...pair, phonetic, special: r.special });
         }
       }
@@ -391,6 +425,15 @@ function deriveHakfaAbbrev(notoneSylls) {
   return notoneSylls.map(extractLeadingInitial).join('');
 }
 
+function printReadingProblems() {
+  if (readingProblems.length) {
+    console.log(`  ⚠ 讀音看毋懂、毋好猜个 ${readingProblems.length} 筆（Obs IME C8-6，愛人工看）：`);
+    for (const p of [...new Set(readingProblems)]) console.log(`    ${p}`);
+  }
+}
+
+/** 單腔萃取：讀客源翠資料，回傳這一腔个詞條（腔號已寫入 subtag）。 */
+function buildLectRecords() {
 console.log(`▶ [1/4] 開始萃取客源翠語料並展開變體（${LECT.name}）...`);
 
 const map = new Map(); // key: word + '|' + fusedNotone -> entry
@@ -598,31 +641,57 @@ for (const r of records) {
 // 依照詞頻排序（客語第一助詞「个」因被賦予 55000 特級頻率，自然名列前茅）
 records.sort((a, b) => b.freq - a.freq);
 console.log(`  ✓ 總計詞庫筆數 (認證 + 教典): ${records.length} 筆`);
+return records;
+}
+
+let records;
+if (IS_ALL) {
+  // 每腔跑一次（腔个調值表摎檔名是模組載入時定个，所以用子程序）
+  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'hakfa-all-'));
+  records = [];
+  for (const key of Object.keys(LECTS)) {
+    const dump = path.join(tmpDir, `${LECTS[key].id}.json`);
+    const res = spawnSync(process.execPath, [__filename, '--lect', key, '--dump-records', dump], { stdio: 'inherit' });
+    if (res.status !== 0) {
+      throw new Error(`--lect ${key} 萃取失敗（exit ${res.status}）`);
+    }
+    records.push(...JSON.parse(fs.readFileSync(dump, 'utf8')));
+  }
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  // 全腔合併排序：詞頻高个在前，同分四縣先（Array.sort 穩定）
+  records.sort((a, b) => b.freq - a.freq);
+  console.log(`\n  ✓ 全腔合併詞庫筆數: ${records.length} 筆`);
+} else {
+  records = buildLectRecords();
+  if (DUMP_RECORDS_PATH) {
+    fs.writeFileSync(DUMP_RECORDS_PATH, JSON.stringify(records), 'utf8');
+    printReadingProblems();
+    process.exit(0);
+  }
+}
 
 // 輸出 CSV
 const csvOutputDir = path.join(REPO_ROOT, 'dictionary/sources/official/hakspring/data');
 fs.mkdirSync(csvOutputDir, { recursive: true });
-const csvPath = path.join(csvOutputDir, 'hakspring.csv');
+// 四縣照舊覆蓋出貨檔；別的腔寫自己的檔，免蓋掉出貨詞庫。
+const csvPath = path.join(csvOutputDir, isShipLect ? 'hakspring.csv' : `hakspring-${LECT.id}.csv`);
 const csvLines = ['word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect'];
 for (const r of records) {
-  csvLines.push(`"${r.word}","${r.tl}","${r.tl_num}","${r.tl_notone}","${r.tl_abbrev}",${r.freq},${r.syllable_count},${r.bitmask},${LECT_KEY}`);
+  csvLines.push(`"${r.word}","${r.tl}","${r.tl_num}","${r.tl_notone}","${r.tl_abbrev}",${r.freq},${r.syllable_count},${r.bitmask},${LECT_KEY_BY_CODE[r.subtag >> LECT_SHIFT]}`);
 }
 fs.writeFileSync(csvPath, csvLines.join('\n'), 'utf8');
-if (readingProblems.length) {
-  console.log(`  ⚠ 讀音看毋懂、毋好猜个 ${readingProblems.length} 筆（Obs IME C8-6，愛人工看）：`);
-  for (const p of [...new Set(readingProblems)]) console.log(`    ${p}`);
-}
+printReadingProblems();
 console.log(`  ✓ 已輸出 CSV 至 ${csvPath}`);
 
 // -------------------------------------------------------------
 // [2/4] 建置 dictionary.bin (TKDB v4)
 // -------------------------------------------------------------
 console.log('\n▶ [2/4] 建置 dictionary.bin (TKDB v4)...');
-const outDirs = [
+const outDirs = isShipLect ? [
   path.join(REPO_ROOT, 'output/hakfa'),
   path.join(REPO_ROOT, 'dictionary/output/hakfa'),
   path.join(REPO_ROOT, 'assets/dictionaries')
-];
+] : [path.join(REPO_ROOT, `dictionary/output/hakfa-${LECT.id}`)];
 for (const d of outDirs) {
   fs.mkdirSync(d, { recursive: true });
 }
