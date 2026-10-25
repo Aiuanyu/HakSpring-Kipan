@@ -390,7 +390,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "五","ǹg","ǹg","ng","",53997,1,3,四
 "身體","shìn-tí","shìn-tí","shinti","sht",53997,2,3,海
 "老妹","ló-mǒi","ló-mǒi","lomoi","lm",53997,2,3,海
-"五","ńg","ńg","g","",53997,1,3,海
+"五","ńg","ńg","ng","",53997,1,3,海
 "身體","síin-tì","síin-tì","siinti","st",53997,2,3,南
 "老妹","lò-moi","lò-moi","lomoi","lm",53997,2,3,南
 "臺","tǒi","tǒi","toi","",53986,1,3,四
@@ -1526,7 +1526,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "1","rhid","rhid","rhid","",50000,1,2,海
 "0","lang","lang","lang","",50000,1,2,海
 "6","liug","liug","liug","",50000,1,2,海
-"5","ńg","ńg","g","",50000,1,2,海
+"5","ńg","ńg","ng","",50000,1,2,海
 "2","ngī","ngī","ngi","",50000,1,2,海
 "7","cid","cid","cid","",50000,1,2,海
 "3","sàm","sàm","sam","",50000,1,2,海
@@ -2767,7 +2767,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "橋","kiau","kiau","kiau","",47522,1,3,海
 "看戲","kǒn-hǐ","kǒn-hǐ","konhi","kh",47522,2,3,海
 "籃球","lam-kiu","lam-kiu","lamkiu","lk",47522,2,3,海
-"五月節","ńg-ngièd-zied","ńg-ngièd-zied","gngiedzied","gngz",47522,3,3,海
+"五月節","ńg-ngièd-zied","ńg-ngièd-zied","ngngiedzied","ngngz",47522,3,3,海
 "點鐘","diám-zhùng","diám-zhùng","diamzhung","dzh",47522,2,3,海
 "回","fui","fui","fui","",47522,1,3,海
 "原來","ngien-loi","ngien-loi","ngienloi","ngl",47522,2,3,海
@@ -4289,7 +4289,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "決定","giàd-tin","giàd-tin","giadtin","gt",43534,2,3,南
 "子女","zìi-ǹg","zìi-ǹg","ziing","zng",43516,2,3,四
 "尾","mí","mí","mi","",43516,1,3,四
-"子女","zíi-ńg","zíi-ńg","ziig","zg",43516,2,3,海
+"子女","zíi-ńg","zíi-ńg","ziing","zng",43516,2,3,海
 "尾","mui","mui","mui","",43516,1,2,海
 "子女","zìi-ǹg","zìi-ǹg","ziing","zng",43516,2,3,南
 "尾","mí","mí","mi","",43516,1,3,南
@@ -5778,7 +5778,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "相借問","siòng-ziǎ-mǔn","siòng-ziǎ-mǔn","siongziamun","szm",41972,3,3,海
 "欺負","kì-fū","kì-fū","kifu","kf",41972,2,3,海
 "民族","min-cùg","min-cùg","mincug","mc",41972,2,3,海
-"孫女","sùn-ńg","sùn-ńg","sung","sg",41972,2,3,海
+"孫女","sùn-ńg","sùn-ńg","sunng","sng",41972,2,3,海
 "調查","tiau-ca","tiau-ca","tiauca","tc",41972,2,3,海
 "祝福","zhug-fug","zhug-fug","zhugfug","zhf",41972,2,3,海
 "參觀","càm-gòn","càm-gòn","camgon","cg",41972,2,3,海
@@ -7289,7 +7289,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "道德","tō-ded","tō-ded","toded","td",41422,2,3,海
 "表達","biáu-tàd","biáu-tàd","biautad","bt",41422,2,2,海
 "本事","bún-sīi","bún-sīi","bunsii","bs",41422,2,3,海
-"姪女","chìd-ńg","chìd-ńg","chidg","chg",41422,2,3,海
+"姪女","chìd-ńg","chìd-ńg","chidng","chng",41422,2,3,海
 "丈人老","chòng-mìn-ló","chòng-mìn-ló","chongminlo","chml",41422,3,3,海
 "丈人老","chòng-ngìn-ló","chòng-ngìn-ló","chongnginlo","chngl",41422,3,2,海
 "處罰","chú-fàd","chú-fàd","chufad","chf",41422,2,3,海
@@ -10617,7 +10617,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "萋萋","cì-cì","cì-cì","cici","cc",36650,2,2,海
 "塞塞","sed-sed","sed-sed","sedsed","ss",36650,2,3,海
 "拄固","zhú-gǔ","zhú-gǔ","zhugu","zhg",36650,2,2,海
-"退伍","tǔi-ńg","tǔi-ńg","tuig","tg",36650,2,3,海
+"退伍","tǔi-ńg","tǔi-ńg","tuing","tng",36650,2,3,海
 "博人惱","bog-ngin-nàu","bog-ngin-nàu","bognginnau","bngn",36650,3,3,海
 "打逆面","dá-ngiàg-miěn","dá-ngiàg-miěn","dangiagmien","dngm",36650,3,3,海
 "䟓工","dàng-gùng","dàng-gùng","danggung","dg",36650,2,3,海
@@ -14993,7 +14993,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "無腦屎","mo-nó-shí","mo-nó-shí","monoshi","mnsh",35550,3,2,海
 "無新無舊","mo-sìn-mo-kiū","mo-sìn-mo-kiū","mosinmokiu","msmk",35550,4,2,海
 "目吊吊","mug-diǎu-diǎu","mug-diǎu-diǎu","mugdiaudiau","mdd",35550,3,2,海
-"五五十十","ńg-ńg-shìb-shìb","ńg-ńg-shìb-shìb","ggshibshib","ggshsh",35550,4,2,海
+"五五十十","ńg-ńg-shìb-shìb","ńg-ńg-shìb-shìb","ngngshibshib","ngngshsh",35550,4,2,海
 "硬健硬健","ngāng-kiēn-ngāng-kiēn","ngāng-kiēn-ngāng-kiēn","ngangkienngangkien","ngkngk",35550,4,2,海
 "目晶晶","mug-zìn-zìn","mug-zìn-zìn","mugzinzin","mzz",35550,3,2,海
 "弱弱","ngiòg-ngiòg","ngiòg-ngiòg","ngiogngiog","ngng",35550,2,2,海
@@ -17293,7 +17293,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "路徑頭","lū-gǎng-teu","lū-gǎng-teu","lugangteu","lgt",31422,3,3,海
 "責罰","zid-fàd","zid-fàd","zidfad","zf",31422,2,3,海
 "落泥時","lòg-nai-shi","lòg-nai-shi","lognaishi","lnsh",31422,3,3,海
-"女家頭","ńg-gà-teu","ńg-gà-teu","ggateu","ggt",31422,3,3,海
+"女家頭","ńg-gà-teu","ńg-gà-teu","nggateu","nggt",31422,3,3,海
 "拈鬮","ngiàm-kièu","ngiàm-kièu","ngiamkieu","ngk",31422,2,3,海
 "覡公","shāng-gùng","shāng-gùng","shanggung","shg",31422,2,2,海
 "送庚","sǔng-gàng","sǔng-gàng","sunggang","sg",31422,2,3,海
@@ -17714,7 +17714,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "戴絭","dǎi-kiěn","dǎi-kiěn","daikien","dk",31277,2,3,海
 "籮䈪","lo-gag","lo-gag","logag","lg",31277,2,3,海
 "命底","miāng-dái","miāng-dái","miangdai","md",31277,2,3,海
-"五燥五溼","ńg-zàu-ńg-shib","ńg-zàu-ńg-shib","gzaugshib","gzgsh",31277,4,3,海
+"五燥五溼","ńg-zàu-ńg-shib","ńg-zàu-ńg-shib","ngzaungshib","ngzngsh",31277,4,3,海
 "三朝","sàm-zhàu","sàm-zhàu","samzhau","szh",31277,2,3,海
 "壽年","shiū-ngien","shiū-ngien","shiungien","shng",31277,2,3,海
 "賺食","cōn-shìd","cōn-shìd","conshid","csh",31277,2,3,海
@@ -19774,7 +19774,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "大骼","tāi-gag","tāi-gag","taigag","tg",30872,2,3,海
 "𢯭頭","těn-teu","těn-teu","tenteu","tt",30872,2,2,海
 "頭烏面烏","teu-vù-miěn-vù","teu-vù-miěn-vù","teuvumienvu","tvmv",30872,4,3,海
-"天仔隔五里","tièn-er-gag-ńg-lì","tièn-er-gag-ńg-lì","tienergaggli","teggl",30872,4,3,海
+"天仔隔五里","tièn-er-gag-ńg-lì","tièn-er-gag-ńg-lì","tienergagngli","tegngl",30872,4,3,海
 "天生天養","tièn-sèn-tièn-rhòng","tièn-sèn-tièn-rhòng","tiensentienrhong","tstrh",30872,4,3,海
 "拖拖挷挷","tò-tò-bàng-bàng","tò-tò-bàng-bàng","totobangbang","ttbb",30872,4,3,海
 "色褪褪","sed-tun-tun","sed-tun-tun","sedtuntun","stt",30872,3,2,海
@@ -21479,7 +21479,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "濞流濞串","pī-lau-pī-chǒn","pī-lau-pī-chǒn","pilaupichon","plpch",30550,4,2,海
 "青瞑的啄","ciàng-miàng-did-dog","ciàng-miàng-did-dog","ciangmiangdiddog","cmdd",30550,4,2,海
 "撨筋接骨","ciau-gìn-ziab-gud","ciau-gìn-ziab-gud","ciauginziabgud","cgzg",30550,4,2,海
-"石女","shàg-ńg","shàg-ńg","shagg","shg",30550,2,3,海
+"石女","shàg-ńg","shàg-ńg","shagng","shng",30550,2,3,海
 "聲痷痷","shàng-rhab-rhab","shàng-rhab-rhab","shangrhabrhab","shrhrh",30550,3,2,海
 "聲失失","shàng-shid-shid","shàng-shid-shid","shangshidshid","shshsh",30550,3,2,海
 "細骼","sě-gag","sě-gag","segag","sg",30550,2,3,海
@@ -22017,7 +22017,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "揬𠊎知","dud-ngái-dì","dud-ngái-dì","dudngaidi","dngd",30550,3,2,海
 "對毋過","dǔi-m-gǒ","dǔi-m-gǒ","duimgo","dmg",30550,3,2,海
 "對手親","dǔi-shiú-cìn","dǔi-shiú-cìn","duishiucin","dshc",30550,3,2,海
-"花囤女","fà-dún-ńg","fà-dún-ńg","fadung","fdg",30550,3,3,海
+"花囤女","fà-dún-ńg","fà-dún-ńg","fadunng","fdng",30550,3,3,海
 "掝掝跳","fag-fag-tiau","fag-fag-tiau","fagfagtiau","fft",30550,3,2,海
 "掝掝跳","fag-fag-tiǎu","fag-fag-tiǎu","fagfagtiau","fft",30550,3,2,海
 "會人毋直","fūi-ngin-m-chìd","fūi-ngin-m-chìd","fuinginmchid","fngmch",30550,4,2,海
@@ -22062,7 +22062,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "扡著屎","rhá-dó-shí","rhá-dó-shí","rhadoshi","rhdsh",30550,3,2,海
 "扡頸","rhá-giáng","rhá-giáng","rhagiang","rhg",30550,2,2,海
 "有家有竇","rhiù-gà-rhiù-děu","rhiù-gà-rhiù-děu","rhiugarhiudeu","rhgrhd",30550,4,2,海
-"接腳女","ziab-giog-ńg","ziab-giog-ńg","ziabgiogg","zgg",30550,3,3,海
+"接腳女","ziab-giog-ńg","ziab-giog-ńg","ziabgiogng","zgng",30550,3,3,海
 "占先行","ziǎm-sèn-hang","ziǎm-sèn-hang","ziamsenhang","zsh",30550,3,2,海
 "靚裝","ziàng-zòng","ziàng-zòng","ziangzong","zz",30550,2,2,海
 "唚唚㗱㗱","zìm-zìm-zib-zib","zìm-zìm-zib-zib","zimzimzibzib","zzzz",30550,4,2,海
@@ -22135,7 +22135,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "撚等來用","ngién-dén-loi-rhūng","ngién-dén-loi-rhūng","ngiendenloirhung","ngdlrh",30550,4,2,海
 "撚等來用","ngién-nén-loi-rhūng","ngién-nén-loi-rhūng","ngiennenloirhung","ngnlrh",30550,4,2,海
 "眼箭摝天","ngán-ziěn-lug-tièn","ngán-ziěn-lug-tièn","nganzienlugtien","ngzlt",30550,4,2,海
-"人家女","ngin-gà-ńg","ngin-gà-ńg","ngingag","nggg",30550,3,3,海
+"人家女","ngin-gà-ńg","ngin-gà-ńg","ngingang","nggng",30550,3,3,海
 "呢呢哪哪","ni-ni-no-no","ni-ni-no-no","nininono","nnnn",30550,4,2,海
 "屙屎嚇番","ò-shí-hag-fàn","ò-shí-hag-fàn","oshihagfan","oshhf",30550,4,3,海
 "刨合削","pau-gag-siog","pau-gag-siog","paugagsiog","pgs",30550,3,2,海
@@ -23402,7 +23402,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "雞胲噴天","gài-gòi-pǔn-tièn","gài-gòi-pǔn-tièn","gaigoipuntien","ggpt",30000,4,2,海
 "服侍阿公","fùg-sīi-ā-gùng","fùg-sīi-ā-gùng","fugsiiagung","fsag",30000,4,2,海
 "紅噹噹","fung-dǎng-dǎng","fung-dǎng-dǎng","fungdangdang","fdd",30000,3,2,海
-"嫁出男賣出女","gǎ-chud-nam-māi-chud-ńg","gǎ-chud-nam-māi-chud-ńg","gachudnammaichudg","gchnmchg",30000,4,2,海
+"嫁出男賣出女","gǎ-chud-nam-māi-chud-ńg","gǎ-chud-nam-māi-chud-ńg","gachudnammaichudng","gchnmchng",30000,4,2,海
 "摎鬼無相同","làu-gúi-mo-siòng-tung","làu-gúi-mo-siòng-tung","lauguimosiongtung","lgmst",30000,4,2,海
 "撿人食","giám-ngin-shid","giám-ngin-shid","giamnginshid","gngsh",30000,3,2,海
 "著驚著嚇","chòg-giàng-chòg-hag","chòg-giàng-chòg-hag","choggiangchoghag","chgchh",30000,4,2,海
@@ -26392,7 +26392,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "相","xiong","xiong","xiong","",22150,1,1,南
 "女","ǹg","ǹg","ng","",22135,1,1,四
 "竹","zùg","zùg","zug","",22135,1,1,四
-"女","ńg","ńg","g","",22135,1,1,海
+"女","ńg","ńg","ng","",22135,1,1,海
 "竹","zhug","zhug","zhug","",22135,1,1,海
 "女","ǹg","ǹg","ng","",22135,1,1,南
 "竹","zùg","zùg","zug","",22135,1,1,南
@@ -31045,7 +31045,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "㸐","nad","nad","nad","",20100,1,1,海
 "能","nen","nen","nen","",20100,1,1,海
 "寧","nen","nen","nen","",20100,1,1,海
-"午","ńg","ńg","g","",20100,1,1,海
+"午","ńg","ńg","ng","",20100,1,1,海
 "磕","ngàb","ngàb","ngab","",20100,1,1,海
 "頷","ngám","ngám","ngam","",20100,1,1,海
 "傲","ngāu","ngāu","ngau","",20100,1,1,海
@@ -32193,6 +32193,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "模","mǔ","mǔ","mu","",19872,1,1,四
 "母","mú","mú","mu","",19872,1,1,四
 "悶","mun","mun","mun","",19872,1,1,四
+"嗯","ń","ń","n","",19872,1,1,四
 "嗯","ǹ","ǹ","n","",19872,1,1,四
 "膩","ne","ne","ne","",19872,1,1,四
 "凝","něn","něn","nen","",19872,1,1,四
@@ -32610,6 +32611,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "母","mù","mù","mu","",19872,1,1,海
 "悶","mǔn","mǔn","mun","",19872,1,1,海
 "嗯","ǹ","ǹ","n","",19872,1,1,海
+"嗯","ń","ń","n","",19872,1,1,海
 "膩","ně","ně","ne","",19872,1,1,海
 "凝","nen","nen","nen","",19872,1,1,海
 "漁","ng","ng","ng","",19872,1,1,海
@@ -33022,6 +33024,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "模","mǔ","mǔ","mu","",19872,1,1,南
 "母","mú","mú","mu","",19872,1,1,南
 "悶","mun","mun","mun","",19872,1,1,南
+"嗯","ń","ń","n","",19872,1,1,南
 "嗯","ǹ","ǹ","n","",19872,1,1,南
 "膩","ne","ne","ne","",19872,1,1,南
 "凝","něn","něn","nen","",19872,1,1,南
@@ -35292,7 +35295,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "捺","nàg","nàg","nag","",19550,1,1,海
 "另","nāng","nāng","nang","",19550,1,1,海
 "紐","néu","néu","neu","",19550,1,1,海
-"伍","ńg","ńg","g","",19550,1,1,海
+"伍","ńg","ńg","ng","",19550,1,1,海
 "衙","nga","nga","nga","",19550,1,1,海
 "軋","ngàd","ngàd","ngad","",19550,1,1,海
 "岩","ngam","ngam","ngam","",19550,1,1,海
@@ -37176,7 +37179,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "止血","zhí-hied","zhí-hied","zhihied","zhh",19422,2,1,海
 "水源","shúi-ngien","shúi-ngien","shuingien","shng",19422,2,1,海
 "主辦","zhú-pān","zhú-pān","zhupan","zhp",19422,2,1,海
-"仙女","sièn-ńg","sièn-ńg","sieng","sg",19422,2,1,海
+"仙女","sièn-ńg","sièn-ńg","sienng","sng",19422,2,1,海
 "出出","chud-chud","chud-chud","chudchud","chch",19422,2,1,海
 "出賣","chud-māi","chud-māi","chudmai","chm",19422,2,1,海
 "出聲","chud-shàng","chud-shàng","chudshang","chsh",19422,2,1,海
@@ -37267,7 +37270,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "鄉長","hiòng-zhóng","hiòng-zhóng","hiongzhong","hzh",19422,2,1,海
 "開路","kòi-lū","kòi-lū","koilu","kl",19422,2,1,海
 "開業","kòi-ngiàb","kòi-ngiàb","koingiab","kng",19422,2,1,海
-"隊伍","chūi-ńg","chūi-ńg","chuig","chg",19422,2,1,海
+"隊伍","chūi-ńg","chūi-ńg","chuing","chng",19422,2,1,海
 "集合","sìb-hàb","sìb-hàb","sibhab","sh",19422,2,1,海
 "匯錢","fūi-cien","fūi-cien","fuicien","fc",19422,2,1,海
 "匯錢","fǔi-cien","fǔi-cien","fuicien","fc",19422,2,1,海
@@ -38368,7 +38371,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "卵包","lón-bàu","lón-bàu","lonbau","lb",19277,2,1,海
 "君子","giùn-zíi","giùn-zíi","giunzii","gz",19277,2,1,海
 "妨害","fong-hōi","fong-hōi","fonghoi","fh",19277,2,1,海
-"孝女","hǎu-ńg","hǎu-ńg","haug","hg",19277,2,1,海
+"孝女","hǎu-ńg","hǎu-ńg","haung","hng",19277,2,1,海
 "志願","zhǐ-ngiēn","zhǐ-ngiēn","zhingien","zhng",19277,2,1,海
 "戒酒","gǎi-ziú","gǎi-ziú","gaiziu","gz",19277,2,1,海
 "扯爛","chá-lān","chá-lān","chalan","chl",19277,2,1,海
@@ -38442,8 +38445,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "針線","zhìm-siěn","zhìm-siěn","zhimsien","zhs",19277,2,1,海
 "高尚","gò-shōng","gò-shōng","goshong","gsh",19277,2,1,海
 "做伴","zǒ-pàn","zǒ-pàn","zopan","zp",19277,2,1,海
-"婦女","fū-ńg","fū-ńg","fug","fg",19277,2,1,海
-"婦女","fǔ-ńg","fǔ-ńg","fug","fg",19277,2,1,海
+"婦女","fū-ńg","fū-ńg","fung","fng",19277,2,1,海
+"婦女","fǔ-ńg","fǔ-ńg","fung","fng",19277,2,1,海
 "專長","zhòn-chong","zhòn-chong","zhonchong","zhch",19277,2,1,海
 "接觸","ziab-chiùg","ziab-chiùg","ziabchiug","zch",19277,2,1,海
 "接觸","ziab-chùg","ziab-chùg","ziabchug","zch",19277,2,1,海
@@ -40565,7 +40568,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "哪片","nāi-pién","nāi-pién","naipien","np",19100,2,1,海
 "凝心","nen-sìm","nen-sìm","nensim","ns",19100,2,1,海
 "乳菇","něn-gù","něn-gù","nengu","ng",19100,2,1,海
-"五行","ńg-hang","ńg-hang","ghang","gh",19100,2,1,海
+"五行","ńg-hang","ńg-hang","nghang","ngh",19100,2,1,海
 "唸經","ngiām-gìn","ngiām-gìn","ngiamgin","ngg",19100,2,1,海
 "年級","ngien-kib","ngien-kib","ngienkib","ngk",19100,2,1,海
 "軟硬","ngiòn-ngāng","ngiòn-ngāng","ngionngang","ngng",19100,2,1,海
@@ -44853,12 +44856,12 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "山崗","sàn-gòng","sàn-gòng","sangong","sg",18872,2,1,海
 "山藥","sàn-rhòg","sàn-rhòg","sanrhog","srh",18872,2,1,海
 "山楂","sièn-zà","sièn-zà","sienza","sz",18872,2,1,海
-"才女","coi-ńg","coi-ńg","coig","cg",18872,2,1,海
+"才女","coi-ńg","coi-ńg","coing","cng",18872,2,1,海
 "才子","coi-zíi","coi-zíi","coizii","cz",18872,2,1,海
 "中原","zhùng-ngien","zhùng-ngien","zhungngien","zhng",18872,2,1,海
 "中秋","zhùng-ciù","zhùng-ciù","zhungciu","zhc",18872,2,1,海
-"五穀","ńg-gug","ńg-gug","ggug","gg",18872,2,1,海
-"五牲","ńg-sàng","ńg-sàng","gsang","gs",18872,2,1,海
+"五穀","ńg-gug","ńg-gug","nggug","ngg",18872,2,1,海
+"五牲","ńg-sàng","ńg-sàng","ngsang","ngs",18872,2,1,海
 "元宵","ngien-siàu","ngien-siàu","ngiensiau","ngs",18872,2,1,海
 "元首","ngien-shiú","ngien-shiú","ngienshiu","ngsh",18872,2,1,海
 "內外","nūi-ngōi","nūi-ngōi","nuingoi","nng",18872,2,1,海
@@ -45034,7 +45037,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "車門","chà-mun","chà-mun","chamun","chm",18872,2,1,海
 "乳水","něn-shúi","něn-shúi","nenshui","nsh",18872,2,1,海
 "乳頭","něn-teu","něn-teu","nenteu","nt",18872,2,1,海
-"使女","síi-ńg","síi-ńg","siig","sg",18872,2,1,海
+"使女","síi-ńg","síi-ńg","siing","sng",18872,2,1,海
 "初中","cù-zhùng","cù-zhùng","cuzhung","czh",18872,2,1,海
 "初中","cò-zhùng","cò-zhùng","cozhung","czh",18872,2,1,海
 "刻字","kad-sīi","kad-sīi","kadsii","ks",18872,2,1,海
@@ -45096,7 +45099,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "後年","hēu-ngien","hēu-ngien","heungien","hng",18872,2,1,海
 "後年","hèu-ngien","hèu-ngien","heungien","hng",18872,2,1,海
 "拜問","bǎi-mǔn","bǎi-mǔn","baimun","bm",18872,2,1,海
-"拜五","bǎi-ńg","bǎi-ńg","baig","bg",18872,2,1,海
+"拜五","bǎi-ńg","bǎi-ńg","baing","bng",18872,2,1,海
 "拜日","bǎi-ngid","bǎi-ngid","baingid","bng",18872,2,1,海
 "拜三","bǎi-sàm","bǎi-sàm","baisam","bs",18872,2,1,海
 "拜四","bǎi-sǐ","bǎi-sǐ","baisi","bs",18872,2,1,海
@@ -45269,7 +45272,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "慢分","mān-fùn","mān-fùn","manfun","mf",18872,2,1,海
 "撤銷","chàd-siàu","chàd-siàu","chadsiau","chs",18872,2,1,海
 "滷肉","lo-ngiug","lo-ngiug","longiug","lng",18872,2,1,海
-"滿女","màn-ńg","màn-ńg","mang","mg",18872,2,1,海
+"滿女","màn-ńg","màn-ńg","manng","mng",18872,2,1,海
 "漢文","hǒn-vun","hǒn-vun","honvun","hv",18872,2,1,海
 "睡醒","shōi-siáng","shōi-siáng","shoisiang","shs",18872,2,1,海
 "管轄","gón-hod","gón-hod","gonhod","gh",18872,2,1,海
@@ -45944,8 +45947,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "鬧市","nāu-shī","nāu-shī","naushi","nsh",18872,2,1,海
 "乳豬","něn-zhù","něn-zhù","nenzhu","nzh",18872,2,1,海
 "漁業","ng-ngiàb","ng-ngiàb","ngngiab","ngng",18872,2,1,海
-"五彩","ńg-cái","ńg-cái","gcai","gc",18872,2,1,海
-"五更","ńg-gàng","ńg-gàng","ggang","gg",18872,2,1,海
+"五彩","ńg-cái","ńg-cái","ngcai","ngc",18872,2,1,海
+"五更","ńg-gàng","ńg-gàng","nggang","ngg",18872,2,1,海
 "衙門","nga-mun","nga-mun","ngamun","ngm",18872,2,1,海
 "硬愛","ngāng-ǒi","ngāng-ǒi","ngangoi","ngo",18872,2,1,海
 "咬核","ngàu-hèd","ngàu-hèd","ngauhed","ngh",18872,2,1,海
@@ -46173,7 +46176,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "退走","tǔi-zéu","tǔi-zéu","tuizeu","tz",18872,2,1,海
 "遁走","tún-zéu","tún-zéu","tunzeu","tz",18872,2,1,海
 "通融","tùng-rhung","tùng-rhung","tungrhung","trh",18872,2,1,海
-"童女","tung-ńg","tung-ńg","tungg","tg",18872,2,1,海
+"童女","tung-ńg","tung-ńg","tungng","tng",18872,2,1,海
 "銅人","tung-ngin","tung-ngin","tungngin","tng",18872,2,1,海
 "痛心","tǔng-sìm","tǔng-sìm","tungsim","ts",18872,2,1,海
 "完隻","von-zhag","von-zhag","vonzhag","vzh",18872,2,1,海
@@ -50711,8 +50714,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "工會","gùng-fūi","gùng-fūi","gungfui","gf",18550,2,1,海
 "才貌","coi-māu","coi-māu","coimau","cm",18550,2,1,海
 "中伏","zhùng-fùg","zhùng-fùg","zhungfug","zhf",18550,2,1,海
-"五金","ńg-gìm","ńg-gìm","ggim","gg",18550,2,1,海
-"五官","ńg-gòn","ńg-gòn","ggon","gg",18550,2,1,海
+"五金","ńg-gìm","ńg-gìm","nggim","ngg",18550,2,1,海
+"五官","ńg-gòn","ńg-gòn","nggon","ngg",18550,2,1,海
 "井水","ziáng-shúi","ziáng-shúi","ziangshui","zsh",18550,2,1,海
 "內行","nūi-hong","nūi-hong","nuihong","nh",18550,2,1,海
 "內部","nūi-pū","nūi-pū","nuipu","np",18550,2,1,海
@@ -50945,8 +50948,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "大暑","tāi-chú","tāi-chú","taichu","tch",18550,2,1,海
 "大胲","tāi-gòi","tāi-gòi","taigoi","tg",18550,2,1,海
 "大肥","tāi-pui","tāi-pui","taipui","tp",18550,2,1,海
-"女士","ńg-sīi","ńg-sīi","gsii","gs",18550,2,1,海
-"女性","ńg-sǐn","ńg-sǐn","gsin","gs",18550,2,1,海
+"女士","ńg-sīi","ńg-sīi","ngsii","ngs",18550,2,1,海
+"女性","ńg-sǐn","ńg-sǐn","ngsin","ngs",18550,2,1,海
 "鴨公","ab-gùng","ab-gùng","abgung","ag",18550,2,1,海
 "水碓","shúi-dǒi","shúi-dǒi","shuidoi","shd",18550,2,1,海
 "阿嬭","ā-nài","ā-nài","anai","an",18550,2,1,海
@@ -51229,7 +51232,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "賣場","māi-chong","māi-chong","maichong","mch",18550,2,1,海
 "踏碓","tàb-dǒi","tàb-dǒi","tabdoi","td",18550,2,1,海
 "養分","rhòng-fūn","rhòng-fūn","rhongfun","rhf",18550,2,1,海
-"養女","rhòng-ńg","rhòng-ńg","rhongg","rhg",18550,2,1,海
+"養女","rhòng-ńg","rhòng-ńg","rhongng","rhng",18550,2,1,海
 "駕駛","gǎ-síi","gǎ-síi","gasii","gs",18550,2,1,海
 "凝凍","kien-dǔng","kien-dǔng","kiendung","kd",18550,2,1,海
 "學分","hòg-fùn","hòg-fùn","hogfun","hf",18550,2,1,海
@@ -51778,7 +51781,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "建言","giěn-ngien","giěn-ngien","gienngien","gng",18550,2,1,海
 "勾搭","gèu-dab","gèu-dab","geudab","gd",18550,2,1,海
 "勾挽","gièu-ván","gièu-ván","gieuvan","gv",18550,2,1,海
-"嬌女","giàu-ńg","giàu-ńg","giaug","gg",18550,2,1,海
+"嬌女","giàu-ńg","giàu-ńg","giaung","gng",18550,2,1,海
 "構思","giěu-sìi","giěu-sìi","gieusii","gs",18550,2,1,海
 "購買","giěu-mài","giěu-mài","gieumai","gm",18550,2,1,海
 "金幣","gìm-bǐ","gìm-bǐ","gimbi","gb",18550,2,1,海
@@ -51996,7 +51999,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "如此","rhi-cíi","rhi-cíi","rhicii","rhc",18550,2,1,海
 "如果","rhi-gó","rhi-gó","rhigo","rhg",18550,2,1,海
 "如何","rhi-ho","rhi-ho","rhiho","rhh",18550,2,1,海
-"兒女","rhi-ńg","rhi-ńg","rhig","rhg",18550,2,1,海
+"兒女","rhi-ńg","rhi-ńg","rhing","rhng",18550,2,1,海
 "移山","rhi-sàn","rhi-sàn","rhisan","rhs",18550,2,1,海
 "儒教","rhi-gǎu","rhi-gǎu","rhigau","rhg",18550,2,1,海
 "異鄉","rhǐ-hiòng","rhǐ-hiòng","rhihiong","rhh",18550,2,1,海
@@ -52365,9 +52368,9 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "梧桐","ng-tung","ng-tung","ngtung","ngt",18550,2,1,海
 "漁獵","ng-liàb","ng-liàb","ngliab","ngl",18550,2,1,海
 "漁船","ng-shon","ng-shon","ngshon","ngsh",18550,2,1,海
-"女色","ńg-sed","ńg-sed","gsed","gs",18550,2,1,海
-"五味","ńg-mūi","ńg-mūi","gmui","gm",18550,2,1,海
-"五色","ńg-sed","ńg-sed","gsed","gs",18550,2,1,海
+"女色","ńg-sed","ńg-sed","ngsed","ngs",18550,2,1,海
+"五味","ńg-mūi","ńg-mūi","ngmui","ngm",18550,2,1,海
+"五色","ńg-sed","ńg-sed","ngsed","ngs",18550,2,1,海
 "牙黃","nga-vong","nga-vong","ngavong","ngv",18550,2,1,海
 "瓦析","ngá-sag","ngá-sag","ngasag","ngs",18550,2,1,海
 "𤘅","ngǎ","ngǎ","nga","",18550,1,1,海
@@ -56435,7 +56438,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "無可能","mo-kó-nen","mo-kó-nen","mokonen","mkn",18100,3,1,海
 "無人識","mo-ngin-shid","mo-ngin-shid","monginshid","mngsh",18100,3,1,海
 "磨豆腐","mō-tēu-fū","mō-tēu-fū","moteufu","mtf",18100,3,1,海
-"五金行","ńg-gìm-hong","ńg-gìm-hong","ggimhong","ggh",18100,3,1,海
+"五金行","ńg-gìm-hong","ńg-gìm-hong","nggimhong","nggh",18100,3,1,海
 "吾老公","nga-ló-gùng","nga-ló-gùng","ngalogung","nglg",18100,3,1,海
 "耳膜仔","ngí-mòg-er","ngí-mòg-er","ngimoger","ngme",18100,3,1,海
 "牛眼核","ngiu-ngán-fùd","ngiu-ngán-fùd","ngiunganfud","ngngf",18100,3,1,海
@@ -57293,8 +57296,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "蒙古","mung-gú","mung-gú","munggu","mg",18000,2,1,海
 "南海","nam-hói","nam-hói","namhoi","nh",18000,2,1,海
 "另過","nāng-gǒ","nāng-gǒ","nanggo","ng",18000,2,1,海
-"五霸","ńg-bǎ","ńg-bǎ","gba","gb",18000,2,1,海
-"五經","ńg-gìn","ńg-gìn","ggin","gg",18000,2,1,海
+"五霸","ńg-bǎ","ńg-bǎ","ngba","ngb",18000,2,1,海
+"五經","ńg-gìn","ńg-gìn","nggin","ngg",18000,2,1,海
 "𪘒","ngàm","ngàm","ngam","",18000,1,1,海
 "爾等","ngi-dén","ngi-dén","ngiden","ngd",18000,2,1,海
 "入等","ngìb-dén","ngìb-dén","ngibden","ngd",18000,2,1,海
@@ -58782,7 +58785,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "綻剁頭","cǎn-dòg-teu","cǎn-dòg-teu","candogteu","cdt",17872,3,1,海
 "家神牌","gà-shin-pai","gà-shin-pai","gashinpai","gshp",17872,3,1,海
 "大肚蟈","tāi-dú-guèd","tāi-dú-guèd","taidugued","tdg",17872,3,1,海
-"女媧娘","ńg-vò-ngiong","ńg-vò-ngiong","gvongiong","gvng",17872,3,1,海
+"女媧娘","ńg-vò-ngiong","ńg-vò-ngiong","ngvongiong","ngvng",17872,3,1,海
 "小使仔","siáu-sìi-er","siáu-sìi-er","siausiier","sse",17872,3,1,海
 "缺牙耙","kied-nga-pa","kied-nga-pa","kiedngapa","kngp",17872,3,1,海
 "牛崽仔","ngiu-zài-er","ngiu-zài-er","ngiuzaier","ngze",17872,3,1,海
@@ -59948,7 +59951,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "山牛眼","sàn-ngiu-ngán","sàn-ngiu-ngán","sanngiungan","sngng",17550,3,1,海
 "元宵節","ngien-siàu-zied","ngien-siàu-zied","ngiensiauzied","ngsz",17550,3,1,海
 "公賣局","gùng-māi-kiùg","gùng-māi-kiùg","gungmaikiug","gmk",17550,3,1,海
-"午時水","ńg-shi-shúi","ńg-shi-shúi","gshishui","gshsh",17550,3,1,海
+"午時水","ńg-shi-shúi","ńg-shi-shúi","ngshishui","ngshsh",17550,3,1,海
 "太空人","tǎi-kùng-ngin","tǎi-kùng-ngin","taikungngin","tkng",17550,3,1,海
 "太空船","tǎi-kùng-shon","tǎi-kùng-shon","taikungshon","tksh",17550,3,1,海
 "心電圖","sìm-tiēn-tu","sìm-tiēn-tu","simtientu","stt",17550,3,1,海
@@ -59966,8 +59969,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "出外洋","chud-ngōi-rhong","chud-ngōi-rhong","chudngoirhong","chngrh",17550,3,1,海
 "加班車","gà-bàn-chà","gà-bàn-chà","gabancha","gbch",17550,3,1,海
 "半天筍","bǎn-tièn-sún","bǎn-tièn-sún","bantiensun","bts",17550,3,1,海
-"外甥女","ngōi-sàng-ńg","ngōi-sàng-ńg","ngoisangg","ngsg",17550,3,1,海
-"外孫女","ngōi-sùn-ńg","ngōi-sùn-ńg","ngoisung","ngsg",17550,3,1,海
+"外甥女","ngōi-sàng-ńg","ngōi-sàng-ńg","ngoisangng","ngsng",17550,3,1,海
+"外孫女","ngōi-sùn-ńg","ngōi-sùn-ńg","ngoisunng","ngsng",17550,3,1,海
 "平埔族","piang-pù-cùg","piang-pù-cùg","piangpucug","ppc",17550,3,1,海
 "平埔族","pin-pù-cùg","pin-pù-cùg","pinpucug","ppc",17550,3,1,海
 "平交道","pin-gàu-tō","pin-gàu-tō","pingauto","pgt",17550,3,1,海
@@ -60132,7 +60135,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "樵頭戲","ciau-teu-hǐ","ciau-teu-hǐ","ciauteuhi","cth",17550,3,1,海
 "㓾豬个","chi-zhù-gǎi","chi-zhù-gǎi","chizhugai","chzhg",17550,3,1,海
 "自來火","cīi-loi-fó","cīi-loi-fó","ciiloifo","clf",17550,3,1,海
-"姪孫女","chìd-sùn-ńg","chìd-sùn-ńg","chidsung","chsg",17550,3,1,海
+"姪孫女","chìd-sùn-ńg","chìd-sùn-ńg","chidsunng","chsng",17550,3,1,海
 "植物園","chìd-vùd-rhan","chìd-vùd-rhan","chidvudrhan","chvrh",17550,3,1,海
 "逞英雄","chín-rhìn-hiung","chín-rhìn-hiung","chinrhinhiung","chrhh",17550,3,1,海
 "陣打陣","chīn-dá-chīn","chīn-dá-chīn","chindachin","chdch",17550,3,1,海
@@ -60352,7 +60355,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "鬧連連","nāu-lien-lien","nāu-lien-lien","naulienlien","nll",17550,3,1,海
 "鬧臺臺","nāu-toi-toi","nāu-toi-toi","nautoitoi","ntt",17550,3,1,海
 "乳水足","něn-shúi-ziug","něn-shúi-ziug","nenshuiziug","nshz",17550,3,1,海
-"五言詩","ńg-ngien-shì","ńg-ngien-shì","gngienshi","gngsh",17550,3,1,海
+"五言詩","ńg-ngien-shì","ńg-ngien-shì","ngngienshi","ngngsh",17550,3,1,海
 "二婚親","ngī-fùn-cìn","ngī-fùn-cìn","ngifuncin","ngfc",17550,3,1,海
 "義父爺","ngī-fǔ-rha","ngī-fǔ-rha","ngifurha","ngfrh",17550,3,1,海
 "義勇軍","ngī-rhúng-giùn","ngī-rhúng-giùn","ngirhunggiun","ngrhg",17550,3,1,海
@@ -60523,7 +60526,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "山芋荷","sàn-vū-ho","sàn-vū-ho","sanvuho","svh",17550,3,1,海
 "山猴仔","sàn-heu-er","sàn-heu-er","sanheuer","she",17550,3,1,海
 "山魯萁","sàn-lù-gì","sàn-lù-gì","sanlugi","slg",17550,3,1,海
-"五穀宮","ńg-gug-giùng","ńg-gug-giùng","gguggiung","ggg",17550,3,1,海
+"五穀宮","ńg-gug-giùng","ńg-gug-giùng","ngguggiung","nggg",17550,3,1,海
 "手長長","shiú-chong-chong","shiú-chong-chong","shiuchongchong","shchch",17550,3,1,海
 "毛蟹蘭","mō-hái-lan","mō-hái-lan","mohailan","mhl",17550,3,1,海
 "水浮蓮","shúi-po-lien","shúi-po-lien","shuipolien","shpl",17550,3,1,海
@@ -61362,7 +61365,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "社區大學","shā-kì-tāi-hòg","shā-kì-tāi-hòg","shakitaihog","shkth",17422,4,1,海
 "㓾人放火","chi-ngin-biǒng-fó","chi-ngin-biǒng-fó","chinginbiongfo","chngbf",17422,4,1,海
 "跋䟘起來","bag-hǒng-hí-loi","bag-hǒng-hí-loi","baghonghiloi","bhhl",17422,4,1,海
-"初一十五","cù-rhid-shìb-ńg","cù-rhid-shìb-ńg","curhidshibg","crhshg",17422,4,1,海
+"初一十五","cù-rhid-shìb-ńg","cù-rhid-shìb-ńg","curhidshibng","crhshng",17422,4,1,海
 "緊來緊少","gín-loi-gín-sháu","gín-loi-gín-sháu","ginloiginshau","glgsh",17422,4,1,海
 "好食懶做","hǎu-shìd-nàn-zǒ","hǎu-shìd-nàn-zǒ","haushidnanzo","hshnz",17422,4,1,海
 "越來越多","rhàd-loi-rhàd-dò","rhàd-loi-rhàd-dò","rhadloirhaddo","rhlrhd",17422,4,1,海
@@ -61550,7 +61553,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "萬事如意","vān-sīi-rhi-rhǐ","vān-sīi-rhi-rhǐ","vansiirhirhi","vsrhrh",17100,4,1,海
 "做鬼頭路","zǒ-gúi-teu-lū","zǒ-gúi-teu-lū","zoguiteulu","zgtl",17100,4,1,海
 "壅塵打灰","rhùng-shin-dá-fòi","rhùng-shin-dá-fòi","rhungshindafoi","rhshdf",17100,4,1,海
-"五穀爺生","ńg-gug-rha-sàng","ńg-gug-rha-sàng","ggugrhasang","ggrhs",17100,4,1,海
+"五穀爺生","ńg-gug-rha-sàng","ńg-gug-rha-sàng","nggugrhasang","nggrhs",17100,4,1,海
 "牙研目皺","nga-ngien-mug-ziǔ","nga-ngien-mug-ziǔ","ngangienmugziu","ngngmz",17100,4,1,海
 "平洋洋仔","piang-rhong-rhong-er","piang-rhong-rhong-er","piangrhongrhonger","prhrhe",17100,4,1,海
 "呵呵呷呷","hò-hò-gab-gab","hò-hò-gab-gab","hohogabgab","hhgg",17100,4,1,海
@@ -61819,7 +61822,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "目水毛","mug-shúi-mò","mug-shúi-mò","mugshuimo","mshm",17000,3,1,海
 "目抌抌","mug-zhǐm-zhǐm","mug-zhǐm-zhǐm","mugzhimzhim","mzhzh",17000,3,1,海
 "乳車車","něn-chà-chà","něn-chà-chà","nenchacha","nchch",17000,3,1,海
-"五指山","ńg-zhí-sàn","ńg-zhí-sàn","gzhisan","gzhs",17000,3,1,海
+"五指山","ńg-zhí-sàn","ńg-zhí-sàn","ngzhisan","ngzhs",17000,3,1,海
 "牙射射","nga-sǎ-sǎ","nga-sǎ-sǎ","ngasasa","ngss",17000,3,1,海
 "硬朳丁","ngāng-bàd-dìn","ngāng-bàd-dìn","ngangbaddin","ngbd",17000,3,1,海
 "硬拚拚","ngāng-biǎng-biǎng","ngāng-biǎng-biǎng","ngangbiangbiang","ngbb",17000,3,1,海
@@ -61935,7 +61938,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "發目㾽","bod-mug-choi","bod-mug-choi","bodmugchoi","bmch",17000,3,1,海
 "發㾽仔","bod-choi-er","bod-choi-er","bodchoier","bche",17000,3,1,海
 "哪兩時","nāi-liòng-shi","nāi-liòng-shi","nailiongshi","nlsh",17000,3,1,海
-"五爪耙","ńg-záu-pa","ńg-záu-pa","gzaupa","gzp",17000,3,1,海
+"五爪耙","ńg-záu-pa","ńg-záu-pa","ngzaupa","ngzp",17000,3,1,海
 "該兩時","gai-liòng-shi","gai-liòng-shi","gailiongshi","glsh",17000,3,1,海
 "雜把戲","càb-bá-hǐ","càb-bá-hǐ","cabbahi","cbh",17000,3,1,海
 "鼻空頭","pī-kùng-teu","pī-kùng-teu","pikungteu","pkt",17000,3,1,海
@@ -62766,7 +62769,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "免致詏數","mièn-zhǐ-ǎu-sǐi","mièn-zhǐ-ǎu-sǐi","mienzhiausii","mzhas",16872,4,1,海
 "無緣無故","mo-rhan-mo-gǔ","mo-rhan-mo-gǔ","morhanmogu","mrhmg",16872,4,1,海
 "燜糯米飯","mùn-nō-mí-pōn","mùn-nō-mí-pōn","munnomipon","mnmp",16872,4,1,海
-"五代同堂","ńg-tōi-tung-tong","ńg-tōi-tung-tong","gtoitungtong","gttt",16872,4,1,海
+"五代同堂","ńg-tōi-tung-tong","ńg-tōi-tung-tong","ngtoitungtong","ngttt",16872,4,1,海
 "咬薑啜醋","ngàu-giòng-cod-cǔ","ngàu-giòng-cod-cǔ","ngaugiongcodcu","nggcc",16872,4,1,海
 "咬薑啜醋","ngàu-giòng-chod-cǐi","ngàu-giòng-chod-cǐi","ngaugiongchodcii","nggchc",16872,4,1,海
 "咬薑啜醋","ngàu-giòng-chod-sǐi","ngàu-giòng-chod-sǐi","ngaugiongchodsii","nggchs",16872,4,1,海
@@ -63571,7 +63574,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "結拜兄弟","gied-bǎi-hiùng-tī","gied-bǎi-hiùng-tī","giedbaihiungti","gbht",16550,4,1,海
 "捲若猴皮","gién-ngia-heu-pi","gién-ngia-heu-pi","gienngiaheupi","gnghp",16550,4,1,海
 "揀肥擇瘦","gán-pui-tòg-sěu","gán-pui-tòg-sěu","ganpuitogseu","gpts",16550,4,1,海
-"金童玉女","gìm-tung-ngiùg-ńg","gìm-tung-ngiùg-ńg","gimtungngiugg","gtngg",16550,4,1,海
+"金童玉女","gìm-tung-ngiùg-ńg","gìm-tung-ngiùg-ńg","gimtungngiugng","gtngng",16550,4,1,海
 "供求相應","giùng-kiu-siòng-rhǐn","giùng-kiu-siòng-rhǐn","giungkiusiongrhin","gksrh",16550,4,1,海
 "高樓大廈","gò-leu-tāi-hā","gò-leu-tāi-hā","goleutaiha","glth",16550,4,1,海
 "過一下仔","gǒ-rhid-hā-er","gǒ-rhid-hā-er","gorhidhaer","grhhe",16550,4,1,海
@@ -63672,12 +63675,12 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "無晝無暗","mo-zhiǔ-mo-ǎm","mo-zhiǔ-mo-ǎm","mozhiumoam","mzhma",16550,4,1,海
 "忘恩負義","mōng-èn-fǔ-ngī","mōng-èn-fǔ-ngī","mongenfungi","mefng",16550,4,1,海
 "目陰目陽","mug-rhìm-mug-rhong","mug-rhìm-mug-rhong","mugrhimmugrhong","mrhmrh",16550,4,1,海
-"男女老幼","nam-ńg-ló-rhiǔ","nam-ńg-ló-rhiǔ","namglorhiu","nglrh",16550,4,1,海
+"男女老幼","nam-ńg-ló-rhiǔ","nam-ńg-ló-rhiǔ","namnglorhiu","nnglrh",16550,4,1,海
 "南腔北調","nam-kiòng-bed-tiāu","nam-kiòng-bed-tiāu","namkiongbedtiau","nkbt",16550,4,1,海
 "南來北往","nam-loi-bed-vòng","nam-loi-bed-vòng","namloibedvong","nlbv",16550,4,1,海
 "喃喃喃喃","nam-nam-nǎm-nǎm","nam-nam-nǎm-nǎm","namnamnamnam","nnnn",16550,4,1,海
 "能算能斷","nen-sǒn-nen-dǒn","nen-sǒn-nen-dǒn","nensonnendon","nsnd",16550,4,1,海
-"五湖四海","ńg-fu-sǐ-hói","ńg-fu-sǐ-hói","gfusihoi","gfsh",16550,4,1,海
+"五湖四海","ńg-fu-sǐ-hói","ńg-fu-sǐ-hói","ngfusihoi","ngfsh",16550,4,1,海
 "牙尖齒利","nga-ziàm-chí-lī","nga-ziàm-chí-lī","ngaziamchili","ngzchl",16550,4,1,海
 "岩岩讒讒","ngam-ngam-cam-cam","ngam-ngam-cam-cam","ngamngamcamcam","ngngcc",16550,4,1,海
 "入莊問俗","ngìb-zòng-mǔn-siùg","ngìb-zòng-mǔn-siùg","ngibzongmunsiug","ngzms",16550,4,1,海
@@ -65553,7 +65556,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "三分人事七分天","sàm-fùn-ngin-sīi-cid-fùn-tièn","sàm-fùn-ngin-sīi-cid-fùn-tièn","samfunnginsiicidfuntien","sfngscft",13550,4,1,海
 "三年文書好做藥","sàm-ngien-vun-shù-hó-zǒ-rhòg","sàm-ngien-vun-shù-hó-zǒ-rhòg","samngienvunshuhozorhog","sngvshhzrh",13550,4,1,海
 "三子家娘鬥一家","sàm-zíi-gà-ngiong-děu-rhid-gà","sàm-zíi-gà-ngiong-děu-rhid-gà","samziigangiongdeurhidga","szgngdrhg",13550,4,1,海
-"十七十八無醜女","shìb-cid-shìb-bad-mo-chiú-ńg","shìb-cid-shìb-bad-mo-chiú-ńg","shibcidshibbadmochiug","shcshbmchg",13550,4,1,海
+"十七十八無醜女","shìb-cid-shìb-bad-mo-chiú-ńg","shìb-cid-shìb-bad-mo-chiú-ńg","shibcidshibbadmochiung","shcshbmchng",13550,4,1,海
 "食番薯毋知米價","shìd-fàn-shu-m-dì-mí-gǎ","shìd-fàn-shu-m-dì-mí-gǎ","shidfanshumdimiga","shfshmdmg",13550,4,1,海
 "上梁不正下梁歪","shōng-liong-bud-zhǐn-hā-liong-vài","shōng-liong-bud-zhǐn-hā-liong-vài","shongliongbudzhinhaliongvai","shlbzhhlv",13550,4,1,海
 "手指拗入無拗出","shiú-zhí-áu-ngìb-mo-áu-chud","shiú-zhí-áu-ngìb-mo-áu-chud","shiuzhiaungibmoauchud","shzhangmach",13550,4,1,海
@@ -65698,7 +65701,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "有病治病無病救命","iú-piang-cii-piang-mǒ-piang-giu-miang","iú-piang-cii-piang-mǒ-piang-giu-miang","iupiangciipiangmopianggiumiang","ipcpmpgm",12550,4,1,四
 "罵三年無半點烏青","ma-sám-ngiěn-mǒ-ban-diàm-vú-qiáng","ma-sám-ngiěn-mǒ-ban-diàm-vú-qiáng","masamngienmobandiamvuqiang","msngmbdvq",12550,4,1,四
 "吂出學堂先學肚量","mǎng-cùd-hog-tǒng-xién-hog-dù-liong","mǎng-cùd-hog-tǒng-xién-hog-dù-liong","mangcudhogtongxienhogduliong","mchtxhdl",12550,4,1,四
-"各人个子女各人教","gog-ngin-gǎi-zíi-ńg-gog-ngin-gǎu","gog-ngin-gǎi-zíi-ńg-gog-ngin-gǎu","gogngingaiziiggogngingau","gnggzggngg",12550,4,1,海
+"各人个子女各人教","gog-ngin-gǎi-zíi-ńg-gog-ngin-gǎu","gog-ngin-gǎi-zíi-ńg-gog-ngin-gǎu","gogngingaiziinggogngingau","gnggznggngg",12550,4,1,海
 "好田地毋當好子弟","hó-tien-tī-m-dǒng-hó-zíi-tī","hó-tien-tī-m-dǒng-hó-zíi-tī","hotientimdonghoziiti","httmdhzt",12550,4,1,海
 "一枝竹篙打一船人","rhid-gì-zhug-gò-dá-rhid-shon-ngin","rhid-gì-zhug-gò-dá-rhid-shon-ngin","rhidgizhuggodarhidshonngin","rhgzhgdrhshng",12550,4,1,海
 "有恩報恩有仇報仇","rhiù-èn-bǒ-èn-rhiù-shiu-bǒ-shiu","rhiù-èn-bǒ-èn-rhiù-shiu-bǒ-shiu","rhiuenboenrhiushiuboshiu","rheberhshbsh",12550,4,1,海
@@ -65895,7 +65898,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "貓扡粢粑－－難脫爪","ngiǎu-rhá-ci-bà-nan-tod-záu","ngiǎu-rhá-ci-bà-nan-tod-záu","ngiaurhacibanantodzau","ngrhcbntz",11000,4,1,海
 "無名無姓，問钁頭柄","mo-miang-mo-siǎng-mǔn-giog-teu-biǎng","mo-miang-mo-siǎng-mǔn-giog-teu-biǎng","momiangmosiangmungiogteubiang","mmmsmgtb",11000,4,1,海
 "目睡鳥，自有飛來蟲","mug-shōi-diàu-cīi-rhiù-bùi-loi-chung","mug-shōi-diàu-cīi-rhiù-bùi-loi-chung","mugshoidiauciirhiubuiloichung","mshdcrhblch",11000,4,1,海
-"男大當婚，女大當嫁","nam-tāi-dòng-fùn-ńg-tāi-dòng-gǎ","nam-tāi-dòng-fùn-ńg-tāi-dòng-gǎ","namtaidongfungtaidongga","ntdfgtdg",11000,4,1,海
+"男大當婚，女大當嫁","nam-tāi-dòng-fùn-ńg-tāi-dòng-gǎ","nam-tāi-dòng-fùn-ńg-tāi-dòng-gǎ","namtaidongfunngtaidongga","ntdfngtdg",11000,4,1,海
 "日求三餐，夜求一宿","ngid-kiu-sàm-còn-rhā-kiu-rhid-siug","ngid-kiu-sàm-còn-rhā-kiu-rhid-siug","ngidkiusamconrhakiurhidsiug","ngkscrhkrhs",11000,4,1,海
 "人係生成，鬼係話成","ngin-hě-sàng-shang-gúi-hě-fǎ-shang","ngin-hě-sàng-shang-gúi-hě-fǎ-shang","nginhesangshangguihefashang","nghsshghfsh",11000,4,1,海
 "人有相像，物有相同","ngin-rhiù-siòng-ciǒng-vùd-rhiù-siòng-tung","ngin-rhiù-siòng-ciǒng-vùd-rhiù-siòng-tung","nginrhiusiongciongvudrhiusiongtung","ngrhscvrhst",11000,4,1,海
@@ -66525,7 +66528,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "得","dèd","dèd","ded","",9000,1,64,四
 "雞","gié","gié","gie","",9000,1,64,四
 "仔","ě","ě","e","",9000,1,64,四
-"阿婆嫁孫女－－無主無意","ā-po-gǎ-sùn-ńg-mo-zhú-mo-rhǐ","ā-po-gǎ-sùn-ńg-mo-zhú-mo-rhǐ","apogasungmozhumorhi","apgsgmzhmrh",9000,4,1,海
+"阿婆嫁孫女－－無主無意","ā-po-gǎ-sùn-ńg-mo-zhú-mo-rhǐ","ā-po-gǎ-sùn-ńg-mo-zhú-mo-rhǐ","apogasunngmozhumorhi","apgsngmzhmrh",9000,4,1,海
 "百貨有百客，伯姆有大伯","bag-fǒ-rhiù-bag-hag-bag-mè-rhiù-tāi-bag","bag-fǒ-rhiù-bag-hag-bag-mè-rhiù-tāi-bag","bagforhiubaghagbagmerhiutaibag","bfrhbhbmrhtb",9000,4,1,海
 "在家千日好，出門半朝難","cāi-gà-cièn-ngid-hó-chud-mun-bǎn-zhàu-nan","cāi-gà-cièn-ngid-hó-chud-mun-bǎn-zhàu-nan","caigacienngidhochudmunbanzhaunan","cgcnghchmbzhn",9000,4,1,海
 "坐船望船走，騎馬望馬飆","cò-shon-mōng-shon-zéu-ki-mà-mōng-mà-biàu","cò-shon-mōng-shon-zéu-ki-mà-mōng-mà-biàu","coshonmongshonzeukimamongmabiau","cshmshzkmmmb",9000,4,1,海
@@ -66591,8 +66594,8 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "目珠花花，瓠仔看做菜瓜","mug-zhù-fà-fà-pu-er-kǒn-zǒ-cǒi-guà","mug-zhù-fà-fà-pu-er-kǒn-zǒ-cǒi-guà","mugzhufafapuerkonzocoigua","mzhffpekzcg",9000,4,1,海
 "泥伯公過河－－自身難保","nai-bag-gùng-gǒ-ho-cīi-shìn-nan-bó","nai-bag-gùng-gǒ-ho-cīi-shìn-nan-bó","naibaggunggohociishinnanbo","nbgghcshnb",9000,4,1,海
 "泥菩薩過河－－自身難保","nai-pu-sad-gǒ-ho-cīi-shìn-nan-bó","nai-pu-sad-gǒ-ho-cīi-shìn-nan-bó","naipusadgohociishinnanbo","npsghcshnb",9000,4,1,海
-"男人个數簿，女人个乳菇","nam-ngin-gǎi-sǐi-pù-ńg-ngin-gǎi-něn-gù","nam-ngin-gǎi-sǐi-pù-ńg-ngin-gǎi-něn-gù","namngingaisiipugngingainengu","nnggspgnggng",9000,4,1,海
-"男怕入差行，女怕嫁差郎","nam-pǎ-ngìb-cà-hong-ńg-pǎ-gǎ-cà-long","nam-pǎ-ngìb-cà-hong-ńg-pǎ-gǎ-cà-long","nampangibcahonggpagacalong","npngchgpgcl",9000,4,1,海
+"男人个數簿，女人个乳菇","nam-ngin-gǎi-sǐi-pù-ńg-ngin-gǎi-něn-gù","nam-ngin-gǎi-sǐi-pù-ńg-ngin-gǎi-něn-gù","namngingaisiipungngingainengu","nnggspngnggng",9000,4,1,海
+"男怕入差行，女怕嫁差郎","nam-pǎ-ngìb-cà-hong-ńg-pǎ-gǎ-cà-long","nam-pǎ-ngìb-cà-hong-ńg-pǎ-gǎ-cà-long","nampangibcahongngpagacalong","npngchngpgcl",9000,4,1,海
 "日仔吂到，毋係天公毋報","ngid-er-mang-dǒ-m-hě-tièn-gùng-m-bǒ","ngid-er-mang-dǒ-m-hě-tièn-gùng-m-bǒ","ngidermangdomhetiengungmbo","ngemdmhtgmb",9000,4,1,海
 "年到二十七，過年差三日","ngien-dǒ-ngī-shìb-cid-gǒ-ngien-cài-sàm-ngid","ngien-dǒ-ngī-shìb-cid-gǒ-ngien-cài-sàm-ngid","ngiendongishibcidgongiencaisamngid","ngdngshcgngcsng",9000,4,1,海
 "人在人情在，人亡人情亡","ngin-còi-ngin-cin-còi-ngin-mong-ngin-cin-mong","ngin-còi-ngin-cin-còi-ngin-mong-ngin-cin-mong","ngincoingincincoinginmongngincinmong","ngcngccngmngcm",9000,4,1,海
@@ -67130,7 +67133,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "摎精人吮膦，毋好摎戇人講話","làu-zìn-ngin-ciòn-lín-m-hó-làu-ngǒng-ngin-góng-fǎ","làu-zìn-ngin-ciòn-lín-m-hó-làu-ngǒng-ngin-góng-fǎ","lauzinngincionlinmholaungongngingongfa","lzngclmhlngnggf",7000,4,1,海
 "老了學吹笛，學得會來鬚就白","ló-lè-hòg-chòi-tàg-hòg-ded-vōi-loi-sì-ciū-pàg","ló-lè-hòg-chòi-tàg-hòg-ded-vōi-loi-sì-ciū-pàg","lolehogchoitaghogdedvoiloisiciupag","llhchthdvlscp",7000,4,1,海
 "吂到六十六，毋好笑人大腳目","mang-dǒ-liug-shìb-liug-m-hó-siǎu-ngin-tāi-giog-mug","mang-dǒ-liug-shìb-liug-m-hó-siǎu-ngin-tāi-giog-mug","mangdoliugshibliugmhosiaungintaigiogmug","mdlshlmhsngtgm",7000,4,1,海
-"吂食五月節粽，襖婆毋好入甕","mang-shìd-ńg-ngièd-zied-zǔng-ó-po-m-hó-ngìb-vǔng","mang-shìd-ńg-ngièd-zied-zǔng-ó-po-m-hó-ngìb-vǔng","mangshidgngiedziedzungopomhongibvung","mshgngzzopmhngv",7000,4,1,海
+"吂食五月節粽，襖婆毋好入甕","mang-shìd-ńg-ngièd-zied-zǔng-ó-po-m-hó-ngìb-vǔng","mang-shìd-ńg-ngièd-zied-zǔng-ó-po-m-hó-ngìb-vǔng","mangshidngngiedziedzungopomhongibvung","mshngngzzopmhngv",7000,4,1,海
 "莫怨天，莫怨地，愛怨怨自己","mòg-rhǎn-tièn-mòg-rhǎn-tī-ǒi-rhǎn-rhǎn-cīi-gí","mòg-rhǎn-tièn-mòg-rhǎn-tī-ǒi-rhǎn-rhǎn-cīi-gí","mogrhantienmogrhantioirhanrhanciigi","mrhtmrhtorhrhcg",7000,4,1,海
 "泥蛇一畚箕，毋當一尾青竹絲","nai-sha-rhid-bǔn-gì-m-dǒng-rhid-mui-ciàng-zhug-sì","nai-sha-rhid-bǔn-gì-m-dǒng-rhid-mui-ciàng-zhug-sì","naisharhidbungimdongrhidmuiciangzhugsi","nshrhbgmdrhmczhs",7000,4,1,海
 "南蛇鑽壁籬，毋死也㪐一層皮","nam-sha-zǒn-biag-li-m-sí-rhā-lud-rhid-cen-pi","nam-sha-zǒn-biag-li-m-sí-rhā-lud-rhid-cen-pi","namshazonbiaglimsirhaludrhidcenpi","nshzblmsrhlrhcp",7000,4,1,海
@@ -67286,7 +67289,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "今日有官今日做，明日無官賣雜貨","gìm-ngid-rhiù-gòn-gìm-ngid-zǒ-mang-ngid-mo-gòn-māi-càb-fǒ","gìm-ngid-rhiù-gòn-gìm-ngid-zǒ-mang-ngid-mo-gòn-māi-càb-fǒ","gimngidrhiugongimngidzomangngidmogonmaicabfo","gngrhggngzmngmgmcf",5000,4,1,海
 "過橋比你行路長，食鹽比你食米多","gǒ-kiau-bí-ngi-hang-lū-chong-shìd-rham-bí-ngi-shìd-mí-dò","gǒ-kiau-bí-ngi-hang-lū-chong-shìd-rham-bí-ngi-shìd-mí-dò","gokiaubingihangluchongshidrhambingishidmido","gkbnghlchshrhbngshmd",5000,4,1,海
 "兄弟分家成鄰舍，上晝分家下晝借","hiùng-tī-bùn-gà-shang-lin-shǎ-shōng-zhiǔ-bùn-gà-hà-zhiǔ-ziǎ","hiùng-tī-bùn-gà-shang-lin-shǎ-shōng-zhiǔ-bùn-gà-hà-zhiǔ-ziǎ","hiungtibungashanglinshashongzhiubungahazhiuzia","htbgshlshshzhbghzhz",5000,4,1,海
-"好女毋使娘嫁衣，好男毋使爺田地","hó-ńg-m-síi-ngiong-gǎ-rhì-hó-nam-m-síi-rha-tien-tī","hó-ńg-m-síi-ngiong-gǎ-rhì-hó-nam-m-síi-rha-tien-tī","hogmsiingionggarhihonammsiirhatienti","hgmsnggrhhnmsrhtt",5000,4,1,海
+"好女毋使娘嫁衣，好男毋使爺田地","hó-ńg-m-síi-ngiong-gǎ-rhì-hó-nam-m-síi-rha-tien-tī","hó-ńg-m-síi-ngiong-gǎ-rhì-hó-nam-m-síi-rha-tien-tī","hongmsiingionggarhihonammsiirhatienti","hngmsnggrhhnmsrhtt",5000,4,1,海
 "易漲易退山溪水，易反易覆小人心","rhǐ-zhǒng-rhǐ-tǔi-sàn-hài-shúi-rhǐ-fán-rhǐ-fug-siáu-ngin-sìm","rhǐ-zhǒng-rhǐ-tǔi-sàn-hài-shúi-rhǐ-fán-rhǐ-fug-siáu-ngin-sìm","rhizhongrhituisanhaishuirhifanrhifugsiaunginsim","rhzhrhtshshrhfrhfsngs",5000,4,1,海
 "爺娘想子長江水，子想爺娘擔竿長","rha-ngiong-sióng-zíi-chong-gòng-shúi-zíi-sióng-rha-ngiong-dǎm-gòn-chong","rha-ngiong-sióng-zíi-chong-gòng-shúi-zíi-sióng-rha-ngiong-dǎm-gòn-chong","rhangiongsiongziichonggongshuiziisiongrhangiongdamgonchong","rhngszchgshzsrhngdgch",5000,4,1,海
 "有貓毋知貓功勞，無貓正知老鼠多","rhiù-ngiǎu-m-dì-ngiǎu-gùng-lo-mo-ngiǎu-zhǎng-dì-ló-chú-dò","rhiù-ngiǎu-m-dì-ngiǎu-gùng-lo-mo-ngiǎu-zhǎng-dì-ló-chú-dò","rhiungiaumdingiaugunglomongiauzhangdilochudo","rhngmdngglmngzhdlchd",5000,4,1,海
@@ -67297,7 +67300,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "吂到冬節先挼圓，三十暗晡喊無錢","mang-dǒ-dùng-zied-sèn-no-rhan-sàm-shìb-ǎm-bù-hèm-mo-cien","mang-dǒ-dùng-zied-sèn-no-rhan-sàm-shìb-ǎm-bù-hèm-mo-cien","mangdodungziedsennorhansamshibambuhemmocien","mddzsnrhsshabhmc",5000,4,1,海
 "吂種瓜豆先搭棚，吂降倈仔先安名","mang-zhǔng-guà-tēu-sèn-dab-pang-mang-giǔng-lǎi-er-sèn-òn-miang","mang-zhǔng-guà-tēu-sèn-dab-pang-mang-giǔng-lǎi-er-sèn-òn-miang","mangzhungguateusendabpangmanggiunglaiersenonmiang","mzhgtsdpmglesom",5000,4,1,海
 "木匠屋肚無凳坐，覡公門前鬼唱歌","mug-siōng-vug-dú-mo-děn-cò-shāng-gùng-mun-cien-gúi-chǒng-gò","mug-siōng-vug-dú-mo-děn-cò-shāng-gùng-mun-cien-gúi-chǒng-gò","mugsiongvugdumodencoshanggungmuncienguichonggo","msvdmdcshgmcgchg",5000,4,1,海
-"男人斷掌有官做，女人斷掌守空房","nam-ngin-tòn-zhóng-rhiù-gòn-zǒ-ńg-ngin-tòn-zhóng-shiú-kùng-fong","nam-ngin-tòn-zhóng-rhiù-gòn-zǒ-ńg-ngin-tòn-zhóng-shiú-kùng-fong","namngintonzhongrhiugonzogngintonzhongshiukungfong","nngtzhrhgzgngtzhshkf",5000,4,1,海
+"男人斷掌有官做，女人斷掌守空房","nam-ngin-tòn-zhóng-rhiù-gòn-zǒ-ńg-ngin-tòn-zhóng-shiú-kùng-fong","nam-ngin-tòn-zhóng-rhiù-gòn-zǒ-ńg-ngin-tòn-zhóng-shiú-kùng-fong","namngintonzhongrhiugonzongngintonzhongshiukungfong","nngtzhrhgzngngtzhshkf",5000,4,1,海
 "人求我，三春風；我求人，六月雪","ngin-kiu-ngò-sàm-chùn-fùng-ngò-kiu-ngin-liug-ngièd-sied","ngin-kiu-ngò-sàm-chùn-fùng-ngò-kiu-ngin-liug-ngièd-sied","nginkiungosamchunfungngokiunginliugngiedsied","ngkngschfngknglngs",5000,4,1,海
 "人惡人怕天毋怕，人善人欺天不欺","ngin-og-ngin-pǎ-tièn-m-pǎ-ngin-shān-ngin-kì-tièn-bud-kì","ngin-og-ngin-pǎ-tièn-m-pǎ-ngin-shān-ngin-kì-tièn-bud-kì","nginognginpatienmpanginshannginkitienbudki","ngongptmpngshngktbk",5000,4,1,海
 "七後生，八後生，毋多知仔轉唐山","cid-hēu-sàng-bad-hēu-sàng-m-dò-dì-er-zhón-tong-sàn","cid-hēu-sàng-bad-hēu-sàng-m-dò-dì-er-zhón-tong-sàn","cidheusangbadheusangmdodierzhontongsan","chsbhsmddezhts",5000,4,1,海
@@ -74752,7 +74755,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "仨","sàm","sàm","sam","",900,1,64,海
 "仱","kiam","kiam","kiam","",900,1,64,海
 "仳","pí","pí","pi","",900,1,64,海
-"仵","ńg","ńg","g","",900,1,64,海
+"仵","ńg","ńg","ng","",900,1,64,海
 "价","gǎi","gǎi","gai","",900,1,64,海
 "伃","rhi","rhi","rhi","",900,1,64,海
 "伈","sím","sím","sim","",900,1,64,海
@@ -80975,7 +80978,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "毋係該人，毋驚你會講；係該人，毋使講佢會想","m-hě-gai-ngin-m-giàng-ngi-vōi-góng-hě-gai-ngin-m-síi-góng-gi-vōi-sióng","m-hě-gai-ngin-m-giàng-ngi-vōi-góng-hě-gai-ngin-m-síi-góng-gi-vōi-sióng","mhegainginmgiangngivoigonghegainginmsiigonggivoisiong","mhgngmgngvghgngmsggvs",100,4,1,海
 "寧賣祖宗田，不忘祖宗言；寧賣祖宗坑，不忘祖宗聲","nen-māi-zú-zùng-tien-bud-mōng-zú-zùng-ngien-nen-māi-zú-zùng-hàng-bud-mōng-zú-zùng-shàng","nen-māi-zú-zùng-tien-bud-mōng-zú-zùng-ngien-nen-māi-zú-zùng-hàng-bud-mōng-zú-zùng-shàng","nenmaizuzungtienbudmongzuzungngiennenmaizuzunghangbudmongzuzungshang","nmzztbmzzngnmzzhbmzzsh",100,4,1,海
 "人老三件歪，行路頭犁犁；打屁打出屎，屙尿淋溼鞋","ngin-ló-sàm-kiēn-vài-hang-lū-teu-lai-lai-dá-pǐ-dá-chud-shí-ò-ngiāu-lim-shib-hai","ngin-ló-sàm-kiēn-vài-hang-lū-teu-lai-lai-dá-pǐ-dá-chud-shí-ò-ngiāu-lim-shib-hai","nginlosamkienvaihangluteulailaidapidachudshiongiaulimshibhai","nglskvhltlldpdchshonglshh",100,4,1,海
-"四十過年年差，五十過月月差，六十過日日差","sǐ-shìb-gǒ-ngien-ngien-cà-ńg-shìb-gǒ-ngièd-ngièd-cà-liug-shìb-gǒ-ngid-ngid-cà","sǐ-shìb-gǒ-ngien-ngien-cà-ńg-shìb-gǒ-ngièd-ngièd-cà-liug-shìb-gǒ-ngid-ngid-cà","sishibgongienngiencagshibgongiedngiedcaliugshibgongidngidca","sshgngngcgshgngngclshgngngc",100,4,1,海
+"四十過年年差，五十過月月差，六十過日日差","sǐ-shìb-gǒ-ngien-ngien-cà-ńg-shìb-gǒ-ngièd-ngièd-cà-liug-shìb-gǒ-ngid-ngid-cà","sǐ-shìb-gǒ-ngien-ngien-cà-ńg-shìb-gǒ-ngièd-ngièd-cà-liug-shìb-gǒ-ngid-ngid-cà","sishibgongienngiencangshibgongiedngiedcaliugshibgongidngidca","sshgngngcngshgngngclshgngngc",100,4,1,海
 "正月雷鳴，二月雪，三月無水過田缺，四月秧打節","zhàng-ngièd-lui-min-ngī-ngièd-sied-sàm-ngièd-mo-shúi-gǒ-tien-kied-sǐ-ngièd-rhòng-dá-zied","zhàng-ngièd-lui-min-ngī-ngièd-sied-sàm-ngièd-mo-shúi-gǒ-tien-kied-sǐ-ngièd-rhòng-dá-zied","zhangngiedluiminngingiedsiedsamngiedmoshuigotienkiedsingiedrhongdazied","zhnglmngngssngmshgtksngrhdz",100,4,1,海
 "毋係該人，毋驚你會講；係該人，毋使講佢會想","m̌-he-ge-ngǐn-m̌-giáng-ňg-voi-gòng-he-ge-ngǐn-m̌-sìi-gòng-ǐ-voi-xiòng","m̌-he-ge-ngǐn-m̌-giáng-ňg-voi-gòng-he-ge-ngǐn-m̌-sìi-gòng-ǐ-voi-xiòng","mhegenginmgiangngvoigonghegenginmsiigongivoixiong","mhgngmgngvghgngmsgivx",100,4,1,南
 "寧賣祖宗田，不忘祖宗言；寧賣祖宗坑，不忘祖宗聲","něn-mai-zù-zúng-tiěn-bùd-mong-zù-zúng-ngiǎn-něn-mai-zù-zúng-háng-bùd-mong-zù-zúng-sáng","něn-mai-zù-zúng-tiěn-bùd-mong-zù-zúng-ngiǎn-něn-mai-zù-zúng-háng-bùd-mong-zù-zúng-sáng","nenmaizuzungtienbudmongzuzungngiannenmaizuzunghangbudmongzuzungsang","nmzztbmzzngnmzzhbmzzs",100,4,1,南

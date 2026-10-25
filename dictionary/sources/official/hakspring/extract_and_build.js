@@ -78,17 +78,18 @@ const VOWEL_MAP = {
   'ī': 'i', 'í': 'i', 'ǐ': 'i', 'î': 'i', 'ì': 'i',
   'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ô': 'o', 'ò': 'o',
   'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'û': 'u', 'ù': 'u',
-  'n̄': 'n', 'ń': 'n', 'ň': 'n', 'n̂': 'n', 'ǹ': 'n',
-  'm̄': 'm', 'ḿ': 'm', 'm̌': 'm', 'm̂': 'm', 'm̀': 'm'
+  'n̄': 'n', 'ń': 'n', 'ń': 'n', 'ň': 'n', 'n̂': 'n', 'ǹ': 'n',
+  'm̄': 'm', 'ḿ': 'm', 'ḿ': 'm', 'm̌': 'm', 'm̂': 'm', 'm̀': 'm'
 };
 
 function removeTone(syll) {
+  if (!syll) return '';
   let s = syll.toLowerCase();
   let res = '';
   for (const ch of s) {
     res += VOWEL_MAP[ch] || ch;
   }
-  return res.replace(/[^a-z]/g, '');
+  return res.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 }
 
 // 調值轉 HagPinPlus 調符（照客源翠 tone_mapping.json default_tones，入聲 2／5 照韻尾分，免另外標）。
