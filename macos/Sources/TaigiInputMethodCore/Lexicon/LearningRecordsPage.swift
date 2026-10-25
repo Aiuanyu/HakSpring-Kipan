@@ -328,18 +328,13 @@ struct LearningRecordsPage: View {
         .onChange(of: model.lect) { showFromFirstPage() }
         .onChange(of: model.kind) { showFromFirstPage() }
         .onChange(of: model.order) { showFromFirstPage() }
-        .alert(
-            "各腔互學",
-            isPresented: Binding(
-                get: { model.syncPreview != nil },
-                set: { if !$0 { model.syncPreview = nil } },
-            ),
-            presenting: model.syncPreview,
-        ) { _ in
-            Button("互學") { Task { await model.confirmSync() } }
-            Button(language.string(.commonCancel), role: .cancel) { model.syncPreview = nil }
-        } message: { preview in
-            Text(Self.syncSummary(preview))
+        .sheet(item: Binding(
+            get: { model.syncPreview },
+            set: { model.syncPreview = $0 }
+        )) { preview in
+            LectsSyncPreviewSheet(preview: preview) {
+                Task { await model.confirmSync() }
+            }
         }
         .sheet(item: $editing) { record in
             LearningRecordCountSheet(record: record) { count in
@@ -555,5 +550,96 @@ struct LearningRecordCountSheet: View {
         }
         .padding(20)
         .frame(width: 360)
+    }
+}
+
+extension Taigi_Engine_LectsSynced: Identifiable {
+    public var id: String {
+        "\(addedWords)-\(addedPhrases)-\(alreadyPresent)-\(skippedMissing)-\(skippedAmbiguous)-\(composed)"
+    }
+}
+
+/// Sheet for previewing and confirming 各腔互學 (D3).
+/// Separated from `.alert` to avoid conflicts with `.userDataPageChrome`'s global alert.
+struct LectsSyncPreviewSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(DisplayLanguageStore.self) private var language
+
+    let preview: Taigi_Engine_LectsSynced
+    let onConfirm: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("各腔互學")
+                    .font(.headline)
+                Text("把一腔學過个詞，共到別腔：別腔詞典有共隻漢字、又淨有一種讀音正共；毋確定个跳過。")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                let added = preview.addedWords + preview.addedPhrases
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                    Text("會增加 \(added) 筆（詞 \(preview.addedWords)、詞組 \(preview.addedPhrases)）")
+                        .fontWeight(.medium)
+                }
+
+                if preview.composed > 0 {
+                    HStack(spacing: 8) {
+                        Image(systemName: "puzzlepiece.fill")
+                            .foregroundStyle(.secondary)
+                        Text("其中 \(preview.composed) 筆係用目的腔詞典个詞組合出來个")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if preview.alreadyPresent > 0 {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle")
+                            .foregroundStyle(.secondary)
+                        Text("本來就有：\(preview.alreadyPresent) 筆")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if preview.skippedMissing > 0 {
+                    HStack(spacing: 8) {
+                        Image(systemName: "xmark.circle")
+                            .foregroundStyle(.secondary)
+                        Text("目的腔無共隻漢字，跳過：\(preview.skippedMissing) 筆")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if preview.skippedAmbiguous > 0 {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundStyle(.secondary)
+                        Text("目的腔有多種讀音，跳過：\(preview.skippedAmbiguous) 筆")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+
+            HStack {
+                Spacer()
+                Button(language.string(.commonCancel), role: .cancel) {
+                    dismiss()
+                }
+                Button("互學") {
+                    dismiss()
+                    onConfirm()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 440)
     }
 }
