@@ -43,9 +43,11 @@ struct DictionaryTogglesView: View {
                             .disabled(isOn(lect) && enabledCount == 1)
                         // Meinong is a switch under 南四縣, not a lect of its own (USER 2026-10-25).
                         if lect == .namxiian {
-                            Toggle("美濃音 (Minung)", isOn: $isMeinongEnabled)
+                            // 美濃腔：24 調（á）寫成 33（ā），另收認證標个美濃音（候選標「美」）。
+                            // 四縣、南四縣都適用，所以兩腔有一腔開咧就做得開。
+                            Toggle("美濃腔 (Minung)", isOn: $isMeinongEnabled)
                                 .padding(.leading, Metrics.subcollectionIndent)
-                                .disabled(!isNamxiianEnabled)
+                                .disabled(!(isXiienEnabled || isNamxiianEnabled))
                         }
                     }
                 }
@@ -75,7 +77,7 @@ struct DictionaryTogglesView: View {
             } header: {
                 Text(language.string(.dictionaryMoeSectionTitle))
             } footer: {
-                Text("客語能力認證詞彙跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸等其他腔同款。")
+                Text("客語能力認證詞彙跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸等其他腔同款。\n美濃腔：四縣、南四縣个羅馬字，24 調（á）寫做 33（ā）；另外收美濃音，候選標「美」。")
             }
 
             // Its own section, at the end, drawn the way the Shortcuts and Appearance

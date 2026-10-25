@@ -216,6 +216,7 @@ mod tests {
             tps_or_maps_to_er: false,
             hanji_conversion: None,
             lect: 0,
+            meinong_tones: false,
         }
     }
 

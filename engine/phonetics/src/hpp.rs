@@ -25,6 +25,33 @@ fn base_letter(c: char) -> Option<char> {
 /// 會讀毋著就係 [`HPP_APOSTROPHE`]，無就係 `""`。
 ///
 /// 前後毋係拉丁字母（漢字、標點、空白）就無加。
+/// Meinong tones (Hakfa fork): tone 24 (acute: á é í ó ú, ḿ ń) written as tone 33 (macron: ā ē ī ō ū,
+/// m̄ n̄). Everything else — other tones, consonants, case — is untouched. Display only; a caller keeps
+/// the canonical reading for identity.
+pub fn tone24_to_33(roman: &str) -> String {
+    let mut out = String::with_capacity(roman.len() + 2);
+    for c in roman.chars() {
+        match c {
+            'á' => out.push('ā'),
+            'é' => out.push('ē'),
+            'í' => out.push('ī'),
+            'ó' => out.push('ō'),
+            'ú' => out.push('ū'),
+            'Á' => out.push('Ā'),
+            'É' => out.push('Ē'),
+            'Í' => out.push('Ī'),
+            'Ó' => out.push('Ō'),
+            'Ú' => out.push('Ū'),
+            'ḿ' => out.push_str("m\u{304}"),
+            'Ḿ' => out.push_str("M\u{304}"),
+            'ń' => out.push_str("n\u{304}"),
+            'Ń' => out.push_str("N\u{304}"),
+            other => out.push(other),
+        }
+    }
+    out
+}
+
 pub fn hpp_boundary(prev: &str, next: &str) -> &'static str {
     // 調符拆開寫（NFD）个時節，結合符號毋算字母。
     let not_mark = |c: &char| !is_combining_mark(*c);
@@ -142,5 +169,20 @@ mod tests {
         assert_eq!(none("van-sii-ǐ-i"), "vansii'ǐ'i");
         // 詞摎詞中間个空白留等，空白兩邊毋加撇號。
         assert_eq!(none("ga-i ab-a"), "ga'i ab'a");
+    }
+}
+
+#[cfg(test)]
+mod meinong_tone_tests {
+    use super::tone24_to_33;
+
+    #[test]
+    fn tone_24_becomes_33_and_nothing_else_moves() {
+        assert_eq!(tone24_to_33("gién-ngiá"), "giēn-ngiā");
+        assert_eq!(tone24_to_33("lí-sú-é-ó-á"), "lī-sū-ē-ō-ā");
+        // other tones and the unmarked stay
+        assert_eq!(tone24_to_33("gǐ-giòg-lò-kiǎn-gî-mo"), "gǐ-giòg-lò-kiǎn-gî-mo");
+        // syllabic nasals and capitals
+        assert_eq!(tone24_to_33("ḿ-ńg Gién"), "m\u{304}-n\u{304}g Giēn");
     }
 }

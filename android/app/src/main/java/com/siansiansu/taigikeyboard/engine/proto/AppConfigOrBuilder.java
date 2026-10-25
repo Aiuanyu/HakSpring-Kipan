@@ -141,4 +141,16 @@ public interface AppConfigOrBuilder extends
    * @return The lect.
    */
   int getLect();
+
+  /**
+   * <pre>
+   * Hakfa fork: write tone 24 (acute) as 33 (macron) in the romanization — Meinong (美濃) speakers read
+   * the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
+   * only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
+   * </pre>
+   *
+   * <code>bool meinong_tones = 16;</code>
+   * @return The meinongTones.
+   */
+  boolean getMeinongTones();
 }

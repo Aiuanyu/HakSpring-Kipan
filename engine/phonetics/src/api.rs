@@ -689,6 +689,9 @@ pub use crate::custom_search::{
 
 pub use crate::hanji::{is_hanji, CJK_RANGES};
 
+/// Hakfa fork: tone 24 → 33 in a display romanization (Meinong tones). See `hpp::tone24_to_33`.
+pub use crate::hpp::tone24_to_33;
+
 /// The syllables of a canonical TL string — `-` inside a word, ` ` between
 /// the words of a multi-word entry (`iā sī`); an empty piece (the khinsiann
 /// `--`) is not a syllable. The one tokenizer `tps` already keys records by.

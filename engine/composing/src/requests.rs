@@ -256,6 +256,13 @@ fn handle_fetch_at_pos(
         config.force_lowercase_nasal_marker,
         shape,
     );
+    // Hakfa fork: Meinong tones — write tone 24 as 33 in the display romanization. Identity
+    // (`canonical_tl`), hanji and the dictionary are untouched; a roman-only commit reads this roman.
+    if config.renders_meinong_tones() {
+        for candidate in &mut candidates {
+            candidate.roman = phonetics::api::tone24_to_33(&candidate.roman);
+        }
+    }
     // INVARIANT_CONTINUOUS_LITERAL_ROMAN_CANDIDATE (§34): whenever composing
     // in TL/POJ — tone or no tone — surface the current composing result
     // (= the preedit WYSIWYG) as a roman-only candidate at index 0, so Hanji-romanization
@@ -649,6 +656,7 @@ mod tests {
             tps_or_maps_to_er: false,
             hanji_conversion: None,
             lect: 0,
+            meinong_tones: false,
         }
     }
 

@@ -61,6 +61,13 @@ impl engine::AppConfig {
     /// TPS layout, whose platform re-splits the candidate `roman` on `-` to
     /// render Bopomofo; `Some("")` drops it (None); `Some(" ")` writes a space
     /// (Space). Fed to `phonetics::api::syllable_joiner_display`.
+    /// Hakfa fork: whether the display romanization writes tone 24 as 33 (Meinong tones). Only for
+    /// the Sixian family — lect 0 (none sent), 1 (四縣) and 6 (南四縣); Hailu and the rest read
+    /// their own tones.
+    pub fn renders_meinong_tones(&self) -> bool {
+        self.meinong_tones && matches!(self.lect, 0 | 1 | 6)
+    }
+
     pub fn rendered_syllable_joiner(&self) -> Option<&'static str> {
         if self.is_tps_layout() {
             return None;

@@ -153,6 +153,10 @@ message AppConfig {
   // as 四縣). Picks the learning stores (frequency, learned phrases, associations): 四縣 keeps
   // the original files, every other lect has its own (`userdata::UserDataHandle::stores_for_lect`).
   uint32 lect = 15;
+  // Hakfa fork: write tone 24 (acute) as 33 (macron) in the romanization — Meinong (美濃) speakers read
+  // the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
+  // only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
+  bool meinong_tones = 16;
 }
 
 // Hanji conversion in the preedit

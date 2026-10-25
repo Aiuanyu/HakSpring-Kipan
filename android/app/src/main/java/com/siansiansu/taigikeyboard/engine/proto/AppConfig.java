@@ -548,6 +548,50 @@ public  final class AppConfig extends
     lect_ = 0;
   }
 
+  public static final int MEINONG_TONES_FIELD_NUMBER = 16;
+  private boolean meinongTones_;
+  /**
+   * <pre>
+   * Hakfa fork: write tone 24 (acute) as 33 (macron) in the romanization — Meinong (美濃) speakers read
+   * the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
+   * only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
+   * </pre>
+   *
+   * <code>bool meinong_tones = 16;</code>
+   * @return The meinongTones.
+   */
+  @java.lang.Override
+  public boolean getMeinongTones() {
+    return meinongTones_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: write tone 24 (acute) as 33 (macron) in the romanization — Meinong (美濃) speakers read
+   * the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
+   * only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
+   * </pre>
+   *
+   * <code>bool meinong_tones = 16;</code>
+   * @param value The meinongTones to set.
+   */
+  private void setMeinongTones(boolean value) {
+
+    meinongTones_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: write tone 24 (acute) as 33 (macron) in the romanization — Meinong (美濃) speakers read
+   * the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
+   * only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
+   * </pre>
+   *
+   * <code>bool meinong_tones = 16;</code>
+   */
+  private void clearMeinongTones() {
+
+    meinongTones_ = false;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.AppConfig parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1206,6 +1250,52 @@ public  final class AppConfig extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: write tone 24 (acute) as 33 (macron) in the romanization — Meinong (美濃) speakers read
+     * the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
+     * only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
+     * </pre>
+     *
+     * <code>bool meinong_tones = 16;</code>
+     * @return The meinongTones.
+     */
+    @java.lang.Override
+    public boolean getMeinongTones() {
+      return instance.getMeinongTones();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: write tone 24 (acute) as 33 (macron) in the romanization — Meinong (美濃) speakers read
+     * the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
+     * only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
+     * </pre>
+     *
+     * <code>bool meinong_tones = 16;</code>
+     * @param value The meinongTones to set.
+     * @return This builder for chaining.
+     */
+    public Builder setMeinongTones(boolean value) {
+      copyOnWrite();
+      instance.setMeinongTones(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: write tone 24 (acute) as 33 (macron) in the romanization — Meinong (美濃) speakers read
+     * the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
+     * only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
+     * </pre>
+     *
+     * <code>bool meinong_tones = 16;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearMeinongTones() {
+      copyOnWrite();
+      instance.clearMeinongTones();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.AppConfig)
   }
   @java.lang.Override
@@ -1234,11 +1324,12 @@ public  final class AppConfig extends
             "hanjiConversion_",
             "syllableSeparator_",
             "lect_",
+            "meinongTones_",
           };
           java.lang.String info =
-              "\u0000\u000b\u0000\u0001\u0002\u000f\u000b\u0000\u0000\u0000\u0002\u0208\u0003\u0007" +
-              "\u0004\u0007\u0005\u0007\b\u0007\t\f\u000b\u0007\f\u0007\r\u1009\u0000\u000e\f\u000f" +
-              "\u000b";
+              "\u0000\f\u0000\u0001\u0002\u0010\f\u0000\u0000\u0000\u0002\u0208\u0003\u0007\u0004" +
+              "\u0007\u0005\u0007\b\u0007\t\f\u000b\u0007\f\u0007\r\u1009\u0000\u000e\f\u000f\u000b" +
+              "\u0010\u0007";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {
