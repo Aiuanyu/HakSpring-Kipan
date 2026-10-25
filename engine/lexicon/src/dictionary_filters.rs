@@ -18,7 +18,7 @@
 use crate::dictionary_reader::{
     KAUTIAN_SUBTAG_ACCENT_COUNT, KAUTIAN_SUBTAG_ACCENT_SHIFT, KAUTIAN_SUBTAG_ALT_READING_BIT,
     KAUTIAN_SUBTAG_MAIN_BIT, KAUTIAN_SUBTAG_NAME_BIT, WIRE_KAUTIAN_SUBCOLL_ACTIVE_BIT,
-    WIRE_KAUTIAN_SUBCOLL_MASK, WIRE_KAUTIAN_SUBCOLL_SHIFT, WIRE_LECT_MASK, WIRE_LECT_SHIFT,
+    WIRE_KAUTIAN_SUBCOLL_MASK, WIRE_KAUTIAN_SUBCOLL_SHIFT, WIRE_LECT_MASK, WIRE_LECT_SHIFT, WIRE_MEINONG_BIT,
 };
 use protos::engine::{DictionaryFiltersResponse, DictionarySourceCode, DictionarySourceToggles};
 use DictionarySourceCode as C;
@@ -74,6 +74,10 @@ pub fn dictionary_filter_bitmask(t: &DictionarySourceToggles) -> u32 {
     mask |= encode_kautian_subcoll_wire(t);
     // Hakfa fork: the wanted lect rides wire bits 27-29 (0 = every lect).
     mask |= (t.lect & WIRE_LECT_MASK) << WIRE_LECT_SHIFT;
+    // Hakfa fork: the Meinong switch rides wire bit 30.
+    if t.meinong {
+        mask |= WIRE_MEINONG_BIT;
+    }
     mask
 }
 
@@ -238,6 +242,7 @@ mod tests {
             dev: true,
             kautian_subcollections: None,
             lect: 0,
+            meinong: false,
         }
     }
 

@@ -24,6 +24,9 @@ struct DictionaryTogglesView: View {
     @AppStorage(SettingsStore.Keys.lectEnabled(.hoiliug).name)
     private var isHoiliugEnabled = SettingsStore.Keys.lectEnabled(.hoiliug).defaultValue
 
+    @AppStorage(SettingsStore.Keys.isMeinongEnabled.name)
+    private var isMeinongEnabled = SettingsStore.Keys.isMeinongEnabled.defaultValue
+
     // Hakfa fork (Obs IME data-ui D1): only the sources that exist in this keyboard are listed.
     // The upstream Taigi dictionaries (iTaigi, plant names, Taiwanese-Japanese, Tai-Hua, STTI,
     // the accent and appendix sub-options, Khiin / variant / LKK characters, the supplement
@@ -38,6 +41,12 @@ struct DictionaryTogglesView: View {
                         Toggle(lect.displayName, isOn: enabledBinding(lect))
                             // The last lect on stays on: the keyboard must have one to type in.
                             .disabled(isOn(lect) && enabledCount == 1)
+                        // Meinong is a switch under 南四縣, not a lect of its own (USER 2026-10-25).
+                        if lect == .namxiian {
+                            Toggle("美濃音 (Minung)", isOn: $isMeinongEnabled)
+                                .padding(.leading, Metrics.subcollectionIndent)
+                                .disabled(!isNamxiianEnabled)
+                        }
                     }
                 }
                 .padding(.leading, Metrics.subcollectionIndent)

@@ -36,6 +36,7 @@ fn invariant_lex_filter_bitmask_three_layers() {
         kautian_subcoll_active: false,
         kautian_subcoll_mask: 0,
         lect: 0,
+        meinong: false,
     };
     let variant_record = 1u16 << 12; // VARIANT_BIT
     assert!(!DictionaryReader::passes_filter(variant_record, 0, &f));
@@ -49,6 +50,7 @@ fn invariant_lex_filter_bitmask_three_layers() {
         kautian_subcoll_active: false,
         kautian_subcoll_mask: 0,
         lect: 0,
+        meinong: false,
     };
     let khiin_record = 1u16 << 9; // KHIIN_BIT
     assert!(!DictionaryReader::passes_filter(khiin_record, 0, &f2));
@@ -64,6 +66,7 @@ fn invariant_lex_filter_bitmask_three_layers() {
         kautian_subcoll_active: false,
         kautian_subcoll_mask: 0,
         lect: 0,
+        meinong: false,
     };
     let dev_record = 1u16 << 10;
     assert!(DictionaryReader::passes_filter(dev_record, 0, &f3));

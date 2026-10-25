@@ -210,6 +210,7 @@ pub(crate) fn dictionary_toggles(toggles: &DictionarySourceToggles) -> WireDicti
         }),
         // Hakfa fork: the lect the dictionary answers in (1 四縣, 2 海陸).
         lect: toggles.lect.code(),
+        meinong: toggles.meinong,
     }
 }
 
@@ -410,6 +411,7 @@ mod tests {
                     alt_reading: _,
                 },
             lect: _,
+            meinong: _,
         } = DictionarySourceToggles::DEFAULT;
         vec![
             source!(kautian),
@@ -515,5 +517,7 @@ mod tests {
         assert_eq!(dictionary_toggles(&hailu).lect, 2);
         let south = DictionarySourceToggles { lect: Lect::Namxiian, ..toggles.clone() };
         assert_eq!(dictionary_toggles(&south).lect, 6);
+        assert!(!dictionary_toggles(&toggles).meinong, "Meinong is off by default");
+        assert!(dictionary_toggles(&DictionarySourceToggles { meinong: true, ..toggles.clone() }).meinong);
     }
 }

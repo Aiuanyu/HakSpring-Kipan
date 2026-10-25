@@ -70,6 +70,11 @@ pub const fn lect_enabled(lect: Lect) -> SettingsKey<bool> {
     }
 }
 
+/// Hakfa fork: show the Meinong (美濃) readings of South Sixian. A switch under 南四縣 on the
+/// Dictionary Sources pane, off by default.
+pub const IS_MEINONG_ENABLED: SettingsKey<bool> =
+    SettingsKey::new("meinongEnabled", ENGINE_DEFAULTS.dictionary_sources.meinong);
+
 /// Hakfa fork: the lect the dictionary answers in (四縣 `xiien`, 海陸 `hoiliug`).
 /// Not in `GENERAL_KEYS`: the General pane's reset must not switch lect under the user, like the
 /// display language. Read by the key path (`key_path.rs`) so macOS sends it in the snapshot.
@@ -317,7 +322,7 @@ pub const APPEARANCE_KEYS: [&str; 4] = [
 
 /// The 13 source toggles + 12 subcollection toggles the Dictionary Sources pane's reset
 /// removes (`SettingsStore.swift` `resetDictionarySources` is the macOS twin).
-pub const DICTIONARY_SOURCE_KEYS: [&str; 28] = [
+pub const DICTIONARY_SOURCE_KEYS: [&str; 29] = [
     IS_KAUTIAN_ENABLED.name,
     IS_TAIGITV_ENABLED.name,
     IS_ITAIGI_ENABLED.name,
@@ -347,6 +352,7 @@ pub const DICTIONARY_SOURCE_KEYS: [&str; 28] = [
     lect_enabled(Lect::Xiien).name,
     lect_enabled(Lect::Namxiian).name,
     lect_enabled(Lect::Hoiliug).name,
+    IS_MEINONG_ENABLED.name,
 ];
 
 #[cfg(test)]

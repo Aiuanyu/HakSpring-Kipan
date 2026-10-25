@@ -478,6 +478,9 @@ function loadSouthFill() {
  */
 const SOUTH_INCLUDE_PENDING = true;
 const SOUTH_PENDING_FREQ_FACTOR = 0.5;
+const MEINONG_FREQ_FACTOR = 0.9;
+/** 美濃變體个 subtag 位元（引擎 KAUTIAN_SUBTAG_MEINONG_BIT，借上游腔口位元 3） */
+const MEINONG_SUBTAG = (1 << 0) | (1 << 3);
 function loadSouthPending() {
   const pendingPath = path.join(HAKSPRING_DATA, 'sub-dialects-fill', '待審-南四縣.json');
   const pending = new Map();
@@ -512,6 +515,7 @@ const certFiles = [
 const southFill = LECT_KEY === '南' ? loadSouthFill() : new Map();
 const southPending = LECT_KEY === '南' ? loadSouthPending() : new Map();
 let southFromPending = 0;
+let southMeinong = 0;
 let southFromVariant = 0;
 let southFromFill = 0;
 let southNoReading = 0;
@@ -570,6 +574,13 @@ for (const cf of certFiles) {
     } else {
       pairs = linePairs(parsed).map(p => ({ ...p, scale: 1 }));
     }
+    // 美濃【（）】音：南四縣个子開關（預設關），毋係獨立个腔。標个美濃音做南四縣腔个變體記錄，
+    // subtag 帶美濃位元，引擎淨在美濃開關開咧時正出。詞頻略低，毋搶南四縣自家个音
+    if (LECT_KEY === '南') {
+      const meinong = linePairsSplit(parsed).other.map(p => ({ ...p, scale: MEINONG_FREQ_FACTOR, meinong: true }));
+      southMeinong += meinong.length;
+      pairs = [...pairs, ...meinong];
+    }
 
     for (const pair of pairs) {
       const tokens = pair.phonetic.trim().split(/[\s\-]+/);
@@ -584,7 +595,8 @@ for (const cf of certFiles) {
       if (word === '個人' && fusedNotone === 'gengin') {
         word = '个人';
       }
-      const key = word + '|' + fusedNotone;
+      // 美濃變體另外一格：同詞同無調音（淨調號無共樣）也毋會被主讀音擋忒
+      const key = word + '|' + fusedNotone + (pair.meinong ? '|美濃' : '');
 
       const boostedFreq = boostFrequency(word, Math.round(cf.freq * pair.scale));
       if (!map.has(key) || map.get(key).freq < boostedFreq) {
@@ -597,7 +609,8 @@ for (const cf of certFiles) {
           freq: boostedFreq,
           syllable_count: Math.min(notoneSylls.length, 4),
           syllables: notoneSylls,
-          bitmask: CERT_BITMASK
+          bitmask: CERT_BITMASK,
+          ...(pair.meinong ? { subtag: MEINONG_SUBTAG } : {})
         });
       }
     }
@@ -606,7 +619,7 @@ for (const cf of certFiles) {
 
 console.log(`  ✓ 認證詞彙（展開變體後）: ${map.size} 筆`);
 if (LECT_KEY === '南') {
-  console.log(`    南四縣認證：標【南】${southFromVariant} 條、附表推導 ${southFromFill} 條、待審以北四縣音權充 ${southFromPending} 條、完全無（毋收）${southNoReading} 條`);
+  console.log(`    南四縣認證：標【南】${southFromVariant} 條、附表推導 ${southFromFill} 條、待審以北四縣音權充 ${southFromPending} 條、完全無（毋收）${southNoReading} 條；美濃音（子開關）${southMeinong} 筆`);
 }
 
 // 2. 處理教典（讀取 20250630-<腔>.json，取得正宗 HagPinPlus 顯示欄位）

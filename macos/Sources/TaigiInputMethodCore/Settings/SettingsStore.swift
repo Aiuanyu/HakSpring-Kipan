@@ -77,6 +77,9 @@ final class SettingsStore: @unchecked Sendable {
         static let lect = SettingsKey(name: "lect", defaultValue: Lect.xiien)
         /// Whether a lect can be typed in: the Dictionary Sources pane's lect rows (desktop-core
         /// `keys::lect_enabled`; the same names, which the settings snapshot carries).
+        /// Hakfa fork: show the Meinong (美濃) readings of South Sixian — a switch under 南四縣, off by
+        /// default (desktop-core `keys::IS_MEINONG_ENABLED`, the same name).
+        static let isMeinongEnabled = SettingsKey(name: "meinongEnabled", defaultValue: false)
         static func lectEnabled(_ lect: Lect) -> SettingsKey<Bool> {
             SettingsKey(name: "lectEnabled.\(lect.rawValue)", defaultValue: true)
         }
@@ -642,6 +645,7 @@ final class SettingsStore: @unchecked Sendable {
         for lect in Lect.allCases {
             userDefaults.removeObject(forKey: Keys.lectEnabled(lect).name)
         }
+        userDefaults.removeObject(forKey: Keys.isMeinongEnabled.name)
     }
 
     /// Puts `names` back to "never touched".

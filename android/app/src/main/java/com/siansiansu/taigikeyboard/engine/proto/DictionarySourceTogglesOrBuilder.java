@@ -172,4 +172,15 @@ public interface DictionarySourceTogglesOrBuilder extends
    * @return The lect.
    */
   int getLect();
+
+  /**
+   * <pre>
+   * Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
+   * wire bit 30. Off by default (maintainer's ruling R8-22).
+   * </pre>
+   *
+   * <code>bool meinong = 16;</code>
+   * @return The meinong.
+   */
+  boolean getMeinong();
 }

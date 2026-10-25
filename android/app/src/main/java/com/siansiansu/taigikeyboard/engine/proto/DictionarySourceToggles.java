@@ -645,6 +645,47 @@ public  final class DictionarySourceToggles extends
     lect_ = 0;
   }
 
+  public static final int MEINONG_FIELD_NUMBER = 16;
+  private boolean meinong_;
+  /**
+   * <pre>
+   * Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
+   * wire bit 30. Off by default (maintainer's ruling R8-22).
+   * </pre>
+   *
+   * <code>bool meinong = 16;</code>
+   * @return The meinong.
+   */
+  @java.lang.Override
+  public boolean getMeinong() {
+    return meinong_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
+   * wire bit 30. Off by default (maintainer's ruling R8-22).
+   * </pre>
+   *
+   * <code>bool meinong = 16;</code>
+   * @param value The meinong to set.
+   */
+  private void setMeinong(boolean value) {
+
+    meinong_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
+   * wire bit 30. Off by default (maintainer's ruling R8-22).
+   * </pre>
+   *
+   * <code>bool meinong = 16;</code>
+   */
+  private void clearMeinong() {
+
+    meinong_ = false;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.DictionarySourceToggles parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1403,6 +1444,49 @@ public  final class DictionarySourceToggles extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
+     * wire bit 30. Off by default (maintainer's ruling R8-22).
+     * </pre>
+     *
+     * <code>bool meinong = 16;</code>
+     * @return The meinong.
+     */
+    @java.lang.Override
+    public boolean getMeinong() {
+      return instance.getMeinong();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
+     * wire bit 30. Off by default (maintainer's ruling R8-22).
+     * </pre>
+     *
+     * <code>bool meinong = 16;</code>
+     * @param value The meinong to set.
+     * @return This builder for chaining.
+     */
+    public Builder setMeinong(boolean value) {
+      copyOnWrite();
+      instance.setMeinong(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
+     * wire bit 30. Off by default (maintainer's ruling R8-22).
+     * </pre>
+     *
+     * <code>bool meinong = 16;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearMeinong() {
+      copyOnWrite();
+      instance.clearMeinong();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.DictionarySourceToggles)
   }
   @java.lang.Override
@@ -1435,11 +1519,12 @@ public  final class DictionarySourceToggles extends
             "kautianSubcollections_",
             "dev_",
             "lect_",
+            "meinong_",
           };
           java.lang.String info =
-              "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\u0007\u0002\u0007" +
+              "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\u0007\u0002\u0007" +
               "\u0003\u0007\u0004\u0007\u0005\u0007\u0006\u0007\u0007\u0007\b\u0007\t\u0007\n\u0007" +
-              "\u000b\u0007\f\u0007\r\u1009\u0000\u000e\u0007\u000f\u000b";
+              "\u000b\u0007\f\u0007\r\u1009\u0000\u000e\u0007\u000f\u000b\u0010\u0007";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

@@ -269,6 +269,9 @@ message DictionarySourceToggles {
   // `compute_filters` packs it into wire bits 27-29 of the filter bitmask
   // (`dictionary_reader::WIRE_LECT_SHIFT`). Values above 7 are ignored (masked).
   uint32 lect = 15;
+  // Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
+  // wire bit 30. Off by default (maintainer's ruling R8-22).
+  bool meinong = 16;
 }
 
 // `KautianSubcollectionToggles` is the per-subcollection enable state for the

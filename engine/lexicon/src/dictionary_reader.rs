@@ -74,6 +74,11 @@ pub const WIRE_KAUTIAN_SUBCOLL_MASK: u32 = KAUTIAN_SUBTAG_USED_MASK as u32;
 /// 13-15 (1 = 四縣, 2 = 海陸, …; 0 = no lect, matches every lect). See `docs/hakfa/lect.md`.
 /// It is NOT part of `KAUTIAN_SUBTAG_USED_MASK`, so it can never reach the subcollection AND.
 pub const KAUTIAN_SUBTAG_LECT_SHIFT: u16 = 13;
+/// Hakfa fork: a record that carries a lect (non-zero) and this subtag bit is a Meinong reading
+/// of South Sixian (美濃), shown only while the Meinong switch is on (`Filter.meinong`, wire bit
+/// 30). The bit is the upstream accent slot 3, which no Hakfa record uses otherwise.
+pub const KAUTIAN_SUBTAG_MEINONG_BIT: u16 = 3;
+pub const WIRE_MEINONG_BIT: u32 = 1 << 30;
 pub const KAUTIAN_SUBTAG_LECT_MASK: u16 = 0b111 << KAUTIAN_SUBTAG_LECT_SHIFT;
 /// Hakfa fork: the wanted lect rides wire bits 27-29 of `enabled_sources_bitmask`
 /// (0 = all lects, the pre-lect behaviour; the `u32::MAX` sentinel also means all).
@@ -131,6 +136,8 @@ pub struct Filter {
     /// Hakfa fork: wanted lect code (wire bits 27-29). 0 = every lect passes.
     /// A record with lect 0 passes any lect, so non-Hakfa dictionaries are unaffected.
     pub lect: u8,
+    /// Hakfa fork: Meinong readings pass (wire bit 30). `u32::MAX` also means yes.
+    pub meinong: bool,
 }
 
 impl Filter {
@@ -152,6 +159,7 @@ impl Filter {
                 != 0,
             kautian_subcoll_mask: ((enabled_sources_bitmask >> WIRE_KAUTIAN_SUBCOLL_SHIFT)
                 & WIRE_KAUTIAN_SUBCOLL_MASK) as u16,
+            meinong: (enabled_sources_bitmask & WIRE_MEINONG_BIT) != 0,
             lect: if enabled_sources_bitmask == u32::MAX {
                 0
             } else {
@@ -331,6 +339,13 @@ impl DictionaryReader {
         if !filter.khiin && (record_bitmask & KHIIN_BIT) != 0 {
             return false;
         }
+        // Hakfa fork: Meinong readings (a Hakfa record with the Meinong subtag bit) only while on.
+        if !filter.meinong
+            && (record_subtag & KAUTIAN_SUBTAG_LECT_MASK) != 0
+            && (record_subtag & (1 << KAUTIAN_SUBTAG_MEINONG_BIT)) != 0
+        {
+            return false;
+        }
         // Hakfa fork: lect gate. A record with lect 0 (non-Hakfa data) matches every lect.
         if filter.lect != 0 {
             let record_lect = (record_subtag >> KAUTIAN_SUBTAG_LECT_SHIFT) as u8;
@@ -460,6 +475,24 @@ mod tests {
         let hailu = Filter::from_enabled_bitmask(wire_lect(2));
         assert!(!DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_SIXIAN, &hailu));
         assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_HAILU, &hailu));
+    }
+
+    #[test]
+    fn meinong_readings_pass_only_while_the_switch_is_on() {
+        let meinong = SUB_MAIN | (1 << KAUTIAN_SUBTAG_MEINONG_BIT) | LECT_SIXIAN;
+        let off = Filter::from_enabled_bitmask(wire_lect(1));
+        assert!(!off.meinong);
+        assert!(!DictionaryReader::passes_filter(KAUTIAN_BIT, meinong, &off));
+        // an ordinary South Sixian row of the same lect is unaffected
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, SUB_MAIN | LECT_SIXIAN, &off));
+        let on = Filter::from_enabled_bitmask(wire_lect(1) | WIRE_MEINONG_BIT);
+        assert!(on.meinong);
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, meinong, &on));
+        // a record with no lect (non-Hakfa data) may use subtag bit 3 as upstream does
+        let upstream_accent = SUB_MAIN | (1 << KAUTIAN_SUBTAG_MEINONG_BIT);
+        assert!(DictionaryReader::passes_filter(KAUTIAN_BIT, upstream_accent, &off));
+        // the all-enabled sentinel shows them
+        assert!(Filter::from_enabled_bitmask(u32::MAX).meinong);
     }
 
     #[test]

@@ -428,6 +428,7 @@ impl SettingsDocument {
                 alt_reading: self.bool(&keys::IS_KAUTIAN_ALT_READING_ENABLED),
             },
             lect: self.effective_lect(),
+            meinong: self.bool(&keys::IS_MEINONG_ENABLED),
         }
     }
 }
@@ -1051,6 +1052,16 @@ mod tests {
         assert_eq!(doc.choice(&keys::LECT), Lect::Hoiliug, "the stored choice is not rewritten");
         doc.set_bool(&keys::lect_enabled(Lect::Hoiliug), true);
         assert_eq!(doc.effective_lect(), Lect::Hoiliug);
+    }
+
+    #[test]
+    fn meinong_is_off_until_switched_on_and_reset_puts_it_back() {
+        let mut doc = SettingsDocument::default();
+        assert!(!doc.dictionary_sources().meinong);
+        doc.set_bool(&keys::IS_MEINONG_ENABLED, true);
+        assert!(doc.dictionary_sources().meinong);
+        doc.reset_dictionary_sources();
+        assert!(!doc.dictionary_sources().meinong);
     }
 
     #[test]

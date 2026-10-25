@@ -401,6 +401,9 @@ pub struct DictionarySourceToggles {
     pub kautian_subcollections: KautianSubcollections,
     /// Hakfa fork: the lect the dictionary answers in (`DictionarySourceToggles.lect` on the wire).
     pub lect: Lect,
+    /// Hakfa fork: show the Meinong (美濃) readings of South Sixian (`meinongEnabled`). Off by default
+    /// (maintainer's ruling R8-22): Meinong is a switch under 南四縣, not a lect of its own.
+    pub meinong: bool,
 }
 
 impl DictionarySourceToggles {
@@ -423,6 +426,7 @@ impl DictionarySourceToggles {
         dev: true,
         kautian_subcollections: KautianSubcollections::DEFAULT,
         lect: Lect::DEFAULT,
+        meinong: false,
     };
 }
 
