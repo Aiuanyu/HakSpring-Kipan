@@ -23,14 +23,17 @@ struct CustomDictionaryRow: Equatable, Sendable, Identifiable {
     let id: String
     var roman: String
     var hanji: String
+    var lect: UInt32
 
     init(
         id: String = UUID().uuidString,
         roman: String,
         hanji: String,
+        lect: UInt32 = 1
     ) {
         self.id = id
         self.roman = roman
         self.hanji = hanji
+        self.lect = lect
     }
 }

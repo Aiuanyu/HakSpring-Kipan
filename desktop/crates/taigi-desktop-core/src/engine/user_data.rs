@@ -94,12 +94,22 @@ pub fn list_custom_entries(
     limit: usize,
     offset: usize,
 ) -> Result<CustomEntries, UserDataError> {
+    list_custom_entries_for_lect(filter, 0, limit, offset)
+}
+
+pub fn list_custom_entries_for_lect(
+    filter: &str,
+    lect: u32,
+    limit: usize,
+    offset: usize,
+) -> Result<CustomEntries, UserDataError> {
     let op = "customDictionaryList";
     match page_request(
         user_data_request::Method::ListCustomEntries(ListCustomEntries {
             filter: filter.to_owned(),
             limit: clamped(limit),
             offset: clamped(offset),
+            lect,
         }),
         op,
     )? {
@@ -167,12 +177,22 @@ pub fn save_custom_entry(
     roman: &str,
     hanji: &str,
 ) -> Result<CustomDictionaryEntry, UserDataError> {
+    save_custom_entry_with_lect(id, roman, hanji, 1)
+}
+
+pub fn save_custom_entry_with_lect(
+    id: &str,
+    roman: &str,
+    hanji: &str,
+    lect: u32,
+) -> Result<CustomDictionaryEntry, UserDataError> {
     let op = "customDictionarySave";
     match page_request(
         user_data_request::Method::SaveCustomEntry(SaveCustomEntry {
             id: (!id.is_empty()).then(|| id.to_owned()),
             roman: roman.to_owned(),
             hanji: hanji.to_owned(),
+            lect,
         }),
         op,
     )? {

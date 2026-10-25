@@ -190,15 +190,17 @@ message CustomDictionaryEntry {
   string id = 1;
   string roman = 2;
   string hanji = 3;
+  uint32 lect = 6;
 }
 
 // A page of the dictionary, newest edit first. `filter` matches romanization
 // or Hanji as a substring (case-insensitive ASCII); empty lists everything.
-// `limit` 0 lists every match.
+// `limit` 0 lists every match. `lect` 0 lists all lects.
 message ListCustomEntries {
   string filter = 1;
   uint32 limit = 2;
   uint32 offset = 3;
+  uint32 lect = 4;
 }
 
 message CustomEntries {
@@ -216,6 +218,7 @@ message SaveCustomEntry {
   optional string id = 1;
   string roman = 2;
   string hanji = 3;
+  uint32 lect = 4;
 }
 
 message CustomEntrySaved {

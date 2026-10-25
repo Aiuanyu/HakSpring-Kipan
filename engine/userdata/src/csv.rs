@@ -76,26 +76,69 @@ impl CustomDictionaryCSV {
     pub const MAX_FILE_SIZE_BYTES: u64 = 5 * 1024 * 1024;
 
     pub fn encode(rows: &[CustomDictionaryRow]) -> String {
-        rows.iter()
-            .map(|row| {
-                format!(
-                    "{},{}\n",
-                    UserDataCSV::escape(&row.roman),
-                    UserDataCSV::escape(&row.hanji)
-                )
-            })
-            .collect()
+        let mut out = String::from("hanzi,xiien,namxiian,hoiliug\n");
+        let mut seen = std::collections::HashSet::new();
+        for row in rows {
+            if !row.hanji.is_empty() {
+                if !seen.insert(row.hanji.clone()) {
+                    continue;
+                }
+                let hanji = &row.hanji;
+                let mut xiien = "";
+                let mut namxiian = "";
+                let mut hoiliug = "";
+                for r in rows {
+                    if &r.hanji == hanji {
+                        match r.lect {
+                            1 => xiien = &r.roman,
+                            6 => namxiian = &r.roman,
+                            2 => hoiliug = &r.roman,
+                            0 => {
+                                if xiien.is_empty() { xiien = &r.roman; }
+                                if namxiian.is_empty() { namxiian = &r.roman; }
+                                if hoiliug.is_empty() { hoiliug = &r.roman; }
+                            }
+                            _ => {
+                                if xiien.is_empty() { xiien = &r.roman; }
+                            }
+                        }
+                    }
+                }
+                out.push_str(&format!(
+                    "{},{},{},{}\n",
+                    UserDataCSV::escape(hanji),
+                    UserDataCSV::escape(xiien),
+                    UserDataCSV::escape(namxiian),
+                    UserDataCSV::escape(hoiliug),
+                ));
+            } else {
+                let (x, n, h) = match row.lect {
+                    6 => ("", row.roman.as_str(), ""),
+                    2 => ("", "", row.roman.as_str()),
+                    _ => (row.roman.as_str(), "", ""),
+                };
+                out.push_str(&format!(
+                    ",{},{},{}\n",
+                    UserDataCSV::escape(x),
+                    UserDataCSV::escape(n),
+                    UserDataCSV::escape(h),
+                ));
+            }
+        }
+        out
     }
 
-    /// Parses `csv` into rows. A row needs a romanization; the Hanji column
-    /// may be empty. Unusable rows are dropped, but a file that is entirely
-    /// unusable is reported.
+    /// Parses `csv` into rows. Supports multi-lect header (`hanzi,xiien,namxiian,hoiliug`)
+    /// as well as legacy two-column (`roman,hanzi`, defaults to 四縣 lect 1).
     pub fn decode(
         csv: &str,
         entry_limit: usize,
     ) -> Result<Vec<CustomDictionaryRow>, CustomDictionaryCSVError> {
         let mut content_lines = 0;
         let mut rows = Vec::new();
+        let mut is_header = true;
+        let mut col_map: Option<Vec<Option<u32>>> = None;
+
         for line in csv.lines() {
             let trimmed = line.trim();
             if trimmed.is_empty() {
@@ -106,10 +149,53 @@ impl CustomDictionaryCSV {
                 .into_iter()
                 .map(|column| column.trim().to_owned())
                 .collect();
-            if columns.len() < 2 || columns[0].is_empty() {
-                continue;
+
+            if is_header {
+                is_header = false;
+                let first_lower = columns.first().map(|s| s.to_ascii_lowercase()).unwrap_or_default();
+                if first_lower == "hanzi" || first_lower == "hanji" || first_lower == "諸夏字" {
+                    let mut map = Vec::new();
+                    map.push(None); // column 0 is hanzi
+                    for col in &columns[1..] {
+                        let c = col.to_ascii_lowercase();
+                        if c == "xiien" || c == "四縣" {
+                            map.push(Some(1));
+                        } else if c == "namxiian" || c == "南四縣" {
+                            map.push(Some(6));
+                        } else if c == "hoiliug" || c == "海陸" {
+                            map.push(Some(2));
+                        } else if c == "generic" || c == "通用" {
+                            map.push(Some(0));
+                        } else {
+                            map.push(Some(1));
+                        }
+                    }
+                    col_map = Some(map);
+                    continue;
+                } else if first_lower == "roman" {
+                    continue;
+                }
             }
-            rows.push(CustomDictionaryRow::new(&columns[0], &columns[1]));
+
+            if let Some(ref map) = col_map {
+                let hanzi = columns.first().cloned().unwrap_or_default();
+                for (idx, lect_opt) in map.iter().enumerate().skip(1) {
+                    if idx < columns.len() && !columns[idx].is_empty() {
+                        if let Some(lect) = *lect_opt {
+                            rows.push(CustomDictionaryRow::new_with_lect(&columns[idx], &hanzi, lect));
+                        }
+                    }
+                }
+            } else {
+                if columns.len() >= 3 {
+                    let lect = columns[2].parse::<u32>().unwrap_or(1);
+                    if !columns[0].is_empty() {
+                        rows.push(CustomDictionaryRow::new_with_lect(&columns[0], &columns[1], lect));
+                    }
+                } else if columns.len() >= 2 && !columns[0].is_empty() {
+                    rows.push(CustomDictionaryRow::new_with_lect(&columns[0], &columns[1], 1));
+                }
+            }
         }
         if content_lines > 0 && rows.is_empty() {
             return Err(CustomDictionaryCSVError::NoUsableRows);

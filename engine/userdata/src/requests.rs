@@ -100,7 +100,7 @@ impl UserDataHandle {
             Method::AddLearningRecordToCustomDictionary(add) => {
                 let (kind, record) = named_learning_record(add.record.as_ref())?;
                 Answer::LearningRecordAddedToCustomDictionary(Self::add_to_custom_dictionary(
-                    stores, kind, record,
+                    stores, kind, record, add.lect,
                 )?)
             }
             // Hakfa fork: answered by `engine/dispatch` (it sees the dictionary too).
@@ -198,9 +198,10 @@ impl UserDataHandle {
             ));
         }
         let hanji = save.hanji.trim();
+        let lect = if save.lect == 0 { 1 } else { save.lect };
         let row = match save.id.as_deref() {
-            Some(id) if !id.is_empty() => CustomDictionaryRow::with_id(id, roman, hanji),
-            _ => CustomDictionaryRow::new(roman, hanji),
+            Some(id) if !id.is_empty() => CustomDictionaryRow::with_id_and_lect(id, roman, hanji, lect),
+            _ => CustomDictionaryRow::new_with_lect(roman, hanji, lect),
         };
         if let Err(error) = dictionary.upsert(&row) {
             return match refusal(&error) {
@@ -227,6 +228,7 @@ impl UserDataHandle {
         stores: &UserDataStores,
         kind: LearningRecordKind,
         record: &LearningRecord,
+        lect: u32,
     ) -> Result<LearningRecordAddedToCustomDictionary, RequestError> {
         // Decided again from the row's own text: the request's
         // `can_add_to_custom_dictionary` is the page's copy, not a permission.
@@ -235,7 +237,8 @@ impl UserDataHandle {
                 "only a learning record with Hanji is added",
             ));
         }
-        let row = CustomDictionaryRow::new(record.tl.trim(), record.text.trim());
+        let lect = if lect == 0 { 1 } else { lect };
+        let row = CustomDictionaryRow::new_with_lect(record.tl.trim(), record.text.trim(), lect);
         if let Err(error) = stores.custom_dictionary.add_unless_stored(&row) {
             return match refusal(&error) {
                 Some(refusal) => Ok(LearningRecordAddedToCustomDictionary {
@@ -391,6 +394,7 @@ fn custom_dictionary_entry(row: &CustomDictionaryRow) -> CustomDictionaryEntry {
         id: row.id.clone(),
         roman: row.roman.clone(),
         hanji: row.hanji.clone(),
+        lect: row.lect,
     }
 }
 
@@ -578,6 +582,7 @@ mod tests {
                 filter: filter.into(),
                 limit: 50,
                 offset: 0,
+                lect: 0,
             }),
         ) {
             user_data_response::Result::CustomEntries(entries) => entries,
@@ -597,6 +602,7 @@ mod tests {
                 id: id.map(str::to_owned),
                 roman: roman.into(),
                 hanji: hanji.into(),
+                lect: 1,
             }),
         ) {
             user_data_response::Result::CustomEntrySaved(saved) => saved,
@@ -964,6 +970,7 @@ mod tests {
                 filter: String::new(),
                 limit: 2,
                 offset: 10,
+                lect: 0,
             }),
         ) {
             user_data_response::Result::CustomEntries(entries) => entries,
@@ -979,6 +986,7 @@ mod tests {
                 filter: String::new(),
                 limit: 0,
                 offset: 0,
+                lect: 0,
             }),
         ) {
             user_data_response::Result::CustomEntries(entries) => entries,

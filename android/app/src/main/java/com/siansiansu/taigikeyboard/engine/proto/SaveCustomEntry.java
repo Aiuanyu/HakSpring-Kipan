@@ -173,6 +173,32 @@ public  final class SaveCustomEntry extends
 
   }
 
+  public static final int LECT_FIELD_NUMBER = 4;
+  private int lect_;
+  /**
+   * <code>uint32 lect = 4;</code>
+   * @return The lect.
+   */
+  @java.lang.Override
+  public int getLect() {
+    return lect_;
+  }
+  /**
+   * <code>uint32 lect = 4;</code>
+   * @param value The lect to set.
+   */
+  private void setLect(int value) {
+
+    lect_ = value;
+  }
+  /**
+   * <code>uint32 lect = 4;</code>
+   */
+  private void clearLect() {
+
+    lect_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.SaveCustomEntry parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -429,6 +455,34 @@ public  final class SaveCustomEntry extends
       return this;
     }
 
+    /**
+     * <code>uint32 lect = 4;</code>
+     * @return The lect.
+     */
+    @java.lang.Override
+    public int getLect() {
+      return instance.getLect();
+    }
+    /**
+     * <code>uint32 lect = 4;</code>
+     * @param value The lect to set.
+     * @return This builder for chaining.
+     */
+    public Builder setLect(int value) {
+      copyOnWrite();
+      instance.setLect(value);
+      return this;
+    }
+    /**
+     * <code>uint32 lect = 4;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearLect() {
+      copyOnWrite();
+      instance.clearLect();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.SaveCustomEntry)
   }
   @java.lang.Override
@@ -449,10 +503,11 @@ public  final class SaveCustomEntry extends
             "id_",
             "roman_",
             "hanji_",
+            "lect_",
           };
           java.lang.String info =
-              "\u0000\u0003\u0000\u0001\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
-              "\u0208\u0003\u0208";
+              "\u0000\u0004\u0000\u0001\u0001\u0004\u0004\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
+              "\u0208\u0003\u0208\u0004\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

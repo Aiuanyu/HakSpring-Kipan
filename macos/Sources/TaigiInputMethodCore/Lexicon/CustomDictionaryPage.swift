@@ -3,6 +3,37 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Multi-lect custom word entry aggregated across lects by Hanji.
+struct CustomWordRow: Identifiable, Equatable {
+    let id: String
+    var hanji: String
+    var xiienRow: CustomDictionaryRow?
+    var namxiianRow: CustomDictionaryRow?
+    var hoiliugRow: CustomDictionaryRow?
+
+    var xiienRoman: String { xiienRow?.roman ?? "" }
+    var namxiianRoman: String { namxiianRow?.roman ?? "" }
+    var hoiliugRoman: String { hoiliugRow?.roman ?? "" }
+
+    var allRows: [CustomDictionaryRow] {
+        [xiienRow, namxiianRow, hoiliugRow].compactMap { $0 }
+    }
+
+    mutating func addRow(_ row: CustomDictionaryRow) {
+        switch row.lect {
+        case 1: xiienRow = row
+        case 6: namxiianRow = row
+        case 2: hoiliugRow = row
+        case 0:
+            if xiienRow == nil { xiienRow = row }
+            if namxiianRow == nil { namxiianRow = row }
+            if hoiliugRow == nil { hoiliugRow = row }
+        default:
+            if xiienRow == nil { xiienRow = row }
+        }
+    }
+}
+
 /// Reads and writes the custom dictionary on behalf of the page, one page of
 /// rows at a time (`UserDataPagedList`).
 @MainActor
@@ -23,12 +54,27 @@ final class CustomDictionaryPageModel {
 
     var message: UserDataPageMessage?
 
-    /// The table's selection, held by the list so a load drops it once its
-    /// row is off screen (`UserDataPagedList.selectedID`).
-    var selectedRowID: CustomDictionaryRow.ID? {
-        get { list.selectedID }
-        set { list.selectedID = newValue }
+    /// Aggregates flat rows into multi-lect word rows by Hanji.
+    var wordRows: [CustomWordRow] {
+        var map: [String: CustomWordRow] = [:]
+        var order: [String] = []
+
+        for row in list.rows {
+            let key = row.hanji.isEmpty ? row.id : row.hanji
+            if var existing = map[key] {
+                existing.addRow(row)
+                map[key] = existing
+            } else {
+                var entry = CustomWordRow(id: key, hanji: row.hanji)
+                entry.addRow(row)
+                map[key] = entry
+                order.append(key)
+            }
+        }
+        return order.compactMap { map[$0] }
     }
+
+    var selectedWordID: CustomWordRow.ID?
 
     func pageBackward() async {
         guard list.step(by: -1) else { return }
@@ -57,9 +103,6 @@ final class CustomDictionaryPageModel {
             list.land(listing, from: load)
         } catch {
             guard list.isCurrent(load) else { return }
-            // Not an empty list: "the dictionary is empty" and "the dictionary
-            // could not be read" look identical on screen, and only one of them
-            // is worth the user doing something about.
             message = .failure(.desktopCustomDictReadFailed, error)
         }
     }
@@ -70,6 +113,11 @@ final class CustomDictionaryPageModel {
         await load()
     }
 
+    var selectedRowID: CustomDictionaryRow.ID? {
+        get { list.selectedID }
+        set { list.selectedID = newValue }
+    }
+
     func save(_ row: CustomDictionaryRow) async {
         await perform(.desktopProgressWorking) { try await UserDataRequests.run(on: self.client) { try $0.save(row) } }
     }
@@ -77,6 +125,57 @@ final class CustomDictionaryPageModel {
     func delete(_ row: CustomDictionaryRow) async {
         let id = row.id
         await perform(.desktopProgressWorking) { try await UserDataRequests.run(on: self.client) { try $0.delete(id: id) } }
+    }
+
+    func deleteWord(_ word: CustomWordRow) async {
+        let rows = word.allRows
+        await perform(.desktopProgressWorking) {
+            for row in rows {
+                try await UserDataRequests.run(on: self.client) { try $0.delete(id: row.id) }
+            }
+        }
+    }
+
+    func saveWord(
+        hanji: String,
+        xiien: String,
+        namxiian: String,
+        hoiliug: String,
+        original: CustomWordRow?
+    ) async {
+        let trimmedHanji = hanji.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedXiien = xiien.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNamxiian = namxiian.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedHoiliug = hoiliug.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        await perform(.desktopProgressWorking) {
+            // Xiien (lect 1)
+            if !trimmedXiien.isEmpty {
+                let id = original?.xiienRow?.id ?? UUID().uuidString
+                let row = CustomDictionaryRow(id: id, roman: trimmedXiien, hanji: trimmedHanji, lect: 1)
+                try await UserDataRequests.run(on: self.client) { try $0.save(row) }
+            } else if let old = original?.xiienRow {
+                try await UserDataRequests.run(on: self.client) { try $0.delete(id: old.id) }
+            }
+
+            // Namxiian (lect 6)
+            if !trimmedNamxiian.isEmpty {
+                let id = original?.namxiianRow?.id ?? UUID().uuidString
+                let row = CustomDictionaryRow(id: id, roman: trimmedNamxiian, hanji: trimmedHanji, lect: 6)
+                try await UserDataRequests.run(on: self.client) { try $0.save(row) }
+            } else if let old = original?.namxiianRow {
+                try await UserDataRequests.run(on: self.client) { try $0.delete(id: old.id) }
+            }
+
+            // Hoiliug (lect 2)
+            if !trimmedHoiliug.isEmpty {
+                let id = original?.hoiliugRow?.id ?? UUID().uuidString
+                let row = CustomDictionaryRow(id: id, roman: trimmedHoiliug, hanji: trimmedHanji, lect: 2)
+                try await UserDataRequests.run(on: self.client) { try $0.save(row) }
+            } else if let old = original?.hoiliugRow {
+                try await UserDataRequests.run(on: self.client) { try $0.delete(id: old.id) }
+            }
+        }
     }
 
     /// Runs on the click, no confirmation (USER 2026-10-16).
@@ -104,10 +203,6 @@ final class CustomDictionaryPageModel {
     }
 
     func importCSV(in window: NSWindow) async {
-        // The slot is taken before the file panel, not after it: the panel is
-        // modal to the window, but the moment it closes the parse and the
-        // batched writes are still running, and that is exactly the window a
-        // second import could start in.
         guard beginWork(.desktopProgressWorking) else { return }
         defer { activity = .idle }
         guard let url = await UserDataFilePanels.chooseFileToOpen(
@@ -117,15 +212,8 @@ final class CustomDictionaryPageModel {
         await importCSV(at: url)
     }
 
-    /// Imports `url` and reloads, whatever the import answered: the engine
-    /// commits a large file in chunks (`IMPORT_CHUNK_SIZE`), so one that
-    /// fails partway has still added rows. The caller holds the work slot;
-    /// internal so a test can drive it without a file panel.
     func importCSV(at url: URL) async {
         do {
-            // Off the main actor: reading and importing up to 5 MB of CSV
-            // there would freeze the very window that is showing the progress
-            // spinner for it.
             let result = try await UserDataRequests.run(on: client) { try $0.importCSV(at: url) }
             message = .imported(result.imported, skipped: result.skipped)
         } catch {
@@ -134,28 +222,10 @@ final class CustomDictionaryPageModel {
         await load()
     }
 
-    /// Takes the page's one work slot for `label`, or answers false because
-    /// something else holds it.
-    ///
-    /// Mutual exclusion lives here rather than in the view's `.disabled`: a
-    /// greyed-out control is an appearance, and this page deliberately delays
-    /// showing that appearance so a millisecond-long write does not flash it
-    /// (`UserDataPageChrome`). A guard that only existed in the view would be
-    /// absent for exactly as long as the delay lasts — and the operation that
-    /// matters most, a CSV import, spends that window parsing after its file
-    /// panel has already closed.
-    ///
-    /// `@MainActor`, so the check and the claim cannot be interleaved.
-    /// Internal so a test can drive the refusal without racing two real
-    /// database writes to reproduce it.
     func beginWork(_ label: StringKey) -> Bool {
         activity.begin(label)
     }
 
-    /// Runs one write and reloads, whatever it answered, as desktop-core's
-    /// `write_outcome` does: the list on screen is what the store holds even
-    /// after a failure. A reload that fails too replaces the write's alert
-    /// with its own, as on Windows.
     private func perform(_ label: StringKey, _ body: () async throws -> Void) async {
         guard beginWork(label) else { return }
         defer { activity = .idle }
@@ -172,9 +242,16 @@ struct CustomDictionaryPage: View {
     @Environment(DisplayLanguageStore.self) private var language
 
     @State private var model: CustomDictionaryPageModel
-    @State private var editing: CustomDictionaryRow?
+    @State private var editing: CustomWordRow?
     @AppStorage(SettingsStore.Keys.isCustomDictEnabled.name)
     private var isCustomDictEnabled = SettingsStore.Keys.isCustomDictEnabled.defaultValue
+
+    @AppStorage(SettingsStore.Keys.lectEnabled(.xiien).name)
+    private var isXiienEnabled = SettingsStore.Keys.lectEnabled(.xiien).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.namxiian).name)
+    private var isNamxiianEnabled = SettingsStore.Keys.lectEnabled(.namxiian).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.hoiliug).name)
+    private var isHoiliugEnabled = SettingsStore.Keys.lectEnabled(.hoiliug).defaultValue
 
     init(client: any UserDataClient) {
         _model = State(initialValue: CustomDictionaryPageModel(client: client))
@@ -210,77 +287,85 @@ struct CustomDictionaryPage: View {
         }
         .formStyle(.grouped)
         .reloadWhenFilterSettles(model.filter) { await model.loadFirstPage() }
-        .sheet(item: $editing) { row in
-            CustomDictionaryEntrySheet(row: row) { edited in
-                Task { await model.save(edited) }
+        .sheet(item: $editing) { word in
+            CustomDictionaryEntrySheet(
+                word: word,
+                isXiienEnabled: isXiienEnabled,
+                isNamxiianEnabled: isNamxiianEnabled,
+                isHoiliugEnabled: isHoiliugEnabled
+            ) { hanji, xiien, namxiian, hoiliug in
+                Task {
+                    await model.saveWord(
+                        hanji: hanji,
+                        xiien: xiien,
+                        namxiian: namxiian,
+                        hoiliug: hoiliug,
+                        original: word.id.isEmpty ? nil : word
+                    )
+                }
             }
         }
         .userDataPageChrome(activity: model.activity, message: $model.message)
     }
 
-    /// The entries, as the table macOS states a list of records with: click
-    /// selects, double-click edits, and the selection is what the `−` button
-    /// acts on. A `Table` rather than form rows drawn to look like one — the
-    /// highlight, its dimming when the window resigns key, arrow-key
-    /// traversal and the "row N of M" an assistive reader announces all come
-    /// with the control and cannot be restated from outside it.
-    ///
-    /// A definite height, not a floor: a `Table` has no intrinsic content
-    /// height, and one left free to grow inside the form's own scroll view has
-    /// no bound at all.
     private var entryTable: some View {
-        Table(model.list.rows, selection: $model.selectedRowID) {
-            TableColumn(language.string(.dictionaryRomanLabel)) { row in
-                Text(row.roman)
-                    .foregroundStyle(.secondary)
+        Table(model.wordRows, selection: $model.selectedWordID) {
+            TableColumn("諸夏字") { word in
+                Text(word.hanji.isEmpty ? "—" : word.hanji)
+                    .fontWeight(.medium)
             }
-            TableColumn(language.string(.dictionaryHanziLabel)) { row in
-                Text(row.hanji)
+            .width(min: 80, ideal: 100)
+
+            TableColumn("打四縣") { word in
+                if word.xiienRoman.isEmpty {
+                    Text("＋")
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(word.xiienRoman)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            TableColumn("打南四縣") { word in
+                if word.namxiianRoman.isEmpty {
+                    Text("＋")
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(word.namxiianRoman)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            TableColumn("打海陸") { word in
+                if word.hoiliugRoman.isEmpty {
+                    Text("＋")
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(word.hoiliugRoman)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .tableStyle(.inset)
-        // Every row the same colour (USER 2026-08-24). The striping is what
-        // AppKit gives a data table by default; this list is short and reads
-        // as settings content, not as a spreadsheet. Selection is unaffected —
-        // this governs only the unselected rows' backgrounds.
         .alternatingRowBackgrounds(.disabled)
         .frame(height: UserDataListMetrics.pagedTableHeight)
-        // The empty case as an overlay rather than in place of the table: the
-        // filter box above stays reachable, and the columns stay put while a
-        // filter is narrowed to nothing and widened again.
         .overlay {
-            if model.list.rows.isEmpty {
+            if model.wordRows.isEmpty {
                 emptyState
             }
         }
-        // `primaryAction` IS the double click. The menu keeps a one-click
-        // route to both verbs for anyone who never discovers it.
-        .contextMenu(forSelectionType: CustomDictionaryRow.ID.self) { ids in
-            if let row = row(for: ids.first) {
-                Button(language.string(.dictionaryEditEntry)) { editing = row }
+        .contextMenu(forSelectionType: CustomWordRow.ID.self) { ids in
+            if let word = word(for: ids.first) {
+                Button(language.string(.dictionaryEditEntry)) { editing = word }
                 Button(language.string(.commonDelete), role: .destructive) {
-                    Task { await model.delete(row) }
+                    Task { await model.deleteWord(word) }
                 }
             }
         } primaryAction: { ids in
-            editing = row(for: ids.first)
+            editing = word(for: ids.first)
         }
     }
 
-    /// What an empty table shows.
-    ///
-    /// A symbol rather than a sentence for "nothing added yet" (USER
-    /// 2026-08-24): an empty dictionary needs no explaining, and the wording
-    /// was a string in five languages saying what the blank table already
-    /// says. A filtered search that matches nothing DOES get words — that one
-    /// is a result, not a state, and the user needs to know their filter is
-    /// what emptied the list.
-    ///
-    /// The symbol carries the shared empty-state sentence as its accessibility
-    /// label rather than showing it: a reader is still told what the blank
-    /// table means, and no string had to be authored to keep that true — the
-    /// key was already translated for iOS and Android, and its wording ("add a
-    /// custom word with +") holds here now that this pane has a + of its own.
     @ViewBuilder
     private var emptyState: some View {
         if model.filter.isEmpty {
@@ -294,14 +379,13 @@ struct CustomDictionaryPage: View {
         }
     }
 
-    /// The `+` / `−` pair under the table, with the pager at its trailing end.
     private var entryTableControls: some View {
         UserDataListControls(
-            add: (.dictionaryAddEntry, { editing = CustomDictionaryRow(roman: "", hanji: "") }),
-            isRemoveEnabled: model.list.selectedRow != nil,
+            add: (.dictionaryAddEntry, { editing = CustomWordRow(id: "", hanji: "") }),
+            isRemoveEnabled: selectedWord != nil,
             onRemove: {
-                guard let selectedRow = model.list.selectedRow else { return }
-                Task { await model.delete(selectedRow) }
+                guard let word = selectedWord else { return }
+                Task { await model.deleteWord(word) }
             },
         ) {
             UserDataListPager(
@@ -313,58 +397,141 @@ struct CustomDictionaryPage: View {
         }
     }
 
-    private func row(for id: CustomDictionaryRow.ID?) -> CustomDictionaryRow? {
-        model.list.rows.first { $0.id == id }
+    private var selectedWord: CustomWordRow? {
+        word(for: model.selectedWordID)
+    }
+
+    private func word(for id: CustomWordRow.ID?) -> CustomWordRow? {
+        model.wordRows.first { $0.id == id }
     }
 }
 
-/// Add or edit one entry.
-///
-/// A sheet rather than another pushed page: it is a two-field form the user
-/// finishes and dismisses, and pushing it would put a back button where a
-/// Cancel belongs.
+/// Add or edit one custom dictionary entry with multi-lect columns.
 struct CustomDictionaryEntrySheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(DisplayLanguageStore.self) private var language
 
-    @State private var roman: String
     @State private var hanji: String
-    private let original: CustomDictionaryRow
-    private let onSave: (CustomDictionaryRow) -> Void
+    @State private var xiien: String
+    @State private var namxiian: String
+    @State private var hoiliug: String
 
-    init(row: CustomDictionaryRow, onSave: @escaping (CustomDictionaryRow) -> Void) {
-        original = row
+    private let original: CustomWordRow
+    private let isXiienEnabled: Bool
+    private let isNamxiianEnabled: Bool
+    private let isHoiliugEnabled: Bool
+    private let onSave: (String, String, String, String) -> Void
+
+    init(
+        word: CustomWordRow,
+        isXiienEnabled: Bool,
+        isNamxiianEnabled: Bool,
+        isHoiliugEnabled: Bool,
+        onSave: @escaping (String, String, String, String) -> Void
+    ) {
+        original = word
+        self.isXiienEnabled = isXiienEnabled
+        self.isNamxiianEnabled = isNamxiianEnabled
+        self.isHoiliugEnabled = isHoiliugEnabled
         self.onSave = onSave
-        _roman = State(initialValue: row.roman)
-        _hanji = State(initialValue: row.hanji)
+        _hanji = State(initialValue: word.hanji)
+        _xiien = State(initialValue: word.xiienRoman)
+        _namxiian = State(initialValue: word.namxiianRoman)
+        _hoiliug = State(initialValue: word.hoiliugRoman)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(language.string(original.roman.isEmpty ? .dictionaryAddEntry : .dictionaryEditEntry))
+            Text(original.id.isEmpty ? language.string(.dictionaryAddEntry) : language.string(.dictionaryEditEntry))
                 .font(.headline)
             Form {
-                TextField(language.string(.dictionaryRomanLabel), text: $roman)
-                TextField(language.string(.dictionaryHanziLabel), text: $hanji)
+                TextField("諸夏字", text: $hanji)
+                if isXiienEnabled {
+                    TextField("打四縣", text: $xiien)
+                }
+                if isNamxiianEnabled {
+                    TextField("打南四縣", text: $namxiian)
+                }
+                if isHoiliugEnabled {
+                    TextField("打海陸", text: $hoiliug)
+                }
             }
             .formStyle(.grouped)
+
             HStack {
+                Button("各腔自動補音") {
+                    autoFillReadings()
+                }
+                .disabled(hanji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
                 Spacer()
                 Button(language.string(.commonCancel), role: .cancel) { dismiss() }
                 Button(language.string(.commonSave)) {
-                    var edited = original
-                    edited.roman = roman.trimmingCharacters(in: .whitespacesAndNewlines)
-                    edited.hanji = hanji.trimmingCharacters(in: .whitespacesAndNewlines)
-                    onSave(edited)
+                    onSave(hanji, xiien, namxiian, hoiliug)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                // A romanization is what the entry is found by; without one
-                // there is nothing to store it under.
-                .disabled(roman.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(!hasAtLeastOneReading)
             }
         }
         .padding(20)
-        .frame(width: 360)
+        .frame(width: 400)
+    }
+
+    private var hasAtLeastOneReading: Bool {
+        let x = xiien.trimmingCharacters(in: .whitespacesAndNewlines)
+        let n = namxiian.trimmingCharacters(in: .whitespacesAndNewlines)
+        let h = hoiliug.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !x.isEmpty || !n.isEmpty || !h.isEmpty
+    }
+
+    private func autoFillReadings() {
+        let text = hanji.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        if isXiienEnabled && xiien.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let reading = lookupUniqueReading(hanji: text, lect: 1) {
+                xiien = reading
+            }
+        }
+        if isNamxiianEnabled && namxiian.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let reading = lookupUniqueReading(hanji: text, lect: 6) {
+                namxiian = reading
+            }
+        }
+        if isHoiliugEnabled && hoiliug.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let reading = lookupUniqueReading(hanji: text, lect: 2) {
+                hoiliug = reading
+            }
+        }
+    }
+
+    private func lookupUniqueReading(hanji: String, lect: UInt32) -> String? {
+        var toggles = Taigi_Engine_DictionarySourceToggles()
+        toggles.lect = lect
+        toggles.kautian = true
+
+        var filterReq = Taigi_Engine_DictionaryFiltersRequest()
+        filterReq.toggles = toggles
+
+        guard case let .lexicon(filterResp)? = RustEngineBridge.roundtrip(
+            payload: .lexicon(Taigi_Engine_LexiconRequest.with { $0.dictionaryFilters = filterReq }),
+            op: "dictionaryFilters"
+        ) else { return nil }
+        guard case let .dictionaryFiltersResult(filters) = filterResp.result else { return nil }
+
+        var req = Taigi_Engine_SearchByHanjiRequest()
+        req.query = hanji
+        req.limit = 20
+        req.enabledSourcesBitmask = filters.dictionaryFilterBitmask
+
+        guard case let .lexicon(resp)? = RustEngineBridge.roundtrip(
+            payload: .lexicon(Taigi_Engine_LexiconRequest.with { $0.searchByHanji = req }),
+            op: "lookupUniqueReading"
+        ) else { return nil }
+        guard case let .searchByHanjiResult(result) = resp.result else { return nil }
+        let exactMatches = result.rows.filter { $0.hanji == hanji }
+        let distinctReadings = Set(exactMatches.map { $0.roman.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        return distinctReadings.count == 1 ? distinctReadings.first : nil
     }
 }

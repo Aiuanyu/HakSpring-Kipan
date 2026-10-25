@@ -127,13 +127,18 @@ struct EngineUserDataClient: UserDataClient {
     static let maxImportFileBytes = 5 * 1024 * 1024
 
     func list(filter: String, limit: Int, offset: Int) throws -> UserDataListing<CustomDictionaryRow> {
+        try list(filter: filter, limit: limit, offset: offset, lect: 0)
+    }
+
+    func list(filter: String, limit: Int, offset: Int, lect: UInt32) throws -> UserDataListing<CustomDictionaryRow> {
         guard let page = RustEngineBridge.customDictionaryList(
             filter: filter,
             limit: limit,
             offset: offset,
+            lect: lect
         ) else { throw UserDataClientError.engineUnavailable(op: "customDictionaryList") }
         return UserDataListing(
-            rows: page.entries.map(CustomDictionaryRow.init),
+            rows: page.entries.map { CustomDictionaryRow(id: $0.id, roman: $0.roman, hanji: $0.hanji, lect: $0.lect) },
             total: Int(page.total),
             matchingTotal: Int(page.matchingTotal),
             offset: Int(page.offset),
@@ -145,6 +150,7 @@ struct EngineUserDataClient: UserDataClient {
             id: row.id,
             roman: row.roman,
             hanji: row.hanji,
+            lect: row.lect,
         ) else { throw UserDataClientError.engineUnavailable(op: "customDictionarySave") }
         guard saved.refusal == .none else { throw UserDataClientError.refused(detail: saved.detail) }
     }

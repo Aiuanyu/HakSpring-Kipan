@@ -247,6 +247,7 @@ fn an_added_entry_is_found_by_its_key_from_another_romanization_and_by_prefix() 
     );
     let keystroke = store.keystroke_rows(
         &query_key("ta", "tl"),
+        0,
         CustomDictionaryStore::KEYSTROKE_LIMIT,
     );
     assert_eq!(keystroke.len(), 1);
@@ -274,6 +275,7 @@ fn keystroke_rows_match_an_abbreviation_whole_and_the_shortest_key_first() {
     let keystroke = |key: &str| {
         store.keystroke_rows(
             &query_key(key, "tl"),
+            0,
             CustomDictionaryStore::KEYSTROKE_LIMIT,
         )
     };
@@ -325,7 +327,7 @@ fn keystroke_rows_two_phase_query_prefers_prefix_and_longer_infix_words() {
 
     // Query key "xxtankiantiongyy": none of them are prefixes; all 3 are infixes.
     // Length-descending order puts 陳建中 (12) first, then 建 (4), then 安 (2).
-    let rows = store.keystroke_rows(&query_key("xxtankiantiongyy", "tl"), 2);
+    let rows = store.keystroke_rows(&query_key("xxtankiantiongyy", "tl"), 0, 2);
     // With limit 2, the 2 longer entries survive; the 1-syllable "安" is left out!
     assert_eq!(hanji_of(&rows), ["陳建中", "建"]);
 
@@ -333,8 +335,51 @@ fn keystroke_rows_two_phase_query_prefers_prefix_and_longer_infix_words() {
     store
         .upsert(&CustomDictionaryRow::new("tsin", "真"))
         .unwrap();
-    let prefix_rows = store.keystroke_rows(&query_key("tsinxxtankiantiongyy", "tl"), 2);
+    let prefix_rows = store.keystroke_rows(&query_key("tsinxxtankiantiongyy", "tl"), 0, 2);
     assert_eq!(hanji_of(&prefix_rows), ["真", "陳建中"]);
+}
+
+#[test]
+fn custom_dictionary_lect_filtering() {
+    let directory = scratch();
+    let store = custom_store(
+        &directory,
+        Arc::new(derive_custom_search_keys),
+        CustomDictionaryStore::MAX_ENTRIES,
+    );
+    // Add "瑋" in 四縣 (lect 1) as "vǐ"
+    store
+        .upsert(&CustomDictionaryRow::new_with_lect("vǐ", "瑋", 1))
+        .unwrap();
+    // Add "瑋" in 海陸 (lect 2) as "vui"
+    store
+        .upsert(&CustomDictionaryRow::new_with_lect("vui", "瑋", 2))
+        .unwrap();
+    // Add a generic word (lect 0)
+    store
+        .upsert(&CustomDictionaryRow::new_with_lect("hakká", "客家", 0))
+        .unwrap();
+
+    // Query in 四縣 (lect 1): sees "瑋" (vǐ) and "客家", but not 海陸 "瑋" (vui)
+    let xiien_rows = store.keystroke_rows(&query_key("v", "tl"), 1, 10);
+    assert_eq!(xiien_rows.len(), 1);
+    assert_eq!(xiien_rows[0].roman, "vǐ");
+    assert_eq!(xiien_rows[0].lect, 1);
+
+    // Query in 海陸 (lect 2): sees "瑋" (vui) and "客家", but not 四縣 "瑋" (vǐ)
+    let hoiliug_rows = store.keystroke_rows(&query_key("v", "tl"), 2, 10);
+    assert_eq!(hoiliug_rows.len(), 1);
+    assert_eq!(hoiliug_rows[0].roman, "vui");
+    assert_eq!(hoiliug_rows[0].lect, 2);
+
+    // Generic word (lect 0) is visible in both 四縣 (1) and 海陸 (2)
+    let gen_xiien = store.keystroke_rows(&query_key("ha", "tl"), 1, 10);
+    assert_eq!(gen_xiien.len(), 1);
+    assert_eq!(gen_xiien[0].hanji, "客家");
+
+    let gen_hoiliug = store.keystroke_rows(&query_key("ha", "tl"), 2, 10);
+    assert_eq!(gen_hoiliug.len(), 1);
+    assert_eq!(gen_hoiliug[0].hanji, "客家");
 }
 
 #[test]

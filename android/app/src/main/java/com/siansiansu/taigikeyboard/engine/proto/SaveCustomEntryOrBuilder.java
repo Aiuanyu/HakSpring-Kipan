@@ -50,4 +50,10 @@ public interface SaveCustomEntryOrBuilder extends
    */
   com.google.protobuf.ByteString
       getHanjiBytes();
+
+  /**
+   * <code>uint32 lect = 4;</code>
+   * @return The lect.
+   */
+  int getLect();
 }

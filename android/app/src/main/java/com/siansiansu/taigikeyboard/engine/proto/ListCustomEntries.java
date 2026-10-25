@@ -9,7 +9,7 @@ package com.siansiansu.taigikeyboard.engine.proto;
  * <pre>
  * A page of the dictionary, newest edit first. `filter` matches romanization
  * or Hanji as a substring (case-insensitive ASCII); empty lists everything.
- * `limit` 0 lists every match.
+ * `limit` 0 lists every match. `lect` 0 lists all lects.
  * </pre>
  *
  * Protobuf type {@code taigi.engine.ListCustomEntries}
@@ -122,6 +122,32 @@ public  final class ListCustomEntries extends
     offset_ = 0;
   }
 
+  public static final int LECT_FIELD_NUMBER = 4;
+  private int lect_;
+  /**
+   * <code>uint32 lect = 4;</code>
+   * @return The lect.
+   */
+  @java.lang.Override
+  public int getLect() {
+    return lect_;
+  }
+  /**
+   * <code>uint32 lect = 4;</code>
+   * @param value The lect to set.
+   */
+  private void setLect(int value) {
+
+    lect_ = value;
+  }
+  /**
+   * <code>uint32 lect = 4;</code>
+   */
+  private void clearLect() {
+
+    lect_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.ListCustomEntries parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -209,7 +235,7 @@ public  final class ListCustomEntries extends
    * <pre>
    * A page of the dictionary, newest edit first. `filter` matches romanization
    * or Hanji as a substring (case-insensitive ASCII); empty lists everything.
-   * `limit` 0 lists every match.
+   * `limit` 0 lists every match. `lect` 0 lists all lects.
    * </pre>
    *
    * Protobuf type {@code taigi.engine.ListCustomEntries}
@@ -330,6 +356,34 @@ public  final class ListCustomEntries extends
       return this;
     }
 
+    /**
+     * <code>uint32 lect = 4;</code>
+     * @return The lect.
+     */
+    @java.lang.Override
+    public int getLect() {
+      return instance.getLect();
+    }
+    /**
+     * <code>uint32 lect = 4;</code>
+     * @param value The lect to set.
+     * @return This builder for chaining.
+     */
+    public Builder setLect(int value) {
+      copyOnWrite();
+      instance.setLect(value);
+      return this;
+    }
+    /**
+     * <code>uint32 lect = 4;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearLect() {
+      copyOnWrite();
+      instance.clearLect();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.ListCustomEntries)
   }
   @java.lang.Override
@@ -349,10 +403,11 @@ public  final class ListCustomEntries extends
             "filter_",
             "limit_",
             "offset_",
+            "lect_",
           };
           java.lang.String info =
-              "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0208\u0002\u000b" +
-              "\u0003\u000b";
+              "\u0000\u0004\u0000\u0000\u0001\u0004\u0004\u0000\u0000\u0000\u0001\u0208\u0002\u000b" +
+              "\u0003\u000b\u0004\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

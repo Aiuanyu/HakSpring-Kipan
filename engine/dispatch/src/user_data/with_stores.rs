@@ -249,16 +249,14 @@ fn buffer_rows(
     else {
         return UserRows::default();
     };
-    // Hakfa fork, interim: a custom entry has no lect yet, and its romanization is whatever the
-    // user typed under one lect (their own name in 四縣 tones shows up under 海陸 as a wrong
-    // reading). Until the entries carry a lect (the multi-lect table, Obs IME data-ui), they
-    // answer in 四縣 (lect 0 or 1) only.
-    let custom = if custom_dictionary_disabled || config.lect >= 2 {
+    // Hakfa fork (Obs IME data-ui D4): custom dictionary entries now carry a lect (0 = generic,
+    // 1 = 四縣, 2 = 海陸, 6 = 南四縣...). Keystroke queries filter by (entry.lect IN (0, config.lect)).
+    let custom = if custom_dictionary_disabled {
         Vec::new()
     } else {
         stores
             .custom_dictionary
-            .keystroke_rows(&key, CustomDictionaryStore::KEYSTROKE_LIMIT)
+            .keystroke_rows(&key, config.lect, CustomDictionaryStore::KEYSTROKE_LIMIT)
             .into_iter()
             .map(custom_entry)
             .collect()

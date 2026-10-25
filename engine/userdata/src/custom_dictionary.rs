@@ -65,11 +65,12 @@ pub struct CustomDictionaryImportResult {
 }
 
 /// What makes two entries the same word to an import: the same word spelled
-/// the same way (a file has no ids).
+/// the same way in the same lect (a file has no ids).
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CustomDictionaryIdentity {
     pub roman: String,
     pub hanji: String,
+    pub lect: u32,
 }
 
 /// A word the user added: the romanization as typed (TL or POJ display form —
@@ -88,25 +89,36 @@ pub struct CustomDictionaryRow {
     pub id: String,
     pub roman: String,
     pub hanji: String,
+    pub lect: u32,
     pub created_at: String,
     pub updated_at: String,
 }
 
 impl CustomDictionaryRow {
     pub fn new(roman: &str, hanji: &str) -> Self {
-        Self::with_id(
+        Self::new_with_lect(roman, hanji, 1)
+    }
+
+    pub fn new_with_lect(roman: &str, hanji: &str, lect: u32) -> Self {
+        Self::with_id_and_lect(
             &uuid::Uuid::new_v4().to_string().to_uppercase(),
             roman,
             hanji,
+            lect,
         )
     }
 
     pub fn with_id(id: &str, roman: &str, hanji: &str) -> Self {
+        Self::with_id_and_lect(id, roman, hanji, 1)
+    }
+
+    pub fn with_id_and_lect(id: &str, roman: &str, hanji: &str, lect: u32) -> Self {
         let now = utc_timestamp_now();
         Self {
             id: id.to_owned(),
             roman: roman.to_owned(),
             hanji: hanji.to_owned(),
+            lect,
             created_at: now.clone(),
             updated_at: now,
         }
@@ -116,6 +128,7 @@ impl CustomDictionaryRow {
         CustomDictionaryIdentity {
             roman: self.roman.clone(),
             hanji: self.hanji.clone(),
+            lect: self.lect,
         }
     }
 }
@@ -193,6 +206,7 @@ impl CustomDictionaryStore {
     pub fn keystroke_rows(
         &self,
         query_key: &CustomSearchKey,
+        lect: u32,
         limit: usize,
     ) -> Vec<CustomDictionaryRow> {
         self.database
@@ -201,11 +215,13 @@ impl CustomDictionaryStore {
                 // Either the key extends the input (user is typing: `key LIKE ?3 || '%'`),
                 // or the key is anchored at the start of input (user typed past: `?3 LIKE key || '%'`),
                 // or exact abbreviation match.
+                // Filtered by lect: entry is either generic (0), or matches the typing lect (?5).
                 let mut prefix_stmt = connection.prepare_cached(&format!(
-                    "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\n\
+                    "SELECT entry.id, entry.roman, entry.hanzi, entry.lect, entry.created_at, entry.updated_at\n\
                      FROM {TABLE_NAME} AS entry\n\
                      JOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\n\
                      WHERE search_key.family = ?1\n\
+                       AND (entry.lect = 0 OR ?5 = 0 OR entry.lect = ?5)\n\
                        AND ((search_key.form = ?2 AND (search_key.key LIKE ?3 || '%' OR ?3 LIKE search_key.key || '%'))\n\
                          OR (search_key.form = 'abbrev' AND search_key.key = ?3))\n\
                      GROUP BY entry.id\n\
@@ -214,7 +230,7 @@ impl CustomDictionaryStore {
                 ))?;
                 let mut rows: Vec<CustomDictionaryRow> = prefix_stmt
                     .query_map(
-                        params![query_key.family, query_key.form, query_key.key, limit as i64],
+                        params![query_key.family, query_key.form, query_key.key, limit as i64, lect as i64],
                         decode_row,
                     )?
                     .collect::<rusqlite::Result<_>>()?;
@@ -227,10 +243,11 @@ impl CustomDictionaryStore {
                     // Longer phrases take precedence (`length DESC`) to prevent short syllables
                     // from exhausting the quota.
                     let mut substr_stmt = connection.prepare_cached(&format!(
-                        "SELECT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\n\
+                        "SELECT entry.id, entry.roman, entry.hanzi, entry.lect, entry.created_at, entry.updated_at\n\
                          FROM {TABLE_NAME} AS entry\n\
                          JOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\n\
                          WHERE search_key.family = ?1\n\
+                           AND (entry.lect = 0 OR ?5 = 0 OR entry.lect = ?5)\n\
                            AND search_key.form = ?2\n\
                            AND instr(?3, search_key.key) > 0\n\
                            AND ?3 NOT LIKE search_key.key || '%'\n\
@@ -240,7 +257,7 @@ impl CustomDictionaryStore {
                          LIMIT ?4;"
                     ))?;
                     let substr_rows = substr_stmt.query_map(
-                        params![query_key.family, query_key.form, query_key.key, remaining],
+                        params![query_key.family, query_key.form, query_key.key, remaining, lect as i64],
                         decode_row,
                     )?;
                     for row in substr_rows {
@@ -266,13 +283,30 @@ impl CustomDictionaryStore {
         query_key: &CustomSearchKey,
         limit: usize,
     ) -> Vec<CustomDictionaryRow> {
+        self.rows_matching_lect(query_key, 0, limit)
+    }
+
+    pub fn rows_matching_lect(
+        &self,
+        query_key: &CustomSearchKey,
+        lect: u32,
+        limit: usize,
+    ) -> Vec<CustomDictionaryRow> {
         self.database
             .read(|connection| {
                 let mut statement = connection.prepare_cached(&format!(
-                    "SELECT DISTINCT entry.id, entry.roman, entry.hanzi, entry.created_at, entry.updated_at\nFROM {TABLE_NAME} AS entry\nJOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\nWHERE search_key.family = ?\n  AND search_key.form IN (?, 'abbrev')\n  AND search_key.key LIKE ? || '%'\nORDER BY entry.roman\nLIMIT ?;"
+                    "SELECT DISTINCT entry.id, entry.roman, entry.hanzi, entry.lect, entry.created_at, entry.updated_at\n\
+                     FROM {TABLE_NAME} AS entry\n\
+                     JOIN {SEARCH_KEY_TABLE_NAME} AS search_key ON search_key.entry_id = entry.id\n\
+                     WHERE search_key.family = ?1\n\
+                       AND (?5 = 0 OR entry.lect = 0 OR entry.lect = ?5)\n\
+                       AND search_key.form IN (?2, 'abbrev')\n\
+                       AND search_key.key LIKE ?3 || '%'\n\
+                     ORDER BY entry.roman\n\
+                     LIMIT ?4;"
                 ))?;
                 let rows = statement.query_map(
-                    params![query_key.family, query_key.form, query_key.key, limit as i64],
+                    params![query_key.family, query_key.form, query_key.key, limit as i64, lect as i64],
                     decode_row,
                 )?;
                 rows.collect()
@@ -287,7 +321,7 @@ impl CustomDictionaryStore {
     pub fn all_rows(&self) -> Result<Vec<CustomDictionaryRow>, CustomDictionaryError> {
         self.database.perform::<_, CustomDictionaryError>(|connection| {
             let mut statement = connection.prepare(&format!(
-                "SELECT id, roman, hanzi, created_at, updated_at\nFROM {TABLE_NAME}\nORDER BY updated_at DESC;"
+                "SELECT id, roman, hanzi, lect, created_at, updated_at\nFROM {TABLE_NAME}\nORDER BY updated_at DESC;"
             ))?;
             let rows = statement.query_map([], decode_row)?;
             Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -307,14 +341,14 @@ impl CustomDictionaryStore {
         self.database.perform::<_, CustomDictionaryError>(move |connection| {
             if trimmed.is_empty() {
                 let mut statement = connection.prepare(&format!(
-                    "SELECT id, roman, hanzi, created_at, updated_at\nFROM {TABLE_NAME}\nORDER BY updated_at DESC\nLIMIT ? OFFSET ?;"
+                    "SELECT id, roman, hanzi, lect, created_at, updated_at\nFROM {TABLE_NAME}\nORDER BY updated_at DESC\nLIMIT ? OFFSET ?;"
                 ))?;
                 let rows = statement.query_map(params![limit as i64, offset as i64], decode_row)?;
                 return Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?);
             }
             let (roman_pattern, hanji_pattern) = filter_patterns(&trimmed);
             let mut statement = connection.prepare(&format!(
-                "SELECT id, roman, hanzi, created_at, updated_at\nFROM {TABLE_NAME}\nWHERE roman LIKE ? ESCAPE '\\' OR hanzi LIKE ? ESCAPE '\\'\nORDER BY updated_at DESC\nLIMIT ? OFFSET ?;"
+                "SELECT id, roman, hanzi, lect, created_at, updated_at\nFROM {TABLE_NAME}\nWHERE roman LIKE ? ESCAPE '\\' OR hanzi LIKE ? ESCAPE '\\'\nORDER BY updated_at DESC\nLIMIT ? OFFSET ?;"
             ))?;
             let rows = statement.query_map(params![roman_pattern, hanji_pattern, limit as i64, offset as i64], decode_row)?;
             Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -329,7 +363,7 @@ impl CustomDictionaryStore {
             Ok(connection
                 .query_row(
                     &format!(
-                        "SELECT id, roman, hanzi, created_at, updated_at\nFROM {TABLE_NAME}\nWHERE id = ?;"
+                        "SELECT id, roman, hanzi, lect, created_at, updated_at\nFROM {TABLE_NAME}\nWHERE id = ?;"
                     ),
                     [id],
                     decode_row,
@@ -706,8 +740,8 @@ fn row_exists(
 ) -> rusqlite::Result<bool> {
     connection
         .query_row(
-            &format!("SELECT 1 FROM {TABLE_NAME} WHERE roman = ? AND hanzi = ? LIMIT 1;"),
-            params![identity.roman, identity.hanji],
+            &format!("SELECT 1 FROM {TABLE_NAME} WHERE roman = ? AND hanzi = ? AND lect = ? LIMIT 1;"),
+            params![identity.roman, identity.hanji, identity.lect as i64],
             |_| Ok(()),
         )
         .optional()
@@ -715,13 +749,14 @@ fn row_exists(
 }
 
 /// Whether an entry with `row`'s Hanji reads as `row`'s roman once both
-/// romans are folded to canonical TL. Only that Hanji's entries are read.
+/// romans are folded to canonical TL. Only that Hanji's entries in the same
+/// lect are read.
 fn word_stored(connection: &Connection, row: &CustomDictionaryRow) -> rusqlite::Result<bool> {
     let canonical = |roman: &str| phonetics::api::canonical_tl_form(roman, InputMode::Tl);
     let wanted = canonical(&row.roman);
     let mut statement =
-        connection.prepare(&format!("SELECT roman FROM {TABLE_NAME} WHERE hanzi = ?;"))?;
-    let romans = statement.query_map(params![row.hanji], |stored| stored.get::<_, String>(0))?;
+        connection.prepare(&format!("SELECT roman FROM {TABLE_NAME} WHERE hanzi = ? AND lect = ?;"))?;
+    let romans = statement.query_map(params![row.hanji, row.lect as i64], |stored| stored.get::<_, String>(0))?;
     for roman in romans {
         if canonical(&roman?) == wanted {
             return Ok(true);
@@ -739,9 +774,9 @@ fn write_row(
 ) -> Result<(), CustomDictionaryError> {
     connection.execute(
         &format!(
-            "INSERT INTO {TABLE_NAME} (id, roman, hanzi, created_at, updated_at)\nVALUES (?, ?, ?, ?, ?)\nON CONFLICT(id) DO UPDATE SET\n    roman = excluded.roman,\n    hanzi = excluded.hanzi,\n    updated_at = excluded.updated_at;"
+            "INSERT INTO {TABLE_NAME} (id, roman, hanzi, lect, created_at, updated_at)\nVALUES (?, ?, ?, ?, ?, ?)\nON CONFLICT(id) DO UPDATE SET\n    roman = excluded.roman,\n    hanzi = excluded.hanzi,\n    lect = excluded.lect,\n    updated_at = excluded.updated_at;"
         ),
-        params![row.id, row.roman, row.hanji, row.created_at, row.updated_at],
+        params![row.id, row.roman, row.hanji, row.lect as i64, row.created_at, row.updated_at],
     )?;
     // Replace rather than add: an edited roman must not stay findable under
     // the keys of the roman it replaced.
@@ -801,8 +836,9 @@ fn decode_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CustomDictionaryRow> 
         id: row.get(0)?,
         roman: row.get(1)?,
         hanji: row.get(2)?,
-        created_at: row.get(3)?,
-        updated_at: row.get(4)?,
+        lect: row.get(3)?,
+        created_at: row.get(4)?,
+        updated_at: row.get(5)?,
     })
 }
 
@@ -812,7 +848,15 @@ fn decode_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CustomDictionaryRow> 
 /// the shape once it has made the data match it.
 fn apply_schema(connection: &Connection) -> rusqlite::Result<()> {
     connection.execute_batch(&format!(
-        "CREATE TABLE IF NOT EXISTS {TABLE_NAME} (\n    id TEXT PRIMARY KEY,\n    roman TEXT NOT NULL,\n    hanzi TEXT NOT NULL,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\nCREATE INDEX IF NOT EXISTS idx_custom_roman ON {TABLE_NAME}(roman);\nCREATE TABLE IF NOT EXISTS {SEARCH_KEY_TABLE_NAME} (\n    entry_id TEXT NOT NULL,\n    family   TEXT NOT NULL,\n    form     TEXT NOT NULL,\n    key      TEXT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_csk_lookup ON {SEARCH_KEY_TABLE_NAME}(family, form, key);\nCREATE INDEX IF NOT EXISTS idx_csk_entry ON {SEARCH_KEY_TABLE_NAME}(entry_id);"
+        "CREATE TABLE IF NOT EXISTS {TABLE_NAME} (\n    id TEXT PRIMARY KEY,\n    roman TEXT NOT NULL,\n    hanzi TEXT NOT NULL,\n    lect INTEGER NOT NULL DEFAULT 1,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\nCREATE INDEX IF NOT EXISTS idx_custom_roman ON {TABLE_NAME}(roman);\nCREATE TABLE IF NOT EXISTS {SEARCH_KEY_TABLE_NAME} (\n    entry_id TEXT NOT NULL,\n    family   TEXT NOT NULL,\n    form     TEXT NOT NULL,\n    key      TEXT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_csk_lookup ON {SEARCH_KEY_TABLE_NAME}(family, form, key);\nCREATE INDEX IF NOT EXISTS idx_csk_entry ON {SEARCH_KEY_TABLE_NAME}(entry_id);"
+    ))?;
+    if !has_column(connection, TABLE_NAME, "lect")? {
+        connection.execute_batch(&format!(
+            "ALTER TABLE {TABLE_NAME} ADD COLUMN lect INTEGER NOT NULL DEFAULT 1;"
+        ))?;
+    }
+    connection.execute_batch(&format!(
+        "CREATE INDEX IF NOT EXISTS idx_custom_lect ON {TABLE_NAME}(lect);"
     ))?;
     drop_learned_rows_if_present(connection)
 }

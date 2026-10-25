@@ -45,4 +45,10 @@ public interface CustomDictionaryEntryOrBuilder extends
    */
   com.google.protobuf.ByteString
       getHanjiBytes();
+
+  /**
+   * <code>uint32 lect = 6;</code>
+   * @return The lect.
+   */
+  int getLect();
 }

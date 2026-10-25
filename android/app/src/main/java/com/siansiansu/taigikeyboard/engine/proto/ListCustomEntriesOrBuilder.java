@@ -33,4 +33,10 @@ public interface ListCustomEntriesOrBuilder extends
    * @return The offset.
    */
   int getOffset();
+
+  /**
+   * <code>uint32 lect = 4;</code>
+   * @return The lect.
+   */
+  int getLect();
 }
