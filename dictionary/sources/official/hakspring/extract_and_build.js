@@ -781,13 +781,16 @@ if (IS_ALL) {
   // 南四縣缺个，用北四縣个頂著（維護者原則，20261025）：北四縣有、南四縣「整隻詞」都無个
   // （無任何一種讀音），抄北四縣个讀音入南四縣，詞頻 ×0.5。南四縣若有該詞（毋論讀音同北四縣
   // 有無共樣）就毋抄——那係南北个差異，毋係缺；抄過去會同南四縣自家个資料衝突。
+  // 補字典个列（單字補音）毋抄，由補字典線自家處理。
   {
     const SOUTH = LECTS['南'].code;
     const NORTH = LECTS['四'].code;
     const lectOf = r => r.subtag >> LECT_SHIFT;
     const southWords = new Set(records.filter(r => lectOf(r) === SOUTH).map(r => r.word));
     const standIns = records
-      .filter(r => lectOf(r) === NORTH && !southWords.has(r.word))
+      // 補字典（單字補音、次方言補音）有自家處理摎推導原則（客源翠 dict-augmentation），毋在這抄：
+      // 南四縣補字典缺个字，由補字典線決定，毋用北四縣頂著
+      .filter(r => lectOf(r) === NORTH && !(r.bitmask & SUPP_BITMASK) && !southWords.has(r.word))
       .map(r => ({
         ...r,
         subtag: (r.subtag & ((1 << LECT_SHIFT) - 1)) | (SOUTH << LECT_SHIFT),
