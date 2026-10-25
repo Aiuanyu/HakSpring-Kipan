@@ -135,7 +135,8 @@
     "description": "世界人權宣言第一條後段（連詞摎，非落）",
     "input": "tezunngiamlaukianlisongidludpinden",
     "expected_hanji": "在尊嚴摎權利上一律平等",
-    "expected_roman": "té zún-ngiǎm láu kiǎn-li song ìd-lud pǐn-dèn"
+    "expected_roman": "té zún-ngiǎm láu kiǎn-li song ìd-lud pǐn-dèn",
+    "lect": "namxiian"
   },
   {
     "id": "bible_love_1",
@@ -231,7 +232,8 @@
     "description": "日常生活句：去街仔",
     "input": "higiaie",
     "expected_hanji": "去街仔",
-    "expected_roman": "hi giái-è"
+    "expected_roman": "hi giái-è",
+    "lect": "namxiian"
   },
   {
     "id": "daily_speak_hakfa",

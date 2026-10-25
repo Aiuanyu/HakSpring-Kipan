@@ -17,7 +17,8 @@ use taigi_desktop_core::engine;
 use taigi_desktop_core::engine::user_data;
 use taigi_desktop_core::platform::DesktopPlatform;
 use taigi_desktop_core::settings::{
-    CandidateDisplayMode, EngineSettings, InputMode, SyllableSeparator,
+    CandidateDisplayMode, DictionarySourceToggles, EngineSettings, InputMode, Lect, SettingChoice,
+    SyllableSeparator,
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -42,6 +43,9 @@ struct GoldenCase {
     input: String,
     expected_hanji: String,
     expected_roman: String,
+    /// Hakfa fork: the lect the sentence is written in (`xiien`, `namxiian`, `hoiliug`); absent = 四縣.
+    #[serde(default)]
+    lect: Option<String>,
     #[serde(default)]
     requires_custom: Vec<CustomWordRequirement>,
     #[serde(default)]
@@ -265,14 +269,28 @@ fn main() {
             }
         }
 
+        // 這一題用个腔（無寫就四縣）
+        let lect = tc
+            .lect
+            .as_deref()
+            .and_then(Lect::from_raw)
+            .unwrap_or(Lect::DEFAULT);
+        let settings = EngineSettings {
+            dictionary_sources: DictionarySourceToggles {
+                lect,
+                ..base_settings.dictionary_sources.clone()
+            },
+            ..base_settings.clone()
+        };
+
         // 逐鍵輸入
         for ch in tc.input.chars() {
             let s = ch.to_string();
-            let _ = engine::append(&s, &base_settings, gen);
+            let _ = engine::append(&s, &settings, gen);
         }
 
         // 取得候選結果
-        let fetch = engine::fetch_at_pos(&base_settings, gen, 0).expect("fetch 成功");
+        let fetch = engine::fetch_at_pos(&settings, gen, 0).expect("fetch 成功");
         let cands = fetch.candidates.unwrap_or_default();
 
         let actual_hanji = cands.first().and_then(|c| c.hanji.clone()).unwrap_or_default();

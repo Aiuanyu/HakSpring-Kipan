@@ -66,6 +66,8 @@ const LECT_KEY = parseLectArg(process.argv.slice(2));
 const DUMP_RECORDS_PATH = parseOptArg(process.argv.slice(2), '--dump-records');
 const IS_ALL = LECT_KEY === ALL_LECTS;
 const LECT = IS_ALL ? { code: 0, name: '全腔', id: 'all' } : LECTS[LECT_KEY];
+// 南四縣無自家个認證檔：用四縣个（【南】標音摎附表）
+const CERT_LECT_KEY = LECT_KEY === '南' ? '四' : LECT_KEY;
 const isShipLect = IS_ALL; // 全腔合併詞庫就係出貨詞庫：覆蓋 assets/dictionaries
 const LECT_KEY_BY_CODE = Object.fromEntries(Object.entries(LECTS).map(([k, v]) => [v.code, k]));
 
@@ -431,6 +433,61 @@ function deriveHakfaAbbrev(notoneSylls) {
   return notoneSylls.map(extractLeadingInitial).join('');
 }
 
+/**
+ * 四縣認證个【】變體分腔 (Obs IME dialects D6)：認證四縣个【】係南四縣音，【（）】係美濃音。
+ * 回傳 { main: 北四縣, south: 南四縣變體, other: 其他（美濃等） }，同樣濾掉「…」。
+ * 四縣只用 main；南四縣用 south（無就用附表）。美濃另外做成輸出選項，先毋收。
+ */
+function linePairsSplit(parsed) {
+  const clean = pairs => pairs.filter(p => !p.word.includes('…'));
+  const main = (parsed.main && parsed.main.word && parsed.main.phonetic)
+    ? processWordPhoneticPairs(parsed.main.word, parsed.main.phonetic) : [];
+  const south = [];
+  const other = [];
+  for (const v of parsed.variants) {
+    if (!v.phonetic) continue;
+    const pairs = v.word
+      ? processWordPhoneticPairs(v.word, v.phonetic)
+      : (main.length ? assignVariantReadings(main, v.phonetic, parsed.main.word) : []);
+    (v.label === '南' ? south : other).push(...pairs);
+  }
+  return { main: clean(main), south: clean(south), other: clean(other) };
+}
+
+/**
+ * 南四縣附表（客源翠 data/sub-dialects-fill/南四縣.json）：認證四縣無標【南】个詞條，官方漏標，
+ * 毋係「南北共樣」，程式推導个南四縣音。鍵 `來源檔|編號`。教典南四縣層以外个推導音詞頻打折；
+ * `待確認`（單字詞，教典音摎推導無共樣）先毋收，推毋出个（待審）本來就毋在附表。
+ */
+const SOUTH_DERIVED_FREQ_FACTOR = 0.8;
+function loadSouthFill() {
+  const fillPath = path.join(HAKSPRING_DATA, 'sub-dialects-fill', '南四縣.json');
+  const fill = new Map();
+  if (!fs.existsSync(fillPath)) return fill;
+  for (const e of JSON.parse(fs.readFileSync(fillPath, 'utf8')).entries) {
+    if (e['待確認']) continue;
+    fill.set(`${e['來源檔']}|${e['編號']}`, e);
+  }
+  return fill;
+}
+
+/**
+ * 推毋出个（`待審-南四縣.json`，有音節無南四縣證據，附表毋收）：用戶打字時「北四縣有，南四縣就無」
+ * 比「南四縣讀音可能略有差」更傷（20261025 維護者：繼續）。所以暫時用北四縣音權充，詞頻打對折，
+ * 有真个南四縣音就排在伊前面。人工審音後會進附表，到時自然取代。SOUTH_INCLUDE_PENDING = false 就毋收。
+ */
+const SOUTH_INCLUDE_PENDING = true;
+const SOUTH_PENDING_FREQ_FACTOR = 0.5;
+function loadSouthPending() {
+  const pendingPath = path.join(HAKSPRING_DATA, 'sub-dialects-fill', '待審-南四縣.json');
+  const pending = new Map();
+  if (!SOUTH_INCLUDE_PENDING || !fs.existsSync(pendingPath)) return pending;
+  for (const e of JSON.parse(fs.readFileSync(pendingPath, 'utf8')).entries) {
+    pending.set(`${e['來源檔']}|${e['編號']}`, e);
+  }
+  return pending;
+}
+
 function printReadingProblems() {
   if (readingProblems.length) {
     console.log(`  ⚠ 讀音看毋懂、毋好猜个 ${readingProblems.length} 筆（Obs IME C8-6，愛人工看）：`);
@@ -451,7 +508,13 @@ const certFiles = [
   { level: '中', freq: 40000, levelName: '中級' },
   { level: '中高', freq: 35000, levelName: '中高級' },
   { level: '高', freq: 30000, levelName: '高級' }
-].map(c => ({ file: `113${LECT_KEY}${c.level}.json`, freq: c.freq, name: `${LECT.name}${c.levelName}` }));
+].map(c => ({ file: `113${CERT_LECT_KEY}${c.level}.json`, freq: c.freq, name: `${LECT.name}${c.levelName}` }));
+const southFill = LECT_KEY === '南' ? loadSouthFill() : new Map();
+const southPending = LECT_KEY === '南' ? loadSouthPending() : new Map();
+let southFromPending = 0;
+let southFromVariant = 0;
+let southFromFill = 0;
+let southNoReading = 0;
 
 for (const cf of certFiles) {
   const p = path.join(HAKSPRING_DATA, 'cert', cf.file);
@@ -473,7 +536,40 @@ for (const cf of certFiles) {
 
     // 透過客源翠 variant-parser 展開變體
     const parsed = getLineVariants(row);
-    const pairs = linePairs(parsed);
+    // 四縣：淨收北四縣主讀音（【】係南四縣／美濃，毋係四縣）。南四縣：【南】變體；無標个用附表
+    let pairs;
+    if (LECT_KEY === '四') {
+      pairs = linePairsSplit(parsed).main.map(p => ({ ...p, scale: 1 }));
+    } else if (LECT_KEY === '南') {
+      const split = linePairsSplit(parsed);
+      const stem = cf.file.replace(/\.json$/, '');
+      const fillEntry = southFill.get(`${stem}|${parts[0]}`);
+      if (split.south.length) {
+        southFromVariant++;
+        // 標个南四縣音排頭前；北四縣主讀音南四縣人亦有講，留起來但詞頻略低
+        pairs = [
+          ...split.south.map(p => ({ ...p, scale: 1 })),
+          ...split.main.map(p => ({ ...p, scale: 0.98 })),
+        ];
+      } else if (fillEntry) {
+        southFromFill++;
+        const scale = fillEntry['推導層'] === '教典南四縣' ? 1 : SOUTH_DERIVED_FREQ_FACTOR;
+        pairs = processWordPhoneticPairs(fillEntry['詞目'], fillEntry['讀音'])
+          .filter(p => !p.word.includes('…'))
+          .map(p => ({ ...p, scale }));
+      } else if (southPending.has(`${stem}|${parts[0]}`)) {
+        southFromPending++;
+        const pending = southPending.get(`${stem}|${parts[0]}`);
+        pairs = processWordPhoneticPairs(pending['詞目'], pending['讀音'])
+          .filter(p => !p.word.includes('…'))
+          .map(p => ({ ...p, scale: SOUTH_PENDING_FREQ_FACTOR }));
+      } else {
+        southNoReading++;
+        pairs = [];
+      }
+    } else {
+      pairs = linePairs(parsed).map(p => ({ ...p, scale: 1 }));
+    }
 
     for (const pair of pairs) {
       const tokens = pair.phonetic.trim().split(/[\s\-]+/);
@@ -490,7 +586,7 @@ for (const cf of certFiles) {
       }
       const key = word + '|' + fusedNotone;
 
-      const boostedFreq = boostFrequency(word, cf.freq);
+      const boostedFreq = boostFrequency(word, Math.round(cf.freq * pair.scale));
       if (!map.has(key) || map.get(key).freq < boostedFreq) {
         map.set(key, {
           word: word,
@@ -509,6 +605,9 @@ for (const cf of certFiles) {
 }
 
 console.log(`  ✓ 認證詞彙（展開變體後）: ${map.size} 筆`);
+if (LECT_KEY === '南') {
+  console.log(`    南四縣認證：標【南】${southFromVariant} 條、附表推導 ${southFromFill} 條、待審以北四縣音權充 ${southFromPending} 條、完全無（毋收）${southNoReading} 條`);
+}
 
 // 2. 處理教典（讀取 20250630-<腔>.json，取得正宗 HagPinPlus 顯示欄位）
 const gipJsonPath = path.join(HAKSPRING_DATA, 'gip', `20250630-${LECT_KEY}.json`);

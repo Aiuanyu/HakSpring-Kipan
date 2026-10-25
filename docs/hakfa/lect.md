@@ -28,7 +28,7 @@ A word found in both MOE and the certification lists is one record with bits 0 a
 | 12 | upstream alternative reading (又唸作) — candidate for secondary readings split by `splitReadingVariants()`, not written yet |
 | **13–15** | **lect code** (Kipan) |
 
-Lect codes: `1` Sixian (四, `xiien`), `2` Hailu (海陸, `hoiliug`), `6` South Sixian (南, `namxiian`: its own lect, built from the MOE 南 volume and the 南 supplement, no certification list; the settings list it second, never as a sub-choice of Sixian). Reserved: `3` Dapu, `4` Raoping, `5` Zhao'an. `0` means "no lect" and fails the build.
+Lect codes: `1` Sixian (四, `xiien`), `2` Hailu (海陸, `hoiliug`), `6` South Sixian (南, `namxiian`: its own lect, built from the MOE 南 volume, the 南 supplement and the certification list's South readings (below); the settings list it second, never as a sub-choice of Sixian). Reserved: `3` Dapu, `4` Raoping, `5` Zhao'an. `0` means "no lect" and fails the build.
 
 The engine reader keeps bits 13–15 (`KAUTIAN_SUBTAG_LECT_MASK`) in `DictionaryRecord.kautian_subtag`. They sit outside `KAUTIAN_SUBTAG_USED_MASK` (bits 0–12), so they never reach the subcollection AND. `DictionaryReader::passes_filter` has a lect gate: when the filter's `lect` is non-zero, a record whose lect is non-zero and different is dropped. A record with lect 0 (non-Hakfa data) and a filter with lect 0 (or the `u32::MAX` sentinel) match everything.
 
@@ -102,3 +102,13 @@ Derived south Sixian / Meinong / Zhuolan / Taoyuan readings are produced by HakS
 ## Learning data across lects (各腔互學)
 
 Learned words and phrases live per lect (`user_frequency.<id>.db` and so on; 四縣 keeps the original names). `UserDataRequest.sync_lects` offers what each lect learned to the others (`engine/dispatch/src/user_data/lect_sync.rs`): a word is copied to a target lect only when the target's dictionary has the same Hanji with exactly one reading. A Hanji the target does not have, or reads several ways, is skipped, never guessed. A copy counts as one use and never raises what the target learned itself. Everything is read before anything is written, so a copy never echoes back. `dry_run` counts only (the preview). Answered in `dispatch`, not `userdata`, because it needs the lexicon. macOS: a row on the Learning Records page asks for the preview, then confirms. Not copied yet: next-word associations.
+
+## South Sixian and the Sixian certification list
+
+The certification list has no South Sixian file; its Sixian lines mark South readings with `【】` (Meinong readings with `【（）】`). The build splits them (`linePairsSplit`):
+
+- **四縣 (1)**: only the main (North) reading of each line. The `【】` readings are South Sixian, so they are no longer Sixian candidates (`就 lu` used to show up under 四縣).
+- **南四縣 (6)**: for each Sixian line, in order: the `【南】` reading(s) when the line has them (the North reading stays at 0.98 of the frequency); otherwise the derived reading from HakSpring's `sub-dialects-fill/南四縣.json` (`來源檔|編號`; layers other than the MOE South volume get 0.8 of the frequency; the `待確認` single-character rows are left out); otherwise, if the line is in `待審-南四縣.json` (a syllable with no South evidence), the North reading stands in at half frequency (`SOUTH_INCLUDE_PENDING`), so a word every Sixian user has (繼續) is not missing from South Sixian; a real South reading, once reviewed and moved into the table, outranks it.
+- **Meinong readings** (`【（）】`) are in neither lect for now; Meinong is an output option on top of South Sixian (maintainer's ruling).
+
+A golden-corpus sentence can name its lect (`lect` in `golden_corpus.json`; default `xiien`); the two South Sixian sentences (街仔 `giai`, 在尊嚴…) do.
