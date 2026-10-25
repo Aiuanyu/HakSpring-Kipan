@@ -78,6 +78,8 @@ pub(crate) struct EdgeChoice {
     /// **Unused** for a synthesized OOV edge (RC0: OOV
     /// cost is char-keyed, never corpus-priced).
     pub walker_cost: u16,
+    /// Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian.
+    pub variant: u8,
     /// Syllable count of the chosen candidate (`>= 1`). Dict/custom:
     /// the record's / greedy-longest span syllable count, drives the
     /// khiin `n_syls^0.2` bias. OOV: the real min-syllable-hop count of
@@ -258,6 +260,7 @@ mod tests {
             dict_hit: true,
             is_custom: false,
             walker_cost,
+            variant: 0,
             syllable_count: syll,
             toneless_len: len,
             user_weight_delta: delta,
@@ -280,6 +283,7 @@ mod tests {
             dict_hit: false,
             is_custom: false,
             walker_cost: 0,
+            variant: 0,
             syllable_count: syll,
             toneless_len: r.chars().count(),
             user_weight_delta: 0.0,
@@ -296,6 +300,7 @@ mod tests {
             dict_hit: true,
             is_custom: true,
             walker_cost,
+            variant: 0,
             syllable_count: syll,
             toneless_len: len,
             user_weight_delta: 0.0,

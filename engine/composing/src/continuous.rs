@@ -103,6 +103,8 @@ pub(crate) struct WalkerSlot0 {
     pub user_weight: f64,
     pub coverage_kind: u8,
     pub is_custom: bool,
+    /// Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian.
+    pub variant: u8,
     /// How many lattice edges — words — the path takes. A list of one word
     /// (a Hanji conversion's `FetchAtPos`) lists a
     /// one-edge path only.
@@ -779,6 +781,7 @@ pub(crate) fn walk_buffer(
                     // `frequency == 0`.
                     dict_hit: true,
                     is_custom: c.is_custom,
+                    variant: c.variant,
                     walker_cost: span_walker_cost,
                     syllable_count: c.syllable_count,
                     // khiin `word_len` for the S5 length
@@ -837,6 +840,7 @@ pub(crate) fn walk_buffer(
                     dict_hit: false,
                     // S6: a synthesized OOV roman edge is not custom.
                     is_custom: false,
+                    variant: 0,
                     walker_cost: WALKER_COST_UNPRICED,
                     syllable_count,
                     toneless_len,
@@ -1024,6 +1028,11 @@ fn fetch_walker_slot0_inner(
         // `(roman,hanji,consumed_span)` not `is_custom`), but a
         // truthful flag keeps future ranking/dedupe changes sound.
         is_custom: path.choices.iter().any(|c| c.is_custom),
+        variant: if path.choices.len() == 1 {
+            path.choices[0].variant
+        } else {
+            0
+        },
         edge_count: path.edges.len(),
     })
 }
@@ -1284,7 +1293,7 @@ pub(crate) fn assemble_candidates(
                             context_rank: ranking::CONTEXT_RANK_NONE,
                             coverage_kind: slot0.coverage_kind,
                             is_custom: slot0.is_custom,
-                            variant: 0,
+                            variant: slot0.variant,
                         };
                         // `hoogua` bug (2026-06-02): the walker synth
                         // joins per-syllable canonical romans with a
@@ -1329,11 +1338,13 @@ pub(crate) fn assemble_candidates(
                                 && x.consumed_span == slot0_cand.consumed_span
                                 && x.hanji == slot0_cand.hanji
                         };
-                        let has_exact_twin = c
+                        let exact_twin_idx = c
                             .iter()
-                            .any(|x| is_same_full_span_word(x) && x.roman == slot0_cand.roman);
-                        let promote_idx = if slot0_cand.is_custom || has_exact_twin {
+                            .position(|x| is_same_full_span_word(x) && x.roman == slot0_cand.roman);
+                        let promote_idx = if slot0_cand.is_custom {
                             None
+                        } else if let Some(i) = exact_twin_idx {
+                            Some(i)
                         } else {
                             c.iter().position(|x| {
                                 is_same_full_span_word(x)
@@ -1676,6 +1687,76 @@ mod tests {
         assert!(roman_reading_eq("iā sī", "iā sī"));
         // Different syllables entirely — not a reading match.
         assert!(!roman_reading_eq("hōo guá", "tâi gí"));
+    }
+
+    #[test]
+    fn exact_twin_promoted_to_slot_0_preserves_variant_flag() {
+        // Hakfa fork: a Meinong reading has variant = 1.
+        // When promoted to slot 0, it must retain variant = 1 so the UI can display 「美」.
+        let cand = RawCandidate {
+            consumed_span: (0, 3),
+            syllable_count: 1,
+            display_text: "卵".to_string(),
+            roman: "nòn".to_string(),
+            hanji: Some("卵".to_string()),
+            canonical_tl: "nòn".to_string(),
+            score: 10.0,
+            frequency: 100,
+            walker_cost: 100,
+            bitmask: 1,
+            user_weight: 0.0,
+            context_rank: 0,
+            coverage_kind: COVERAGE_KIND_FULL,
+            is_custom: false,
+            variant: 1,
+        };
+        let mut candidates = vec![cand];
+        let slot0_cand = RawCandidate {
+            consumed_span: (0, 3),
+            syllable_count: 1,
+            display_text: "卵".to_string(),
+            roman: "nòn".to_string(),
+            hanji: Some("卵".to_string()),
+            canonical_tl: "nòn".to_string(),
+            score: 0.0,
+            frequency: 0,
+            walker_cost: WALKER_COST_UNPRICED,
+            bitmask: 0,
+            user_weight: 0.0,
+            context_rank: ranking::CONTEXT_RANK_NONE,
+            coverage_kind: COVERAGE_KIND_FULL,
+            is_custom: false,
+            variant: 1,
+        };
+        let is_same_full_span_word = |x: &RawCandidate| {
+            x.coverage_kind == COVERAGE_KIND_FULL
+                && x.consumed_span == slot0_cand.consumed_span
+                && x.hanji == slot0_cand.hanji
+        };
+        let exact_twin_idx = candidates
+            .iter()
+            .position(|x| is_same_full_span_word(x) && x.roman == slot0_cand.roman);
+        let promote_idx = if slot0_cand.is_custom {
+            None
+        } else if let Some(i) = exact_twin_idx {
+            Some(i)
+        } else {
+            candidates.iter().position(|x| {
+                is_same_full_span_word(x)
+                    && roman_reading_eq(&x.roman, &slot0_cand.roman)
+            })
+        };
+        let slot0 = match promote_idx {
+            Some(i) => candidates.remove(i),
+            None => slot0_cand,
+        };
+        candidates.retain(|x| {
+            !(x.hanji == slot0.hanji
+                && x.consumed_span == slot0.consumed_span
+                && (x.canonical_tl == slot0.canonical_tl || x.roman == slot0.roman))
+        });
+        candidates.insert(0, slot0);
+        assert_eq!(candidates[0].variant, 1, "Slot 0 candidate must preserve variant = 1");
     }
 
     // ----- v3.5.8 S2 — synth_consumed_span trailing-hyphen guard -----

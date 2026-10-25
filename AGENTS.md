@@ -138,13 +138,13 @@ Full setup: [`docs/BUILDING.md`](docs/BUILDING.md). **Bootstrap**: clone with `-
 | engine | `cargo build --manifest-path engine/Cargo.toml --workspace` | `make test` |
 | iOS | Xcode → keyboard extension | `xcodebuild -project ios/TaigiKeyboard.xcodeproj -scheme TaigiKeyboardTests -destination 'platform=iOS Simulator,name=<device>' test` |
 | Android | `android/gradlew -p android :app:assembleDebug` | `android/gradlew -p android :app:testDebugUnitTest` |
-| macOS | `make -C macos build` (`install` before dogfood) | `make -C macos test` |
+| macOS | `make -C macos build` (dogfood: `make macos-libs && make -C macos install && make -C macos reload`) | `make -C macos test` |
 | Windows | `make windows-check` (host gate; its `check-box` step needs the maintainer's Windows box over ssh — others run the sub-targets in `windows/README.md`; the DLL builds only on Windows — `docs/architecture/windows-release.md`) | included |
 | Linux | `make linux-check` (host gate; `.deb` via `make -C linux deb` — `docs/architecture/linux-release.md`) | included |
 | desktop-shared / macOS Rust crates | `make desktop-check` (`desktop/`) · `make macos-rust-check` (`macos/crates`) | included |
 | taigi-converter | — | `npm test` in `taigi-converter/` |
 
-**Stale-artifact gate — run before every iOS / Android / macOS build+test** (stale binaries give false-green tests):
+**Stale-artifact gate — run before every iOS / Android / macOS build+test** (stale binaries give false-green tests; note `macos/Makefile` never rebuilds Rust, so always run `make macos-libs` with `protoc` in `PATH` before macOS install when Rust or dictionary changes):
 
 | Diff touches… | Run first |
 |---|---|
