@@ -70,15 +70,15 @@ impl CandidateCellContent {
             return Self::new(text, None);
         }
         match candidate.nonempty_hanji() {
-            None => Self::new(candidate.roman.clone(), None),
+            None => Self::new(candidate.roman_for_display(), None),
             Some(_) if settings.candidate_display_mode == CandidateDisplayMode::RomanOnly => {
-                Self::new(candidate.roman.clone(), None)
+                Self::new(candidate.roman_for_display(), None)
             }
             Some(hanji) => {
                 if settings.is_hanji_first {
-                    Self::new(hanji, Some(candidate.roman.clone()))
+                    Self::new(hanji, Some(candidate.roman_for_display()))
                 } else {
-                    Self::new(candidate.roman.clone(), Some(hanji.to_owned()))
+                    Self::new(candidate.roman_for_display(), Some(hanji.to_owned()))
                 }
             }
         }
@@ -109,6 +109,27 @@ mod tests {
         assert_eq!(
             CandidateCellContent::cell(&c, &settings(true)),
             CandidateCellContent::new("交--人", Some("kau--lâng".to_owned()))
+        );
+    }
+
+    #[test]
+    fn a_meinong_reading_carries_the_mark_after_its_romanization_only_in_the_cell() {
+        // Hakfa fork: 「美」 is a display mark on the romanization; the candidate itself is untouched.
+        let mut c = candidate("nòn", Some("卵"), 0);
+        c.variant = 1;
+        assert_eq!(
+            CandidateCellContent::cell(&c, &settings(true)),
+            CandidateCellContent::new("卵", Some("nòn 美".to_owned()))
+        );
+        assert_eq!(
+            CandidateCellContent::cell(&c, &settings(false)),
+            CandidateCellContent::new("nòn 美", Some("卵".to_owned()))
+        );
+        assert_eq!(c.roman, "nòn", "the commit never sees the mark");
+        let plain = candidate("lòn", Some("卵"), 0);
+        assert_eq!(
+            CandidateCellContent::cell(&plain, &settings(true)),
+            CandidateCellContent::new("卵", Some("lòn".to_owned()))
         );
     }
 

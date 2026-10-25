@@ -1284,6 +1284,7 @@ pub(crate) fn assemble_candidates(
                             context_rank: ranking::CONTEXT_RANK_NONE,
                             coverage_kind: slot0.coverage_kind,
                             is_custom: slot0.is_custom,
+                            variant: 0,
                         };
                         // `hoogua` bug (2026-06-02): the walker synth
                         // joins per-syllable canonical romans with a
@@ -1802,6 +1803,7 @@ mod tests {
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: COVERAGE_KIND_FULL,
             is_custom: false,
+            variant: 0,
         };
         cand.roman = recase_tl_as_poj_display(&cand.roman);
         assert_eq!(cand.roman, "go\u{0358}", "display roman renders to POJ");
@@ -1829,6 +1831,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
                 is_custom,
+                variant: 0,
             }
         }
         // Post-render: a custom entry stored `gô͘` and a dict.bin entry
@@ -1876,6 +1879,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
                 is_custom: false,
+                variant: 0,
             }
         }
         // The reported bug: TPS `ㄨㄢ` → dict has 灣/uan (tone 1) + 灣/uân
@@ -1905,6 +1909,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
                 is_custom: false,
+                variant: 0,
             }
         }
         // Same hanji at different `consumed_span` is a legitimate partial
@@ -1938,6 +1943,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
                 is_custom: false,
+                variant: 0,
             }
         }
         // Hanji-absent rows render as TPS / roman in the UI and are

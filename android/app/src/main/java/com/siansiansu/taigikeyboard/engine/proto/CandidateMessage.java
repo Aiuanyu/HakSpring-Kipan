@@ -395,6 +395,47 @@ public  final class CandidateMessage extends
 
   }
 
+  public static final int VARIANT_FIELD_NUMBER = 11;
+  private int variant_;
+  /**
+   * <pre>
+   * Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+   * candidate window marks 「美」. Display only; the commit goes through `display_text`.
+   * </pre>
+   *
+   * <code>uint32 variant = 11;</code>
+   * @return The variant.
+   */
+  @java.lang.Override
+  public int getVariant() {
+    return variant_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+   * candidate window marks 「美」. Display only; the commit goes through `display_text`.
+   * </pre>
+   *
+   * <code>uint32 variant = 11;</code>
+   * @param value The variant to set.
+   */
+  private void setVariant(int value) {
+
+    variant_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+   * candidate window marks 「美」. Display only; the commit goes through `display_text`.
+   * </pre>
+   *
+   * <code>uint32 variant = 11;</code>
+   */
+  private void clearVariant() {
+
+    variant_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.CandidateMessage parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -878,6 +919,49 @@ public  final class CandidateMessage extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+     * candidate window marks 「美」. Display only; the commit goes through `display_text`.
+     * </pre>
+     *
+     * <code>uint32 variant = 11;</code>
+     * @return The variant.
+     */
+    @java.lang.Override
+    public int getVariant() {
+      return instance.getVariant();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+     * candidate window marks 「美」. Display only; the commit goes through `display_text`.
+     * </pre>
+     *
+     * <code>uint32 variant = 11;</code>
+     * @param value The variant to set.
+     * @return This builder for chaining.
+     */
+    public Builder setVariant(int value) {
+      copyOnWrite();
+      instance.setVariant(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+     * candidate window marks 「美」. Display only; the commit goes through `display_text`.
+     * </pre>
+     *
+     * <code>uint32 variant = 11;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearVariant() {
+      copyOnWrite();
+      instance.clearVariant();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.CandidateMessage)
   }
   @java.lang.Override
@@ -901,10 +985,11 @@ public  final class CandidateMessage extends
             "roman_",
             "hanji_",
             "canonicalTl_",
+            "variant_",
           };
           java.lang.String info =
-              "\u0000\u0006\u0000\u0001\u0002\n\u0006\u0000\u0000\u0000\u0002\u000b\u0003\u000b" +
-              "\u0004\u0208\b\u0208\t\u1208\u0000\n\u0208";
+              "\u0000\u0007\u0000\u0001\u0002\u000b\u0007\u0000\u0000\u0000\u0002\u000b\u0003\u000b" +
+              "\u0004\u0208\b\u0208\t\u1208\u0000\n\u0208\u000b\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

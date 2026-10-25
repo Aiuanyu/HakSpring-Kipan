@@ -73,7 +73,7 @@ pub(crate) fn presentation(
                 } else {
                     CandidateScript::Primary
                 },
-                cell: CandidateCellContent::new(candidate.roman.clone(), None),
+                cell: CandidateCellContent::new(candidate.roman_for_display(), None),
             });
         }
     }

@@ -110,4 +110,15 @@ public interface CandidateMessageOrBuilder extends
    */
   com.google.protobuf.ByteString
       getCanonicalTlBytes();
+
+  /**
+   * <pre>
+   * Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+   * candidate window marks 「美」. Display only; the commit goes through `display_text`.
+   * </pre>
+   *
+   * <code>uint32 variant = 11;</code>
+   * @return The variant.
+   */
+  int getVariant();
 }

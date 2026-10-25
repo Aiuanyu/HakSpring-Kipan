@@ -193,6 +193,10 @@ pub struct RawCandidate {
     /// re-reading the dictionary record) lets the sort be a pure
     /// function of the returned `RawCandidate` vector.
     pub bitmask: u16,
+    /// Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian
+    /// (`dictionary_reader::KAUTIAN_SUBTAG_MEINONG_BIT` on a record that carries a lect). Emitted on
+    /// `CandidateMessage.variant` so the candidate window can mark it 「美」.
+    pub variant: u8,
     /// Time-decayed user-selection weight for this candidate's
     /// `(display_text, canonical_tl)` pair
     /// ([`ranking::FrequencyData::user_weight`]; `0.0` = never selected,
@@ -2059,6 +2063,7 @@ mod edge_word_pick_tests {
             context_rank,
             coverage_kind: COVERAGE_KIND_FULL,
             is_custom: false,
+            variant: 0,
         }
     }
 

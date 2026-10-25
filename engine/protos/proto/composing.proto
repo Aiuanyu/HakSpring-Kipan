@@ -501,6 +501,9 @@ message CandidateMessage {
   // NEVER consulted for the document commit (that goes through
   // `display_text`).
   string         canonical_tl        = 10;
+  // Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+  // candidate window marks 「美」. Display only; the commit goes through `display_text`.
+  uint32         variant             = 11;
 }
 
 // Platform-neutral effects. The wrapper maps document-mutation effects

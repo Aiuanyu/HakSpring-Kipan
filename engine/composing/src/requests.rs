@@ -405,6 +405,7 @@ fn literal_roman_candidate(
         context_rank: ranking::CONTEXT_RANK_NONE,
         coverage_kind: COVERAGE_KIND_FULL,
         is_custom: false,
+        variant: 0,
     })
 }
 
@@ -472,6 +473,7 @@ fn raw_to_proto_candidate(c: RawCandidate) -> CandidateMessage {
         // into `CommitContinuous.association_tl` on tap. Empty only for
         // TPS-OOV hanji-absent candidates with no recoverable dict TL.
         canonical_tl: c.canonical_tl,
+        variant: u32::from(c.variant),
     }
 }
 
@@ -550,6 +552,7 @@ mod tests {
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: lexicon::COVERAGE_KIND_FULL,
             is_custom: false,
+            variant: 0,
         };
         let proto = raw_to_proto_candidate(raw);
         assert_eq!(proto.roman, "tâi-uân");
@@ -576,6 +579,7 @@ mod tests {
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: lexicon::COVERAGE_KIND_FULL,
             is_custom: false,
+            variant: 0,
         };
         let proto = raw_to_proto_candidate(raw);
         assert_eq!(proto.roman, "tāi");
@@ -606,6 +610,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: lexicon::COVERAGE_KIND_FULL,
                 is_custom: false,
+                variant: 0,
             }
         }
         let mut candidates = vec![

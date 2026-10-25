@@ -128,6 +128,8 @@ pub struct ContinuousCandidate {
     /// Canonical TL, snapshotted before any display recasing. Empty only when
     /// no canonical TL is recoverable.
     pub canonical_tl: String,
+    /// Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian.
+    pub variant: u32,
 }
 
 impl ContinuousCandidate {
@@ -139,6 +141,17 @@ impl ContinuousCandidate {
             roman: message.roman.clone(),
             hanji: message.hanji.clone(),
             canonical_tl: message.canonical_tl.clone(),
+            variant: message.variant,
+        }
+    }
+
+    /// The romanization as the candidate window draws it: a Meinong reading carries 「美」 after it.
+    /// Display only — a commit goes through the engine's `display_text`.
+    pub fn roman_for_display(&self) -> String {
+        if self.variant == 1 {
+            format!("{} 美", self.roman)
+        } else {
+            self.roman.clone()
         }
     }
 
@@ -186,6 +199,7 @@ pub(crate) mod test_support {
             roman: roman.to_owned(),
             hanji: hanji.map(str::to_owned),
             canonical_tl: roman.to_owned(),
+            variant: 0,
         }
     }
 }

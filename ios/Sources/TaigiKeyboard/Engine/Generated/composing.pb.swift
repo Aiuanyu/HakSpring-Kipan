@@ -982,6 +982,10 @@ public nonisolated struct Taigi_Engine_CandidateMessage: Sendable {
   /// `display_text`).
   public var canonicalTl: String = String()
 
+  /// Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
+  /// candidate window marks 「美」. Display only; the commit goes through `display_text`.
+  public var variant: UInt32 = 0
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -2205,7 +2209,7 @@ nonisolated extension Taigi_Engine_ContinuousResponse: SwiftProtobuf.Message, Sw
 
 nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CandidateMessage"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{2}consumed_span_end\0\u{3}syllable_count\0\u{3}display_text\0\u{2}\u{4}roman\0\u{1}hanji\0\u{3}canonical_tl\0\u{b}consumed_span_start\0\u{b}score\0\u{b}form\0\u{b}script_kind\0\u{c}\u{1}\u{1}\u{c}\u{5}\u{1}\u{c}\u{6}\u{1}\u{c}\u{7}\u{1}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{2}consumed_span_end\0\u{3}syllable_count\0\u{3}display_text\0\u{2}\u{4}roman\0\u{1}hanji\0\u{3}canonical_tl\0\u{1}variant\0\u{b}consumed_span_start\0\u{b}score\0\u{b}form\0\u{b}script_kind\0\u{c}\u{1}\u{1}\u{c}\u{5}\u{1}\u{c}\u{6}\u{1}\u{c}\u{7}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2219,6 +2223,7 @@ nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, Swif
       case 8: try { try decoder.decodeSingularStringField(value: &self.roman) }()
       case 9: try { try decoder.decodeSingularStringField(value: &self._hanji) }()
       case 10: try { try decoder.decodeSingularStringField(value: &self.canonicalTl) }()
+      case 11: try { try decoder.decodeSingularUInt32Field(value: &self.variant) }()
       default: break
       }
     }
@@ -2247,6 +2252,9 @@ nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, Swif
     if !self.canonicalTl.isEmpty {
       try visitor.visitSingularStringField(value: self.canonicalTl, fieldNumber: 10)
     }
+    if self.variant != 0 {
+      try visitor.visitSingularUInt32Field(value: self.variant, fieldNumber: 11)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2257,6 +2265,7 @@ nonisolated extension Taigi_Engine_CandidateMessage: SwiftProtobuf.Message, Swif
     if lhs.roman != rhs.roman {return false}
     if lhs._hanji != rhs._hanji {return false}
     if lhs.canonicalTl != rhs.canonicalTl {return false}
+    if lhs.variant != rhs.variant {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

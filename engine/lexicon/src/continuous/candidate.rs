@@ -176,9 +176,14 @@ pub(super) fn record_to_candidate(
         syllable_count,
         hanji,
         tl,
-        kautian_subtag: _,
+        kautian_subtag,
         walker_cost,
     } = record;
+    // Hakfa fork: a Meinong reading is a Hakfa record (it has a lect) with the Meinong subtag bit.
+    let variant = u8::from(
+        (kautian_subtag & crate::dictionary_reader::KAUTIAN_SUBTAG_LECT_MASK) != 0
+            && (kautian_subtag & (1 << crate::dictionary_reader::KAUTIAN_SUBTAG_MEINONG_BIT)) != 0,
+    );
     // EFFECTIVE bitmask (kautian bit dropped when its subcollection is
     // disabled) drives `source_tier_rank` so a multi-source survivor ranks by
     // its other source's tier, not kautian's (DD6 ranking-weight drop).
@@ -217,6 +222,7 @@ pub(super) fn record_to_candidate(
         frequency,
         walker_cost,
         bitmask,
+        variant,
         user_weight,
         context_rank,
         coverage_kind,
@@ -326,6 +332,7 @@ pub(super) fn custom_entry_to_candidate(
         context_rank,
         coverage_kind,
         is_custom: true,
+        variant: 0,
     }
 }
 
@@ -473,6 +480,31 @@ mod record_to_candidate_carrier_tests {
     }
 
     #[test]
+    fn only_a_hakfa_record_with_the_meinong_bit_is_a_meinong_variant() {
+        use crate::dictionary_reader::{KAUTIAN_SUBTAG_LECT_SHIFT, KAUTIAN_SUBTAG_MEINONG_BIT};
+        let variant_of = |subtag: u16| {
+            let mut rec = record("nòn", Some("卵"));
+            rec.kautian_subtag = subtag;
+            record_to_candidate(
+                rec,
+                0,
+                (0, 3),
+                &FrequencyMap::new(),
+                0,
+                ContextRanks::empty(),
+                COVERAGE_KIND_FULL,
+            )
+            .variant
+        };
+        let south = 6 << KAUTIAN_SUBTAG_LECT_SHIFT;
+        let meinong = 1 << KAUTIAN_SUBTAG_MEINONG_BIT;
+        assert_eq!(variant_of(south | 1 | meinong), 1, "South Sixian + Meinong bit");
+        assert_eq!(variant_of(south | 1), 0, "an ordinary South Sixian reading");
+        // upstream data uses subtag bit 3 as an accent slot and has no lect: never a variant
+        assert_eq!(variant_of(1 | meinong), 0);
+    }
+
+    #[test]
     fn hant_record_emits_roman_and_some_hanji() {
         let cand = record_to_candidate(
             record("tâi-uân", Some("臺灣")),
@@ -563,6 +595,7 @@ mod item12_custom_dedupe_tests {
             context_rank: CONTEXT_RANK_NONE,
             coverage_kind: COVERAGE_KIND_FULL,
             is_custom: false,
+            variant: 0,
         }
     }
 
