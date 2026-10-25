@@ -791,14 +791,25 @@ if (!fs.existsSync(suppJsonPath)) {
     const key = word + '|' + notone;
     if (map.has(key)) continue;
     // Frequency grows with how often the character occurs in words, but stays below every real entry.
-    const count = Number((line.match(/出現 (\d+) 擺/) || [])[1] || 1);
+    // 5b: 擬音字詞頻設為 900（排在所有補字典後面）；人工沿襲設為 1200
+    const isNisim = line.includes('擬音') || (parts[8] && parts[8].includes('擬音'));
+    const isIamsip = line.includes('沿襲') || (parts[8] && parts[8].includes('沿襲'));
+    let freq;
+    if (isNisim) {
+      freq = 900;
+    } else if (isIamsip) {
+      freq = 1200;
+    } else {
+      const count = Number((line.match(/出現 (\d+) 擺/) || [])[1] || 1);
+      freq = Math.min(9000, 1000 + 100 * count);
+    }
     map.set(key, {
       word,
       tl: syll,
       tl_num: syll,
       tl_notone: notone,
       tl_abbrev: '',
-      freq: Math.min(9000, 1000 + 100 * count),
+      freq,
       syllable_count: 1,
       syllables: [notone],
       bitmask: SUPP_BITMASK,
