@@ -118,6 +118,29 @@ impl UserFrequencyStore {
         });
     }
 
+    /// Hakfa fork (各腔互學): records multiple `(word, tl)` pairs synchronously in a single
+    /// transaction without overflowing the async write queue.
+    pub fn record_batch(&self, pairs: &[(String, String)]) -> Result<(), UserDataDatabaseError> {
+        if pairs.is_empty() {
+            return Ok(());
+        }
+        let pairs = pairs.to_vec();
+        let capacity = self.capacity_for_writer();
+        self.database.perform(move |connection| {
+            immediate_transaction::<_, UserDataDatabaseError>(connection, |connection| {
+                let mut statement = connection.prepare_cached(&format!(
+                    "INSERT INTO {TABLE_NAME} (word, tl, count, last_used)\nVALUES (?, ?, 1, CURRENT_TIMESTAMP)\nON CONFLICT(word, tl) DO UPDATE SET\n    count = count + 1,\n    last_used = CURRENT_TIMESTAMP;"
+                ))?;
+                for (word, tl) in &pairs {
+                    statement.execute(params![word, tl])?;
+                }
+                drop(statement);
+                capacity.enforce(connection)?;
+                Ok(())
+            })
+        })
+    }
+
     /// Merges a backup's counts: a `(word, tl)` already stored keeps the
     /// larger count, and every imported row counts as used now — the phones'
     /// `.taigi` merge (iOS `UserFrequencyRepository.batchImportMerge`). One

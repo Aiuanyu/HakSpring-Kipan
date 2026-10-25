@@ -130,6 +130,50 @@ impl LearnedPhraseStore {
         });
     }
 
+    /// Hakfa fork (各腔互學): learns multiple `(hanzi, canonical_tl)` pairs synchronously
+    /// in a single transaction without overflowing the async write queue.
+    pub fn learn_phrases_batch(&self, pairs: &[(String, String)]) -> Result<(), UserDataDatabaseError> {
+        if pairs.is_empty() {
+            return Ok(());
+        }
+        let mut candidates = Vec::with_capacity(pairs.len());
+        for (hanji, canonical_tl) in pairs {
+            if hanji.is_empty() || canonical_tl.is_empty() {
+                continue;
+            }
+            if let Some(keys) = (self.derive_search_keys)(canonical_tl).filter(|k| !k.is_empty()) {
+                candidates.push((hanji.clone(), canonical_tl.clone(), keys));
+            }
+        }
+        if candidates.is_empty() {
+            return Ok(());
+        }
+        let limit = self.limit;
+        self.database.perform(move |connection| {
+            immediate_transaction::<_, UserDataDatabaseError>(connection, |connection| {
+                let mut last_inserted_id = 0i64;
+                for (hanzi, canonical_tl, search_keys) in &candidates {
+                    let (row_id, learn_count): (i64, i64) = connection.query_row(
+                        &format!(
+                            "INSERT INTO {TABLE_NAME} (roman, hanzi, learn_count, updated_at)\nVALUES (?, ?, 1, CURRENT_TIMESTAMP)\nON CONFLICT(hanzi, roman) DO UPDATE SET\n    learn_count = MIN(learn_count + 1, {}),\n    updated_at = CURRENT_TIMESTAMP\nRETURNING id, learn_count;",
+                            Self::MAX_LEARN_COUNT
+                        ),
+                        params![canonical_tl, hanzi],
+                        |row| Ok((row.get(0)?, row.get(1)?)),
+                    )?;
+                    if learn_count == 1 {
+                        write_search_keys(connection, row_id, search_keys)?;
+                        last_inserted_id = row_id;
+                    }
+                }
+                if last_inserted_id > 0 {
+                    evict_past_cap(connection, limit, last_inserted_id)?;
+                }
+                Ok(())
+            })
+        })
+    }
+
     /// Bumps a phrase the user just committed as one candidate, so a phrase
     /// that is used stays ahead of the eviction line. No-op for an unknown pair.
     pub fn touch_phrase(&self, hanji: &str, canonical_tl: &str) {

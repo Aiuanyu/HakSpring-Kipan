@@ -15,7 +15,7 @@
 //! The dictionary lookup is a parameter, so the algorithm runs against a stub in the tests and
 //! against `lexicon::api::search_by_hanji` in the engine.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use userdata::{UserDataHandle, UserDataStores};
@@ -167,60 +167,87 @@ pub(crate) fn sync(
     struct Learned {
         phrases: Vec<userdata::LearnedPhraseRow>,
         words: Vec<userdata::FrequencyRow>,
-        have_phrases: HashSet<(String, String)>,
-        have_words: HashSet<(String, String)>,
     }
+    let mut target_have_phrases: HashMap<u32, HashSet<(String, String)>> = HashMap::new();
+    let mut target_have_words: HashMap<u32, HashSet<(String, String)>> = HashMap::new();
+
     let learned: Vec<(u32, Learned)> = stores
         .iter()
         .map(|(lect, set)| {
             let phrases = set.learned_phrases.all_rows().unwrap_or_default();
             let words = set.frequency.all_rows().unwrap_or_default();
-            let have_phrases = phrases
+            let have_phrases: HashSet<(String, String)> = phrases
                 .iter()
                 .map(|row| (row.hanji.clone(), row.canonical_tl.clone()))
                 .collect();
-            let have_words = words
+            let have_words: HashSet<(String, String)> = words
                 .iter()
                 .map(|row| (row.word.clone(), row.tl.clone()))
                 .collect();
-            (*lect, Learned { phrases, words, have_phrases, have_words })
+            target_have_phrases.insert(*lect, have_phrases);
+            target_have_words.insert(*lect, have_words);
+            (*lect, Learned { phrases, words })
         })
         .collect();
 
+    let mut pending_phrases: HashMap<u32, Vec<(String, String)>> = HashMap::new();
+    let mut pending_words: HashMap<u32, Vec<(String, String)>> = HashMap::new();
+
     let mut report = SyncReport::default();
     for (source, from) in &learned {
-        for (target, to) in learned.iter().filter(|(lect, _)| lect != source) {
-            let Some((_, target_stores)) = stores.iter().find(|(lect, _)| lect == target) else {
+        for (target, _) in learned.iter().filter(|(lect, _)| lect != source) {
+            let Some(have_phrases) = target_have_phrases.get_mut(target) else {
                 continue;
             };
             for row in &from.phrases {
                 match outcome(readings, &row.hanji, *target, &row.canonical_tl) {
                     Outcome::Skip(reason) => report.skip(&row.hanji, *target, reason),
-                    Outcome::Copy { tl, .. } if to.have_phrases.contains(&(row.hanji.clone(), tl.clone())) => {
+                    Outcome::Copy { tl, .. } if have_phrases.contains(&(row.hanji.clone(), tl.clone())) => {
                         report.already_present += 1;
                     }
                     Outcome::Copy { tl, composed } => {
                         report.added_phrases += 1;
                         report.composed += u32::from(composed);
+                        have_phrases.insert((row.hanji.clone(), tl.clone()));
                         if !dry_run {
-                            target_stores.learned_phrases.learn_phrase(&row.hanji, &tl);
+                            pending_phrases.entry(*target).or_default().push((row.hanji.clone(), tl));
                         }
                     }
                 }
             }
+
+            let Some(have_words) = target_have_words.get_mut(target) else {
+                continue;
+            };
             for row in &from.words {
                 match outcome(readings, &row.word, *target, &row.tl) {
                     Outcome::Skip(reason) => report.skip(&row.word, *target, reason),
-                    Outcome::Copy { tl, .. } if to.have_words.contains(&(row.word.clone(), tl.clone())) => {
+                    Outcome::Copy { tl, .. } if have_words.contains(&(row.word.clone(), tl.clone())) => {
                         report.already_present += 1;
                     }
                     Outcome::Copy { tl, composed } => {
                         report.added_words += 1;
                         report.composed += u32::from(composed);
+                        have_words.insert((row.word.clone(), tl.clone()));
                         if !dry_run {
-                            target_stores.frequency.record(&row.word, &tl);
+                            pending_words.entry(*target).or_default().push((row.word.clone(), tl));
                         }
                     }
+                }
+            }
+        }
+    }
+
+    if !dry_run {
+        for (target, target_stores) in &stores {
+            if let Some(phrases) = pending_phrases.remove(target) {
+                if !phrases.is_empty() {
+                    let _ = target_stores.learned_phrases.learn_phrases_batch(&phrases);
+                }
+            }
+            if let Some(words) = pending_words.remove(target) {
+                if !words.is_empty() {
+                    let _ = target_stores.frequency.record_batch(&words);
                 }
             }
         }
@@ -430,5 +457,28 @@ mod tests {
         assert_eq!((report.added_words, report.composed), (1, 1), "{report:?}");
         let rows = handle.stores_for_lect(2).unwrap().frequency.all_rows().unwrap();
         assert_eq!((rows[0].word.as_str(), rows[0].tl.as_str()), ("一下", "rhid-hā"));
+    }
+
+    #[test]
+    fn multi_source_sync_does_not_duplicate_and_second_run_is_idempotent() {
+        let directory = tempfile::tempdir().unwrap();
+        let handle = opened_handle(directory.path());
+        // Lect 1 and Lect 2 both learned "海"; Lect 3 has not.
+        handle.stores_for_lect(1).unwrap().frequency.record("海", "hòi");
+        handle.stores_for_lect(2).unwrap().frequency.record("海", "hói");
+        let dict = HashMap::from([
+            (("海", 1), vec!["hòi"]),
+            (("海", 2), vec!["hói"]),
+            (("海", 3), vec!["hoi"]),
+        ]);
+        let readings = readings_from(dict);
+
+        // First sync among [1, 2, 3]: Lect 3 should receive "海" exactly once!
+        let first = sync(&handle, &[1, 2, 3], false, &readings).unwrap();
+        assert_eq!(first.added_words, 1, "Lect 3 receives 海 once, not twice from both 1 and 2: {first:?}");
+
+        // Second sync immediately after: must add 0 words (strictly idempotent).
+        let second = sync(&handle, &[1, 2, 3], false, &readings).unwrap();
+        assert_eq!(second.added_words, 0, "Second sync must add nothing: {second:?}");
     }
 }
