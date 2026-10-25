@@ -30,7 +30,8 @@ One maintainer works with local agents (Gemini and Claude in Antigravity, Claude
 **The maintainer's notes** are a private Obsidian vault, kept in a private GitHub repository of the maintainer's. Kipan's notes are under `創作/程式/HakSpring/IME/`:
 
 - `IME.md` — the hub: current status, the decisions table, roadmap, active discussion. **Read it first** when you have the vault. A row in its decisions table overrides anything said in an archived thread.
-- `dialects.md`, `android.md`, `ui-strings.md`, `names.md` — sub-plans.
+- `learner.md` — 學習模式：開發**「打別種語言出客語／顯示詞典資訊」**的創新機制（如注音／漢拼／倉頡／Rime 反查客語、同形／同義反查、候選 📖 詞典卡片）。**絕不是**輸入法引擎日常記憶字詞組合的「自動學詞／自學詞彙／跨腔學詞（Userdata / Association / Frequency）」機制！兩者性質完全不同，嚴禁混淆。
+- `dialects.md`, `android.md`, `ui-strings.md`, `names.md`, `release.md`, `queue.md` — sub-plans.
 - `log/` — archived threads (read-only; read them only to learn why something was decided).
 - `hub-template.md` — the format every note follows.
 
