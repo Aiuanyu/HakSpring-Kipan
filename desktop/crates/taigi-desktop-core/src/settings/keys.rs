@@ -70,6 +70,12 @@ pub const fn lect_enabled(lect: Lect) -> SettingsKey<bool> {
     }
 }
 
+/// Hakfa fork: write tone 24 (á) as 33 (ā) in the display romanization. An output option for Meinong
+/// speakers, switched on its own (USER 2026-10-25), not with the Meinong readings. Sixian and South
+/// Sixian only. Off by default.
+pub const IS_TONE33_ENABLED: SettingsKey<bool> =
+    SettingsKey::new("tone33Enabled", ENGINE_DEFAULTS.meinong_tones);
+
 /// Hakfa fork: show the Meinong (美濃) readings of South Sixian. A switch under 南四縣 on the
 /// Dictionary Sources pane, off by default.
 pub const IS_MEINONG_ENABLED: SettingsKey<bool> =
@@ -322,7 +328,7 @@ pub const APPEARANCE_KEYS: [&str; 4] = [
 
 /// The 13 source toggles + 12 subcollection toggles the Dictionary Sources pane's reset
 /// removes (`SettingsStore.swift` `resetDictionarySources` is the macOS twin).
-pub const DICTIONARY_SOURCE_KEYS: [&str; 29] = [
+pub const DICTIONARY_SOURCE_KEYS: [&str; 30] = [
     IS_KAUTIAN_ENABLED.name,
     IS_TAIGITV_ENABLED.name,
     IS_ITAIGI_ENABLED.name,
@@ -353,6 +359,7 @@ pub const DICTIONARY_SOURCE_KEYS: [&str; 29] = [
     lect_enabled(Lect::Namxiian).name,
     lect_enabled(Lect::Hoiliug).name,
     IS_MEINONG_ENABLED.name,
+    IS_TONE33_ENABLED.name,
 ];
 
 #[cfg(test)]

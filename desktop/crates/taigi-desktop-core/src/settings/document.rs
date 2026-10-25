@@ -359,6 +359,7 @@ impl SettingsDocument {
             syllable_separator: self.choice(&keys::SYLLABLE_SEPARATOR),
             is_nasal_marker_uppercase_enabled: self.bool(&keys::IS_NASAL_MARKER_UPPERCASE_ENABLED),
             is_custom_dict_enabled: self.bool(&keys::IS_CUSTOM_DICT_ENABLED),
+            meinong_tones: self.bool(&keys::IS_TONE33_ENABLED),
             dictionary_sources: self.dictionary_sources(),
         }
     }
@@ -905,6 +906,7 @@ mod tests {
             syllable_separator: SyllableSeparator::None,
             is_nasal_marker_uppercase_enabled: false,
             is_custom_dict_enabled: false,
+            meinong_tones: false,
             dictionary_sources: DictionarySourceToggles {
                 kautian: false,
                 khiin: true,
@@ -1062,6 +1064,21 @@ mod tests {
         assert!(doc.dictionary_sources().meinong);
         doc.reset_dictionary_sources();
         assert!(!doc.dictionary_sources().meinong);
+    }
+
+    #[test]
+    fn the_33_tone_output_is_its_own_switch_apart_from_the_meinong_readings() {
+        let mut doc = SettingsDocument::default();
+        assert!(!doc.engine_settings().meinong_tones);
+        doc.set_bool(&keys::IS_MEINONG_ENABLED, true);
+        assert!(doc.dictionary_sources().meinong);
+        assert!(!doc.engine_settings().meinong_tones, "the readings switch does not write 33");
+        doc.set_bool(&keys::IS_TONE33_ENABLED, true);
+        doc.set_bool(&keys::IS_MEINONG_ENABLED, false);
+        assert!(doc.engine_settings().meinong_tones, "and the tones need not the readings");
+        assert!(!doc.dictionary_sources().meinong);
+        doc.reset_dictionary_sources();
+        assert!(!doc.engine_settings().meinong_tones);
     }
 
     #[test]

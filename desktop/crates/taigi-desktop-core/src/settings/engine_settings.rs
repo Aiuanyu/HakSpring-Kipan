@@ -327,6 +327,10 @@ pub struct EngineSettings {
     /// no custom rows (`FetchAtPos.custom_dictionary_disabled`). CROSS-PLATFORM INVARIANT —
     /// `SharedSettings.swift` `isCustomDictEnabledKey` (ON).
     pub is_custom_dict_enabled: bool,
+    /// Hakfa fork: write tone 24 (á) as 33 (ā) in the display romanization — an output option for
+    /// Meinong (美濃) speakers (`tone33Enabled`), separate from the Meinong readings switch
+    /// (`DictionarySourceToggles.meinong`). Off by default.
+    pub meinong_tones: bool,
     pub dictionary_sources: DictionarySourceToggles,
 }
 
@@ -354,6 +358,7 @@ impl EngineSettings {
             syllable_separator: SyllableSeparator::None,
             is_nasal_marker_uppercase_enabled: true,
             is_custom_dict_enabled: true,
+            meinong_tones: false,
             dictionary_sources: DictionarySourceToggles::DEFAULT,
         }
     };

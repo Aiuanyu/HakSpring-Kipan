@@ -26,6 +26,8 @@ struct DictionaryTogglesView: View {
 
     @AppStorage(SettingsStore.Keys.isMeinongEnabled.name)
     private var isMeinongEnabled = SettingsStore.Keys.isMeinongEnabled.defaultValue
+    @AppStorage(SettingsStore.Keys.isTone33Enabled.name)
+    private var isTone33Enabled = SettingsStore.Keys.isTone33Enabled.defaultValue
 
     // Hakfa fork (Obs IME data-ui D1): only the sources that exist in this keyboard are listed.
     // The upstream Taigi dictionaries (iTaigi, plant names, Taiwanese-Japanese, Tai-Hua, STTI,
@@ -43,11 +45,10 @@ struct DictionaryTogglesView: View {
                             .disabled(isOn(lect) && enabledCount == 1)
                         // Meinong is a switch under 南四縣, not a lect of its own (USER 2026-10-25).
                         if lect == .namxiian {
-                            // 美濃腔：24 調（á）寫成 33（ā），另收認證標个美濃音（候選標「美」）。
-                            // 四縣、南四縣都適用，所以兩腔有一腔開咧就做得開。
-                            Toggle("美濃腔 (Minung)", isOn: $isMeinongEnabled)
+                            // 美濃音：認證標个美濃讀音，淨南四縣腔有（候選標「美」）。
+                            Toggle("美濃音 (Minung)", isOn: $isMeinongEnabled)
                                 .padding(.leading, Metrics.subcollectionIndent)
-                                .disabled(!(isXiienEnabled || isNamxiianEnabled))
+                                .disabled(!isNamxiianEnabled)
                         }
                     }
                 }
@@ -77,7 +78,18 @@ struct DictionaryTogglesView: View {
             } header: {
                 Text(language.string(.dictionaryMoeSectionTitle))
             } footer: {
-                Text("客語能力認證詞彙跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸等其他腔同款。\n美濃腔：四縣、南四縣个羅馬字，24 調（á）寫做 33（ā）；另外收美濃音，候選標「美」。")
+                Text("客語能力認證詞彙跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸等其他腔同款。\n美濃音：另外收認證標个美濃讀音，候選標「美」。")
+            }
+
+            // Hakfa fork: an output option, switched on its own (USER 2026-10-25) — the Meinong
+            // readings above and this tone rewrite do not depend on each other.
+            Section {
+                Toggle("24 調寫做 33（á→ā）", isOn: $isTone33Enabled)
+                    .disabled(!(isXiienEnabled || isNamxiianEnabled))
+            } header: {
+                Text("輸出選項")
+            } footer: {
+                Text("美濃人个 24 調讀 33。淨改羅馬字个寫法，漢字、詞庫、學習資料都毋變；四縣、南四縣適用。")
             }
 
             // Its own section, at the end, drawn the way the Shortcuts and Appearance

@@ -80,6 +80,9 @@ final class SettingsStore: @unchecked Sendable {
         /// Hakfa fork: show the Meinong (美濃) readings of South Sixian — a switch under 南四縣, off by
         /// default (desktop-core `keys::IS_MEINONG_ENABLED`, the same name).
         static let isMeinongEnabled = SettingsKey(name: "meinongEnabled", defaultValue: false)
+        /// Hakfa fork: write tone 24 (á) as 33 (ā) in the romanization — an output option for Meinong
+        /// speakers, apart from the Meinong readings (desktop-core `keys::IS_TONE33_ENABLED`). Off by default.
+        static let isTone33Enabled = SettingsKey(name: "tone33Enabled", defaultValue: false)
         static func lectEnabled(_ lect: Lect) -> SettingsKey<Bool> {
             SettingsKey(name: "lectEnabled.\(lect.rawValue)", defaultValue: true)
         }
@@ -646,6 +649,7 @@ final class SettingsStore: @unchecked Sendable {
             userDefaults.removeObject(forKey: Keys.lectEnabled(lect).name)
         }
         userDefaults.removeObject(forKey: Keys.isMeinongEnabled.name)
+        userDefaults.removeObject(forKey: Keys.isTone33Enabled.name)
     }
 
     /// Puts `names` back to "never touched".
