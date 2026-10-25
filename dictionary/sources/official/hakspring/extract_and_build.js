@@ -582,7 +582,7 @@ function printReadingProblems() {
 function buildLectRecords() {
 console.log(`▶ [1/4] 開始萃取客源翠語料並展開變體（${LECT.name}）...`);
 
-const map = new Map(); // key: word + '|' + fusedNotone -> entry
+const map = new Map(); // key: word + '|' + normTL (+ '|美濃') -> entry (原則 6：以漢字加帶調讀音為識別鍵，保全一字多音)
 
 // 1. 處理認證五級（按級別賦予詞頻）
 const certFiles = [
@@ -676,7 +676,9 @@ for (const cf of certFiles) {
         word = '个人';
       }
       // 美濃變體另外一格：同詞同無調音（淨調號無共樣）也毋會被主讀音擋忒
-      const key = word + '|' + fusedNotone + (pair.meinong ? '|美濃' : '');
+      // 依原則 6：以 (漢字, 帶調標準讀音) 為識別鍵，保全一字多音；同字同音同調者才去重取高頻
+      const normTL = hyphenatedPhonetic.normalize('NFC');
+      const key = word + '|' + normTL + (pair.meinong ? '|美濃' : '');
 
       const boostedFreq = boostFrequency(word, Math.round(cf.freq * pair.scale));
       if (!map.has(key) || map.get(key).freq < boostedFreq) {
@@ -738,12 +740,9 @@ if (fs.existsSync(gipJsonPath)) {
       if (word === '個人' && fusedNotone === 'gengin') {
         word = '个人';
       }
-      // 「特」讀音：淨差聲調也另外一筆（鍵加帶調讀音）；共一隻帶調讀音就併
-      const plainKey = word + '|' + fusedNotone;
-      const samePlain = map.has(plainKey) && map.get(plainKey).tl.normalize('NFC') === hyphenatedPhonetic.normalize('NFC');
-      const key = pair.special && !samePlain
-        ? word + '|' + fusedNotone + '|' + hyphenatedPhonetic.normalize('NFC')
-        : plainKey;
+      // 依原則 6：以 (漢字, 帶調標準讀音) 為唯一鍵；同字同音同調者併入並加教典 bitmask，不同調者為合法多音詞條獨立保留
+      const normTL = hyphenatedPhonetic.normalize('NFC');
+      const key = word + '|' + normTL;
       const baseFreq = Math.max(100, gipDefaultFreq - word.length * 1000);
       const freq = boostFrequency(word, baseFreq);
 
@@ -788,7 +787,8 @@ if (!fs.existsSync(suppJsonPath)) {
     const syll = parts[2];
     if (!word || !syll) continue;
     const notone = removeTone(syll);
-    const key = word + '|' + notone;
+    const normTL = syll.normalize('NFC');
+    const key = word + '|' + normTL;
     if (map.has(key)) continue;
     // Frequency grows with how often the character occurs in words, but stays below every real entry.
     // 5b: 擬音字詞頻設為 900（排在所有補字典後面）；人工沿襲設為 1200
