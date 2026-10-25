@@ -479,6 +479,8 @@ function loadSouthFill() {
 const SOUTH_INCLUDE_PENDING = true;
 const SOUTH_PENDING_FREQ_FACTOR = 0.5;
 const MEINONG_FREQ_FACTOR = 0.9;
+/** 南四縣整隻詞都缺、抄北四縣音个詞頻倍數（--lect all 合併時做） */
+const SOUTH_STAND_IN_FREQ_FACTOR = 0.5;
 /** 美濃變體个 subtag 位元（引擎 KAUTIAN_SUBTAG_MEINONG_BIT，借上游腔口位元 3） */
 const MEINONG_SUBTAG = (1 << 0) | (1 << 3);
 function loadSouthPending() {
@@ -776,6 +778,24 @@ if (IS_ALL) {
     records.push(...JSON.parse(fs.readFileSync(dump, 'utf8')));
   }
   fs.rmSync(tmpDir, { recursive: true, force: true });
+  // 南四縣缺个，用北四縣个頂著（維護者原則，20261025）：北四縣有、南四縣「整隻詞」都無个
+  // （無任何一種讀音），抄北四縣个讀音入南四縣，詞頻 ×0.5。南四縣若有該詞（毋論讀音同北四縣
+  // 有無共樣）就毋抄——那係南北个差異，毋係缺；抄過去會同南四縣自家个資料衝突。
+  {
+    const SOUTH = LECTS['南'].code;
+    const NORTH = LECTS['四'].code;
+    const lectOf = r => r.subtag >> LECT_SHIFT;
+    const southWords = new Set(records.filter(r => lectOf(r) === SOUTH).map(r => r.word));
+    const standIns = records
+      .filter(r => lectOf(r) === NORTH && !southWords.has(r.word))
+      .map(r => ({
+        ...r,
+        subtag: (r.subtag & ((1 << LECT_SHIFT) - 1)) | (SOUTH << LECT_SHIFT),
+        freq: Math.max(100, Math.round(r.freq * SOUTH_STAND_IN_FREQ_FACTOR)),
+      }));
+    records.push(...standIns);
+    console.log(`  ✓ 南四縣缺个詞，用北四縣音頂著: ${new Set(standIns.map(r => r.word)).size} 隻詞 / ${standIns.length} 筆`);
+  }
   // 全腔合併排序：詞頻高个在前，同分四縣先（Array.sort 穩定）
   records.sort((a, b) => b.freq - a.freq);
   console.log(`\n  ✓ 全腔合併詞庫筆數: ${records.length} 筆`);
