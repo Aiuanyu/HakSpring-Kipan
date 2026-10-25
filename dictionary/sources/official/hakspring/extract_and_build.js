@@ -478,7 +478,8 @@ function loadSouthFill() {
  */
 const SOUTH_INCLUDE_PENDING = true;
 const SOUTH_PENDING_FREQ_FACTOR = 0.5;
-const MEINONG_FREQ_FACTOR = 0.9;
+// 美濃開關開咧時，美濃讀音排南四縣同詞个普通讀音前面（開這個開關个人就係愛打美濃）
+const MEINONG_FREQ_FACTOR = 1.02;
 /** 南四縣整隻詞都缺、抄北四縣音个詞頻倍數（--lect all 合併時做） */
 const SOUTH_STAND_IN_FREQ_FACTOR = 0.5;
 /** 美濃變體个 subtag 位元（引擎 KAUTIAN_SUBTAG_MEINONG_BIT，借上游腔口位元 3） */
@@ -491,6 +492,83 @@ function loadSouthPending() {
     pending.set(`${e['來源檔']}|${e['編號']}`, e);
   }
   return pending;
+}
+
+/**
+ * 南四縣音推導（頂著北四縣音時用，維護者 20261025 准）：
+ * 1. 規則：舌根音（g、k、ng）、喉音（h）、零聲母 + -ien/-ied → -ian/-iad，調號挪去 a
+ *    （kiěn→kiǎn、ngièd→ngiàd、ien→ian）。客源翠附表个 `rule-ien`，卓桃音另外
+ * 2. 字級對照：由南北都有、音節數＝字數个詞，學「這隻字北讀 X、南讀 Y」，出現 ≥2 擺、佔 ≥8 成正用
+ * 毋確定个音節就維持北四縣音。
+ */
+const DIACRITIC_MARKS = new Set(['\u0300', '\u0301', '\u0302', '\u0304', '\u030c']);
+function splitToneMark(syllable) {
+  let mark = '';
+  let base = '';
+  for (const ch of syllable.normalize('NFD')) {
+    if (DIACRITIC_MARKS.has(ch)) mark = ch; else base += ch;
+  }
+  return { base: base.normalize('NFC'), mark };
+}
+function ruleIen(syllable) {
+  const { base, mark } = splitToneMark(syllable);
+  const m = /^(ng|g|k|h|)(ie)([nd])$/.exec(base);
+  if (!m) return syllable;
+  // 調號擺 a 頂（a 優先）：i + a + 調號 + n/d
+  return (m[1] + 'ia' + mark + m[3]).normalize('NFC');
+}
+const SOUTH_TABLE_MIN_COUNT = 2;
+const SOUTH_TABLE_MIN_RATIO = 0.8;
+function buildSouthTable(records) {
+  const NORTH = LECTS['四'].code;
+  const SOUTH = LECTS['南'].code;
+  const readings = { [NORTH]: new Map(), [SOUTH]: new Map() };
+  for (const r of records) {
+    const lect = r.subtag >> LECT_SHIFT;
+    if (lect !== NORTH && lect !== SOUTH) continue;
+    if (r.subtag & MEINONG_SUBTAG & ~1) continue;
+    const m = readings[lect];
+    if (!m.has(r.word)) m.set(r.word, new Set());
+    m.get(r.word).add(r.tl);
+  }
+  const table = new Map(); // `${字}|${北音節}` -> Map(南音節 -> 次數)
+  const words = [];
+  for (const [word, northSet] of readings[NORTH]) {
+    const southSet = readings[SOUTH].get(word);
+    if (!southSet || northSet.size !== 1 || southSet.size !== 1) continue;
+    const chars = Array.from(word);
+    const north = [...northSet][0].split('-');
+    const south = [...southSet][0].split('-');
+    if (chars.length !== north.length || north.length !== south.length) continue;
+    words.push({ chars, north, south });
+    chars.forEach((c, i) => {
+      const key = `${c}|${north[i]}`;
+      if (!table.has(key)) table.set(key, new Map());
+      const counts = table.get(key);
+      counts.set(south[i], (counts.get(south[i]) || 0) + 1);
+    });
+  }
+  return { table, words };
+}
+/** 一隻音節个南四縣音：字級對照（扣掉 exclude 自家貢獻个）→ 規則 → 維持北四縣音 */
+function deriveSouthSyllable(table, char, northSyl, exclude) {
+  const counts = char ? table.get(`${char}|${northSyl}`) : null;
+  if (counts) {
+    let total = 0, top = null, topN = 0;
+    for (const [s, n0] of counts) {
+      const n = n0 - (exclude && exclude === s ? 1 : 0);
+      total += n;
+      if (n > topN) { topN = n; top = s; }
+    }
+    if (top && total >= SOUTH_TABLE_MIN_COUNT && topN / total >= SOUTH_TABLE_MIN_RATIO) return top;
+  }
+  return ruleIen(northSyl);
+}
+function deriveSouthReading(table, word, northTl, exclude) {
+  const chars = Array.from(word);
+  const north = northTl.split('-');
+  const aligned = chars.length === north.length;
+  return north.map((s, i) => deriveSouthSyllable(table, aligned ? chars[i] : null, s, exclude ? exclude[i] : null)).join('-');
 }
 
 function printReadingProblems() {
@@ -778,6 +856,17 @@ if (IS_ALL) {
     records.push(...JSON.parse(fs.readFileSync(dump, 'utf8')));
   }
   fs.rmSync(tmpDir, { recursive: true, force: true });
+  // 美濃讀音摎南四縣同詞个普通讀音完全共樣，就毋使再標「美」：丟忒美濃那筆，免得候選重複
+  {
+    const SOUTH = LECTS['南'].code;
+    const isMeinong = r => (r.subtag >> LECT_SHIFT) === SOUTH && (r.subtag & (1 << 3));
+    const plain = new Set(records.filter(r => (r.subtag >> LECT_SHIFT) === SOUTH && !(r.subtag & (1 << 3))).map(r => `${r.word}|${r.tl}`));
+    const before = records.length;
+    for (let i = records.length - 1; i >= 0; i--) {
+      if (isMeinong(records[i]) && plain.has(`${records[i].word}|${records[i].tl}`)) records.splice(i, 1);
+    }
+    if (records.length !== before) console.log(`  ✓ 美濃音摎南四縣普通讀音共樣，合併 ${before - records.length} 筆`);
+  }
   // 南四縣缺个，用北四縣个頂著（維護者原則，20261025）：北四縣有、南四縣「整隻詞」都無个
   // （無任何一種讀音），抄北四縣个讀音入南四縣，詞頻 ×0.5。南四縣若有該詞（毋論讀音同北四縣
   // 有無共樣）就毋抄——那係南北个差異，毋係缺；抄過去會同南四縣自家个資料衝突。
@@ -787,17 +876,37 @@ if (IS_ALL) {
     const NORTH = LECTS['四'].code;
     const lectOf = r => r.subtag >> LECT_SHIFT;
     const southWords = new Set(records.filter(r => lectOf(r) === SOUTH).map(r => r.word));
+    const { table, words: trainWords } = buildSouthTable(records);
+    // 推導準確率（leave-one-out）：南北都有个詞，扣掉自家貢獻，看推導个南四縣音對毋對
+    let hit = 0, syllableHit = 0, syllableAll = 0;
+    for (const w of trainWords) {
+      const pred = w.chars.map((c, i) => deriveSouthSyllable(table, c, w.north[i], w.south[i]));
+      pred.forEach((s, i) => { syllableAll++; if (s === w.south[i]) syllableHit++; });
+      if (pred.every((s, i) => s === w.south[i])) hit++;
+    }
+    const baseline = trainWords.filter(w => w.north.every((s, i) => s === w.south[i])).length;
+    console.log(`  ✓ 南四縣推導驗證（${trainWords.length} 隻南北都有个詞）：整詞全對 ${(100 * hit / trainWords.length).toFixed(1)}%（毋推導、照北四縣音：${(100 * baseline / trainWords.length).toFixed(1)}%）；音節 ${(100 * syllableHit / syllableAll).toFixed(1)}%`);
     const standIns = records
       // 補字典（單字補音、次方言補音）有自家處理摎推導原則（客源翠 dict-augmentation），毋在這抄：
       // 南四縣補字典缺个字，由補字典線決定，毋用北四縣頂著
       .filter(r => lectOf(r) === NORTH && !(r.bitmask & SUPP_BITMASK) && !southWords.has(r.word))
-      .map(r => ({
-        ...r,
-        subtag: (r.subtag & ((1 << LECT_SHIFT) - 1)) | (SOUTH << LECT_SHIFT),
-        freq: Math.max(100, Math.round(r.freq * SOUTH_STAND_IN_FREQ_FACTOR)),
-      }));
+      .map(r => {
+        const tl = deriveSouthReading(table, r.word, r.tl);
+        return {
+          ...r,
+          tl,
+          tl_num: tl,
+          // 無調音節、縮寫拼法愛跟讀音走：ien→ian 會改拼寫
+          tl_notone: tl.split('-').map(removeTone).join(''),
+          tl_abbrev: deriveHakfaAbbrev(tl.split('-').map(removeTone)),
+          syllables: tl.split('-').map(removeTone),
+          subtag: (r.subtag & ((1 << LECT_SHIFT) - 1)) | (SOUTH << LECT_SHIFT),
+          freq: Math.max(100, Math.round(r.freq * SOUTH_STAND_IN_FREQ_FACTOR)),
+          derived: tl !== r.tl,
+        };
+      });
     records.push(...standIns);
-    console.log(`  ✓ 南四縣缺个詞，用北四縣音頂著: ${new Set(standIns.map(r => r.word)).size} 隻詞 / ${standIns.length} 筆`);
+    console.log(`  ✓ 南四縣缺个詞，用北四縣音頂著: ${new Set(standIns.map(r => r.word)).size} 隻詞 / ${standIns.length} 筆，其中推導過（音有變）${standIns.filter(r => r.derived).length} 筆`);
   }
   // 全腔合併排序：詞頻高个在前，同分四縣先（Array.sort 穩定）
   records.sort((a, b) => b.freq - a.freq);
