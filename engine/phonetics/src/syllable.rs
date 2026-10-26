@@ -196,10 +196,12 @@ fn num_face(reading: &str, form: SpellingForm) -> (String, Vec<u32>) {
             // the `h` is part of a nasal `hⁿ`, which folds to `hnn` and ends
             // in `n`.
             let coda = crate::taigi_unicode_base_form(&bare);
-            out.push(match coda.chars().last() {
-                Some('p' | 't' | 'k' | 'h') => '4',
-                _ => '1',
-            });
+            let is_checked = match coda.chars().last() {
+                Some('p' | 't' | 'k' | 'h' | 'b' | 'd') => true,
+                Some('g') => !coda.ends_with("ng"),
+                _ => false,
+            };
+            out.push(if is_checked { '4' } else { '1' });
         } else {
             out.push_str(&tone);
         }
@@ -210,12 +212,12 @@ fn num_face(reading: &str, form: SpellingForm) -> (String, Vec<u32>) {
     (out, ends)
 }
 
-/// Whether `c` is a stop coda `p t k h` (either case) — the letter that
+/// Whether `c` is a stop coda `p t k h b d g` (either case) — the letter that
 /// closes a checked syllable, the only kind that carries tone 4 or 8. One
 /// owner for the rule `normalize_input` (default tone 4 vs 1) and the
 /// desktop Telex pair keys (`composing::telex`) both apply.
 pub fn is_stop_coda(c: char) -> bool {
-    matches!(c.to_ascii_lowercase(), 'p' | 't' | 'k' | 'h')
+    matches!(c.to_ascii_lowercase(), 'p' | 't' | 'k' | 'h' | 'b' | 'd' | 'g')
 }
 
 pub fn strip_tone_mark(text: &str) -> (String, String) {

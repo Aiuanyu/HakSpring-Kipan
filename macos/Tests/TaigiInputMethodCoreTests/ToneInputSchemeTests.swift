@@ -10,11 +10,12 @@ import XCTest
 final class ToneInputSchemeTests: XCTestCase {
     func testStandard_isTheShippedScheme() {
         XCTAssertEqual(SettingsStore.Keys.toneInputScheme.defaultValue, .standard)
-        XCTAssertEqual(ToneInputScheme.allCases.map(\.rawValue), ["standard", "telex"], "the stored spellings")
+        XCTAssertEqual(ToneInputScheme.allCases.map(\.rawValue), ["standard", "scale", "telex"], "the stored spellings")
     }
 
     func testTheSlotKeySet_followsTheScheme() {
-        XCTAssertEqual(ToneInputScheme.standard.slotKeySet, .bareKeys)
+        XCTAssertEqual(ToneInputScheme.standard.slotKeySet, .digits)
+        XCTAssertEqual(ToneInputScheme.scale.slotKeySet, .digits)
         XCTAssertEqual(ToneInputScheme.telex.slotKeySet, .digits)
     }
 }

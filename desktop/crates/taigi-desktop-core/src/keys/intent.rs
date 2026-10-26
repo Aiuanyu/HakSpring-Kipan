@@ -106,6 +106,8 @@ impl From<NavigationKey> for CandidateNavigation {
 pub enum ComposingKeyIntent {
     /// A romanization character to append to the composition.
     Input(String),
+    /// Hakfa: Ctrl+數字輸入聲調（方案 3 符號編號、方案 1 五度調值）。
+    ToneDigit(char),
     /// One of the Telex keys (`ToneInputScheme::TELEX_KEYS`), handed to the
     /// engine's `TelexKey` intent rather than appended: the engine decides
     /// which tone it writes, or which initial `z` spells in this input mode.
@@ -299,6 +301,32 @@ impl ComposingKeyIntent {
                 is_composing,
                 Self::CommitThenInsert(punctuation.to_string()),
             );
+        }
+        // Hakfa: Ctrl+數字鍵作為調號輸入（ToneDigit）。純數字鍵留給候選字擇字。
+        // 方案 3（符號編號）：2 3 5 6 7 -> '2', '3', '5', '6', '7'（無標不打，1 與 4 不作用）
+        // 方案 1（五度調值）：1..=9 均可作為調值數字
+        if is_composing && modifiers == KeyModifiers::CONTROL {
+            if let Some(c) = key
+                .characters_ignoring_modifiers
+                .as_deref()
+                .and_then(|s| s.chars().next())
+            {
+                if c.is_ascii_digit() {
+                    match bindings.tone_scheme {
+                        ToneInputScheme::Standard => {
+                            if matches!(c, '2' | '3' | '5' | '6' | '7') {
+                                return Self::ToneDigit(c);
+                            }
+                        }
+                        ToneInputScheme::Scale => {
+                            if matches!(c, '1'..='9') {
+                                return Self::ToneDigit(c);
+                            }
+                        }
+                        ToneInputScheme::Telex => {}
+                    }
+                }
+            }
         }
         // Tier 5 — Control, Alt and Win chords are the host's shortcuts, mid-
         // composition too: swallowing Ctrl+S would cost the user their save.
@@ -948,12 +976,17 @@ mod tests {
     #[test]
     fn the_mac_hands_a_chorded_digit_or_slot_key_to_the_host_under_either_scheme() {
         let mac = DesktopPlatform::MacOS;
-        // trace: ⌃3 arrives as Escape
-        // with `3` unmodified; the fixed tier skips it under a host chord.
+        // 客話企盤中，⌃3 在 Standard 與 Scale 下是聲調鍵 ToneDigit('3')；在 Telex 下交給 host。
         let control_three = KeyEventSnapshot::chord(Some("\u{1B}"), "3", KeyModifiers::CONTROL);
         for scheme in ToneInputScheme::ALL {
             let bindings = ComposingKeyBindings::resolve(&Default::default(), *scheme);
             for is_showing_candidates in [true, false] {
+                let expected = match scheme {
+                    ToneInputScheme::Standard | ToneInputScheme::Scale => {
+                        ComposingKeyIntent::ToneDigit('3')
+                    }
+                    ToneInputScheme::Telex => ComposingKeyIntent::CommitThenPassThrough,
+                };
                 assert_eq!(
                     ComposingKeyIntent::intent(
                         &control_three,
@@ -962,7 +995,7 @@ mod tests {
                         &bindings,
                         mac
                     ),
-                    ComposingKeyIntent::CommitThenPassThrough,
+                    expected,
                     "{scheme:?} window up={is_showing_candidates}"
                 );
             }

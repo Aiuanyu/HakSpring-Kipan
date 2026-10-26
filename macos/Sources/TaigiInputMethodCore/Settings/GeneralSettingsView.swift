@@ -116,6 +116,7 @@ struct GeneralSettingsView: View {
                 // user types.
                 Picker(language.string(.settingsToneInputScheme), selection: $toneInputScheme) {
                     Text(language.string(.settingsToneSchemeStandard)).tag(ToneInputScheme.standard)
+                    Text(language.string(.settingsToneSchemeScale)).tag(ToneInputScheme.scale)
                     Text(language.string(.settingsToneSchemeTelex)).tag(ToneInputScheme.telex)
                 }
 

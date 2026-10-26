@@ -13,8 +13,8 @@ use super::next_word::NextWordPort;
 use super::outcomes::{CandidateCommitOutcome, CandidateFetchOutcome};
 use super::presentation::{leads_with_literal_roman, presentation, PresentedCandidate};
 use crate::engine::{self, CommitContinuousArgs, ComposingTransition, ContinuousCandidate, Effect};
-use crate::keys::CaretDirection;
-use crate::settings::{EngineSettings, InputMode, SettingsProvider};
+use crate::keys::{resolve_scale_tone, CaretDirection, ToneInputScheme};
+use crate::settings::{keys as settings_keys, EngineSettings, InputMode, SettingsProvider};
 
 /// Writes the engine's document effects into the client that is currently
 /// focused. Learning handshakes never reach it — the manager reports them to
@@ -69,6 +69,8 @@ pub struct ComposingManager {
     /// the engine keeps one composition per process and drops it whenever the
     /// generation it is handed changes.
     current_generation: u64,
+    /// 方案 1 五度調值暫存之第一位數字（等待第二位以湊成兩位數調值）
+    pending_scale_digit: Option<char>,
 }
 
 impl ComposingManager {
@@ -91,6 +93,7 @@ impl ComposingManager {
             next_word,
             clock,
             current_generation: starting_generation,
+            pending_scale_digit: None,
         }
     }
 
@@ -172,13 +175,73 @@ impl ComposingManager {
         );
     }
 
+    /// 重設五度調值暫存狀態
+    pub fn reset_pending_scale_tone(&mut self) {
+        self.pending_scale_digit = None;
+    }
+
     /// Appends one typed character. The engine starts a composition when idle,
     /// so there is no separate "begin" call — one engine request per key.
     pub fn append(&mut self, character: &str, executor: &mut dyn ComposingEffectExecutor) {
         log::debug!("append");
+        self.pending_scale_digit = None;
         let settings = self.current_settings();
         let transition = engine::append(character, &settings, self.current_generation);
         self.apply(transition, &settings, executor);
+    }
+
+    /// Hakfa: 套用數字聲調（方案 3 符號編號、方案 1 五度調值）。
+    pub fn apply_tone_digit(&mut self, digit: char, executor: &mut dyn ComposingEffectExecutor) {
+        log::debug!("applyToneDigit: {digit}");
+        let doc = self.settings.current();
+        let scheme = doc.choice(&settings_keys::TONE_INPUT_SCHEME);
+        let lect = doc.choice(&settings_keys::LECT);
+
+        match scheme {
+            ToneInputScheme::Standard => {
+                // 方案 3：符號編號（Ctrl+2 3 5 6 7 對應 á à â ǎ ā）
+                if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
+                    self.delete_backward(executor);
+                }
+                self.append(&digit.to_string(), executor);
+            }
+            ToneInputScheme::Scale => {
+                // 方案 1：五度調值
+                let clean_raw = self.raw_input.trim_end_matches(|c: char| c.is_ascii_digit());
+                let last_char = clean_raw.chars().last();
+                let is_checked = matches!(last_char, Some('b' | 'd' | 'g' | 'p' | 't' | 'k'));
+
+                if is_checked {
+                    // 入聲：單數字成調 (2 陰入、5 陽入)
+                    self.pending_scale_digit = None;
+                    if let Some(tone_char) = resolve_scale_tone(lect, &digit.to_string(), true) {
+                        if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
+                            self.delete_backward(executor);
+                        }
+                        if tone_char != '4' {
+                            self.append(&tone_char.to_string(), executor);
+                        }
+                    }
+                } else {
+                    // 舒聲：兩位數成調 (例如 24, 33, 11, 55, 31, 53)
+                    if let Some(first) = self.pending_scale_digit.take() {
+                        let scale_str = format!("{}{}", first, digit);
+                        if let Some(tone_char) = resolve_scale_tone(lect, &scale_str, false) {
+                            if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
+                                self.delete_backward(executor);
+                            }
+                            if tone_char != '1' {
+                                self.append(&tone_char.to_string(), executor);
+                            }
+                        }
+                    } else {
+                        // 第一鍵：記錄暫存
+                        self.pending_scale_digit = Some(digit);
+                    }
+                }
+            }
+            ToneInputScheme::Telex => {}
+        }
     }
 
     /// Applies one Telex key — a tone letter, `z` or `f` — to the pending
@@ -187,6 +250,7 @@ impl ComposingManager {
     /// an idle `z` starts a composition the way a letter does.
     pub fn telex_key(&mut self, key: &str, executor: &mut dyn ComposingEffectExecutor) {
         log::debug!("telexKey");
+        self.pending_scale_digit = None;
         let settings = self.current_settings();
         let transition = engine::telex_key(key, &settings, self.current_generation);
         self.apply(transition, &settings, executor);
@@ -201,6 +265,7 @@ impl ComposingManager {
         executor: &mut dyn ComposingEffectExecutor,
     ) -> TpsKeyOutcome {
         log::debug!("tpsKey");
+        self.pending_scale_digit = None;
         let settings = self.current_settings();
         let Some(transition) = engine::tps_key(key, &settings, self.current_generation) else {
             return TpsKeyOutcome::Failed;
@@ -221,6 +286,7 @@ impl ComposingManager {
     /// that empties it.
     pub fn delete_backward(&mut self, executor: &mut dyn ComposingEffectExecutor) {
         log::debug!("deleteBackward");
+        self.pending_scale_digit = None;
         let settings = self.current_settings();
         let transition = engine::delete_backward(&settings, self.current_generation);
         self.apply(transition, &settings, executor);
@@ -235,6 +301,7 @@ impl ComposingManager {
         executor: &mut dyn ComposingEffectExecutor,
     ) {
         log::debug!("moveCaret");
+        self.pending_scale_digit = None;
         let settings = self.current_settings();
         let transition = engine::move_caret(direction, &settings, self.current_generation);
         self.apply(transition, &settings, executor);
@@ -533,5 +600,6 @@ impl ComposingManager {
         self.display_caret_utf16 = 0;
         self.composition_input_mode = None;
         self.preedit_settings = None;
+        self.pending_scale_digit = None;
     }
 }

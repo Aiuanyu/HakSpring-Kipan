@@ -92,6 +92,43 @@ function removeTone(syll) {
   return res.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 }
 
+// 方案 3 符號編號映射表（對齊臺羅 TL / POJ 調號：2 á、3 à、5 â、6 ǎ、7 ā、8 ̍）
+const TONE_CHAR_TO_NUM = {
+  '\u0301': '2', // acute: á
+  '\u0300': '3', // grave: à
+  '\u0302': '5', // circumflex: â
+  '\u030c': '6', // caron: ǎ
+  '\u0304': '7', // macron: ā
+  '\u030d': '8', // vertical line
+};
+
+function isCheckedCoda(bare) {
+  if (/[bdptk]$/.test(bare)) return true;
+  if (/g$/.test(bare) && !/ng$/.test(bare)) return true;
+  return false;
+}
+
+function parseSyllableTone(syll) {
+  if (!syll) return { toneless: '', tone: '', numSyll: '' };
+  const decomposed = syll.normalize('NFD');
+  let tone = '';
+  let bare = '';
+  for (const ch of decomposed) {
+    if (TONE_CHAR_TO_NUM[ch]) {
+      tone = TONE_CHAR_TO_NUM[ch];
+    } else if (ch >= '\u0300' && ch <= '\u036f') {
+      // 忽略其他結合音標
+    } else {
+      bare += ch;
+    }
+  }
+  bare = bare.normalize('NFC').toLowerCase().replace(/[^a-z]/g, '');
+  if (!tone) {
+    tone = isCheckedCoda(bare) ? '4' : '1';
+  }
+  return { toneless: bare, tone, numSyll: bare + tone };
+}
+
 // 調值轉 HagPinPlus 調符（照客源翠 tone_mapping.json default_tones，入聲 2／5 照韻尾分，免另外標）。
 // 四縣：24 á、11 ǎ、31 à、55 無標。海陸：53 à、24 á、11 ǎ、33 ā、55 無標。
 const TONE_MARKS = {
@@ -665,10 +702,12 @@ for (const cf of certFiles) {
 
     for (const pair of pairs) {
       const tokens = pair.phonetic.trim().split(/[\s\-]+/);
-      const notoneSylls = tokens.map(removeTone).filter(Boolean);
-      if (notoneSylls.length === 0) continue;
+      const parsedSylls = tokens.map(parseSyllableTone).filter(p => Boolean(p.toneless));
+      if (parsedSylls.length === 0) continue;
+      const notoneSylls = parsedSylls.map(p => p.toneless);
       const fusedNotone = notoneSylls.join('');
       const hyphenatedPhonetic = tokens.join('-');
+      const hyphenatedNum = parsedSylls.map(p => p.numSyll).join('-');
       // 客話聲母縮寫（多字母聲母長度優先，單音節詞留空）
       const fusedAbbrev = deriveHakfaAbbrev(notoneSylls);
       let word = pair.word;
@@ -686,7 +725,7 @@ for (const cf of certFiles) {
         map.set(key, {
           word: word,
           tl: hyphenatedPhonetic,
-          tl_num: hyphenatedPhonetic,
+          tl_num: hyphenatedNum,
           tl_notone: fusedNotone,
           tl_abbrev: fusedAbbrev,
           freq: boostedFreq,
@@ -730,10 +769,12 @@ if (fs.existsSync(gipJsonPath)) {
 
     for (const pair of pairs) {
       const tokens = pair.phonetic.trim().split(/[\s\-]+/);
-      const notoneSylls = tokens.map(removeTone).filter(Boolean);
-      if (notoneSylls.length === 0) continue;
+      const parsedSylls = tokens.map(parseSyllableTone).filter(p => Boolean(p.toneless));
+      if (parsedSylls.length === 0) continue;
+      const notoneSylls = parsedSylls.map(p => p.toneless);
       const fusedNotone = notoneSylls.join('');
       const hyphenatedPhonetic = tokens.join('-');
+      const hyphenatedNum = parsedSylls.map(p => p.numSyll).join('-');
       // 客話聲母縮寫（多字母聲母長度優先，單音節詞留空）
       const fusedAbbrev = deriveHakfaAbbrev(notoneSylls);
       let word = pair.word;
@@ -755,7 +796,7 @@ if (fs.existsSync(gipJsonPath)) {
         map.set(key, {
           word: word,
           tl: hyphenatedPhonetic,
-          tl_num: hyphenatedPhonetic,
+          tl_num: hyphenatedNum,
           tl_notone: fusedNotone,
           tl_abbrev: fusedAbbrev,
           freq: freq,
@@ -787,7 +828,9 @@ if (!fs.existsSync(suppJsonPath)) {
     const word = parts[1];
     const syll = parts[2];
     if (!word || !syll) continue;
-    const notone = removeTone(syll);
+    const parsedSyll = parseSyllableTone(syll);
+    const notone = parsedSyll.toneless || removeTone(syll);
+    const numSyll = parsedSyll.numSyll;
     const normTL = syll.normalize('NFC');
     const key = word + '|' + normTL;
     if (map.has(key)) continue;
@@ -807,7 +850,7 @@ if (!fs.existsSync(suppJsonPath)) {
     map.set(key, {
       word,
       tl: syll,
-      tl_num: syll,
+      tl_num: numSyll,
       tl_notone: notone,
       tl_abbrev: '',
       freq,
@@ -904,10 +947,12 @@ if (IS_ALL) {
       .filter(r => lectOf(r) === NORTH && !(r.bitmask & SUPP_BITMASK) && !southWords.has(r.word))
       .map(r => {
         const tl = deriveSouthReading(table, r.word, r.tl);
+        const parsedSylls = tl.split('-').map(parseSyllableTone);
+        const tl_num = parsedSylls.map(p => p.numSyll).join('-');
         return {
           ...r,
           tl,
-          tl_num: tl,
+          tl_num,
           // 無調音節、縮寫拼法愛跟讀音走：ien→ian 會改拼寫
           tl_notone: tl.split('-').map(removeTone).join(''),
           tl_abbrev: deriveHakfaAbbrev(tl.split('-').map(removeTone)),
@@ -1067,9 +1112,16 @@ for (const d of outDirs) {
 // [4/4] 建置 syllables.fst 合法客話音節庫
 // -------------------------------------------------------------
 console.log('\n▶ [4/4] 建置 syllables.fst 音節庫 (fst::Set)...');
-const syllableKeys = Array.from(allSyllables)
-  .sort()
-  .map(s => `tl:${s}`);
+// 上游 Syllabifier 規範：必須同時收錄無調音節 (tl:sin) 與帶數字調音節 (tl:sin3)
+// 否則 is_false_toneless_boundary 會在遇到數字調時將無調音節判為假邊界捨棄，導致前綴殘缺
+const syllableKeysSet = new Set();
+for (const s of allSyllables) {
+  syllableKeysSet.add(`tl:${s}`);
+  for (let tone = 1; tone <= 8; tone++) {
+    syllableKeysSet.add(`tl:${s}${tone}`);
+  }
+}
+const syllableKeys = Array.from(syllableKeysSet).sort();
 
 for (const d of outDirs) {
   const p = path.join(d, 'syllables.fst');

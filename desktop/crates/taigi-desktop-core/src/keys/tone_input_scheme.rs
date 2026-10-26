@@ -3,6 +3,7 @@
 //! `ToneInputScheme.swift`.
 
 use super::slot_key_set::CandidateSlotKeySet;
+use crate::settings::Lect;
 use crate::settings::SettingChoice;
 use crate::strings::StringKey;
 
@@ -25,9 +26,10 @@ use crate::strings::StringKey;
 /// keys reach it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ToneInputScheme {
-    /// Digits type tones; `q w d f z x v y ;` pick candidates. The shipped
-    /// default, and today's behaviour before the scheme existed.
+    /// 方案 3：符號編號（Ctrl+2 3 5 6 7 對應 á à â ǎ ā）
     Standard,
+    /// 方案 1：五度調值（Ctrl+24、Ctrl+33 等，照當前腔調動態換算為調號）
+    Scale,
     /// Letters type tones; `1`…`9` pick candidates.
     Telex,
 }
@@ -44,10 +46,7 @@ impl ToneInputScheme {
 
     /// The keys that pick a candidate under this scheme.
     pub fn slot_key_set(self) -> CandidateSlotKeySet {
-        match self {
-            Self::Standard => CandidateSlotKeySet::Digits,
-            Self::Telex => CandidateSlotKeySet::Digits,
-        }
+        CandidateSlotKeySet::Digits
     }
 
     /// The picker row's i18n key. macOS keeps a Swift twin of the picker:
@@ -55,6 +54,7 @@ impl ToneInputScheme {
     pub fn label_key(self) -> StringKey {
         match self {
             Self::Standard => StringKey::SettingsToneSchemeStandard,
+            Self::Scale => StringKey::SettingsToneSchemeScale,
             Self::Telex => StringKey::SettingsToneSchemeTelex,
         }
     }
@@ -75,13 +75,51 @@ impl ToneInputScheme {
     }
 }
 
+/// 方案 1：將五度調值字串（如 "24", "33"）依腔調轉為 TL 調號字符 ('2', '3', '5', '6', '7', '1', '4')。
+pub fn resolve_scale_tone(lect: Lect, scale_input: &str, is_checked: bool) -> Option<char> {
+    if is_checked {
+        return match scale_input {
+            "2" => Some('3'), // 陰入 (à)
+            "5" => Some('4'), // 陽入 (無標)
+            _ => None,
+        };
+    }
+    match lect {
+        Lect::Xiien | Lect::Namxiian => match scale_input {
+            "24" => Some('2'), // 陰平 (á)
+            "11" => Some('6'), // 陽平 (ǎ)
+            "31" => Some('3'), // 上聲 (à)
+            "55" => Some('1'), // 去聲 (無標)
+            _ => None,
+        },
+        Lect::Hoiliug => match scale_input {
+            "53" => Some('3'), // 陰平 (à)
+            "24" => Some('2'), // 上聲 (á)
+            "11" => Some('6'), // 陰去 (ǎ)
+            "33" => Some('7'), // 陽去 (ā)
+            "55" => Some('1'), // 陽平 (無標)
+            _ => None,
+        },
+    }
+}
+
 impl SettingChoice for ToneInputScheme {
-    const ALL: &'static [Self] = &[Self::Standard, Self::Telex];
+    const ALL: &'static [Self] = &[Self::Standard, Self::Scale, Self::Telex];
     const DEFAULT: Self = Self::Standard;
     fn raw(self) -> &'static str {
         match self {
             Self::Standard => "standard",
+            Self::Scale => "scale",
             Self::Telex => "telex",
+        }
+    }
+
+    fn from_raw(raw: &str) -> Option<Self> {
+        match raw {
+            "standard" | "symbol" => Some(Self::Standard),
+            "scale" | "contour" => Some(Self::Scale),
+            "telex" => Some(Self::Telex),
+            _ => None,
         }
     }
 }
@@ -142,10 +180,33 @@ mod tests {
         // trace: `SettingChoice::raw` — the settings file speaks one
         // vocabulary on all three desktops (the spellings the Mac stores).
         assert_eq!(ToneInputScheme::Standard.raw(), "standard");
+        assert_eq!(ToneInputScheme::Scale.raw(), "scale");
         assert_eq!(ToneInputScheme::Telex.raw(), "telex");
         for scheme in ToneInputScheme::ALL {
             assert_eq!(ToneInputScheme::from_raw(scheme.raw()), Some(*scheme));
         }
+        assert_eq!(ToneInputScheme::from_raw("symbol"), Some(ToneInputScheme::Standard));
+        assert_eq!(ToneInputScheme::from_raw("contour"), Some(ToneInputScheme::Scale));
         assert_eq!(ToneInputScheme::from_raw("bareKeys"), None);
+    }
+
+    #[test]
+    fn scale_tone_resolves_accurately_across_lects() {
+        // 四縣 / 南四縣: 24->2, 11->6, 31->3, 55->1; checked 2->3, 5->4
+        assert_eq!(resolve_scale_tone(Lect::Xiien, "24", false), Some('2'));
+        assert_eq!(resolve_scale_tone(Lect::Xiien, "11", false), Some('6'));
+        assert_eq!(resolve_scale_tone(Lect::Xiien, "31", false), Some('3'));
+        assert_eq!(resolve_scale_tone(Lect::Xiien, "55", false), Some('1'));
+        assert_eq!(resolve_scale_tone(Lect::Xiien, "2", true), Some('3'));
+        assert_eq!(resolve_scale_tone(Lect::Xiien, "5", true), Some('4'));
+
+        // 海陸: 53->3, 24->2, 11->6, 33->7, 55->1; checked 2->3, 5->4
+        assert_eq!(resolve_scale_tone(Lect::Hoiliug, "53", false), Some('3'));
+        assert_eq!(resolve_scale_tone(Lect::Hoiliug, "24", false), Some('2'));
+        assert_eq!(resolve_scale_tone(Lect::Hoiliug, "11", false), Some('6'));
+        assert_eq!(resolve_scale_tone(Lect::Hoiliug, "33", false), Some('7'));
+        assert_eq!(resolve_scale_tone(Lect::Hoiliug, "55", false), Some('1'));
+        assert_eq!(resolve_scale_tone(Lect::Hoiliug, "2", true), Some('3'));
+        assert_eq!(resolve_scale_tone(Lect::Hoiliug, "5", true), Some('4'));
     }
 }

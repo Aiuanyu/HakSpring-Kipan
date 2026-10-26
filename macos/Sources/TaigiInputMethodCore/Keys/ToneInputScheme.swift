@@ -18,9 +18,10 @@
 /// the engine (`engine/composing/src/telex.rs`); this side only decides which
 /// keys reach it.
 enum ToneInputScheme: String, CaseIterable, Sendable {
-    /// Digits type tones; `q w d f z x v y ;` pick candidates. The shipped
-    /// default, and today's behaviour before the scheme existed.
+    /// 方案 3：符號編號（Ctrl+2 3 5 6 7 對應 á à â ǎ ā）
     case standard
+    /// 方案 1：五度調值（Ctrl+24、Ctrl+33 等，照當前腔調動態換算為調號）
+    case scale
     /// Letters type tones; `1`…`9` pick candidates.
     case telex
 

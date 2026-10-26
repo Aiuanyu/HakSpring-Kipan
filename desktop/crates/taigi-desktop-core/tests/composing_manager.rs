@@ -1303,3 +1303,88 @@ fn a_switch_across_tps_leaves_the_composition_behind() {
     assert!(rig.manager.is_composing());
     assert!(!rig.manager.is_left_by_mode_change(InputMode::Poj));
 }
+
+#[test]
+fn hakfa_tone_digit_scheme_standard_and_scale() {
+    use taigi_desktop_core::keys::ToneInputScheme;
+    use taigi_desktop_core::settings::Lect;
+
+    let _lock = engine_lock();
+    let mut rig = rig();
+
+    // 1. 方案 3：符號編號（Standard）
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::TONE_INPUT_SCHEME, ToneInputScheme::Standard);
+        doc.set_choice(&keys::LECT, Lect::Xiien);
+    });
+
+    rig.type_text("da");
+    rig.manager.apply_tone_digit('2', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "da2");
+    assert_eq!(rig.manager.display_text(), "dá");
+
+    rig.manager.apply_tone_digit('3', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "da3");
+    assert_eq!(rig.manager.display_text(), "dà");
+    assert!(rig.candidates().iter().any(|c| c.hanji.as_deref() == Some("打")));
+
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("dan");
+    rig.manager.apply_tone_digit('2', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "dan2");
+    assert_eq!(rig.manager.display_text(), "dán");
+    assert!(rig.candidates().iter().any(|c| c.hanji.as_deref() == Some("單")));
+
+    rig.manager.cancel_composition(&mut rig.recorder);
+
+    // 2. 方案 1：五度調值（Scale）- 四縣 (Xiien)
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::TONE_INPUT_SCHEME, ToneInputScheme::Scale);
+        doc.set_choice(&keys::LECT, Lect::Xiien);
+    });
+
+    // 舒聲：打 da 後打 24（陰平 -> á）
+    rig.type_text("da");
+    rig.manager.apply_tone_digit('2', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "da"); // 第一鍵暫存，不影響 buffer
+    rig.manager.apply_tone_digit('4', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "da2");
+    assert_eq!(rig.manager.display_text(), "dá");
+
+    // 入聲：打 fad 後打 2（陰入 -> à）
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("fad");
+    rig.manager.apply_tone_digit('2', &mut rig.recorder); // 入聲一鍵成調
+    assert_eq!(rig.manager.raw_input(), "fad3");
+    assert_eq!(rig.manager.display_text(), "fàd");
+
+    // 3. 方案 1：五度調值（Scale）- 海陸 (Hoiliug)
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::TONE_INPUT_SCHEME, ToneInputScheme::Scale);
+        doc.set_choice(&keys::LECT, Lect::Hoiliug);
+    });
+
+    // 海陸打 sii 後打 33（陽去 -> ā）
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("sii");
+    rig.manager.apply_tone_digit('3', &mut rig.recorder);
+    rig.manager.apply_tone_digit('3', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "sii7");
+    assert_eq!(rig.manager.display_text(), "sīi");
+    assert!(rig.candidates().iter().any(|c| c.hanji.as_deref() == Some("事")));
+
+    // 4. 測試海陸打 sin3（方案 3 符號編號）：候選字必須包含「新（sìn）」，且絕無「si」音節（細、死等）鬧場
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::TONE_INPUT_SCHEME, ToneInputScheme::Standard);
+        doc.set_choice(&keys::LECT, Lect::Hoiliug);
+    });
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("sin");
+    rig.manager.apply_tone_digit('3', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "sin3");
+    assert_eq!(rig.manager.display_text(), "sìn");
+    let cands_sin3 = rig.candidates();
+    assert!(cands_sin3.iter().any(|c| c.hanji.as_deref() == Some("新")));
+    // 嚴格斷言：絕對不能出現 si 的字（細、死、四、西等）
+    assert!(!cands_sin3.iter().any(|c| c.hanji.as_deref() == Some("細") || c.hanji.as_deref() == Some("死")));
+}

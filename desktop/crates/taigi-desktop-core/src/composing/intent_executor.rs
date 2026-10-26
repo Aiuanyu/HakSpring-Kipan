@@ -76,6 +76,11 @@ pub fn perform_intent(
             refresh(settings, manager, list, surface);
             true
         }
+        ComposingKeyIntent::ToneDigit(c) => {
+            manager.apply_tone_digit(*c, surface);
+            refresh(settings, manager, list, surface);
+            true
+        }
         ComposingKeyIntent::TelexKey(key) => {
             manager.telex_key(key, surface);
             refresh(settings, manager, list, surface);

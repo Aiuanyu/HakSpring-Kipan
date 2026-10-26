@@ -157,9 +157,14 @@
       "values": { "hanji": "聲調拍法", "tailo": "Siann-tiāu phah-huat", "poj": "Siaⁿ-tiāu phah-hoat", "en": "Tone Keys", "ja": "声調の入力方式" }
     },
     "toneSchemeStandard": {
-      "comment": "toneInputScheme option: digits 1-9 type the tone, the bare letters q w d f z x v y ; pick a candidate. Named after what the user types rather than 標準 (USER 2026-09-09) — beside Telex, \"standard\" says which is the default, not which keys carry the tone.",
+      "comment": "toneInputScheme option: Symbol Number mode (2 3 5 6 7 = á à â ǎ ā).",
       "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
-      "values": { "hanji": "數字調", "tailo": "Sòo-jī-tiāu", "poj": "Sò͘-jī-tiāu", "en": "Numeric Tones", "ja": "数字で声調" }
+      "values": { "hanji": "符號編號（2 3 5 6 7）", "tailo": "Hû-hō pian-hō", "poj": "Hû-hō pian-hō", "en": "Symbol Numbers (2 3 5 6 7)", "ja": "記号番号 (2 3 5 6 7)" }
+    },
+    "toneSchemeScale": {
+      "comment": "toneInputScheme option: Five-Degree Scale mode (24 33 53 31 11...).",
+      "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
+      "values": { "hanji": "五度調值（24 33 53...）", "tailo": "Ngóo-tōo tiāu-ti̍t", "poj": "Gō͘-tō͘ tiāu-ti̍t", "en": "Five-Degree Scale (24 33 53...)", "ja": "五度調値 (24 33 53...)" }
     },
     "toneSchemeTelex": {
       "comment": "toneInputScheme option: the letters v y d w x q type the tone, digits 1-9 pick a candidate. A scheme name, kept as-is in every language. Also the title over the floating Telex guide's key table — the scheme's own name, nothing else (USER 2026-09-0x; desktop.telexGuideTitle merged 2026-09-20).",
