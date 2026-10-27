@@ -443,18 +443,22 @@ pub fn build_continuous_keys_with_inventory(
 /// The same pair learned under two typed separators (`guá-sī` / `guá--sī`)
 /// is two stored rows under `UNIQUE(hanji, roman)`; only the first in store
 /// order (`learn_count DESC, updated_at DESC` — the form the user composed
-/// most, then most recently) is kept, so a corrected separator wins over the
-/// slip and one slip never displaces a settled phrase.
+/// most, then most recently) is kept.
+/// hakfa: 當同一漢字同音讀同時存在「帶空格跨詞」與「帶連字符／無空格連詞」時，
+/// 以連詞優先（使用者明確加了 `-` 構詞，不應被舊的帶空格記憶吞噬）。
 fn first_learned_per_reading(entries: &[LearnedEntry]) -> Vec<LearnedEntry> {
     let mut out: Vec<LearnedEntry> = Vec::with_capacity(entries.len());
     for e in entries
         .iter()
         .filter(|e| !e.hanji.is_empty() && !e.canonical_tl.is_empty())
     {
-        let same_reading = out.iter().any(|kept| {
+        if let Some(pos) = out.iter().position(|kept| {
             kept.hanji == e.hanji && roman_reading_eq(&kept.canonical_tl, &e.canonical_tl)
-        });
-        if !same_reading {
+        }) {
+            if out[pos].canonical_tl.contains(' ') && !e.canonical_tl.contains(' ') {
+                out[pos] = e.clone();
+            }
+        } else {
             out.push(e.clone());
         }
     }

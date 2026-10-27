@@ -1387,4 +1387,62 @@ fn hakfa_tone_digit_scheme_standard_and_scale() {
     assert!(cands_sin3.iter().any(|c| c.hanji.as_deref() == Some("新")));
     // 嚴格斷言：絕對不能出現 si 的字（細、死、四、西等）
     assert!(!cands_sin3.iter().any(|c| c.hanji.as_deref() == Some("細") || c.hanji.as_deref() == Some("死")));
+
+    // 復原環境，避免污染其他測試
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::TONE_INPUT_SCHEME, ToneInputScheme::Standard);
+        doc.set_choice(&keys::LECT, Lect::Xiien);
+    });
+}
+
+#[test]
+fn hakfa_continuous_composition_and_stepwise_picks() {
+    use taigi_desktop_core::settings::Lect;
+
+    let _lock = engine_lock();
+    let mut rig = rig();
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::LECT, Lect::Xiien);
+    });
+
+    // 1. 驗證 idngixiqid 候選包含整句候選與單字左錨候選，且可逐字 nail 選字
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("idngixiqid");
+    let cands = rig.candidates();
+    assert!(cands.iter().any(|c| c.hanji.as_deref() == Some("一你細七") && c.consumed_span_end == 10));
+    assert!(cands.iter().any(|c| c.hanji.as_deref() == Some("一") && c.consumed_span_end == 2));
+
+    let id_cand = cands.iter().find(|c| c.hanji.as_deref() == Some("一") && c.consumed_span_end == 2).unwrap();
+    let (outcome, committed) = rig.commit(id_cand, CandidateScript::Primary);
+    assert!(matches!(outcome, CandidateCommitOutcome::Nailed { refetch: true }));
+    assert_eq!(committed, None);
+    assert_eq!(rig.manager.display_text(), "一ngixiqid");
+
+    let cands_step2 = rig.candidates();
+    assert!(cands_step2.iter().any(|c| c.hanji.as_deref() == Some("二") && c.consumed_span_end == 3));
+
+    // 2. 驗證 bu-sii-dien 可分段 nail 選「補」再選「字典」完成送出「補字典」
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("bu-sii-dien");
+    let cands_bu = rig.candidates();
+    assert!(cands_bu.iter().any(|c| c.hanji.as_deref() == Some("補字典") && c.consumed_span_end == 11));
+    assert!(cands_bu.iter().any(|c| c.hanji.as_deref() == Some("補") && c.consumed_span_end == 2));
+
+    let bu_cand = cands_bu.iter().find(|c| c.hanji.as_deref() == Some("補") && c.consumed_span_end == 2).unwrap();
+    let (outcome_bu, committed_bu) = rig.commit(bu_cand, CandidateScript::Primary);
+    assert!(matches!(outcome_bu, CandidateCommitOutcome::Nailed { refetch: true }));
+    assert_eq!(committed_bu, None);
+    assert_eq!(rig.manager.display_text(), "補-sii-dien");
+
+    let cands_step2_bu = rig.candidates();
+    assert!(cands_step2_bu.iter().any(|c| c.hanji.as_deref() == Some("字典")));
+    let dien_cand = cands_step2_bu.iter().find(|c| c.hanji.as_deref() == Some("字典")).unwrap();
+    let (outcome_dien, committed_dien) = rig.commit(dien_cand, CandidateScript::Primary);
+    assert!(matches!(outcome_dien, CandidateCommitOutcome::Finalized { .. }));
+    assert_eq!(committed_dien, Some("補字典".to_string()));
+
+    // 復原環境，避免污染其他測試
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::LECT, Lect::Xiien);
+    });
 }

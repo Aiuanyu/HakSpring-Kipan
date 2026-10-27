@@ -209,6 +209,31 @@ fn typed_separator_before_a_segment_is_the_joiner() {
 }
 
 #[test]
+fn bu_sii_dien_learning_investigation() {
+    // 使用者明確打了 hyphen: bu-sii-dien -> 學成連寫的 bù-sii-dièn
+    let res = learn(
+        "bu-sii-dien",
+        &[
+            (Some("補"), "bù", 2, 1),
+            (Some("字典"), "sii-dièn", 9, 2),
+        ],
+    );
+    assert_eq!(res, phrase("補字典", "bù-sii-dièn"));
+}
+
+#[test]
+fn bu_sii_dien_learning_without_hyphen() {
+    // 使用者沒打 hyphen: busiidien -> 維持跨詞分寫 bù sii-dièn，不強行黏成單詞（平哥指示）
+    let res = learn(
+        "busiidien",
+        &[
+            (Some("補"), "bù", 2, 1),
+            (Some("字典"), "sii-dièn", 7, 2),
+        ],
+    );
+    assert_eq!(res, phrase("補字典", "bù sii-dièn"));
+}
+#[test]
 fn dictionary_khinsiann_piece_wins_over_the_typed_separator() {
     // The segment's own dictionary form already opens with `--`; the
     // typed `-` is not stacked on it (mirrors the walker's dictionary-
@@ -504,6 +529,18 @@ fn learned_rows_differing_only_in_separator_collapse_to_the_first() {
         let readings = readings_for(&cells, "記起來");
         assert_eq!(readings, vec![order[0]], "rows {order:?}; got {cells:?}");
     }
+}
+
+#[test]
+fn learned_hyphenated_reading_wins_over_space_separated_reading() {
+    // hakfa: 當舊記憶為帶空格跨詞（"bù sii-dièn"），而後續記憶為帶連字符構詞（"bù-sii-dièn"）時，
+    // 去重必定以連詞勝出，確保使用者明確加了 `-` 的連寫記憶不會被舊的帶空格記憶吞噬。
+    let _lock = engine_install_lock();
+    install(&fixture_rows(), FIXTURE_SYLLABLES);
+    let rows = vec![learned("補字典", "bù sii-dièn"), learned("補字典", "bù-sii-dièn")];
+    let cells = fetch_cells(&config_tl(), "busiidien", with_learned(rows));
+    let readings = readings_for(&cells, "補字典");
+    assert_eq!(readings, vec!["bù-sii-dièn"], "連字符構詞必須勝過帶空格記憶");
 }
 
 #[test]
