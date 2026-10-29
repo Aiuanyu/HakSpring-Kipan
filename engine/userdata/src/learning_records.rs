@@ -232,6 +232,13 @@ pub(crate) fn delete(
     let id = record.id;
     database.perform::<_, UserDataDatabaseError>(move |connection| {
         immediate_transaction::<_, UserDataDatabaseError>(connection, |connection| {
+            crate::sync_ledger::block_rows(
+                connection,
+                table.name,
+                table.identity,
+                &guard,
+                params_from_iter(values.clone()),
+            )?;
             let removed = connection.execute(
                 &format!("DELETE FROM {} WHERE {guard};", table.name),
                 params_from_iter(values),
@@ -444,6 +451,29 @@ mod tests {
 
         record_times(&stores, "台灣", "tâi-uân", 1);
         assert_eq!(all(&stores, FREQUENCY)[0].count, 1);
+    }
+
+    #[test]
+    fn a_deleted_row_is_blocked_for_the_lect_sync_until_the_user_learns_it_again() {
+        // Hakfa fork (各腔互學): deleting a row (the Learning Records page) records the pair, so the
+        // sync does not copy it back; the user's own pick of the pair lifts the block.
+        let directory = tempfile::tempdir().unwrap();
+        let stores = open(directory.path());
+        record_times(&stores, "台灣", "tâi-uân", 2);
+        stores.learned_phrases.learn_phrase("食飯", "tsia̍h-pn̄g");
+        let word = all(&stores, FREQUENCY).remove(0);
+        let phrase = all(&stores, PHRASE).remove(0);
+
+        assert!(remove(&stores, &word));
+        assert!(remove(&stores, &phrase));
+        let pair = |a: &str, b: &str| (a.to_owned(), b.to_owned());
+        assert!(stores.frequency.blocked_pairs().unwrap().contains(&pair("台灣", "tâi-uân")));
+        assert!(stores.learned_phrases.blocked_pairs().unwrap().contains(&pair("食飯", "tsia̍h-pn̄g")));
+
+        record_times(&stores, "台灣", "tâi-uân", 1);
+        stores.learned_phrases.learn_phrase("食飯", "tsia̍h-pn̄g");
+        assert!(stores.frequency.blocked_pairs().unwrap().is_empty());
+        assert!(stores.learned_phrases.blocked_pairs().unwrap().is_empty());
     }
 
     #[test]

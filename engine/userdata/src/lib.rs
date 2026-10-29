@@ -31,6 +31,7 @@ mod paging;
 mod paths;
 mod requests;
 mod stores;
+mod sync_ledger;
 mod timestamp;
 
 pub use association::{AssociationPair, AssociationRow, FollowingRow, UserAssociationStore};

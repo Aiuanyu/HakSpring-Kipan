@@ -4,12 +4,13 @@
 //! byte-identical.
 
 use crate::custom_dictionary::SearchKeyDeriver;
+use crate::sync_ledger;
 use crate::database::{
     immediate_transaction, is_taken_over, mark_taken_over, user_version, JournalMode, StoreSchema,
     UserDataDatabase, UserDataDatabaseError,
 };
 use phonetics::api::CustomSearchKey;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -123,6 +124,7 @@ impl LearnedPhraseStore {
                     params![canonical_tl, hanji],
                     |row| Ok((row.get(0)?, row.get(1)?)),
                 )?;
+                sync_ledger::claim(connection, &hanji, &canonical_tl)?;
                 // `learn_count` reads 1 only for the row this statement just
                 // inserted (a bump lands at 2 or more). If already learned,
                 // refresh search keys in case phonetic derivation rules evolved.
@@ -137,9 +139,10 @@ impl LearnedPhraseStore {
         });
     }
 
-    /// Hakfa fork (各腔互學): learns multiple `(hanzi, canonical_tl)` pairs synchronously
-    /// in a single transaction without overflowing the async write queue.
-    pub fn learn_phrases_batch(&self, pairs: &[(String, String)]) -> Result<(), UserDataDatabaseError> {
+    /// Hakfa fork (各腔互學): writes the phrases the lect sync copied, in one transaction, without
+    /// overflowing the async write queue. A pair that is already a row is left alone; a new row is
+    /// noted in the sync ledger as a copy, so the sync never offers it on.
+    pub fn learn_phrase_copies(&self, pairs: &[(String, String)]) -> Result<(), UserDataDatabaseError> {
         if pairs.is_empty() {
             return Ok(());
         }
@@ -160,20 +163,19 @@ impl LearnedPhraseStore {
             immediate_transaction::<_, UserDataDatabaseError>(connection, |connection| {
                 let mut last_inserted_id = 0i64;
                 for (hanzi, canonical_tl, search_keys) in &candidates {
-                    let (row_id, learn_count): (i64, i64) = connection.query_row(
-                        &format!(
-                            "INSERT INTO {TABLE_NAME} (roman, hanzi, learn_count, updated_at)\nVALUES (?, ?, 1, CURRENT_TIMESTAMP)\nON CONFLICT(hanzi, roman) DO UPDATE SET\n    learn_count = MIN(learn_count + 1, {}),\n    updated_at = CURRENT_TIMESTAMP\nRETURNING id, learn_count;",
-                            Self::MAX_LEARN_COUNT
-                        ),
-                        params![canonical_tl, hanzi],
-                        |row| Ok((row.get(0)?, row.get(1)?)),
-                    )?;
-                    if learn_count == 1 {
+                    let inserted: Option<i64> = connection
+                        .query_row(
+                            &format!(
+                                "INSERT INTO {TABLE_NAME} (roman, hanzi, learn_count, updated_at)\nVALUES (?, ?, 1, CURRENT_TIMESTAMP)\nON CONFLICT(hanzi, roman) DO NOTHING\nRETURNING id;"
+                            ),
+                            params![canonical_tl, hanzi],
+                            |row| row.get(0),
+                        )
+                        .optional()?;
+                    if let Some(row_id) = inserted {
                         write_search_keys(connection, row_id, search_keys)?;
+                        sync_ledger::mark_copied(connection, hanzi, canonical_tl)?;
                         last_inserted_id = row_id;
-                    } else {
-                        delete_search_keys(connection, row_id)?;
-                        write_search_keys(connection, row_id, search_keys)?;
                     }
                 }
                 if last_inserted_id > 0 {
@@ -182,6 +184,20 @@ impl LearnedPhraseStore {
                 Ok(())
             })
         })
+    }
+
+    /// The pairs the lect sync copied here (not the user's own evidence).
+    pub fn copied_pairs(&self) -> Option<std::collections::HashSet<(String, String)>> {
+        self.database.wait_for_queued_writes();
+        self.database
+            .read(|connection| sync_ledger::read_pairs(connection, sync_ledger::COPY_TABLE))
+    }
+
+    /// The pairs the user deleted here: the lect sync does not copy them back.
+    pub fn blocked_pairs(&self) -> Option<std::collections::HashSet<(String, String)>> {
+        self.database.wait_for_queued_writes();
+        self.database
+            .read(|connection| sync_ledger::read_pairs(connection, sync_ledger::BLOCK_TABLE))
     }
 
     /// Bumps a phrase the user just committed as one candidate, so a phrase
@@ -200,6 +216,7 @@ impl LearnedPhraseStore {
                 ),
                 params![hanji, canonical_tl],
             )?;
+            sync_ledger::claim(connection, &hanji, &canonical_tl)?;
             Ok(())
         });
     }
@@ -352,6 +369,7 @@ impl LearnedPhraseStore {
     pub fn delete_all(&self) -> Result<(), UserDataDatabaseError> {
         self.database.perform(|connection| {
             immediate_transaction::<_, rusqlite::Error>(connection, |connection| {
+                sync_ledger::block_rows(connection, TABLE_NAME, ["hanzi", "roman"], "1", [])?;
                 connection.execute(&format!("DELETE FROM {SEARCH_KEY_TABLE_NAME};"), [])?;
                 connection.execute(&format!("DELETE FROM {TABLE_NAME};"), [])?;
                 Ok(())
@@ -430,5 +448,6 @@ fn apply_schema(connection: &Connection) -> rusqlite::Result<()> {
     connection.execute_batch(&format!(
         "CREATE TABLE IF NOT EXISTS {TABLE_NAME} (\n    id INTEGER PRIMARY KEY,\n    roman TEXT NOT NULL,\n    hanzi TEXT NOT NULL,\n    learn_count INTEGER NOT NULL DEFAULT 1,\n    updated_at TEXT NOT NULL,\n    UNIQUE(hanzi, roman)\n);\nCREATE TABLE IF NOT EXISTS {SEARCH_KEY_TABLE_NAME} (\n    phrase_id INTEGER NOT NULL,\n    family TEXT NOT NULL,\n    form TEXT NOT NULL,\n    key TEXT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_lsk_lookup ON {SEARCH_KEY_TABLE_NAME}(family, form, key);\nCREATE UNIQUE INDEX IF NOT EXISTS idx_lsk_phrase ON {SEARCH_KEY_TABLE_NAME}(phrase_id, family, form, key);\nCREATE INDEX IF NOT EXISTS idx_learned_rank ON {TABLE_NAME}(learn_count, updated_at);"
     ))?;
+    connection.execute_batch(&sync_ledger::ddl())?;
     Ok(())
 }

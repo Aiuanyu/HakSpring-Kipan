@@ -2,6 +2,7 @@
 //! the former Swift `UserFrequencyStore`; SQL byte-identical.
 
 use crate::capacity::LearningCapacity;
+use crate::sync_ledger;
 use crate::database::{
     has_column, immediate_transaction, table_exists, JournalMode, StoreSchema, UserDataDatabase,
     UserDataDatabaseError,
@@ -111,6 +112,7 @@ impl UserFrequencyStore {
                 ),
                 params![word, tl],
             )?;
+            sync_ledger::claim(connection, &word, &tl)?;
             if let Some(capacity) = capacity {
                 capacity.enforce(connection)?;
             }
@@ -118,9 +120,11 @@ impl UserFrequencyStore {
         });
     }
 
-    /// Hakfa fork (各腔互學): records multiple `(word, tl)` pairs synchronously in a single
-    /// transaction without overflowing the async write queue.
-    pub fn record_batch(&self, pairs: &[(String, String)]) -> Result<(), UserDataDatabaseError> {
+    /// Hakfa fork (各腔互學): writes the pairs the lect sync copied, in one transaction, without
+    /// overflowing the async write queue. A pair that is already a row is left alone (a copy never
+    /// raises what the lect learned itself); a new row counts once and is noted in the sync ledger
+    /// as a copy, so the sync never offers it on.
+    pub fn record_copies(&self, pairs: &[(String, String)]) -> Result<(), UserDataDatabaseError> {
         if pairs.is_empty() {
             return Ok(());
         }
@@ -129,16 +133,36 @@ impl UserFrequencyStore {
         self.database.perform(move |connection| {
             immediate_transaction::<_, UserDataDatabaseError>(connection, |connection| {
                 let mut statement = connection.prepare_cached(&format!(
-                    "INSERT INTO {TABLE_NAME} (word, tl, count, last_used)\nVALUES (?, ?, 1, CURRENT_TIMESTAMP)\nON CONFLICT(word, tl) DO UPDATE SET\n    count = count + 1,\n    last_used = CURRENT_TIMESTAMP;"
+                    "INSERT INTO {TABLE_NAME} (word, tl, count, last_used)\nVALUES (?, ?, 1, CURRENT_TIMESTAMP)\nON CONFLICT(word, tl) DO NOTHING;"
                 ))?;
+                let mut inserted = Vec::new();
                 for (word, tl) in &pairs {
-                    statement.execute(params![word, tl])?;
+                    if statement.execute(params![word, tl])? > 0 {
+                        inserted.push((word.clone(), tl.clone()));
+                    }
                 }
                 drop(statement);
+                for (word, tl) in &inserted {
+                    sync_ledger::mark_copied(connection, word, tl)?;
+                }
                 capacity.enforce(connection)?;
                 Ok(())
             })
         })
+    }
+
+    /// The pairs the lect sync copied here (not the user's own evidence).
+    pub fn copied_pairs(&self) -> Option<std::collections::HashSet<(String, String)>> {
+        self.database.wait_for_queued_writes();
+        self.database
+            .read(|connection| sync_ledger::read_pairs(connection, sync_ledger::COPY_TABLE))
+    }
+
+    /// The pairs the user deleted here: the lect sync does not copy them back.
+    pub fn blocked_pairs(&self) -> Option<std::collections::HashSet<(String, String)>> {
+        self.database.wait_for_queued_writes();
+        self.database
+            .read(|connection| sync_ledger::read_pairs(connection, sync_ledger::BLOCK_TABLE))
     }
 
     /// Merges a backup's counts: a `(word, tl)` already stored keeps the
@@ -159,6 +183,7 @@ impl UserFrequencyStore {
                 let mut merged = 0;
                 for (word, tl, count) in rows.iter().filter(|(word, ..)| !word.is_empty()) {
                     statement.execute(params![word, tl, count])?;
+                    sync_ledger::claim(connection, word, tl)?;
                     merged += 1;
                 }
                 capacity.enforce(connection)?;
@@ -210,6 +235,7 @@ impl UserFrequencyStore {
     /// Forgets everything.
     pub fn delete_all(&self) -> Result<(), UserDataDatabaseError> {
         self.database.perform(|connection| {
+            sync_ledger::block_rows(connection, TABLE_NAME, ["word", "tl"], "1", [])?;
             connection.execute(&format!("DELETE FROM {TABLE_NAME};"), [])?;
             connection.execute("VACUUM;", []).ok();
             Ok(())
@@ -231,6 +257,7 @@ fn decode_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FrequencyRow> {
 fn apply_schema(connection: &Connection) -> rusqlite::Result<()> {
     migrate_to_pair_key_if_needed(connection)?;
     connection.execute_batch(&table_ddl(TABLE_NAME))?;
+    connection.execute_batch(&sync_ledger::ddl())?;
     // No index on `word` alone: the UNIQUE constraint's automatic index
     // already has it as the leftmost column, so it serves `WHERE word IN`.
     connection.execute_batch(&format!(

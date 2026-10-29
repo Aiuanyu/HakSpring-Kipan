@@ -23,9 +23,6 @@ use userdata::{UserDataHandle, UserDataStores};
 /// How many skipped words the answer lists, for the preview to show why.
 const SKIP_EXAMPLES: usize = 12;
 
-/// Most rounds one sync repeats (see `sync`).
-const MAX_ROUNDS: usize = 8;
-
 /// Why a word was not copied.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum SkipReason {
@@ -165,39 +162,46 @@ pub(crate) fn sync(
         set.frequency.open_blocking();
         set.learned_phrases.open_blocking();
     }
-    // Everything is read before anything is written, so a copy never echoes back within a round.
-    // Rounds repeat until nothing new is copied: what round N copied is offered to the other lects
-    // in round N+1, because another lect's reading can settle a Hanji the first source could not
-    // (a copy's toneless face is the tie-break hint). One press therefore reaches the end state,
-    // and the preview counts exactly what the press writes — a second press finds nothing new.
-    // Only the rows copied in the previous round are re-offered, so no row is counted twice.
-    struct Frontier {
+    // Everything is read before anything is written. The sources are what each lect's user learned:
+    // rows the sync itself copied (the stores' sync ledger) are not offered on, so a copy is never
+    // taken for the user's own pick and one press reaches the end state. A pair the user deleted in
+    // the target lect is not copied back.
+    struct Learned {
         phrases: Vec<(String, String)>,
         words: Vec<(String, String)>,
     }
     let mut target_have_phrases: HashMap<u32, HashSet<(String, String)>> = HashMap::new();
     let mut target_have_words: HashMap<u32, HashSet<(String, String)>> = HashMap::new();
 
-    let mut frontier: Vec<(u32, Frontier)> = stores
+    let learned: Vec<(u32, Learned)> = stores
         .iter()
         .map(|(lect, set)| {
-            let phrases: Vec<(String, String)> = set
+            let copied_phrases = set.learned_phrases.copied_pairs().unwrap_or_default();
+            let copied_words = set.frequency.copied_pairs().unwrap_or_default();
+            let all_phrases: Vec<(String, String)> = set
                 .learned_phrases
                 .all_rows()
                 .unwrap_or_default()
                 .into_iter()
                 .map(|row| (row.hanji, row.canonical_tl))
                 .collect();
-            let words: Vec<(String, String)> = set
+            let all_words: Vec<(String, String)> = set
                 .frequency
                 .all_rows()
                 .unwrap_or_default()
                 .into_iter()
                 .map(|row| (row.word, row.tl))
                 .collect();
-            target_have_phrases.insert(*lect, phrases.iter().cloned().collect());
-            target_have_words.insert(*lect, words.iter().cloned().collect());
-            (*lect, Frontier { phrases, words })
+            // "Have" counts what the user deleted too: the user already decided about that pair.
+            let mut have_phrases: HashSet<(String, String)> = all_phrases.iter().cloned().collect();
+            have_phrases.extend(set.learned_phrases.blocked_pairs().unwrap_or_default());
+            let mut have_words: HashSet<(String, String)> = all_words.iter().cloned().collect();
+            have_words.extend(set.frequency.blocked_pairs().unwrap_or_default());
+            target_have_phrases.insert(*lect, have_phrases);
+            target_have_words.insert(*lect, have_words);
+            let phrases = all_phrases.into_iter().filter(|pair| !copied_phrases.contains(pair)).collect();
+            let words = all_words.into_iter().filter(|pair| !copied_words.contains(pair)).collect();
+            (*lect, Learned { phrases, words })
         })
         .collect();
 
@@ -205,84 +209,60 @@ pub(crate) fn sync(
     let mut pending_words: HashMap<u32, Vec<(String, String)>> = HashMap::new();
 
     let mut report = SyncReport::default();
-    // The chain is short (each round needs a copy that settles a Hanji the last could not); the cap
-    // only guards a pathological dictionary.
-    for round in 0..MAX_ROUNDS {
-        let mut next: Vec<(u32, Frontier)> = lects
-            .iter()
-            .map(|lect| (*lect, Frontier { phrases: Vec::new(), words: Vec::new() }))
-            .collect();
-        // Later rounds re-offer copies, so what they find present or skip is not the user's data.
-        let counting = round == 0;
-        for (source, from) in &frontier {
-            for target in lects.iter().filter(|lect| *lect != source) {
-                let Some(have_phrases) = target_have_phrases.get_mut(target) else {
-                    continue;
-                };
-                for (hanji, source_tl) in &from.phrases {
-                    match outcome(readings, hanji, *target, source_tl) {
-                        Outcome::Skip(reason) => {
-                            if counting {
-                                report.skip(hanji, *target, reason);
-                            }
-                        }
-                        Outcome::Copy { tl, .. } if have_phrases.contains(&(hanji.clone(), tl.clone())) => {
-                            report.already_present += u32::from(counting);
-                        }
-                        Outcome::Copy { tl, composed } => {
-                            report.added_phrases += 1;
-                            report.composed += u32::from(composed);
-                            have_phrases.insert((hanji.clone(), tl.clone()));
-                            pending_phrases.entry(*target).or_default().push((hanji.clone(), tl.clone()));
-                            if let Some((_, slot)) = next.iter_mut().find(|(lect, _)| lect == target) {
-                                slot.phrases.push((hanji.clone(), tl));
-                            }
+    for (source, from) in &learned {
+        for (target, _) in learned.iter().filter(|(lect, _)| lect != source) {
+            let Some(have_phrases) = target_have_phrases.get_mut(target) else {
+                continue;
+            };
+            for (hanji, source_tl) in &from.phrases {
+                match outcome(readings, hanji, *target, source_tl) {
+                    Outcome::Skip(reason) => report.skip(hanji, *target, reason),
+                    Outcome::Copy { tl, .. } if have_phrases.contains(&(hanji.clone(), tl.clone())) => {
+                        report.already_present += 1;
+                    }
+                    Outcome::Copy { tl, composed } => {
+                        report.added_phrases += 1;
+                        report.composed += u32::from(composed);
+                        have_phrases.insert((hanji.clone(), tl.clone()));
+                        if !dry_run {
+                            pending_phrases.entry(*target).or_default().push((hanji.clone(), tl));
                         }
                     }
                 }
+            }
 
-                let Some(have_words) = target_have_words.get_mut(target) else {
-                    continue;
-                };
-                for (word, source_tl) in &from.words {
-                    match outcome(readings, word, *target, source_tl) {
-                        Outcome::Skip(reason) => {
-                            if counting {
-                                report.skip(word, *target, reason);
-                            }
-                        }
-                        Outcome::Copy { tl, .. } if have_words.contains(&(word.clone(), tl.clone())) => {
-                            report.already_present += u32::from(counting);
-                        }
-                        Outcome::Copy { tl, composed } => {
-                            report.added_words += 1;
-                            report.composed += u32::from(composed);
-                            have_words.insert((word.clone(), tl.clone()));
-                            pending_words.entry(*target).or_default().push((word.clone(), tl.clone()));
-                            if let Some((_, slot)) = next.iter_mut().find(|(lect, _)| lect == target) {
-                                slot.words.push((word.clone(), tl));
-                            }
+            let Some(have_words) = target_have_words.get_mut(target) else {
+                continue;
+            };
+            for (word, source_tl) in &from.words {
+                match outcome(readings, word, *target, source_tl) {
+                    Outcome::Skip(reason) => report.skip(word, *target, reason),
+                    Outcome::Copy { tl, .. } if have_words.contains(&(word.clone(), tl.clone())) => {
+                        report.already_present += 1;
+                    }
+                    Outcome::Copy { tl, composed } => {
+                        report.added_words += 1;
+                        report.composed += u32::from(composed);
+                        have_words.insert((word.clone(), tl.clone()));
+                        if !dry_run {
+                            pending_words.entry(*target).or_default().push((word.clone(), tl));
                         }
                     }
                 }
             }
         }
-        if next.iter().all(|(_, slot)| slot.phrases.is_empty() && slot.words.is_empty()) {
-            break;
-        }
-        frontier = next;
     }
 
     if !dry_run {
         for (target, target_stores) in &stores {
             if let Some(phrases) = pending_phrases.remove(target) {
                 if !phrases.is_empty() {
-                    let _ = target_stores.learned_phrases.learn_phrases_batch(&phrases);
+                    let _ = target_stores.learned_phrases.learn_phrase_copies(&phrases);
                 }
             }
             if let Some(words) = pending_words.remove(target) {
                 if !words.is_empty() {
-                    let _ = target_stores.frequency.record_batch(&words);
+                    let _ = target_stores.frequency.record_copies(&words);
                 }
             }
         }
@@ -518,10 +498,11 @@ mod tests {
     }
 
     #[test]
-    fn a_copy_settles_what_the_first_source_could_not_in_one_sync() {
+    fn a_copy_is_never_offered_on_so_one_sync_is_the_end_state() {
         // 1 = 四縣 learned 行 as `hen`; 2 reads it one way (`hóng`); 3 reads it two ways, `hàng` /
-        // `hóng`. `hen` settles nothing in 3, but 2's copy `hóng` does — in the same sync, so a
-        // second press finds nothing new.
+        // `hóng`. `hen` settles nothing in 3. 2's copy `hóng` WOULD settle it, but a copy is not the
+        // user's evidence: it is not offered on, so 3 stays without it and a second sync finds
+        // nothing new either.
         let dict = HashMap::from([
             (("行", 2), vec!["hóng"]),
             (("行", 3), vec!["hàng", "hóng"]),
@@ -531,13 +512,57 @@ mod tests {
         let handle = opened_handle(directory.path());
         handle.stores_for_lect(1).unwrap().frequency.record("行", "hen");
 
-        let first = sync(&handle, &[1, 2, 3], false, &readings).unwrap();
-        let third = handle.stores_for_lect(3).unwrap();
-        third.frequency.open_blocking();
-        let rows: Vec<_> = third.frequency.all_rows().unwrap().into_iter().map(|r| (r.word, r.tl)).collect();
-        assert_eq!(rows, vec![("行".to_owned(), "hóng".to_owned())], "{first:?}");
-
+        sync(&handle, &[1, 2, 3], false, &readings).unwrap();
         let second = sync(&handle, &[1, 2, 3], false, &readings).unwrap();
         assert_eq!((second.added_words, second.added_phrases), (0, 0), "{second:?}");
+
+        let second_lect = handle.stores_for_lect(2).unwrap();
+        second_lect.frequency.open_blocking();
+        assert_eq!(
+            second_lect.frequency.copied_pairs().unwrap(),
+            std::collections::HashSet::from([("行".to_owned(), "hóng".to_owned())])
+        );
+        let third = handle.stores_for_lect(3).unwrap();
+        third.frequency.open_blocking();
+        assert!(third.frequency.all_rows().unwrap().is_empty(), "no chained copy into 3");
+    }
+
+    #[test]
+    fn a_pair_the_user_deleted_is_not_copied_back_until_they_learn_it_again() {
+        let directory = tempfile::tempdir().unwrap();
+        let handle = opened_handle(directory.path());
+        let readings = readings_from(dictionary());
+        let sixian = handle.stores_for_lect(1).unwrap();
+        let hailu = handle.stores_for_lect(2).unwrap();
+        sixian.frequency.record("海", "hòi");
+
+        sync(&handle, &[1, 2], false, &readings).unwrap();
+        assert_eq!(hailu.frequency.all_rows().unwrap().len(), 1);
+
+        // The user forgets everything in 海陸; the next sync does not bring 海 back.
+        hailu.frequency.delete_all().unwrap();
+        let again = sync(&handle, &[1, 2], false, &readings).unwrap();
+        assert!(hailu.frequency.all_rows().unwrap().is_empty(), "{again:?}");
+        assert_eq!(again.added_words, 0);
+
+        // Typing 海 in 海陸 and picking it makes it theirs again.
+        hailu.frequency.record("海", "hói");
+        assert!(hailu.frequency.blocked_pairs().unwrap().is_empty());
+        assert!(hailu.frequency.copied_pairs().unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_pair_the_user_picked_themselves_is_a_source_even_if_it_was_copied_before() {
+        let directory = tempfile::tempdir().unwrap();
+        let handle = opened_handle(directory.path());
+        let readings = readings_from(dictionary());
+        let sixian = handle.stores_for_lect(1).unwrap();
+        let hailu = handle.stores_for_lect(2).unwrap();
+        sixian.frequency.record("海", "hòi");
+        sync(&handle, &[1, 2], false, &readings).unwrap();
+        assert_eq!(hailu.frequency.copied_pairs().unwrap().len(), 1);
+
+        hailu.frequency.record("海", "hói"); // the user's own pick of the copied pair
+        assert!(hailu.frequency.copied_pairs().unwrap().is_empty(), "now theirs");
     }
 }
