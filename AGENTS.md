@@ -24,6 +24,7 @@ One maintainer works with local agents (Gemini and Claude in Antigravity, Claude
 | Layer | What | Where |
 |---|---|---|
 | Code-bound knowledge | build pitfalls, architecture, data rules, how-tos | this repo, `docs/hakfa/` — commit it with the code it describes |
+| Feature x platform matrix | which platform's source mentions which Hakfa feature | `docs/hakfa/platform-matrix.md`, measured by `tools/hakfa/platform-matrix.py` — when a change adds or removes a feature on a platform, run `python3 tools/hakfa/platform-matrix.py --write` and commit the refreshed table with it |
 | Decisions, status, roadmap | what is decided, what is next | the maintainer's notes (below) |
 | Discussion | maintainer ↔ agent threads | the maintainer's notes (below) |
 
