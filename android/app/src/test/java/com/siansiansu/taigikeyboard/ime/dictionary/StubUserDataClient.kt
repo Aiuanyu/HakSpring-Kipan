@@ -4,6 +4,7 @@ import com.siansiansu.taigikeyboard.engine.proto.LearningRecord
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordKind
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordOrder
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecords
+import com.siansiansu.taigikeyboard.engine.proto.LectsSynced
 
 /**
  * A [UserDataClient] whose every method fails as unused; a test's fake
@@ -24,6 +25,8 @@ open class StubUserDataClient : UserDataClient {
     override suspend fun importCsv(csv: ByteArray): CustomDictionaryImportResult = error("unused")
 
     override suspend fun clearLearningRecords(): Unit = error("unused")
+
+    override suspend fun syncLects(dryRun: Boolean): LectsSynced = error("unused")
 
     override suspend fun search(
         query: String,

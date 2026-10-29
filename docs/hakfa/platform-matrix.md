@@ -9,7 +9,7 @@ Which platform's source mentions which Hakfa feature. It exists so a feature tha
 <!-- matrix:begin -->
 | 功能 | engine | desktop | iOS | Android | macOS | Windows | Linux |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 各腔互學 (sync lects) 入口 | 2 | 1 | - | - | 3 | - | - |
+| 各腔互學 (sync lects) 入口 | 2 | 1 | - | 3 | 3 | - | - |
 | 學習紀錄頁 (learning records) | 6 | 6 | 6 | 11 | 4 | 3 | 4 |
 | 數字調打法 (digit tones) | - | 11 | - | 1 | 6 | 2 | 1 |
 | 備份匯出入 (backup) | 3 | - | 5 | 5 | - | - | - |

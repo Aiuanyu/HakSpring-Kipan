@@ -24,11 +24,13 @@ import com.siansiansu.taigikeyboard.engine.proto.LearningRecord
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordKind
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordOrder
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecords
+import com.siansiansu.taigikeyboard.engine.proto.LectsSynced
 import com.siansiansu.taigikeyboard.engine.proto.ResetUserData
+import com.siansiansu.taigikeyboard.engine.syncLects
 import com.siansiansu.taigikeyboard.engine.userDataReset
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.UUID
 
 /** One word in the user's own dictionary, as the screens show and edit it. */
 data class CustomDictionaryWord(
@@ -101,6 +103,9 @@ interface UserDataClient {
 
     /** Empties what the keyboard learned — counts, bigrams, learned phrases — and leaves the custom dictionary alone. */
     suspend fun clearLearningRecords()
+
+    /** Hakfa fork (各腔互學): copies what one lect learned to the others; [dryRun] only counts what it would copy. */
+    suspend fun syncLects(dryRun: Boolean): LectsSynced
 
     /**
      * The dictionary search's lookup, by the key [query] derives under the
@@ -242,6 +247,8 @@ object EngineUserDataClient : UserDataClient {
             ?.record
 
     override suspend fun deleteLearningRecord(record: LearningRecord): Boolean = engine("learningRecordDelete") { RustEngineBridge.learningRecordDelete(record) }.removed
+
+    override suspend fun syncLects(dryRun: Boolean): LectsSynced = engine("userDataSyncLects") { RustEngineBridge.syncLects(dryRun = dryRun) }
 
     override suspend fun addLearningRecordToCustomDictionary(record: LearningRecord) {
         val added = engine("learningRecordAddToCustomDictionary") { RustEngineBridge.learningRecordAddToCustomDictionary(record) }
