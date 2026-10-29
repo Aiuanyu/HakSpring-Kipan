@@ -4,7 +4,7 @@
   "direction": "ltr",
   "arrangement": [
     [
-      { "code": 126, "label": "~", "popup": [{"code": 65374, "label": "～"}, {"code": 8776, "label": "≈"}, {"code": 8764, "label": "∼"}] },
+      { "code": 126, "label": "~", "popup": [{"code": 65374, "label": "～"}, {"code": 8776, "label": "≈"}, {"code": 8764, "label": "∼"}, {"code": 96, "label": "`"}] },
       { "code": 47, "label": "/", "popup": [{"code": 8260, "label": "⁄"}, {"code": 247, "label": "÷"}] },
       { "code": 61, "label": "=", "popup": [{"code": 65309, "label": "＝"}, {"code": 8800, "label": "≠"}, {"code": 8776, "label": "≈"}, {"code": 8801, "label": "≡"}] },
       { "code": 95, "label": "_", "popup": [{"code": 65343, "label": "＿"}, {"code": 9472, "label": "─"}, {"code": 65103, "label": "﹏"}] },

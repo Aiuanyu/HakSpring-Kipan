@@ -657,20 +657,20 @@ private fun resolveBackgroundColor(
     }
 }
 
-// Tone hint diacritics for number keys in Hakfa (HagPinPlus / GIP):
-// Uses standard Western diacritics (\u00B4 acute, \u02C7 caron, \u0060 grave, \u00AF macron)
-// instead of East-Asian Zhuyin full-width marks.
+// Tone hint diacritics for number keys in Hakfa (HagPinPlus / GIP): the digit -> mark
+// table of the numeric tone scheme (`docs/hakfa/tone-input.md`, `tone_input_scheme.rs`):
+// 2 acute, 3 grave, 5 circumflex, 6 caron, 7 macron. 1 and 4 name the unmarked tone, so
+// they carry no mark. Standard Western diacritics, not East-Asian Zhuyin full-width marks.
 private val toneHints = mapOf(
-    49 to "´", // 1  ´ ACUTE ACCENT (U+00B4)
-    50 to "ˇ", // 2  ˇ CARON (U+02C7)
+    50 to "´", // 2  ´ ACUTE ACCENT (U+00B4)
     51 to "`", // 3  ` GRAVE ACCENT (U+0060)
     53 to "^", // 5  ^ CIRCUMFLEX (U+005E)
     54 to "ˇ", // 6  ˇ CARON (U+02C7)
     55 to "¯", // 7  ¯ MACRON (U+00AF)
 )
 
-/** No tone marks for "0", "4", "8", "9" — render space for layout consistency. */
-private val noToneHintCodes = setOf(48, 52, 56, 57)
+/** No tone marks for "0", "1", "4", "8", "9" — render space for layout consistency. */
+private val noToneHintCodes = setOf(48, 49, 52, 56, 57)
 
 internal fun toneHintForCode(
     code: Int,
