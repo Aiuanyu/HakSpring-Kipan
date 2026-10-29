@@ -37,10 +37,10 @@ One maintainer works with local agents (Gemini and Claude in Antigravity, Claude
 
 Access: local agents on the maintainer's Mac have the vault; a session the maintainer explicitly attaches it to has it. Cloud sessions normally do not — do not ask for it. Work from the issue, which the maintainer writes to be self-contained.
 
-Writing in the vault — only when asked, and following `hub-template.md`:
+Writing in the vault — **always ask the maintainer first whether to write a note** when you finish work (never write unprompted, never skip the question), then follow `hub-template.md`:
 
 - Traditional Chinese (zh-TW), full-width punctuation, timestamps in UTC+8 as `<sup>YYYYMMDD HH:MM</sup>`.
-- Your section is `### C<n>` (Claude) or `### G<n>` (Gemini) with a model tag line such as `#Claude/Opus-5-5/Code` under the heading. `### R<n>` sections belong to the maintainer; never write one.
+- Your section is `### C<n>` (Claude) or `### G<n>` (Gemini) with a signature hashtag line `#<AI>/<model>/<tool>/<environment>` under the heading, e.g. `#Claude/Sonnet-5-5/Code/Cloud` (Claude Code on the web) or `#Claude/Opus-5-5/Code/Local`. The maintainer tells you which string this session uses; if not told, ask. `### R<n>` sections belong to the maintainer; never write one.
 - Append; never rewrite another author's section. Check whether a file exists before creating it.
 - Obsidian links: `[[full/path|text]]`, embeds `![[full/path#heading]]`.
 - When a decision is made, update its row in the hub's decisions table.
