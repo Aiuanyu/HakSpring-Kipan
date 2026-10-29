@@ -160,5 +160,6 @@ windows/.build/
 # Hakfa dictionary build scratch & output
 /output/
 /dictionary/output/hakfa/
+/dictionary/output/hakfa-*/
 assets/dictionaries/backup_taigi/
 commit_msg.txt
