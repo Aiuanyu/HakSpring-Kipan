@@ -1293,6 +1293,7 @@ pub(crate) fn assemble_candidates(
                             context_rank: ranking::CONTEXT_RANK_NONE,
                             coverage_kind: slot0.coverage_kind,
                             is_custom: slot0.is_custom,
+                            is_compound_learned: false,
                             variant: slot0.variant,
                         };
                         // `hoogua` bug (2026-06-02): the walker synth
@@ -1708,6 +1709,7 @@ mod tests {
             context_rank: 0,
             coverage_kind: COVERAGE_KIND_FULL,
             is_custom: false,
+            is_compound_learned: false,
             variant: 1,
         };
         let mut candidates = vec![cand];
@@ -1726,6 +1728,7 @@ mod tests {
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: COVERAGE_KIND_FULL,
             is_custom: false,
+            is_compound_learned: false,
             variant: 1,
         };
         let is_same_full_span_word = |x: &RawCandidate| {
@@ -1884,6 +1887,7 @@ mod tests {
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: COVERAGE_KIND_FULL,
             is_custom: false,
+            is_compound_learned: false,
             variant: 0,
         };
         cand.roman = recase_tl_as_poj_display(&cand.roman);
@@ -1912,6 +1916,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
                 is_custom,
+                is_compound_learned: false,
                 variant: 0,
             }
         }
@@ -1960,6 +1965,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
                 is_custom: false,
+                is_compound_learned: false,
                 variant: 0,
             }
         }
@@ -1990,6 +1996,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
                 is_custom: false,
+                is_compound_learned: false,
                 variant: 0,
             }
         }
@@ -2024,6 +2031,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: COVERAGE_KIND_FULL,
                 is_custom: false,
+                is_compound_learned: false,
                 variant: 0,
             }
         }

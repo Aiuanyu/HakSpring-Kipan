@@ -102,6 +102,13 @@ impl UserDataHandle {
                 .stores
                 .for_lect(opened.paths.for_lect(lect), opened.journal);
             stores.open_learning();
+            let lp = Arc::clone(&stores.learned_phrases);
+            std::thread::Builder::new()
+                .name("taigi-lect-learned-open".into())
+                .spawn(move || {
+                    lp.open_blocking();
+                })
+                .ok();
             Arc::new(stores)
         });
         Some(Arc::clone(stores))

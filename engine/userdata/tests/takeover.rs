@@ -813,6 +813,42 @@ fn a_learned_phrase_file_keeps_its_rows_and_is_marked() {
 }
 
 #[test]
+fn a_learned_phrase_file_v1_rederives_search_keys_on_takeover() {
+    let directory = scratch();
+    let path = paths(&directory).learned_phrases;
+    // Insert with old v1 keys (e.g. tske instead of chke for chǐkǒn er)
+    build(
+        &path,
+        "CREATE TABLE learned_phrases (id INTEGER PRIMARY KEY, roman TEXT NOT NULL, hanzi TEXT NOT NULL,
+             learn_count INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, UNIQUE(hanzi, roman));
+         CREATE TABLE learned_search_key (phrase_id INTEGER NOT NULL, family TEXT NOT NULL, form TEXT NOT NULL, key TEXT NOT NULL);
+         INSERT INTO learned_phrases VALUES (1, 'chǐ-kǒn-er', '試看仔', 1, '2026-10-27 00:00:00');
+         INSERT INTO learned_search_key VALUES (1, 'tl', 'abbrev', 'tske');
+         PRAGMA user_version = 1;",
+    );
+    let store = LearnedPhraseStore::new(
+        path.clone(),
+        JournalMode::Delete,
+        Arc::new(derive_custom_search_keys),
+        LearnedPhraseStore::MAX_ENTRIES,
+    );
+    store.open_blocking();
+
+    assert_eq!(pragma(&path, "user_version"), 2);
+    // After takeover, search keys should contain tl|abbrev|chke
+    let connection = raw(&path);
+    let mut stmt = connection
+        .prepare("SELECT key FROM learned_search_key WHERE phrase_id = 1 AND family = 'tl' AND form = 'abbrev';")
+        .unwrap();
+    let keys: Vec<String> = stmt
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+    assert!(keys.contains(&"chke".to_string()), "keys: {keys:?}");
+}
+
+#[test]
 fn the_journal_mode_is_the_platform_s_choice() {
     let directory = scratch();
     let files = paths(&directory);

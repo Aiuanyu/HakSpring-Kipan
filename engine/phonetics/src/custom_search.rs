@@ -56,6 +56,10 @@ pub fn derive_custom_search_keys(roman: &str) -> Vec<CustomSearchKey> {
 
     let mut keys = Vec::new();
     push_latin_family(&mut keys, KeyFamily::Tl, &tl);
+    // Hakfa fork: also index raw `roman` directly under KeyFamily::Tl,
+    // so Hakfa initials like `ch-` (海陸翹舌音) are preserved as `ch-` instead of being
+    // overwritten to 台語 `ts-`.
+    push_latin_family(&mut keys, KeyFamily::Tl, roman);
     push_latin_family(&mut keys, KeyFamily::Poj, &poj);
     push_tps_family(&mut keys, &tl);
     dedup_nonempty(keys)
@@ -258,6 +262,22 @@ mod tests {
         assert!(
             query_hits_stored(&stored, &q_poj),
             "POJ query must find POJ-stored entry"
+        );
+    }
+
+    #[test]
+    fn hakfa_ch_initials_preserved_in_tl_family() {
+        // Hakfa: 海陸 retroflex initial `ch-` (e.g. 試看仔 `chǐ-kǒn-er`) must yield
+        // abbreviation `chke` directly in the `tl` family, without being mangled into `tske`.
+        let stored = derive_custom_search_keys("chǐ-kǒn-er");
+        assert!(
+            has(&stored, "tl", FORM_ABBREV, "chke"),
+            "TL family must contain abbreviation 'chke' for Hakfa 'chǐ-kǒn-er'"
+        );
+        let q_tl_abbrev = derive_custom_query_key("chke", "tl").unwrap();
+        assert!(
+            query_hits_stored(&stored, &q_tl_abbrev),
+            "TL query 'chke' must hit stored Hakfa abbreviation"
         );
     }
 

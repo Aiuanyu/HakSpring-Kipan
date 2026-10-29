@@ -333,3 +333,97 @@ fn custom_entry_sharing_the_abbreviated_word_shows_once() {
         "custom first, dictionary 鎖匙 deduped onto it"
     );
 }
+
+#[test]
+fn compound_learned_phrase_leads_abbreviation_block_and_survives_cap() {
+    let _lock = engine_install_lock();
+    install_fixture();
+    // Hakfa fork: a learned phrase with explicit hyphen (e.g. 存在 `cǔn-cai` or 魔卡 `mó-ka`)
+    // is treated as an inline custom entry (preference_class = 1).
+    // Under `mk`, the dictionary has 30 `mó-ka` abbreviation rows which fill PARTIAL_PREFIX_OUTPUT_CAP.
+    // The compound learned phrase must lead the abbreviation block ahead of the 30 dictionary rows.
+    let hanji = fetch_hanji(
+        "mk",
+        "tl",
+        Fetch {
+            learned: vec![LearnedEntry {
+                hanji: "魔卡".into(),
+                canonical_tl: "mó-ka".into(),
+            }],
+            ..Fetch::default()
+        },
+    );
+    assert!(
+        hanji.contains(&"魔卡".to_string()),
+        "compound learned phrase must survive the 30-item abbreviation cap; got {hanji:?}"
+    );
+    // It must lead the abbreviation-only block (ahead of 詞0..詞29)
+    let pos_learned = hanji.iter().position(|h| h == "魔卡").unwrap();
+    let pos_dict = hanji.iter().position(|h| h == "詞0").unwrap();
+    assert!(
+        pos_learned < pos_dict,
+        "compound learned phrase (pos {pos_learned}) must outrank unselected dictionary abbrev (pos {pos_dict})"
+    );
+}
+
+#[test]
+fn selected_abbreviation_outranks_unselected_reading_homophones_end_to_end() {
+    let _lock = engine_install_lock();
+    install_fixture();
+    // In fixture, `tse` has reading "這" (freq 27958).
+    // If the user previously selected an abbreviation entry under `tse` (e.g. "早矣" `tsá-e`, leading units ts + e = tse, user_weight > 0),
+    // it must be promoted ahead of the unselected full-reading word "這".
+    let hanji = fetch_hanji(
+        "tse",
+        "tl",
+        Fetch {
+            learned: vec![LearnedEntry {
+                hanji: "早矣".into(),
+                canonical_tl: "tsá-e".into(),
+            }],
+            frequency: vec![crate::common::selected("早矣", "tsá-e", 5, 1000)],
+            now_ms: crate::common::NOW_MS,
+            ..Fetch::default()
+        },
+    );
+    // Slot 0 is reserved for the full-syllable walker path ("這"),
+    // but the selected abbreviation "早矣" is immediately at slot 1,
+    // promoted ahead of all unselected homophones and other candidates.
+    assert_eq!(
+        hanji[1], "早矣",
+        "user-selected abbreviation must be promoted to slot 1 right after walker slot 0; got {hanji:?}"
+    );
+}
+
+#[test]
+fn selected_abbreviation_outranks_selected_partial_prefix_end_to_end() {
+    let _lock = engine_install_lock();
+    install_fixture();
+    // In fixture, under `mk`:
+    // `m̄-khíng` (毋肯) is a Step 4b partial extension (partial prefix, coverage_kind = 1).
+    // `mó-ka` (魔卡) is a Step 4c abbreviation hit (coverage_kind = 2).
+    // If BOTH have been selected by the user (even if 毋肯 has higher frequency count=20 vs 魔卡 count=5),
+    // the completed abbreviation "魔卡" must outrank the incomplete partial prefix "毋肯".
+    let hanji = fetch_hanji(
+        "mk",
+        "tl",
+        Fetch {
+            learned: vec![LearnedEntry {
+                hanji: "魔卡".into(),
+                canonical_tl: "mó-ka".into(),
+            }],
+            frequency: vec![
+                crate::common::selected("毋肯", "m̄-khíng", 20, 1000),
+                crate::common::selected("魔卡", "mó-ka", 5, 1000),
+            ],
+            now_ms: crate::common::NOW_MS,
+            ..Fetch::default()
+        },
+    );
+    let pos_abbrev = hanji.iter().position(|h| h == "魔卡").expect("魔卡 present");
+    let pos_partial = hanji.iter().position(|h| h == "毋肯").expect("毋肯 present");
+    assert!(
+        pos_abbrev < pos_partial,
+        "selected abbreviation 魔卡 (pos {pos_abbrev}) must outrank selected partial prefix 毋肯 (pos {pos_partial}); got {hanji:?}"
+    );
+}

@@ -5,16 +5,18 @@
 
 use crate::custom_dictionary::SearchKeyDeriver;
 use crate::database::{
-    immediate_transaction, JournalMode, StoreSchema, UserDataDatabase, UserDataDatabaseError,
+    immediate_transaction, is_taken_over, mark_taken_over, user_version, JournalMode, StoreSchema,
+    UserDataDatabase, UserDataDatabaseError,
 };
 use phonetics::api::CustomSearchKey;
 use rusqlite::{params, Connection};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 const TABLE_NAME: &str = "learned_phrases";
 const SEARCH_KEY_TABLE_NAME: &str = "learned_search_key";
-/// `user_version` — a key-derivation change bumps it and adds a backfill step.
-const SCHEMA_VERSION: i64 = 1;
+/// `user_version` — Hakfa bump to 2 to rederive search keys for Hakfa initials (like `ch-`).
+const SCHEMA_VERSION: i64 = 2;
 
 /// The table as the Learning Records page reads it. A phrase's search keys
 /// go with it.
@@ -70,7 +72,7 @@ impl LearnedPhraseStore {
                 StoreSchema {
                     apply: apply_schema,
                     max_known_version: SCHEMA_VERSION,
-                    marks_takeover_on_open: true,
+                    marks_takeover_on_open: false,
                 },
             ),
             derive_search_keys,
@@ -88,6 +90,9 @@ impl LearnedPhraseStore {
 
     pub fn open_blocking(&self) {
         self.database.open_blocking();
+        if self.is_ready() {
+            self.finish_takeover();
+        }
     }
 
     /// Records one phrase a final commit taught: inserts the `(hanji, canonical
@@ -119,9 +124,11 @@ impl LearnedPhraseStore {
                     |row| Ok((row.get(0)?, row.get(1)?)),
                 )?;
                 // `learn_count` reads 1 only for the row this statement just
-                // inserted (a bump lands at 2 or more) — the one case that
-                // needs keys and can push the table past its cap.
+                // inserted (a bump lands at 2 or more). If already learned,
+                // refresh search keys in case phonetic derivation rules evolved.
                 if learn_count != 1 {
+                    delete_search_keys(connection, row_id)?;
+                    write_search_keys(connection, row_id, &search_keys)?;
                     return Ok(());
                 }
                 write_search_keys(connection, row_id, &search_keys)?;
@@ -164,6 +171,9 @@ impl LearnedPhraseStore {
                     if learn_count == 1 {
                         write_search_keys(connection, row_id, search_keys)?;
                         last_inserted_id = row_id;
+                    } else {
+                        delete_search_keys(connection, row_id)?;
+                        write_search_keys(connection, row_id, search_keys)?;
                     }
                 }
                 if last_inserted_id > 0 {
@@ -279,6 +289,63 @@ impl LearnedPhraseStore {
         })
     }
 
+    /// Rebuilds every learned phrase's search keys when the stored database predates
+    /// the Hakfa initial derivation (v1 → v2: Hakfa `ch-` preserved in Tl family)
+    /// or the engine has not taken the file over yet, then records the version and takeover.
+    pub fn rederive_search_keys_if_needed(&self) -> Result<(), UserDataDatabaseError> {
+        let stored: Option<Vec<(i64, String)>> = self.database.perform::<_, UserDataDatabaseError>(|connection| {
+            let version = user_version(connection)?;
+            if version >= SCHEMA_VERSION && is_taken_over(connection)? {
+                return Ok(None);
+            }
+            let mut statement = connection.prepare(&format!(
+                "SELECT id, roman FROM {TABLE_NAME};"
+            ))?;
+            let rows = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+            let mut list = Vec::new();
+            for r in rows {
+                list.push(r?);
+            }
+            Ok(Some(list))
+        })?;
+
+        let Some(stored) = stored else {
+            return Ok(());
+        };
+
+        let mut derived_by_roman: HashMap<String, Vec<CustomSearchKey>> = HashMap::new();
+        for (_, roman) in &stored {
+            if derived_by_roman.contains_key(roman) {
+                continue;
+            }
+            if let Some(keys) = (self.derive_search_keys)(roman).filter(|k| !k.is_empty()) {
+                derived_by_roman.insert(roman.clone(), keys);
+            }
+        }
+
+        self.database.perform::<_, UserDataDatabaseError>(move |connection| {
+            immediate_transaction(connection, |connection| {
+                for (id, roman) in &stored {
+                    if let Some(keys) = derived_by_roman.get(roman) {
+                        delete_search_keys(connection, *id)?;
+                        write_search_keys(connection, *id, keys)?;
+                    }
+                }
+                let version = user_version(connection)?;
+                connection.pragma_update(None, "user_version", version.max(SCHEMA_VERSION))?;
+                mark_taken_over(connection)?;
+                Ok(())
+            })
+        })
+    }
+
+    /// What launch or open runs once the file is open: the takeover's key re-derivation.
+    pub fn finish_takeover(&self) {
+        if let Err(error) = self.rederive_search_keys_if_needed() {
+            log::error!("learned_phrases.rederive_failed error={error}");
+        }
+    }
+
     /// Forgets everything — the learning-data wipe, beside the frequency and
     /// association stores'. One transaction: the keys and the rows go
     /// together.
@@ -363,6 +430,5 @@ fn apply_schema(connection: &Connection) -> rusqlite::Result<()> {
     connection.execute_batch(&format!(
         "CREATE TABLE IF NOT EXISTS {TABLE_NAME} (\n    id INTEGER PRIMARY KEY,\n    roman TEXT NOT NULL,\n    hanzi TEXT NOT NULL,\n    learn_count INTEGER NOT NULL DEFAULT 1,\n    updated_at TEXT NOT NULL,\n    UNIQUE(hanzi, roman)\n);\nCREATE TABLE IF NOT EXISTS {SEARCH_KEY_TABLE_NAME} (\n    phrase_id INTEGER NOT NULL,\n    family TEXT NOT NULL,\n    form TEXT NOT NULL,\n    key TEXT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_lsk_lookup ON {SEARCH_KEY_TABLE_NAME}(family, form, key);\nCREATE UNIQUE INDEX IF NOT EXISTS idx_lsk_phrase ON {SEARCH_KEY_TABLE_NAME}(phrase_id, family, form, key);\nCREATE INDEX IF NOT EXISTS idx_learned_rank ON {TABLE_NAME}(learn_count, updated_at);"
     ))?;
-    connection.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     Ok(())
 }

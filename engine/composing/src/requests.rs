@@ -412,6 +412,7 @@ fn literal_roman_candidate(
         context_rank: ranking::CONTEXT_RANK_NONE,
         coverage_kind: COVERAGE_KIND_FULL,
         is_custom: false,
+        is_compound_learned: false,
         variant: 0,
     })
 }
@@ -563,6 +564,7 @@ mod tests {
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: lexicon::COVERAGE_KIND_FULL,
             is_custom: false,
+            is_compound_learned: false,
             variant: 0,
         };
         let proto = raw_to_proto_candidate(raw);
@@ -590,6 +592,7 @@ mod tests {
             context_rank: ranking::CONTEXT_RANK_NONE,
             coverage_kind: lexicon::COVERAGE_KIND_FULL,
             is_custom: false,
+            is_compound_learned: false,
             variant: 0,
         };
         let proto = raw_to_proto_candidate(raw);
@@ -621,6 +624,7 @@ mod tests {
                 context_rank: ranking::CONTEXT_RANK_NONE,
                 coverage_kind: lexicon::COVERAGE_KIND_FULL,
                 is_custom: false,
+                is_compound_learned: false,
                 variant: 0,
             }
         }

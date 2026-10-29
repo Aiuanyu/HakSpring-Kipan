@@ -122,6 +122,9 @@ impl UserDataStores {
         self.association.open_blocking();
         self.learned_phrases.open_blocking();
         self.custom_dictionary.open_blocking();
+        if self.learned_phrases.is_ready() {
+            self.learned_phrases.finish_takeover();
+        }
         if self.custom_dictionary.is_ready() {
             self.custom_dictionary.finish_takeover();
         }

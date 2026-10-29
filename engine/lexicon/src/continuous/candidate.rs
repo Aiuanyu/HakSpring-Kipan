@@ -230,6 +230,7 @@ pub(super) fn record_to_candidate(
         // `bitmask`; `is_custom = false` keeps the kautian/taigitv/…
         // ordering. Only `custom_entry_to_candidate` sets `true`.
         is_custom: false,
+        is_compound_learned: false,
     }
 }
 
@@ -332,6 +333,7 @@ pub(super) fn custom_entry_to_candidate(
         context_rank,
         coverage_kind,
         is_custom: true,
+        is_compound_learned: false,
         variant: 0,
     }
 }
@@ -361,7 +363,11 @@ pub(super) fn learned_entry_to_candidate(
     coverage_kind: u8,
 ) -> RawCandidate {
     let syllable_count = tl_syllable_count(&entry.canonical_tl);
-    record_to_candidate(
+    // Hakfa fork: for abbreviation lookup (COVERAGE_KIND_ABBREV), a learned phrase with explicit
+    // hyphen is promoted with preference_class = 1 (inline custom entry), so it is not crowded out
+    // by dictionary words under the output cap. Full reading stays neutral per §50.
+    let is_compound_learned = coverage_kind == COVERAGE_KIND_ABBREV && entry.canonical_tl.contains('-');
+    let mut cand = record_to_candidate(
         DictionaryRecord {
             bitmask: 0,
             frequency: 0,
@@ -377,7 +383,9 @@ pub(super) fn learned_entry_to_candidate(
         now_ms,
         context,
         coverage_kind,
-    )
+    );
+    cand.is_compound_learned = is_compound_learned;
+    cand
 }
 
 /// v3.5.8 Phase 9 Item 12 — `(roman, hanji)` dedupe (Codex pre-impl
@@ -595,6 +603,7 @@ mod item12_custom_dedupe_tests {
             context_rank: CONTEXT_RANK_NONE,
             coverage_kind: COVERAGE_KIND_FULL,
             is_custom: false,
+            is_compound_learned: false,
             variant: 0,
         }
     }

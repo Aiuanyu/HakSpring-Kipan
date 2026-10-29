@@ -240,6 +240,9 @@ pub struct RawCandidate {
     /// `CandidateMessage` (same pattern as [`coverage_kind`] /
     /// `user_weight`).
     pub is_custom: bool,
+    /// Hakfa fork: `true` for a learned phrase with explicit hyphen (compound word, e.g. `cun-cai`).
+    /// Treated with `preference_class = 1` like an inline custom entry.
+    pub is_compound_learned: bool,
 }
 
 impl RawCandidate {
@@ -255,6 +258,7 @@ impl RawCandidate {
             frequency: self.frequency,
             bitmask: self.bitmask,
             is_custom: self.is_custom,
+            is_compound_learned: self.is_compound_learned,
         }
     }
 }
@@ -2063,6 +2067,7 @@ mod edge_word_pick_tests {
             context_rank,
             coverage_kind: COVERAGE_KIND_FULL,
             is_custom: false,
+            is_compound_learned: false,
             variant: 0,
         }
     }

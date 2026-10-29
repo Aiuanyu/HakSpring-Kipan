@@ -54,6 +54,8 @@ pub struct CandidateRankFacts {
     pub bitmask: u16,
     /// `true` for a custom-dictionary entry (source rank 0).
     pub is_custom: bool,
+    /// `true` for a learned phrase with explicit hyphen (compound word, treated like an inline custom entry).
+    pub is_compound_learned: bool,
 }
 
 /// [`CandidateRankFacts::walker_cost`] of a candidate the corpus does not price
@@ -96,7 +98,7 @@ pub fn candidate_lead(facts: &CandidateRankFacts, raw_len: u32) -> (u8, u8) {
 }
 
 /// `0` = selected (`user_weight > 0`, any source), `1` = a never-selected
-/// custom-dictionary word, `2` = every other word. The user's picks lead
+/// custom-dictionary word or compound learned word, `2` = every other word. The user's picks lead
 /// the words they filed, which lead the rest (USER 2026-10-16: a bulk-filed
 /// custom 屢 `lí` must not bury 你 the user keeps picking). Within a match
 /// kind, selected words then order by `user_weight` — a custom word gets no
@@ -104,7 +106,7 @@ pub fn candidate_lead(facts: &CandidateRankFacts, raw_len: u32) -> (u8, u8) {
 fn preference_class(facts: &CandidateRankFacts) -> u8 {
     if facts.user_weight > 0.0 {
         0
-    } else if facts.is_custom {
+    } else if facts.is_custom || facts.is_compound_learned {
         1
     } else {
         2
@@ -120,17 +122,47 @@ fn preference_class(facts: &CandidateRankFacts) -> u8 {
 // is descending. NaN-safe because floats are wrapped in `NonNanF64`
 // which coerces NaN to `f64::MIN` at construction.
 //
-// Order: tier, abbreviation, preference_class, coverage_kind, -user_weight,
+// Order: tier, abbrev_penalty, preference_class, coverage_kind, -user_weight,
 // context_rank, walker_cost, -score, -freq, -coverage, source_rank,
-// stable_idx — the first two are [`candidate_lead`], shared with the TPS
-// word list. Bigram P5 (§56) added
-// `context_rank` between `-user_weight` and `-score`; E1 P5a added
-// `walker_cost` below it for the walker's edge pick, and P5b made the
-// candidate list read it too, so the list and slot 0 share one scale. S8 moved `-coverage` from
-// dim 3 (above score) down to dim 6 (a weak tiebreak below
-// score/freq): the slot-0 whole-sentence walker now owns phrase
-// priority, so longest-coverage-first inside a tier only buried the
-// short single-syllable first-segment candidate.
+// stable_idx. Hakfa promotion:
+// 1. Only UNSELECTED abbreviations suffer `abbrev_penalty = 1` so they don't crowd out readings.
+// 2. Once an abbreviation is selected (`user_weight > 0.0`), `abbrev_penalty = 0`.
+// 3. Among selected words, a completed abbreviation (`COVERAGE_KIND_ABBREV`, e.g. 千毓 under `qi` or 存在 under `cc`)
+//    outranks an incomplete partial prefix (`COVERAGE_KIND_PARTIAL_PREFIX`, e.g. 請 / 像 under `qi`),
+//    while full readings (`COVERAGE_KIND_FULL`, e.g. 湯 under `thng`) strictly lead all.
+
+/// Abbreviation penalty:
+/// Only unselected abbreviations suffer a penalty against readings (`1`).
+/// Selected abbreviations and all readings have `0`.
+fn abbrev_penalty(facts: &CandidateRankFacts) -> u8 {
+    u8::from(facts.coverage_kind == COVERAGE_KIND_ABBREV && facts.user_weight <= 0.0)
+}
+
+/// Effective coverage kind for Hakfa continuous sorting:
+/// - Full reading (`COVERAGE_KIND_FULL`): always `0`.
+/// - When selected (`user_weight > 0.0`): abbreviation `1` < partial prefix `2`.
+/// - When unselected (`user_weight == 0.0`): partial prefix `1` < abbreviation `2`.
+fn effective_coverage(facts: &CandidateRankFacts) -> u8 {
+    let is_selected = facts.user_weight > 0.0;
+    match facts.coverage_kind {
+        COVERAGE_KIND_FULL => 0,
+        COVERAGE_KIND_ABBREV => {
+            if is_selected {
+                1
+            } else {
+                2
+            }
+        }
+        COVERAGE_KIND_PARTIAL_PREFIX => {
+            if is_selected {
+                2
+            } else {
+                1
+            }
+        }
+        _ => 3,
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CandidateSortKey {
@@ -141,19 +173,17 @@ pub struct CandidateSortKey {
     /// covering only a front segment (`taiuanl` → 台灣人 before 台灣;
     /// `docs/engine/continuous-input-ranking.md`).
     tier: u8,
-    /// `1` for an abbreviation hit ([`COVERAGE_KIND_ABBREV`], which says why),
-    /// `0` for a reading: every reading of the tier leads, custom or not.
-    abbreviation: u8,
+    /// `1` for an unselected abbreviation hit ([`COVERAGE_KIND_ABBREV`] with `user_weight == 0.0`).
+    /// `0` for readings and user-selected abbreviations.
+    abbrev_penalty: u8,
     /// [`preference_class`]: selected words, then never-selected custom
-    /// words, then the rest — whatever their full/partial match kind or
+    /// words and compound learned words, then the rest — whatever their full/partial match kind or
     /// corpus cost ("the word I put in shows up", but below the words the
     /// user actually picks). The list synthesizes custom words whole-input,
     /// so there class `1` only appears in Tier 0; the walker's edge pick
     /// meets them at the edge's span.
     preference_class: u8,
-    /// Within a tier: full syllable `0` < partial prefix `1` < abbreviation
-    /// `2` ([`COVERAGE_KIND_FULL`] / [`COVERAGE_KIND_PARTIAL_PREFIX`] /
-    /// [`COVERAGE_KIND_ABBREV`]).
+    /// Within a tier and preference class: ordered by [`effective_coverage`].
     coverage_kind: u8,
     /// Descending: [`CandidateRankFacts::user_weight`] — orders the
     /// selected words (`preference_class` already put every one of them
@@ -209,12 +239,14 @@ impl CandidateSortKey {
         // candidate (`record_to_candidate` → false, dict.bin source
         // bits; `custom_entry_to_candidate` → true, forces rank 0).
         let source_rank = source_tier_rank(facts.bitmask, facts.is_custom);
-        let (tier, abbreviation) = candidate_lead(facts, raw_len);
+        let (tier, _abbreviation) = candidate_lead(facts, raw_len);
+        let abbrev_penalty = abbrev_penalty(facts);
+        let coverage_kind = effective_coverage(facts);
         Self {
             tier,
-            abbreviation,
+            abbrev_penalty,
             preference_class: preference_class(facts),
-            coverage_kind: facts.coverage_kind,
+            coverage_kind,
             neg_user_weight: Reverse(NonNanF64::new(facts.user_weight)),
             context_rank: facts.context_rank,
             walker_cost: facts.walker_cost,
@@ -319,6 +351,7 @@ mod tests {
             frequency,
             bitmask,
             is_custom: false,
+            is_compound_learned: false,
         }
     }
 
@@ -634,6 +667,63 @@ mod tests {
         assert!(key(&dictionary_full_weak, raw_len, 1) < key(&custom_abbreviation, raw_len, 0));
         assert!(key(&dictionary_partial_weak, raw_len, 1) < key(&custom_abbreviation, raw_len, 0));
         assert!(key(&custom_abbreviation, raw_len, 1) < key(&dictionary_abbreviation, raw_len, 0));
+    }
+
+    #[test]
+    fn selected_abbreviation_outranks_unselected_reading_homophones() {
+        // Hakfa promotion: a user-selected abbreviation (e.g. 千毓 under `qi`, user_weight > 0)
+        // must outrank cold, unselected reading homophones (e.g. 80 rare characters with reading `qi`),
+        // while unselected readings stay ahead of unselected abbreviations.
+        let raw_len: u32 = 2;
+        let selected_abbrev = CandidateRankFacts {
+            user_weight: 1.5,
+            ..cand_abbreviation(0, 2, 0.0, 0, 0)
+        };
+        let unselected_reading = cand(0, 2, 50.0, 50, 0); // cold dictionary single character
+        assert!(
+            key(&selected_abbrev, raw_len, 1) < key(&unselected_reading, raw_len, 0),
+            "selected abbreviation must outrank unselected reading"
+        );
+    }
+
+    #[test]
+    fn selected_abbreviation_outranks_selected_partial_prefix() {
+        // Hakfa promotion: a user-selected abbreviation (e.g. 千毓 under `qi`, user_weight > 0)
+        // must outrank incomplete partial prefixes even if the prefix was selected (e.g. 請 / 像 under `qi`),
+        // because the user typed the complete abbreviation matching their intended learned phrase.
+        let raw_len: u32 = 2;
+        let selected_abbrev = CandidateRankFacts {
+            user_weight: 1.5,
+            is_compound_learned: true,
+            ..cand_abbreviation(0, 2, 0.0, 0, 0)
+        };
+        let selected_partial = CandidateRankFacts {
+            user_weight: 4.0, // high selection count for single character prefix (e.g. 請)
+            ..cand_partial(0, 2, 100.0, 100, 0)
+        };
+        assert!(
+            key(&selected_abbrev, raw_len, 1) < key(&selected_partial, raw_len, 0),
+            "selected abbreviation must outrank selected partial prefix"
+        );
+    }
+
+    #[test]
+    fn compound_learned_word_outranks_unselected_dictionary_abbreviations() {
+        // Hakfa promotion: a learned phrase with explicit hyphen (e.g. 存在 `cun-cai` under `cc`)
+        // is treated with preference_class 1, outranking unselected dictionary abbreviations
+        // (preference_class 2) so it is never crowded out by the output cap.
+        let raw_len: u32 = 2;
+        let compound_learned = CandidateRankFacts {
+            is_compound_learned: true,
+            ..cand_abbreviation(0, 2, 0.0, 0, 0)
+        };
+        let dict_abbrev = CandidateRankFacts {
+            ..cand_abbreviation(0, 2, 10.0, 10, 0)
+        };
+        assert!(
+            key(&compound_learned, raw_len, 1) < key(&dict_abbrev, raw_len, 0),
+            "compound learned word must outrank cold dictionary abbreviations"
+        );
     }
 
     #[test]
