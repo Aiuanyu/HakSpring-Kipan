@@ -226,3 +226,37 @@ fn phrase_reachable_prefix_survives_while_the_remainder_is_open() {
         );
     }
 }
+
+#[test]
+fn nasal_tail_prefix_survives_only_for_syllabic_m() {
+    // hakfa: `m` is a syllable (毋), so `tam` = `ta`|`m` too and `ta` stays keyed.
+    // Controls: `tai` (tail `i` is a syllable but not `m`) and the strict prefix
+    // `ta` itself keep the longest-match suppression / presence.
+    let inv = build_inventory(&["ta1", "tam1", "m7", "tai1", "i1"]);
+    let keys = |input: &str| -> Vec<String> {
+        build_continuous_keys_with_inventory(input, &inv, phonetics::InputMode::Tl)
+            .into_iter()
+            .map(|(_, k)| k)
+            .collect()
+    };
+    let tam = keys("tam");
+    assert!(tam.contains(&"tl:tam".to_string()), "got {tam:?}");
+    assert!(tam.contains(&"tl:ta".to_string()), "`ta` must survive beside `tam`, got {tam:?}");
+    let tai = keys("tai");
+    assert!(tai.contains(&"tl:tai".to_string()), "got {tai:?}");
+    assert!(!tai.contains(&"tl:ta".to_string()), "`ta` must stay suppressed in `tai`, got {tai:?}");
+    assert!(keys("ta").contains(&"tl:ta".to_string()));
+}
+
+#[test]
+fn nasal_tail_prefix_covers_ng_too() {
+    // hakfa: `ng` is a syllable (吳) as well as a coda, so `tang` = `ta`|`ng` too.
+    let inv = build_inventory(&["ta1", "tang1", "ng5"]);
+    let tang: Vec<String> =
+        build_continuous_keys_with_inventory("tang", &inv, phonetics::InputMode::Tl)
+            .into_iter()
+            .map(|(_, k)| k)
+            .collect();
+    assert!(tang.contains(&"tl:tang".to_string()), "got {tang:?}");
+    assert!(tang.contains(&"tl:ta".to_string()), "`ta` must survive beside `tang`, got {tang:?}");
+}

@@ -597,6 +597,18 @@ pub(crate) fn left_anchored_keys_and_restrictions(
                 .any(|next_end| Some(next_end) > max_single_end)
     };
 
+    // hakfa: `m` `n` `ng` are syllables of their own (毋, 你, 吳) as well as codas, so
+    // `dam` reads `da|m` as well as `dam` and the shorter `da` (打) stays listed. The tail
+    // must end exactly at the longest single's end, so `tai` / `ngai` keep dropping `ta` / `ng`.
+    let is_nasal_tail_prefix = |end: usize| {
+        mode == InputMode::Tl
+            && max_single_end.is_some_and(|max_end| {
+                matches!(lowered.get(end..max_end), Some("m" | "n" | "ng"))
+                    && valid_span_endings_lowered_with_barriers(&lowered, end, inv, mode, 1, barriers)
+                        .contains(&max_end)
+            })
+    };
+
     let mut out = Vec::with_capacity(lattice.edges().len());
     let mut restrictions: Vec<Vec<usize>> = Vec::with_capacity(lattice.edges().len());
     let mut tone_pins: Vec<TonePin> = Vec::with_capacity(lattice.edges().len());
@@ -617,6 +629,7 @@ pub(crate) fn left_anchored_keys_and_restrictions(
             && Some(end) != max_single_end
             && !survives_as_phrase(end)
             && !is_straddled_prefix(end)
+            && !is_nasal_tail_prefix(end)
         {
             continue;
         }
