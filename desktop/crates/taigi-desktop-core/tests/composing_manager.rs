@@ -1337,6 +1337,20 @@ fn hakfa_tone_digit_scheme_standard_and_scale() {
 
     rig.manager.cancel_composition(&mut rig.recorder);
 
+    // 1b. 方案 3 的 Ctrl+1／4：限定無標調（補 `1`／`4` 去查，畫面維持無標）
+    rig.type_text("dam");
+    rig.manager.apply_tone_digit('1', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "dam1");
+    assert_eq!(rig.manager.display_text(), "dam");
+    let unmarked = rig.candidates();
+    assert!(unmarked.iter().any(|c| c.hanji.as_deref() == Some("擔")));
+    assert!(!unmarked.iter().any(|c| c.hanji.as_deref() == Some("膽")), "膽 is dàm / dám, not unmarked");
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("fad");
+    rig.manager.apply_tone_digit('1', &mut rig.recorder); // 入聲音節：1 也換成 4
+    assert_eq!(rig.manager.raw_input(), "fad4");
+    rig.manager.cancel_composition(&mut rig.recorder);
+
     // 2. 方案 1：五度調值（Scale）- 四縣 (Xiien)
     rig.settings.edit(|doc| {
         doc.set_choice(&keys::TONE_INPUT_SCHEME, ToneInputScheme::Scale);
@@ -1350,6 +1364,14 @@ fn hakfa_tone_digit_scheme_standard_and_scale() {
     rig.manager.apply_tone_digit('4', &mut rig.recorder);
     assert_eq!(rig.manager.raw_input(), "da2");
     assert_eq!(rig.manager.display_text(), "dá");
+
+    // 舒聲 55（去聲，無標）：補 `1` 去查，畫面維持無標
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("da");
+    rig.manager.apply_tone_digit('5', &mut rig.recorder);
+    rig.manager.apply_tone_digit('5', &mut rig.recorder);
+    assert_eq!(rig.manager.raw_input(), "da1");
+    assert_eq!(rig.manager.display_text(), "da");
 
     // 入聲：打 fad 後打 2（陰入 -> à）
     rig.manager.cancel_composition(&mut rig.recorder);

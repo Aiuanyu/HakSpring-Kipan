@@ -303,7 +303,7 @@ impl ComposingKeyIntent {
             );
         }
         // Hakfa: Ctrl+數字鍵作為調號輸入（ToneDigit）。純數字鍵留給候選字擇字。
-        // 方案 3（符號編號）：2 3 5 6 7 -> '2', '3', '5', '6', '7'（無標不打，1 與 4 不作用）
+        // 方案 3（符號編號）：2 3 5 6 7 -> 對應調符；1 與 4 -> 限定無標調（補 `1`／`4` 去查）
         // 方案 1（五度調值）：1..=9 均可作為調值數字
         if is_composing && modifiers == KeyModifiers::CONTROL {
             if let Some(c) = key
@@ -314,7 +314,7 @@ impl ComposingKeyIntent {
                 if c.is_ascii_digit() {
                     match bindings.tone_scheme {
                         ToneInputScheme::Standard => {
-                            if matches!(c, '2' | '3' | '5' | '6' | '7') {
+                            if matches!(c, '1'..='7') {
                                 return Self::ToneDigit(c);
                             }
                         }

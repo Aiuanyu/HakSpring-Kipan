@@ -199,7 +199,14 @@ impl ComposingManager {
 
         match scheme {
             ToneInputScheme::Standard => {
-                // 方案 3：符號編號（Ctrl+2 3 5 6 7 對應 á à â ǎ ā）
+                // 方案 3：符號編號（Ctrl+2 3 5 6 7 對應 á à â ǎ ā；Ctrl+1／4 限定無標調）
+                let clean_raw = self.raw_input.trim_end_matches(|c: char| c.is_ascii_digit());
+                let is_checked = matches!(clean_raw.chars().last(), Some('b' | 'd' | 'g' | 'p' | 't' | 'k'));
+                // 無標調的查詢數字：舒聲 `1`、入聲 `4`；兩個鍵打哪個都照音節種類換。
+                let digit = match digit {
+                    '1' | '4' => if is_checked { '4' } else { '1' },
+                    other => other,
+                };
                 if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
                     self.delete_backward(executor);
                 }
@@ -218,9 +225,7 @@ impl ComposingManager {
                         if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
                             self.delete_backward(executor);
                         }
-                        if tone_char != '4' {
-                            self.append(&tone_char.to_string(), executor);
-                        }
+                        self.append(&tone_char.to_string(), executor);
                     }
                 } else {
                     // 舒聲：兩位數成調 (例如 24, 33, 11, 55, 31, 53)
@@ -230,9 +235,7 @@ impl ComposingManager {
                             if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
                                 self.delete_backward(executor);
                             }
-                            if tone_char != '1' {
-                                self.append(&tone_char.to_string(), executor);
-                            }
+                            self.append(&tone_char.to_string(), executor);
                         }
                     } else {
                         // 第一鍵：記錄暫存
