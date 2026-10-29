@@ -1472,6 +1472,45 @@ fn partial_prefix_hydrates_up_to_hydrate_cap_then_truncates() {
 }
 
 #[test]
+fn partial_prefix_budget_goes_to_the_most_frequent_rows_not_the_shortest_keys() {
+    // hakfa: one frequent word with a LONG key (`tung` 同, rowid 0 = most frequent) behind a
+    // wall of shorter keys that outnumber the hydrate cap. The cap is spent on the frequent
+    // rows first, so the word reaches the ranker (typing `t` surfaced 同 before the merged
+    // dictionary, USER 2026-10-29). `PARTIAL_PREFIX_SCAN_CAP` keeps the look bounded.
+    let mut rows: Vec<Row> = vec![Row {
+        toneless_key: "sung",
+        hanji: "同",
+        tl: "sung",
+        syll: 1,
+        freq: 100_000,
+    }];
+    rows.extend((0..(PARTIAL_PREFIX_HYDRATE_CAP + 100)).map(|i| {
+        let a = (b'a' + ((i / 26) % 26) as u8) as char;
+        let b = (b'a' + (i % 26) as u8) as char;
+        Row {
+            toneless_key: Box::leak(format!("s{a}{b}").into_boxed_str()),
+            hanji: Box::leak(format!("漢{i}").into_boxed_str()),
+            tl: Box::leak(format!("s{a}{b}").into_boxed_str()),
+            syll: 1,
+            freq: 1,
+        }
+    }));
+    let (prefix_index, dict) = build_fixture("hakfa-budget-by-frequency", &rows);
+
+    let key = partial_prefix_key_for("s");
+    let out = fetch_partial_prefix_candidates(
+        &key,
+        1,
+        &ctx(&FrequencyMap::new(), 0, &[], &prefix_index, &dict),
+    );
+    assert!(
+        out.iter().any(|c| c.hanji.as_deref() == Some("同")),
+        "the frequent long-key word must reach the ranker: {:?}",
+        out.iter().map(|c| c.hanji.clone()).collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn partial_prefix_empty_key_returns_empty() {
     // Defensive: a literally empty FST key (`String::new()`) must
     // short-circuit before any FST range scan. Note this does NOT
