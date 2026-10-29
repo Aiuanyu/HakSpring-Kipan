@@ -27,7 +27,7 @@ final class DataManagementViewModel: ObservableObject {
         let data = try await userData.exportBackup(appVersion: Bundle.main.shortVersion)
         return BackupExportPayload(
             data: data,
-            filename: "taigi_backup_\(Self.formattedDate()).taigi",
+            filename: "hakfa_backup_\(Self.formattedDate()).hakfa",
         )
     }
 

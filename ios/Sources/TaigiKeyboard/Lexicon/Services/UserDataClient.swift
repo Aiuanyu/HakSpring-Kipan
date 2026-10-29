@@ -4,7 +4,7 @@
 
 import Foundation
 
-/// Rows a `.taigi` restore merged, per store.
+/// Rows a `.hakfa` restore merged, per store.
 struct BackupImportResult: Equatable {
     let customDict: Int
     let frequency: Int
@@ -33,7 +33,7 @@ enum CustomDictionaryError: LocalizedError {
     }
 }
 
-/// A `.taigi` file the engine would not restore.
+/// A `.hakfa` file the engine would not restore.
 enum BackupError: LocalizedError {
     case unreadable
     case unsupportedVersion
@@ -89,7 +89,7 @@ protocol UserDataClient: Sendable {
     /// settings `inputMode`; empty when nothing matches or the engine did not answer.
     func search(query: String, mode: InputMode, limit: Int) async -> [CustomDictionaryEntry]
     func exportBackup(appVersion: String) async throws -> Data
-    /// A `.taigi` file the user picked; a refusal throws `BackupError`.
+    /// A `.hakfa` file the user picked; a refusal throws `BackupError`.
     func importBackup(url: URL) async throws -> BackupImportResult
     /// One page of what the keyboard learned of `kind`, in `order`, whose
     /// text or TL holds `filter`; `limit` is at least 1. The answer carries

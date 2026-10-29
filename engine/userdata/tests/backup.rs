@@ -1,4 +1,4 @@
-//! The `.taigi` codec against backups the phones wrote (roadmap P4b): an
+//! The `.hakfa` codec against backups the phones wrote (roadmap P4b): an
 //! iOS export and an Android one must restore, merging with what is there,
 //! and what the engine writes must restore on the other side.
 
@@ -139,7 +139,7 @@ fn what_the_engine_writes_restores_on_a_fresh_install() {
     );
     assert!(!text.contains("origin"), "never written");
     // Persisted JSON key names: the code says `hanji` / `previous`, the
-    // `.taigi` format keeps what older apps wrote and read.
+    // `.hakfa` format keeps what older apps wrote and read.
     for key in [
         "\"hanzi\": \"台灣\"",
         "\"prevWord\": \"重\"",

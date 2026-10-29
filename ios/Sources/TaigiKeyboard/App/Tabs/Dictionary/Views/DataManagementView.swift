@@ -12,7 +12,7 @@ struct DataManagementView: View {
     @State private var showBackupExporter = false
     @State private var showBackupImporter = false
     @State private var backupDocument: BackupDocument?
-    @State private var backupFilename = "taigi_backup.taigi"
+    @State private var backupFilename = "hakfa_backup.hakfa"
 
     @State private var showBackupResultAlert = false
     @State private var backupResultMessage = ""

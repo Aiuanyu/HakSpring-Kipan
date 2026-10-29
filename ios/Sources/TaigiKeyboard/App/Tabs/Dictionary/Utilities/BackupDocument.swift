@@ -1,12 +1,12 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// UTType for .taigi backup files; the UTI is declared in Info.plist exported types.
+/// UTType for .hakfa backup files; the UTI is declared in Info.plist exported types.
 extension UTType {
     static let taigiBackup = UTType(exportedAs: "tw.taigikeyboard.backup", conformingTo: .json)
 }
 
-/// FileDocument wrapper for .taigi backup export via fileExporter
+/// FileDocument wrapper for .hakfa backup export via fileExporter
 struct BackupDocument: FileDocument {
     static var readableContentTypes: [UTType] {
         [.taigiBackup, .json]

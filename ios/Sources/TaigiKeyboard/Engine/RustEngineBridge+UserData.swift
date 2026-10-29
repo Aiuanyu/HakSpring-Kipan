@@ -185,7 +185,7 @@ extension RustEngineBridge {
 
     // MARK: - Backup
 
-    /// The `.taigi` backup of what the engine holds, written by `ios` `appVersion`.
+    /// The `.hakfa` backup of what the engine holds, written by `ios` `appVersion`.
     static func backupExport(appVersion: String) -> Data? {
         var export = Taigi_Engine_ExportBackup()
         export.platform = "ios"
