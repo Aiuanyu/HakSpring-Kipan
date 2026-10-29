@@ -23,6 +23,9 @@ use userdata::{UserDataHandle, UserDataStores};
 /// How many skipped words the answer lists, for the preview to show why.
 const SKIP_EXAMPLES: usize = 12;
 
+/// Most rounds one sync repeats (see `sync`).
+const MAX_ROUNDS: usize = 8;
+
 /// Why a word was not copied.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum SkipReason {
@@ -162,31 +165,39 @@ pub(crate) fn sync(
         set.frequency.open_blocking();
         set.learned_phrases.open_blocking();
     }
-    // Everything is read before anything is written, so a copy made on the way never becomes a
-    // source of its own (a word would otherwise echo back to the lect it came from).
-    struct Learned {
-        phrases: Vec<userdata::LearnedPhraseRow>,
-        words: Vec<userdata::FrequencyRow>,
+    // Everything is read before anything is written, so a copy never echoes back within a round.
+    // Rounds repeat until nothing new is copied: what round N copied is offered to the other lects
+    // in round N+1, because another lect's reading can settle a Hanji the first source could not
+    // (a copy's toneless face is the tie-break hint). One press therefore reaches the end state,
+    // and the preview counts exactly what the press writes — a second press finds nothing new.
+    // Only the rows copied in the previous round are re-offered, so no row is counted twice.
+    struct Frontier {
+        phrases: Vec<(String, String)>,
+        words: Vec<(String, String)>,
     }
     let mut target_have_phrases: HashMap<u32, HashSet<(String, String)>> = HashMap::new();
     let mut target_have_words: HashMap<u32, HashSet<(String, String)>> = HashMap::new();
 
-    let learned: Vec<(u32, Learned)> = stores
+    let mut frontier: Vec<(u32, Frontier)> = stores
         .iter()
         .map(|(lect, set)| {
-            let phrases = set.learned_phrases.all_rows().unwrap_or_default();
-            let words = set.frequency.all_rows().unwrap_or_default();
-            let have_phrases: HashSet<(String, String)> = phrases
-                .iter()
-                .map(|row| (row.hanji.clone(), row.canonical_tl.clone()))
+            let phrases: Vec<(String, String)> = set
+                .learned_phrases
+                .all_rows()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|row| (row.hanji, row.canonical_tl))
                 .collect();
-            let have_words: HashSet<(String, String)> = words
-                .iter()
-                .map(|row| (row.word.clone(), row.tl.clone()))
+            let words: Vec<(String, String)> = set
+                .frequency
+                .all_rows()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|row| (row.word, row.tl))
                 .collect();
-            target_have_phrases.insert(*lect, have_phrases);
-            target_have_words.insert(*lect, have_words);
-            (*lect, Learned { phrases, words })
+            target_have_phrases.insert(*lect, phrases.iter().cloned().collect());
+            target_have_words.insert(*lect, words.iter().cloned().collect());
+            (*lect, Frontier { phrases, words })
         })
         .collect();
 
@@ -194,48 +205,72 @@ pub(crate) fn sync(
     let mut pending_words: HashMap<u32, Vec<(String, String)>> = HashMap::new();
 
     let mut report = SyncReport::default();
-    for (source, from) in &learned {
-        for (target, _) in learned.iter().filter(|(lect, _)| lect != source) {
-            let Some(have_phrases) = target_have_phrases.get_mut(target) else {
-                continue;
-            };
-            for row in &from.phrases {
-                match outcome(readings, &row.hanji, *target, &row.canonical_tl) {
-                    Outcome::Skip(reason) => report.skip(&row.hanji, *target, reason),
-                    Outcome::Copy { tl, .. } if have_phrases.contains(&(row.hanji.clone(), tl.clone())) => {
-                        report.already_present += 1;
-                    }
-                    Outcome::Copy { tl, composed } => {
-                        report.added_phrases += 1;
-                        report.composed += u32::from(composed);
-                        have_phrases.insert((row.hanji.clone(), tl.clone()));
-                        if !dry_run {
-                            pending_phrases.entry(*target).or_default().push((row.hanji.clone(), tl));
+    // The chain is short (each round needs a copy that settles a Hanji the last could not); the cap
+    // only guards a pathological dictionary.
+    for round in 0..MAX_ROUNDS {
+        let mut next: Vec<(u32, Frontier)> = lects
+            .iter()
+            .map(|lect| (*lect, Frontier { phrases: Vec::new(), words: Vec::new() }))
+            .collect();
+        // Later rounds re-offer copies, so what they find present or skip is not the user's data.
+        let counting = round == 0;
+        for (source, from) in &frontier {
+            for target in lects.iter().filter(|lect| *lect != source) {
+                let Some(have_phrases) = target_have_phrases.get_mut(target) else {
+                    continue;
+                };
+                for (hanji, source_tl) in &from.phrases {
+                    match outcome(readings, hanji, *target, source_tl) {
+                        Outcome::Skip(reason) => {
+                            if counting {
+                                report.skip(hanji, *target, reason);
+                            }
+                        }
+                        Outcome::Copy { tl, .. } if have_phrases.contains(&(hanji.clone(), tl.clone())) => {
+                            report.already_present += u32::from(counting);
+                        }
+                        Outcome::Copy { tl, composed } => {
+                            report.added_phrases += 1;
+                            report.composed += u32::from(composed);
+                            have_phrases.insert((hanji.clone(), tl.clone()));
+                            pending_phrases.entry(*target).or_default().push((hanji.clone(), tl.clone()));
+                            if let Some((_, slot)) = next.iter_mut().find(|(lect, _)| lect == target) {
+                                slot.phrases.push((hanji.clone(), tl));
+                            }
                         }
                     }
                 }
-            }
 
-            let Some(have_words) = target_have_words.get_mut(target) else {
-                continue;
-            };
-            for row in &from.words {
-                match outcome(readings, &row.word, *target, &row.tl) {
-                    Outcome::Skip(reason) => report.skip(&row.word, *target, reason),
-                    Outcome::Copy { tl, .. } if have_words.contains(&(row.word.clone(), tl.clone())) => {
-                        report.already_present += 1;
-                    }
-                    Outcome::Copy { tl, composed } => {
-                        report.added_words += 1;
-                        report.composed += u32::from(composed);
-                        have_words.insert((row.word.clone(), tl.clone()));
-                        if !dry_run {
-                            pending_words.entry(*target).or_default().push((row.word.clone(), tl));
+                let Some(have_words) = target_have_words.get_mut(target) else {
+                    continue;
+                };
+                for (word, source_tl) in &from.words {
+                    match outcome(readings, word, *target, source_tl) {
+                        Outcome::Skip(reason) => {
+                            if counting {
+                                report.skip(word, *target, reason);
+                            }
+                        }
+                        Outcome::Copy { tl, .. } if have_words.contains(&(word.clone(), tl.clone())) => {
+                            report.already_present += u32::from(counting);
+                        }
+                        Outcome::Copy { tl, composed } => {
+                            report.added_words += 1;
+                            report.composed += u32::from(composed);
+                            have_words.insert((word.clone(), tl.clone()));
+                            pending_words.entry(*target).or_default().push((word.clone(), tl.clone()));
+                            if let Some((_, slot)) = next.iter_mut().find(|(lect, _)| lect == target) {
+                                slot.words.push((word.clone(), tl));
+                            }
                         }
                     }
                 }
             }
         }
+        if next.iter().all(|(_, slot)| slot.phrases.is_empty() && slot.words.is_empty()) {
+            break;
+        }
+        frontier = next;
     }
 
     if !dry_run {
@@ -480,5 +515,29 @@ mod tests {
         // Second sync immediately after: must add 0 words (strictly idempotent).
         let second = sync(&handle, &[1, 2, 3], false, &readings).unwrap();
         assert_eq!(second.added_words, 0, "Second sync must add nothing: {second:?}");
+    }
+
+    #[test]
+    fn a_copy_settles_what_the_first_source_could_not_in_one_sync() {
+        // 1 = 四縣 learned 行 as `hen`; 2 reads it one way (`hóng`); 3 reads it two ways, `hàng` /
+        // `hóng`. `hen` settles nothing in 3, but 2's copy `hóng` does — in the same sync, so a
+        // second press finds nothing new.
+        let dict = HashMap::from([
+            (("行", 2), vec!["hóng"]),
+            (("行", 3), vec!["hàng", "hóng"]),
+        ]);
+        let readings = readings_from(dict);
+        let directory = tempfile::tempdir().unwrap();
+        let handle = opened_handle(directory.path());
+        handle.stores_for_lect(1).unwrap().frequency.record("行", "hen");
+
+        let first = sync(&handle, &[1, 2, 3], false, &readings).unwrap();
+        let third = handle.stores_for_lect(3).unwrap();
+        third.frequency.open_blocking();
+        let rows: Vec<_> = third.frequency.all_rows().unwrap().into_iter().map(|r| (r.word, r.tl)).collect();
+        assert_eq!(rows, vec![("行".to_owned(), "hóng".to_owned())], "{first:?}");
+
+        let second = sync(&handle, &[1, 2, 3], false, &readings).unwrap();
+        assert_eq!((second.added_words, second.added_phrases), (0, 0), "{second:?}");
     }
 }
