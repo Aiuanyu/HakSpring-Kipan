@@ -1,11 +1,12 @@
 package com.siansiansu.taigikeyboard.ui.tabs.dictionary
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,12 +18,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,21 +42,21 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.siansiansu.taigikeyboard.R
+import com.siansiansu.taigikeyboard.engine.HakfaLects
 import com.siansiansu.taigikeyboard.engine.proto.CustomDictionaryRefusal
 import com.siansiansu.taigikeyboard.i18n.LocalStringResolver
 import com.siansiansu.taigikeyboard.i18n.generated.L10n
 import com.siansiansu.taigikeyboard.i18n.generated.StringKey
 import com.siansiansu.taigikeyboard.i18n.generated.dictionaryImportResult
-import com.siansiansu.taigikeyboard.ime.dictionary.CustomDictionaryWord
+import com.siansiansu.taigikeyboard.ime.dictionary.CustomWord
 import com.siansiansu.taigikeyboard.ime.dictionary.UserDataException
+import com.siansiansu.taigikeyboard.ime.dictionary.groupCustomWords
+import com.siansiansu.taigikeyboard.ime.dictionary.planWordSave
 import com.siansiansu.taigikeyboard.ui.components.ActionRow
 import com.siansiansu.taigikeyboard.ui.components.EmptyListCard
 import com.siansiansu.taigikeyboard.ui.components.FileDownload
@@ -77,6 +78,15 @@ import java.util.Locale
 
 private const val DISPLAY_LIMIT = 100
 
+private const val IMPORTING_HINT = "匯入中⋯"
+private const val EXPORTING_HINT = "匯出中⋯"
+
+// The CSV header is the engine's (`CustomDictionaryCSV`): one column per lect.
+private const val CSV_FORMAT_NOTE =
+    "hanzi,xiien,namxiian,hoiliug\n" +
+        "𠊎,ngai,ngai,ngoi\n" +
+        "舊式兩欄 roman,hanji 也讀得（入四縣）"
+
 // Custom dictionary management — add, edit, import/export, and delete entries
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,19 +105,25 @@ fun CustomDictionaryScreen(
     val isCustomDictEnabled by viewModel.isCustomDictEnabled.collectAsStateWithLifecycle()
 
     var showEditDialog by remember { mutableStateOf(false) }
-    var editingEntry by remember { mutableStateOf<CustomDictionaryWord?>(null) }
+    var editingEntry by remember { mutableStateOf<CustomWord?>(null) }
+    // Hakfa fork: null = every lect; otherwise only words that have a reading in that lect.
+    var lectFilter by remember { mutableStateOf<Int?>(null) }
     var showResultDialog by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf("") }
     var filterText by remember { mutableStateOf("") }
 
+    // Hakfa fork: the engine stores one row per (word, lect); the list shows one row per Hanji.
+    val lectCodes = remember { HakfaLects.all.map { it.code } }
+    val words = remember(entries) { groupCustomWords(entries, lectCodes) }
+    val byLect = lectFilter?.let { lect -> words.filter { it.readings.containsKey(lect) } } ?: words
     val filteredEntries =
         if (filterText.isEmpty()) {
-            entries.take(DISPLAY_LIMIT)
+            byLect.take(DISPLAY_LIMIT)
         } else {
             val query = filterText.lowercase()
-            entries.filter {
-                it.roman.lowercase().contains(query) ||
-                    it.hanji.lowercase().contains(query)
+            byLect.filter { word ->
+                word.hanji.lowercase().contains(query) ||
+                    word.readings.values.any { it.roman.lowercase().contains(query) }
             }
         }
 
@@ -120,14 +136,16 @@ fun CustomDictionaryScreen(
         ) { uri: Uri? ->
             uri ?: return@rememberLauncherForActivityResult
             scope.launch {
+                // Hakfa fork: a small hint when it starts and when it is done (failures keep the dialog).
+                Toast.makeText(context, IMPORTING_HINT, Toast.LENGTH_SHORT).show()
                 try {
                     val result = viewModel.importFile(uri)
-                    resultMessage =
-                        stringResolver.dictionaryImportResult(
-                            imported = result.imported,
-                            skipped = result.skipped,
-                        )
-                    showResultDialog = true
+                    Toast
+                        .makeText(
+                            context,
+                            stringResolver.dictionaryImportResult(imported = result.imported, skipped = result.skipped),
+                            Toast.LENGTH_LONG,
+                        ).show()
                 } catch (e: Exception) {
                     resultMessage =
                         when ((e as? UserDataException.Refused)?.refusal) {
@@ -152,6 +170,7 @@ fun CustomDictionaryScreen(
         ) { uri: Uri? ->
             uri ?: return@rememberLauncherForActivityResult
             scope.launch {
+                Toast.makeText(context, EXPORTING_HINT, Toast.LENGTH_SHORT).show()
                 try {
                     val csv = viewModel.exportCSV()
                     withContext(Dispatchers.IO) {
@@ -159,8 +178,9 @@ fun CustomDictionaryScreen(
                             outputStream.write(csv)
                         }
                     }
-                    resultMessage = stringResolver.resolve(StringKey.DICTIONARY_EXPORT_SUCCESS)
-                    showResultDialog = true
+                    // Hakfa fork: the first line is the header; one line per Hanji after it.
+                    val words = csv.decodeToString().lines().count { it.isNotBlank() } - 1
+                    Toast.makeText(context, "匯出完成：$words 個詞", Toast.LENGTH_LONG).show()
                 } catch (_: Exception) {
                     resultMessage = stringResolver.resolve(StringKey.COMMON_EXPORT_FAILED)
                     showResultDialog = true
@@ -234,16 +254,14 @@ fun CustomDictionaryScreen(
                     )
 
                     SettingsCard {
-                        Image(
-                            painter = painterResource(R.drawable.csv_example),
-                            contentDescription = null,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
-                                    .padding(top = 16.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.FillWidth,
+                        // Hakfa fork: the CSV carries one column per lect (Hanji + the reading in each lect),
+                        // the same file the Mac exports; the old two-column roman,hanji file still imports (into 四縣).
+                        Text(
+                            text = CSV_FORMAT_NOTE,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 20.dp).padding(top = 16.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = FontFamily.Monospace,
                         )
                         Text(
                             text = L10n.dictionaryCustomDictDescription,
@@ -323,13 +341,13 @@ fun CustomDictionaryScreen(
                     item { SettingsCard { LoadingRow() } }
                 } else if (entries.isEmpty()) {
                     item { EmptyListCard(L10n.dictionaryCustomDictEmpty) }
-                } else if (filterText.isNotEmpty() && filteredEntries.isEmpty()) {
+                } else if ((filterText.isNotEmpty() || lectFilter != null) && filteredEntries.isEmpty()) {
                     item { NoticeCard(L10n.dictionaryNoResults) }
                 } else {
                     itemsIndexed(
                         items = filteredEntries,
-                        key = { _, entry -> entry.id },
-                    ) { index, entry ->
+                        key = { _, word -> word.key },
+                    ) { index, word ->
                         Row(
                             modifier =
                                 Modifier
@@ -339,20 +357,31 @@ fun CustomDictionaryScreen(
                                     .padding(start = 20.dp, end = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = "${entry.roman} → ${entry.hanji}",
-                                color = MaterialTheme.colorScheme.onSurface,
-                                style = MaterialTheme.typography.bodyLarge,
+                            Column(
                                 modifier =
                                     Modifier
                                         .weight(1f)
                                         .clickable {
-                                            editingEntry = entry
+                                            editingEntry = word
                                             showEditDialog = true
                                         }.padding(vertical = 12.dp),
-                            )
+                            ) {
+                                // Hakfa fork: the Hanji, then one line per lect that has a reading.
+                                Text(
+                                    text = word.hanji.ifBlank { "—" },
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                HakfaLects.all.filter { word.readings.containsKey(it.code) }.forEach { lect ->
+                                    Text(
+                                        text = "${lectTag(lect.code)}　${word.roman(lect.code)}",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                }
+                            }
                             IconButton(
-                                onClick = { viewModel.delete(entry.id) },
+                                onClick = { viewModel.deleteWord(word) },
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
@@ -373,6 +402,9 @@ fun CustomDictionaryScreen(
                 item { Spacer(Modifier.height(40.dp)) }
             }
 
+            // Hakfa fork: show only the words that have a reading in one lect.
+            LectFilterRow(selected = lectFilter, onSelected = { lectFilter = it })
+
             // Filter (anchored at bottom)
             FilterSearchBar(
                 value = filterText,
@@ -385,12 +417,13 @@ fun CustomDictionaryScreen(
     // Edit/Add dialog
     if (showEditDialog) {
         EditEntryDialog(
-            entry = editingEntry,
+            word = editingEntry,
             onDismiss = { showEditDialog = false },
-            onSave = { entry ->
-                viewModel.save(entry)
+            onSave = { hanji, romans ->
+                viewModel.saveWord(planWordSave(editingEntry, hanji, romans, lectCodes))
                 showEditDialog = false
             },
+            lookup = viewModel::lookupReading,
         )
     }
 
@@ -401,5 +434,30 @@ fun CustomDictionaryScreen(
             confirmLabel = L10n.commonOk,
             onDismiss = { showResultDialog = false },
         )
+    }
+}
+
+// Hakfa fork: the short lect name a row wears ("四縣", "海陸", "南四縣"); the part before the romanization.
+private fun lectTag(code: Int): String = HakfaLects.nameOf(code).substringBefore(" (")
+
+// Hakfa fork: 「全部」 plus one chip per lect; the chosen one limits the list to words read in that lect.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LectFilterRow(
+    selected: Int?,
+    onSelected: (Int?) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(selected = selected == null, onClick = { onSelected(null) }, label = { Text("全部") })
+        HakfaLects.all.forEach { lect ->
+            FilterChip(
+                selected = selected == lect.code,
+                onClick = { onSelected(lect.code) },
+                label = { Text(lectTag(lect.code)) },
+            )
+        }
     }
 }

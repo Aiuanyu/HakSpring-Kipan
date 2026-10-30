@@ -37,6 +37,7 @@ internal fun appConfig(
     candidateDisplayMode: CandidateDisplayMode = CandidateDisplayMode.SIDE_BY_SIDE,
     syllableSeparator: SyllableSeparator = SyllableSeparator.HYPHEN,
     isTpsOrMappedToER: Boolean = false,
+    lect: Int = ActiveLect.current,
 ): AppConfig =
     AppConfig
         .newBuilder()
@@ -53,8 +54,8 @@ internal fun appConfig(
         .setCandidateDisplayMode(candidateDisplayMode.toProto())
         .setSyllableSeparator(syllableSeparator.toProto())
         .setTpsOrMapsToEr(isTpsOrMappedToER)
-        // Hakfa fork: Android has no lect setting yet; 1 = 四縣 (see LexiconBridge.kt).
-        .setLect(1)
+        // Hakfa fork: the lect the keyboard is typing in ([ActiveLect]; 1 四縣, 2 海陸, 6 南四縣).
+        .setLect(lect)
         .build()
 
 /**

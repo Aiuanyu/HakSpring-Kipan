@@ -16,6 +16,7 @@ import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.InputMethodSubtype
 import androidx.compose.runtime.Recomposer
 import androidx.compose.ui.platform.AndroidUiDispatcher
 import androidx.compose.ui.platform.ComposeView
@@ -24,6 +25,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.siansiansu.taigikeyboard.BuildConfig
 import com.siansiansu.taigikeyboard.R
 import com.siansiansu.taigikeyboard.TaigiKeyboardApplication
+import com.siansiansu.taigikeyboard.engine.HakfaLects
 import com.siansiansu.taigikeyboard.i18n.DisplayLanguage
 import com.siansiansu.taigikeyboard.i18n.StringResolver
 import com.siansiansu.taigikeyboard.i18n.buildStringResolver
@@ -436,6 +438,8 @@ class TaigiKeyboard : LifecycleInputMethodService() {
     ) {
         currentInputConnection?.requestCursorUpdates(InputConnection.CURSOR_UPDATE_MONITOR)
 
+        syncLectFromSubtype((getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager)?.currentInputMethodSubtype)
+
         // A theme picked in settings while the IME was alive: switch between the forced-light
         // and system render modes before this input shows.
         if (syncForcedLight()) rebuildInputView()
@@ -444,6 +448,27 @@ class TaigiKeyboard : LifecycleInputMethodService() {
         clearSpaceMarks()
         textInputManager.onStartInputView(info, restarting)
         mediaInputManager.onStartInputView(info, restarting)
+    }
+
+    // Hakfa fork: the system keyboard menu lists one subtype per lect (res/xml/method.xml); picking one
+    // there changes the lect the keyboard types in.
+    override fun onCurrentInputMethodSubtypeChanged(newSubtype: InputMethodSubtype?) {
+        super.onCurrentInputMethodSubtypeChanged(newSubtype)
+        syncLectFromSubtype(newSubtype)
+    }
+
+    // The lect of the subtype last seen. The subtype decides only when it CHANGES (or first shows up in
+    // this process), so a lect picked in the settings screen is not undone by the unchanged subtype.
+    private var lastSubtypeLect: Int? = null
+
+    private fun syncLectFromSubtype(subtype: InputMethodSubtype?) {
+        val lect = HakfaLects.fromSubtypeExtra(subtype?.extraValue) ?: return
+        if (lect == lastSubtypeLect) return
+        lastSubtypeLect = lect
+        if (lect == prefs.lect) return
+        prefs.lect = lect
+        // Readings differ by lect: drop the composition in the old one, as a change of input mode does.
+        textInputManager.onInputModeChanged(prefs.inputMode)
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {

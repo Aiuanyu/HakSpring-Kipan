@@ -79,6 +79,10 @@ object PreferenceKeys {
     val ONE_HANDED_MODE = stringPreferencesKey("keyboard__one_handed_mode")
     val KEYBOARD_TOOLBAR_ACTION = stringPreferencesKey("keyboard__toolbar_keyboard_action")
     val GLOBE_KEY_ENABLED = booleanPreferencesKey("keyboard__globe_key_enabled")
+
+    /** Hakfa fork: the lect (腔) the keyboard types in; 1 四縣, 2 海陸, 6 南四縣. */
+    val LECT = intPreferencesKey("hakfa__lect")
+
     val SOUND_FEEDBACK_ENABLED = booleanPreferencesKey("keyboard__sound_feedback_enabled")
     val VIBRATION_FEEDBACK_ENABLED = booleanPreferencesKey("keyboard__vibration_feedback_enabled")
 

@@ -31,7 +31,6 @@ import com.siansiansu.taigikeyboard.ui.theme.AppStyle
 
 // Single-choice sub-screen: one card of label rows, checkmark on the selected value.
 // Shared by the input-mode and candidate-display-mode pickers.
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> SelectionListScreen(
     title: String,
@@ -39,6 +38,26 @@ fun <T> SelectionListScreen(
     selected: T,
     onSelected: (T) -> Unit,
     onBack: () -> Unit,
+) {
+    LabeledSelectionListScreen(
+        title = title,
+        options = options.map { (value, labelKey) -> value to stringRes(labelKey) },
+        selected = selected,
+        onSelected = onSelected,
+        onBack = onBack,
+    )
+}
+
+// Hakfa fork: the same screen for options whose labels are plain text (a lect's name has no i18n key).
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> LabeledSelectionListScreen(
+    title: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelected: (T) -> Unit,
+    onBack: () -> Unit,
+    footer: @Composable () -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
 
@@ -65,7 +84,7 @@ fun <T> SelectionListScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
         ) {
             SettingsCard {
-                options.forEachIndexed { index, (value, labelKey) ->
+                options.forEachIndexed { index, (value, label) ->
                     Row(
                         modifier =
                             Modifier
@@ -76,7 +95,7 @@ fun <T> SelectionListScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = stringRes(labelKey),
+                            text = label,
                             modifier = Modifier.weight(1f),
                             color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyLarge,
@@ -95,6 +114,7 @@ fun <T> SelectionListScreen(
                     }
                 }
             }
+            footer()
         }
     }
 }

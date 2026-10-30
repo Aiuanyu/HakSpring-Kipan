@@ -107,12 +107,14 @@ fun RustEngineBridge.customDictionarySave(
     id: String,
     roman: String,
     hanji: String,
+    lect: Int = 0,
 ): CustomEntrySaved? {
     val save = SaveCustomEntry
         .newBuilder()
         .setId(id)
         .setRoman(roman)
         .setHanji(hanji)
+        .setLect(lect)
         .build()
     return userData("customDictionarySave") { setSaveCustomEntry(save) }
         ?.takeIf { it.hasCustomEntrySaved() }

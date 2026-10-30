@@ -11,6 +11,8 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.preference.PreferenceManager
+import com.siansiansu.taigikeyboard.engine.ActiveLect
+import com.siansiansu.taigikeyboard.engine.HakfaLects
 import com.siansiansu.taigikeyboard.i18n.DisplayLanguage
 import com.siansiansu.taigikeyboard.i18n.buildStringResolver
 import com.siansiansu.taigikeyboard.i18n.generated.StringKey
@@ -153,6 +155,8 @@ class PrefHelper(
             val ds = dataStore
             val logger = CompositionRoot.shared(context).logger
             cachedPrefs = runBlocking { ds.data.first() }
+            // Hakfa fork: the lect the engine requests are made in starts from the stored one.
+            ActiveLect.current = cachedPrefs?.get(PreferenceKeys.LECT)?.takeIf(HakfaLects::isKnown) ?: ActiveLect.XIIEN
             scope.launch {
                 ds.data
                     .retryWhen { cause, attempt ->
@@ -360,6 +364,18 @@ class PrefHelper(
     var isNasalMarkerUppercaseEnabled: Boolean by preference(PreferenceKeys.NASAL_MARKER_UPPERCASE, true)
 
     var autoCapitalizationEnabled: Boolean by preference(PreferenceKeys.AUTO_CAPITALIZATION_ENABLED, true)
+
+    /**
+     * Hakfa fork: the lect (腔) the keyboard types in. Writing it also updates [ActiveLect], which the
+     * request builders read; [warmUp] sets that from the stored value at process start.
+     */
+    var lect: Int
+        get() = cached(PreferenceKeys.LECT, ActiveLect.XIIEN).takeIf(HakfaLects::isKnown) ?: ActiveLect.XIIEN
+        set(value) {
+            if (!HakfaLects.isKnown(value)) return
+            updateCacheAndPersist(PreferenceKeys.LECT, value)
+            ActiveLect.current = value
+        }
 
     var isAutoSpaceEnabled: Boolean by preference(PreferenceKeys.AUTO_SPACE_ENABLED, false)
 

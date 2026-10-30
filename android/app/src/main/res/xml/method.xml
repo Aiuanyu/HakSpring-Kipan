@@ -10,9 +10,22 @@
          (Multiple languages) keeps "Chinese" out of the OS keyboard list; do NOT use nan/zh.
          imeSubtypeLocale is intentionally absent (deprecated; an OEM reading it could re-surface
          "Min Nan Chinese"). -->
+    <!-- Hakfa fork: one subtype per lect (腔), so each shows in the system's keyboard language list.
+         extraValue names the lect code (`HakfaLects`): 1 四縣, 2 海陸, 6 南四縣. -->
     <subtype
         android:label="@string/ime_subtype_sixian"
         android:languageTag="mul"
-        android:imeSubtypeMode="keyboard" />
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=1" />
+    <subtype
+        android:label="@string/ime_subtype_namxiian"
+        android:languageTag="mul"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=6" />
+    <subtype
+        android:label="@string/ime_subtype_hoiliug"
+        android:languageTag="mul"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=2" />
 
 </input-method>

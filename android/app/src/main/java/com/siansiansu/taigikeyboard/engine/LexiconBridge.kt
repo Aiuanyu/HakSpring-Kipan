@@ -139,6 +139,39 @@ fun RustEngineBridge.dictionaryFilters(toggles: RustEngineBridge.DictionaryToggl
     )
 }
 
+/**
+ * Hakfa fork: the readings the dictionary gives [hanji] exactly, in [lect], from the 教典／認證 sources
+ * (Mac's 「各腔自動補音」 lookup). Distinct, in the engine's order; empty when nothing matches, `null`
+ * when the engine did not answer (so the screen can say that, instead of looking as if nothing matched).
+ */
+fun RustEngineBridge.hanjiReadings(
+    hanji: String,
+    lect: Int,
+): List<String>? {
+    val toggles = ProtoDictionarySourceToggles
+        .newBuilder()
+        .setKautian(true)
+        .setLect(lect)
+        .build()
+    val filters = lexiconDispatch(
+        LexiconRequest
+            .newBuilder()
+            .setDictionaryFilters(DictionaryFiltersRequest.newBuilder().setToggles(toggles).build())
+            .build(),
+        "dictionaryFilters",
+    ) ?: return null
+    if (!filters.hasDictionaryFiltersResult()) return null
+    return searchByHanji(
+        query = hanji,
+        inputMode = RustEngineBridge.LexiconInputMode.TL,
+        limit = 20u,
+        enabledSourcesBitmask = filters.dictionaryFiltersResult.dictionaryFilterBitmask.toUInt(),
+    ).filter { it.hanji == hanji }
+        .map { it.roman.trim() }
+        .filter { it.isNotEmpty() }
+        .distinct()
+}
+
 /** Proto form of the user's dictionary toggles, shared by [dictionaryFilters], `composingFetchAtPos` and `nextwordPredictNext`. */
 internal fun dictionaryTogglesProto(toggles: RustEngineBridge.DictionaryToggles): ProtoDictionarySourceToggles =
     ProtoDictionarySourceToggles
@@ -156,9 +189,9 @@ internal fun dictionaryTogglesProto(toggles: RustEngineBridge.DictionaryToggles)
         .setKhiin(toggles.khiin)
         .setLkk(toggles.lkk)
         .setDev(toggles.dev)
-        // Hakfa fork: the merged dictionary carries every lect; Android has no lect setting yet,
-        // so it asks for 四縣 (1). 0 would mix every lect's readings into one list.
-        .setLect(1)
+        // Hakfa fork: the merged dictionary carries every lect, so a request names the one the
+        // keyboard types in ([ActiveLect]). 0 would mix every lect's readings into one list.
+        .setLect(ActiveLect.current)
         // Always set the subcollection message (Android ships the toggles)
         // so the engine runs the gate; absence would signal legacy all-on
         // (DD5). Mirrors iOS RustEngineBridge togglesProto mapping.

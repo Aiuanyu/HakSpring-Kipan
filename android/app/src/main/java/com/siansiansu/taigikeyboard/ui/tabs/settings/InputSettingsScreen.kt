@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.siansiansu.taigikeyboard.content.FeatureContentLoader
+import com.siansiansu.taigikeyboard.engine.HakfaLects
 import com.siansiansu.taigikeyboard.i18n.LocalDisplayLanguage
 import com.siansiansu.taigikeyboard.i18n.LocalSelectedDisplayLanguage
 import com.siansiansu.taigikeyboard.i18n.LocalStringResolver
@@ -67,6 +68,7 @@ fun InputSettingsScreen(
     val context = LocalContext.current
     var showDisplayLanguagePicker by remember { mutableStateOf(false) }
     var showInputModePicker by remember { mutableStateOf(false) }
+    var showLectPicker by remember { mutableStateOf(false) }
     var showCandidateDisplayModePicker by remember { mutableStateOf(false) }
     var showNasalMarkerStylePicker by remember { mutableStateOf(false) }
     var showSyllableSeparatorPicker by remember { mutableStateOf(false) }
@@ -78,6 +80,7 @@ fun InputSettingsScreen(
     val displayLanguage = LocalSelectedDisplayLanguage.current
     // Each state re-reads from prefs when resetCounter changes (after settings reset)
     var inputMode by remember(resetCounter) { mutableStateOf(prefs.inputMode) }
+    var lect by remember(resetCounter) { mutableStateOf(prefs.lect) }
     var fontType by remember(resetCounter) { mutableStateOf(prefs.fontType) }
     var candidateDisplayMode by remember(resetCounter) { mutableStateOf(prefs.candidateDisplayMode) }
     // Annotate in Brackets binds the STORED flag; it is only disabled (not cleared) while roman-only.
@@ -105,6 +108,15 @@ fun InputSettingsScreen(
             selectedLanguage = displayLanguage,
             onLanguageSelected = { prefs.displayLanguageTag = it.tag },
             onBack = { showDisplayLanguagePicker = false },
+        )
+    } else if (showLectPicker) {
+        LectScreen(
+            selected = lect,
+            onSelected = {
+                lect = it
+                prefs.lect = it
+            },
+            onBack = { showLectPicker = false },
         )
     } else if (showInputModePicker) {
         InputModeScreen(
@@ -197,6 +209,12 @@ fun InputSettingsScreen(
                 Spacer(Modifier.height(24.dp))
 
                 SettingsCard {
+                    SettingNavigationRow(
+                        label = LECT_SETTING_LABEL,
+                        value = HakfaLects.nameOf(lect),
+                        onClick = { showLectPicker = true },
+                    )
+                    SettingsDivider()
                     SettingNavigationRow(
                         label = L10n.settingsInputMode,
                         value = inputModeDisplayName(inputMode),

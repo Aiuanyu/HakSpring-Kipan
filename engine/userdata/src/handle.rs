@@ -237,8 +237,8 @@ impl UserDataHandle {
         self.handle(&request)
     }
 
-    /// Hakfa fork: the lects with their own learning data in the shipped dictionary (四縣, 海陸, 南四縣).
-    const BUNDLE_LECTS: [u32; 3] = [1, 2, 6];
+    /// Hakfa fork: the lects with their own learning data in the shipped dictionary (四縣, 南四縣, 海陸).
+    const BUNDLE_LECTS: [u32; 3] = [1, 6, 2];
 
     /// Hakfa fork: every shipped lect's learning plus the custom dictionary, as one version-4 file.
     fn export_bundle(

@@ -4,20 +4,26 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.siansiansu.taigikeyboard.engine.RustEngineBridge
+import com.siansiansu.taigikeyboard.engine.hanjiReadings
 import com.siansiansu.taigikeyboard.engine.proto.CustomDictionaryRefusal
 import com.siansiansu.taigikeyboard.ime.core.CompositionRoot
 import com.siansiansu.taigikeyboard.ime.dictionary.CustomDictionaryImportResult
 import com.siansiansu.taigikeyboard.ime.dictionary.CustomDictionaryWord
+import com.siansiansu.taigikeyboard.ime.dictionary.CustomWord
 import com.siansiansu.taigikeyboard.ime.dictionary.UserDataClient
 import com.siansiansu.taigikeyboard.ime.dictionary.UserDataException
+import com.siansiansu.taigikeyboard.ime.dictionary.WordSavePlan
 import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 // ViewModel for CustomDictionaryScreen — entries, CRUD, CSV import/export, enable toggle.
 // The words are the engine's (roadmap P8b); the client runs every request on Dispatchers.IO.
@@ -60,6 +66,49 @@ class CustomDictionaryViewModel(
             load()
         }
     }
+
+    /** Hakfa fork: writes a word's per-lect readings (see [planWordSave]) and reloads once. */
+    fun saveWord(plan: WordSavePlan) {
+        viewModelScope.launch {
+            quietly("saveWord", Unit) {
+                plan.saves.forEach { userData.save(it) }
+                plan.deleteIds.forEach { userData.delete(it) }
+            }
+            load()
+        }
+    }
+
+    /** Hakfa fork: removes every row of the word. */
+    fun deleteWord(word: CustomWord) {
+        viewModelScope.launch {
+            quietly("deleteWord", Unit) { word.rows.forEach { userData.delete(it.id) } }
+            load()
+        }
+    }
+
+    /**
+     * Hakfa fork: what the dictionary gives [hanji] in [lect]: one reading is filled in; none or several
+     * are said, not guessed at (a guess would be wrong half the time; the person picks).
+     */
+    suspend fun lookupReading(
+        hanji: String,
+        lect: Int,
+    ): ReadingLookup =
+        try {
+            withTimeout(LOOKUP_TIMEOUT_MS) {
+                withContext(Dispatchers.IO) {
+                    val readings = RustEngineBridge.hanjiReadings(hanji, lect)
+                    when {
+                        readings == null -> ReadingLookup.Failed
+                        readings.isEmpty() -> ReadingLookup.None
+                        readings.size == 1 -> ReadingLookup.Found(readings.single())
+                        else -> ReadingLookup.Several(readings.size)
+                    }
+                }
+            }
+        } catch (_: TimeoutCancellationException) {
+            ReadingLookup.Failed
+        }
 
     fun delete(id: String) {
         viewModelScope.launch {
@@ -122,5 +171,22 @@ class CustomDictionaryViewModel(
 
     private companion object {
         const val TAG = "CustomDictionaryViewModel"
+        const val LOOKUP_TIMEOUT_MS = 8_000L
     }
+}
+
+/** What the 「各腔自動補音」 lookup found for one lect. */
+sealed interface ReadingLookup {
+    data class Found(
+        val roman: String,
+    ) : ReadingLookup
+
+    data class Several(
+        val count: Int,
+    ) : ReadingLookup
+
+    data object None : ReadingLookup
+
+    /** The engine did not answer, or took too long. */
+    data object Failed : ReadingLookup
 }

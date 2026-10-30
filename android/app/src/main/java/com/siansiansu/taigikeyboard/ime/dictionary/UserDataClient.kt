@@ -38,6 +38,8 @@ data class CustomDictionaryWord(
     val id: String = UUID.randomUUID().toString(),
     val roman: String,
     val hanji: String,
+    /** Hakfa fork: the lect the word is typed in (1 四縣, 2 海陸, 6 南四縣). 0 = unspecified: the engine files it under 四縣. */
+    val lect: Int = 0,
 )
 
 data class CustomDictionaryImportResult(
@@ -179,7 +181,7 @@ object EngineUserDataClient : UserDataClient {
             .map(::word)
 
     override suspend fun save(word: CustomDictionaryWord) {
-        val saved = engine("customDictionarySave") { RustEngineBridge.customDictionarySave(word.id, word.roman, word.hanji) }
+        val saved = engine("customDictionarySave") { RustEngineBridge.customDictionarySave(word.id, word.roman, word.hanji, word.lect) }
         if (saved.refusal != CustomDictionaryRefusal.CUSTOM_DICTIONARY_REFUSAL_NONE) {
             throw UserDataException.Refused(saved.refusal, saved.detail)
         }
@@ -275,5 +277,5 @@ object EngineUserDataClient : UserDataClient {
         request: () -> T?,
     ): T = withContext(Dispatchers.IO) { request() } ?: throw UserDataException.EngineUnavailable(op)
 
-    private fun word(entry: CustomDictionaryEntry) = CustomDictionaryWord(id = entry.id, roman = entry.roman, hanji = entry.hanji)
+    private fun word(entry: CustomDictionaryEntry) = CustomDictionaryWord(id = entry.id, roman = entry.roman, hanji = entry.hanji, lect = entry.lect)
 }
