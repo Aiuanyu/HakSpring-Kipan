@@ -82,6 +82,10 @@ Signed-off-by: GHSRobert Ciang <93833368+Aiuanyu@users.noreply.github.com>
 - Keep **verified** (a command you ran in this session and its output) apart from **inferred**. Never write "all tests pass" or "100 % done" for something you did not run — and name the stale-artifact gate (`make dict`, `make build`) you ran before a platform test.
 - Hakfa phonetics: never carry a TL / POJ rule over to HPP by analogy (HPP has no `tsh` / `chh`; its stop finals are `b d g`). When unsure, ask the maintainer.
 
+### Lect order
+
+Wherever lects are listed (menus, columns, files, copy), use 四縣, 南四縣, 海陸, 大埔, 饒平, 詔安 ("四南海大平安"). Their lect codes (1, 6, 2, 3, 4, 5) follow that order, not numeric order.
+
 ### Development board (Obsidian vault)
 
 Work status for HakSpring (website) and Kipan lives on a kanban in the Obsidian vault, not in this repo: one note per card under `創作/程式/HakSpring/看板/` in the vault (`~/NAS/Obsidian/Main`), with frontmatter `project` / `status` (想做, 排定, 進行中, 等平哥, 完成) / `size`.
