@@ -85,7 +85,7 @@ Signed-off-by: GHSRobert Ciang <93833368+Aiuanyu@users.noreply.github.com>
 ### Development board (Obsidian vault)
 
 Work status for HakSpring (website) and Kipan lives on a kanban in the Obsidian vault, not in this repo: one note per card under `創作/程式/HakSpring/看板/` in the vault (`~/NAS/Obsidian/Main`), with frontmatter `project` / `status` (想做, 排定, 進行中, 等平哥, 完成) / `size`.
-- Before starting a substantial task, read its card; if none exists, ask the coordinating session (蒂兒) or create one following `AGENTS.md` in the vault.
+- Before starting a substantial task, read its card; if none exists, ask the coordinating session or create one following `AGENTS.md` in the vault.
 - When you start, finish, or get blocked, update the card's `status`. Do not edit `kanban_order`. The user's own drag-and-drop on the board wins over any other file.
 - Run `python3 <vault>/創作/程式/HakSpring/看板/check.py` (read-only) before wrapping up.
 - If you cannot reach the vault (e.g. a cloud session), say so in your report instead of skipping silently, so the coordinator can update the card.
