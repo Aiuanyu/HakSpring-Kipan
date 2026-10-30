@@ -107,6 +107,15 @@ pub use ranking::{COVERAGE_KIND_ABBREV, COVERAGE_KIND_FULL, COVERAGE_KIND_PARTIA
 /// scoring ran.
 pub const PARTIAL_PREFIX_HYDRATE_CAP: usize = 500;
 
+/// How many FST rowids a partial-prefix fetch may LOOK at while it collects
+/// [`PARTIAL_PREFIX_HYDRATE_CAP`] accepted rows. hakfa: the merged dictionary holds every lect's
+/// rows under one key, and the source / lect filter rejects the other lects' rows only after
+/// they are read. A budget counted in rowids therefore ran out on rows the filter drops — typing
+/// `t` in 四縣 never reached `tung` 同, whatever the learned frequency (USER 2026-10-29). The
+/// accepted-row cap keeps the ranker's pool the size it always was; this scan cap only bounds the
+/// worst-case work, as the rowid cap used to.
+pub const PARTIAL_PREFIX_SCAN_CAP: usize = 4_000;
+
 /// Maximum candidates returned from [`fetch_partial_prefix_candidates`]
 /// to the platform candidate strip. Applied AFTER hydration, dedupe,
 /// and [`CandidateSortKey`] sort — so the top-N visible to the user is the
@@ -968,9 +977,8 @@ pub fn fetch_partial_prefix_candidates_unbounded(
     // `fetch_partial_prefix_candidates` applies `PARTIAL_PREFIX_OUTPUT_CAP`
     // for callers that don't need cross-batch exclude; Step 4b in
     // `composing::continuous` takes the un-truncated pool, applies its
-    // FULL-block exclude, then truncates itself. Filter rejects still
-    // consume hydration budget — goal is bounding worst-case work, not
-    // maximizing hits.
+    // FULL-block exclude, then truncates itself. Filter rejects
+    // consume the scan cap, not the accepted-row budget.
     // Item 12: guard the unbounded `lookup_prefix("")` scan — with the
     // early-return now gated on `fst_key.is_empty() && custom.is_empty()`,
     // an empty `fst_key` + non-empty `custom` reaches here and must NOT
@@ -1001,18 +1009,32 @@ pub fn fetch_partial_prefix_candidates_unbounded(
         // post-impl 2026-08-19 BLOCK 1). TL/POJ keep the plain lookup.
         let hits: Vec<(String, u32)> = if fst_key.starts_with(KeyFamily::Tps.prefix()) {
             ctx.prefix_index
-                .lookup_prefix_shortest_first_tps_readings(fst_key, PARTIAL_PREFIX_HYDRATE_CAP)
+                .lookup_prefix_shortest_first_tps_readings(fst_key, PARTIAL_PREFIX_SCAN_CAP)
         } else {
             ctx.prefix_index
-                .lookup_prefix_shortest_first(fst_key, PARTIAL_PREFIX_HYDRATE_CAP)
+                .lookup_prefix_shortest_first(fst_key, PARTIAL_PREFIX_SCAN_CAP)
                 .into_iter()
                 .map(|rowid| (fst_key.to_string(), rowid))
                 .collect()
         };
+        // hakfa: the dictionary is built in frequency order (rowid 0 = the most frequent
+        // row), so within the scanned range the lowest rowids are the most frequent words.
+        // Spending the accepted-row budget on them first keeps a common word with a long
+        // key (`tung` 同 behind a wall of shorter `t*` keys) from being cut by key length.
+        // Only WHICH rows the budget admits follows rowid; the pool keeps the shortest-first
+        // order it always had (the ranker's tie-break), restored after the loop.
+        let mut by_rowid: Vec<usize> = (0..hits.len()).collect();
+        by_rowid.sort_by_key(|&position| hits[position].1);
+        let mut admitted_at: Vec<usize> = Vec::new();
         // Loop-invariant: the family and the typed body's length are the
         // same for every hydrated row.
         let reach = SyllableReach::new(fst_key);
-        for (matched_key, rowid) in hits {
+        for position in by_rowid {
+            let (matched_key, rowid) = hits[position].clone();
+            // The budget counts ACCEPTED rows (see `PARTIAL_PREFIX_SCAN_CAP`), not rowids read.
+            if out.len() >= PARTIAL_PREFIX_HYDRATE_CAP {
+                break;
+            }
             let Some(record) = ctx.dict.record(rowid) else {
                 continue;
             };
@@ -1059,6 +1081,7 @@ pub fn fetch_partial_prefix_candidates_unbounded(
                 record.kautian_subtag,
                 &filter,
             );
+            admitted_at.push(position);
             out.push(record_to_candidate(
                 record,
                 effective,
@@ -1069,6 +1092,11 @@ pub fn fetch_partial_prefix_candidates_unbounded(
                 COVERAGE_KIND_PARTIAL_PREFIX,
             ));
         }
+        // Back to the scan's (shortest-first) order.
+        let mut order: Vec<usize> = (0..out.len()).collect();
+        order.sort_by_key(|&index| admitted_at[index]);
+        let mut slots: Vec<Option<RawCandidate>> = out.drain(..).map(Some).collect();
+        out.extend(order.into_iter().filter_map(|index| slots[index].take()));
     }
     let typed_key = (!fst_key.is_empty()).then_some(fst_key.as_str());
     merge_custom_dedupe_sort(out, ctx, raw_len, typed_key, COVERAGE_KIND_PARTIAL_PREFIX)

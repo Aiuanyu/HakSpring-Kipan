@@ -2,7 +2,7 @@
   <!-- 方案三 (V3)：大導角超橢圓立體鍵帽 (Super-Squircle Keycap on Lavender Rim)
        108x108 dp 畫布，72 dp 可見區 (r=36 dp)，66 dp 安全圓 (r=33 dp)。
        保留「方圓鍵帽」造型與淡吊菜老鼠色底板，但透過大導角 (rx=23.5) 讓對角線完美貼合 33 dp 安全圓，
-       使鍵帽寬度從原本 39 dp (54%) / 蒂兒 A 版 51 dp (70%) 大幅撐滿至 61 dp (佔可見範圍 85%！) -->
+       使鍵帽寬度從原本 39 dp (54%) / the earlier A version 51 dp (70%) 大幅撐滿至 61 dp (佔可見範圍 85%！) -->
   <defs>
     <linearGradient id="v3_bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#eae3f1"/>

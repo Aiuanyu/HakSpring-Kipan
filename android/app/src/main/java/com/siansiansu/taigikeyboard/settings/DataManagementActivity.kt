@@ -102,7 +102,7 @@ class DataManagementActivity : ComponentActivity() {
                 },
                 onExportBackup = {
                     val dateStr = SimpleDateFormat(BACKUP_DATE_FORMAT, Locale.US).format(Date())
-                    exportBackupLauncher.launch("taigi_backup_$dateStr.taigi")
+                    exportBackupLauncher.launch("hakfa_backup_$dateStr.hakfa")
                 },
                 onImportBackup = {
                     importBackupLauncher.launch(arrayOf("application/json", "*/*"))

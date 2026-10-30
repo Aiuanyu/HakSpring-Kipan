@@ -26,6 +26,7 @@ import com.siansiansu.taigikeyboard.engine.proto.LearningRecordKind
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordOrder
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordSaved
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecords
+import com.siansiansu.taigikeyboard.engine.proto.LectsSynced
 import com.siansiansu.taigikeyboard.engine.proto.ListCustomEntries
 import com.siansiansu.taigikeyboard.engine.proto.ListLearningRecords
 import com.siansiansu.taigikeyboard.engine.proto.OpenUserData
@@ -34,6 +35,7 @@ import com.siansiansu.taigikeyboard.engine.proto.ResetUserData
 import com.siansiansu.taigikeyboard.engine.proto.SaveCustomEntry
 import com.siansiansu.taigikeyboard.engine.proto.SearchCustomEntries
 import com.siansiansu.taigikeyboard.engine.proto.SetLearningRecordCount
+import com.siansiansu.taigikeyboard.engine.proto.SyncLects
 import com.siansiansu.taigikeyboard.engine.proto.UserDataJournal
 import com.siansiansu.taigikeyboard.engine.proto.UserDataRequest
 import com.siansiansu.taigikeyboard.engine.proto.UserDataReset
@@ -234,6 +236,20 @@ fun RustEngineBridge.learningRecordAddToCustomDictionary(record: LearningRecord)
     return userData("learningRecordAddToCustomDictionary") { setAddLearningRecordToCustomDictionary(add) }
         ?.takeIf { it.hasLearningRecordAddedToCustomDictionary() }
         ?.learningRecordAddedToCustomDictionary
+}
+
+/**
+ * Hakfa fork (各腔互學): offers what each lect learned to the others. `dryRun` only counts. An empty
+ * [lects] means every lect the engine knows.
+ */
+fun RustEngineBridge.syncLects(
+    lects: List<Int> = emptyList(),
+    dryRun: Boolean,
+): LectsSynced? {
+    val sync = SyncLects.newBuilder().addAllLects(lects).setDryRun(dryRun).build()
+    return userData("userDataSyncLects") { setSyncLects(sync) }
+        ?.takeIf { it.hasLectsSynced() }
+        ?.lectsSynced
 }
 
 /**

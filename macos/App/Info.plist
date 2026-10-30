@@ -113,7 +113,7 @@
 	<array>
 		<string>Hant</string>
 	</array>
-	<!-- The `.taigi` backup document. Declared so the open and save panels in
+	<!-- The `.hakfa` backup document. Declared so the open and save panels in
 	     Dictionary → Backup and Restore can filter for it; an undeclared extension resolves only
 	     to a dynamic type nothing recognises. Same identifier iOS exports
 	     (ios/Sources/TaigiKeyboard-Info.plist), because it is the same format.
@@ -126,7 +126,7 @@
 			<key>UTTypeIdentifier</key>
 			<string>tw.taigikeyboard.backup</string>
 			<key>UTTypeDescription</key>
-			<string>台語鍵盤備份</string>
+			<string>客源翠企盤備份</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.json</string>
@@ -135,7 +135,7 @@
 			<dict>
 				<key>public.filename-extension</key>
 				<array>
-					<string>taigi</string>
+					<string>hakfa</string>
 				</array>
 			</dict>
 		</dict>

@@ -30,6 +30,8 @@ class LearningRecordsMenuActivity : ComponentActivity() {
                     startActivity(LearningRecordsActivity.createIntent(this, kind))
                 },
                 onClearAll = { userData.clearLearningRecords() },
+                onSyncPreview = { userData.syncLects(dryRun = true) },
+                onSyncConfirm = { userData.syncLects(dryRun = false) },
             )
         }
     }

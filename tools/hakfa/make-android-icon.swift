@@ -2,7 +2,7 @@
 // 產生程式是 tools/hakfa/build-kipan-icons.py。這支和那支寫**同一批檔案**
 // （mipmap-*/ic_launcher*.webp、ic_launcher-playstore.png）：執行這支會把目前的圖示蓋成「客」字版，
 // 而且不產生 ic_launcher_monochrome.webp（主題圖示會壞）。要用先備份，或改輸出路徑。
-// 平哥 20261024 決定留著備用。
+// Kept as a spare (maintainer decision, 20261024).
 //
 // Generates the Android launcher icons from the same 客 outline as the macOS
 // app icon (tools/desktop/make-app-icon.swift), so the platforms cannot drift:

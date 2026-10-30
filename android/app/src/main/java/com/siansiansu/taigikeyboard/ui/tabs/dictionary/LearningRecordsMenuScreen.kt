@@ -10,12 +10,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -29,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordKind
+import com.siansiansu.taigikeyboard.engine.proto.LectsSynced
 import com.siansiansu.taigikeyboard.i18n.LocalStringResolver
 import com.siansiansu.taigikeyboard.i18n.generated.L10n
 import com.siansiansu.taigikeyboard.i18n.generated.StringKey
@@ -49,6 +52,9 @@ fun LearningRecordsMenuScreen(
     onNavigateBack: () -> Unit,
     onKind: (LearningRecordKind) -> Unit,
     onClearAll: suspend () -> Unit,
+    // Hakfa fork (各腔互學): the preview counts what would be copied, the confirm copies. Both throw for the screen to report.
+    onSyncPreview: suspend () -> LectsSynced,
+    onSyncConfirm: suspend () -> LectsSynced,
 ) {
     val scope = rememberCoroutineScope()
     // Read after the clear returns; tracks the live display language.
@@ -57,6 +63,41 @@ fun LearningRecordsMenuScreen(
     var isClearing by remember { mutableStateOf(false) }
     // Only a failure is said; a clear that landed says nothing (USER 2026-10-16).
     var clearFailure by remember { mutableStateOf<String?>(null) }
+
+    // Hakfa fork (各腔互學): the preview waits for the user's confirmation before anything is copied.
+    var syncPreview by remember { mutableStateOf<LectsSynced?>(null) }
+    var syncFailure by remember { mutableStateOf<String?>(null) }
+
+    fun previewSync() {
+        isClearing = true
+        scope.launch {
+            try {
+                syncPreview = onSyncPreview()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                syncFailure = resultMessage("各腔互學無成功", e.message)
+            } finally {
+                isClearing = false
+            }
+        }
+    }
+
+    fun confirmSync() {
+        syncPreview = null
+        isClearing = true
+        scope.launch {
+            try {
+                onSyncConfirm()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                syncFailure = resultMessage("各腔互學無成功", e.message)
+            } finally {
+                isClearing = false
+            }
+        }
+    }
 
     fun clearAll() {
         isClearing = true
@@ -119,6 +160,14 @@ fun LearningRecordsMenuScreen(
                 )
             }
             Spacer(Modifier.height(16.dp))
+            // Hakfa fork: 各腔互學, one row; the preview dialog asks before copying.
+            SettingsCard {
+                ActionRow(
+                    label = "各腔互學",
+                    onClick = { if (!isClearing) previewSync() },
+                )
+            }
+            Spacer(Modifier.height(16.dp))
             // Runs on the tap, no confirmation (USER 2026-10-16).
             SettingsCard {
                 ActionRow(
@@ -130,6 +179,28 @@ fun LearningRecordsMenuScreen(
         }
     }
 
+    syncPreview?.let { preview ->
+        AlertDialog(
+            onDismissRequest = { syncPreview = null },
+            title = { Text("各腔互學") },
+            text = { Text(lectsSyncSummary(preview)) },
+            confirmButton = {
+                TextButton(onClick = { confirmSync() }) { Text("互學") }
+            },
+            dismissButton = {
+                TextButton(onClick = { syncPreview = null }) { Text(L10n.commonCancel) }
+            },
+        )
+    }
+
+    syncFailure?.let { message ->
+        ResultDialog(
+            message = message,
+            confirmLabel = L10n.commonOk,
+            onDismiss = { syncFailure = null },
+        )
+    }
+
     clearFailure?.let { message ->
         ResultDialog(
             message = message,
@@ -138,3 +209,15 @@ fun LearningRecordsMenuScreen(
         )
     }
 }
+
+/** What the preview says before anything is copied (the macOS Learning Records page says the same). */
+internal fun lectsSyncSummary(preview: LectsSynced): String {
+    val added = preview.addedWords + preview.addedPhrases
+    val lines = mutableListOf("會增加 $added 筆（詞 ${preview.addedWords}、詞組 ${preview.addedPhrases}）。")
+    if (preview.composed > 0) lines += "其中 ${preview.composed} 筆係用目的腔詞典个詞組合出來个。"
+    if (preview.alreadyPresent > 0) lines += "本來就有：${preview.alreadyPresent} 筆。"
+    if (preview.skippedMissing > 0) lines += "目的腔無共隻漢字，跳過：${preview.skippedMissing} 筆。"
+    if (preview.skippedAmbiguous > 0) lines += "目的腔有多種讀音，跳過：${preview.skippedAmbiguous} 筆。"
+    return lines.joinToString("\n")
+}
+

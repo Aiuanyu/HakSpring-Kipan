@@ -24,6 +24,7 @@ One maintainer works with local agents (Gemini and Claude in Antigravity, Claude
 | Layer | What | Where |
 |---|---|---|
 | Code-bound knowledge | build pitfalls, architecture, data rules, how-tos | this repo, `docs/hakfa/` — commit it with the code it describes |
+| Feature x platform matrix | which platform's source mentions which Hakfa feature | `docs/hakfa/platform-matrix.md`, measured by `tools/hakfa/platform-matrix.py` — when a change adds or removes a feature on a platform, run `python3 tools/hakfa/platform-matrix.py --write` and commit the refreshed table with it |
 | Decisions, status, roadmap | what is decided, what is next | the maintainer's notes (below) |
 | Discussion | maintainer ↔ agent threads | the maintainer's notes (below) |
 
@@ -37,10 +38,10 @@ One maintainer works with local agents (Gemini and Claude in Antigravity, Claude
 
 Access: local agents on the maintainer's Mac have the vault; a session the maintainer explicitly attaches it to has it. Cloud sessions normally do not — do not ask for it. Work from the issue, which the maintainer writes to be self-contained.
 
-Writing in the vault — only when asked, and following `hub-template.md`:
+Writing in the vault — **always ask the maintainer first whether to write a note** when you finish work (never write unprompted, never skip the question), then follow `hub-template.md`:
 
 - Traditional Chinese (zh-TW), full-width punctuation, timestamps in UTC+8 as `<sup>YYYYMMDD HH:MM</sup>`.
-- Your section is `### C<n>` (Claude) or `### G<n>` (Gemini) with a model tag line such as `#Claude/Opus-5-5/Code` under the heading. `### R<n>` sections belong to the maintainer; never write one.
+- Your section is `### C<n>` (Claude) or `### G<n>` (Gemini) with a signature hashtag line `#<AI>/<model>/<tool>/<environment>` under the heading, e.g. `#Claude/Sonnet-5-5/Code/Cloud` (Claude Code on the web) or `#Claude/Opus-5-5/Code/Local`. The maintainer tells you which string this session uses; if not told, ask. `### R<n>` sections belong to the maintainer; never write one.
 - Append; never rewrite another author's section. Check whether a file exists before creating it.
 - Obsidian links: `[[full/path|text]]`, embeds `![[full/path#heading]]`.
 - When a decision is made, update its row in the hub's decisions table.
@@ -84,7 +85,7 @@ Signed-off-by: GHSRobert Ciang <93833368+Aiuanyu@users.noreply.github.com>
 ### Development board (Obsidian vault)
 
 Work status for HakSpring (website) and Kipan lives on a kanban in the Obsidian vault, not in this repo: one note per card under `創作/程式/HakSpring/看板/` in the vault (`~/NAS/Obsidian/Main`), with frontmatter `project` / `status` (想做, 排定, 進行中, 等平哥, 完成) / `size`.
-- Before starting a substantial task, read its card; if none exists, ask the coordinating session (蒂兒) or create one following `AGENTS.md` in the vault.
+- Before starting a substantial task, read its card; if none exists, ask the coordinating session or create one following `AGENTS.md` in the vault.
 - When you start, finish, or get blocked, update the card's `status`. Do not edit `kanban_order`. The user's own drag-and-drop on the board wins over any other file.
 - Run `python3 <vault>/創作/程式/HakSpring/看板/check.py` (read-only) before wrapping up.
 - If you cannot reach the vault (e.g. a cloud session), say so in your report instead of skipping silently, so the coordinator can update the card.

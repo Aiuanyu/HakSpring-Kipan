@@ -1,4 +1,4 @@
-//! The `.taigi` backup file: the custom dictionary, the frequency counts and
+//! The `.hakfa` backup file: the custom dictionary, the frequency counts and
 //! the learned bigrams in one JSON document; learned phrases never travel
 //! (§50). One codec for every platform (user-data-engine-roadmap P4b); the
 //! file picker and share sheet stay with the platform.
@@ -79,7 +79,7 @@ struct AssociationEntry {
 /// Why a backup could not be restored.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum BackupError {
-    #[error("not a .taigi backup: {0}")]
+    #[error("not a .hakfa backup: {0}")]
     Unreadable(String),
     #[error("unsupported backup version {0}")]
     UnsupportedVersion(i64),
@@ -99,7 +99,7 @@ pub struct BackupImported {
     pub association: usize,
 }
 
-/// The stores as a `.taigi` file. `platform` / `app_version` name the
+/// The stores as a `.hakfa` file. `platform` / `app_version` name the
 /// writer (`ios`, `android`, `macos`, …); `now_seconds` stamps `exportedAt`.
 pub fn export_backup(
     stores: &UserDataStores,
@@ -153,7 +153,7 @@ pub fn export_backup(
     serde_json::to_vec_pretty(&backup).map_err(store_error)
 }
 
-/// Restores a `.taigi` file into the stores, merging with what is there:
+/// Restores a `.hakfa` file into the stores, merging with what is there:
 /// custom words already stored are skipped and the import fills whatever
 /// room the dictionary has left; counts keep the larger of the two and count
 /// as used now; bigram readings of a version-1 / -2 file are folded POJ →

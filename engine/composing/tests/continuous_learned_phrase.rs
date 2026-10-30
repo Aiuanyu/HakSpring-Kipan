@@ -223,7 +223,7 @@ fn bu_sii_dien_learning_investigation() {
 
 #[test]
 fn bu_sii_dien_learning_without_hyphen() {
-    // 使用者沒打 hyphen: busiidien -> 維持跨詞分寫 bù sii-dièn，不強行黏成單詞（平哥指示）
+    // 使用者沒打 hyphen: busiidien -> 維持跨詞分寫 bù sii-dièn，不強行黏成單詞（維護者指示）
     let res = learn(
         "busiidien",
         &[
