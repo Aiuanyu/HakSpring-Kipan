@@ -155,6 +155,47 @@ public  final class ExportBackup extends
     lect_ = 0;
   }
 
+  public static final int ALL_LECTS_FIELD_NUMBER = 4;
+  private boolean allLects_;
+  /**
+   * <pre>
+   * Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+   * phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+   * </pre>
+   *
+   * <code>bool all_lects = 4;</code>
+   * @return The allLects.
+   */
+  @java.lang.Override
+  public boolean getAllLects() {
+    return allLects_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+   * phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+   * </pre>
+   *
+   * <code>bool all_lects = 4;</code>
+   * @param value The allLects to set.
+   */
+  private void setAllLects(boolean value) {
+
+    allLects_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+   * phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+   * </pre>
+   *
+   * <code>bool all_lects = 4;</code>
+   */
+  private void clearAllLects() {
+
+    allLects_ = false;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.ExportBackup parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -395,6 +436,49 @@ public  final class ExportBackup extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+     * phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+     * </pre>
+     *
+     * <code>bool all_lects = 4;</code>
+     * @return The allLects.
+     */
+    @java.lang.Override
+    public boolean getAllLects() {
+      return instance.getAllLects();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+     * phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+     * </pre>
+     *
+     * <code>bool all_lects = 4;</code>
+     * @param value The allLects to set.
+     * @return This builder for chaining.
+     */
+    public Builder setAllLects(boolean value) {
+      copyOnWrite();
+      instance.setAllLects(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+     * phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+     * </pre>
+     *
+     * <code>bool all_lects = 4;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearAllLects() {
+      copyOnWrite();
+      instance.clearAllLects();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.ExportBackup)
   }
   @java.lang.Override
@@ -414,10 +498,11 @@ public  final class ExportBackup extends
             "platform_",
             "appVersion_",
             "lect_",
+            "allLects_",
           };
           java.lang.String info =
-              "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
-              "\u0003\u000b";
+              "\u0000\u0004\u0000\u0000\u0001\u0004\u0004\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+              "\u0003\u000b\u0004\u0007";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

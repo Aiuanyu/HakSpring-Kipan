@@ -43,4 +43,15 @@ public interface ExportBackupOrBuilder extends
    * @return The lect.
    */
   int getLect();
+
+  /**
+   * <pre>
+   * Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+   * phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+   * </pre>
+   *
+   * <code>bool all_lects = 4;</code>
+   * @return The allLects.
+   */
+  boolean getAllLects();
 }

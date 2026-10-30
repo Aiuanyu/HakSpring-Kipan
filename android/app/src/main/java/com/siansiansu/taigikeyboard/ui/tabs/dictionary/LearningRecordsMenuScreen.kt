@@ -220,4 +220,3 @@ internal fun lectsSyncSummary(preview: LectsSynced): String {
     if (preview.skippedAmbiguous > 0) lines += "目的腔有多種讀音，跳過：${preview.skippedAmbiguous} 筆。"
     return lines.joinToString("\n")
 }
-

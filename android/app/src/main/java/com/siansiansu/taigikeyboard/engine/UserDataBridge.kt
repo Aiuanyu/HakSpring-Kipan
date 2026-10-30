@@ -163,12 +163,16 @@ fun RustEngineBridge.customDictionarySearch(
         ?.entriesList
 }
 
-/** The `.taigi` backup of what the engine holds, written by `android` [appVersion]. */
+/**
+ * The `.hakfa` backup of what the engine holds, written by `android` [appVersion]. Hakfa fork: one
+ * bundle with every lect's learning (learned phrases too) and the custom dictionary with each row's lect.
+ */
 fun RustEngineBridge.backupExport(appVersion: String): ByteArray? {
     val export = ExportBackup
         .newBuilder()
         .setPlatform("android")
         .setAppVersion(appVersion)
+        .setAllLects(true)
         .build()
     return userData("backupExport") { setExportBackup(export) }
         ?.takeIf { it.hasBackupExported() }
@@ -177,11 +181,33 @@ fun RustEngineBridge.backupExport(appVersion: String): ByteArray? {
         ?.toByteArray()
 }
 
+/** A part stays well under the FFI request cap (2 MiB), leaving room for the envelope. */
+private const val BACKUP_PART_BYTES = 1024 * 1024
+
+/**
+ * Hakfa fork: a bundle can pass the FFI request cap, so the file goes in parts of [BACKUP_PART_BYTES]
+ * and the engine joins them (`ImportBackup.part` / `more`). Only the last part's answer carries the counts.
+ */
 fun RustEngineBridge.backupImport(backup: ByteArray): BackupImported? {
-    val import = ImportBackup.newBuilder().setBackup(UnsafeByteOperations.unsafeWrap(backup)).build()
-    return userData("backupImport") { setImportBackup(import) }
-        ?.takeIf { it.hasBackupImported() }
-        ?.backupImported
+    var offset = 0
+    var part = 0
+    while (true) {
+        val end = minOf(offset + BACKUP_PART_BYTES, backup.size)
+        val more = end < backup.size
+        val import = ImportBackup
+            .newBuilder()
+            .setBackup(UnsafeByteOperations.unsafeWrap(backup, offset, end - offset))
+            .setPart(part)
+            .setMore(more)
+            .build()
+        val imported = userData("backupImport") { setImportBackup(import) }
+            ?.takeIf { it.hasBackupImported() }
+            ?.backupImported
+            ?: return null
+        if (!more) return imported
+        offset = end
+        part += 1
+    }
 }
 
 /**
@@ -246,7 +272,11 @@ fun RustEngineBridge.syncLects(
     lects: List<Int> = emptyList(),
     dryRun: Boolean,
 ): LectsSynced? {
-    val sync = SyncLects.newBuilder().addAllLects(lects).setDryRun(dryRun).build()
+    val sync = SyncLects
+        .newBuilder()
+        .addAllLects(lects)
+        .setDryRun(dryRun)
+        .build()
     return userData("userDataSyncLects") { setSyncLects(sync) }
         ?.takeIf { it.hasLectsSynced() }
         ?.lectsSynced

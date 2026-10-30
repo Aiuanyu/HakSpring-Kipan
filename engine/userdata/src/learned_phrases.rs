@@ -186,6 +186,61 @@ impl LearnedPhraseStore {
         })
     }
 
+    /// Hakfa fork (備份匯入): merges backed-up phrases, in one transaction. A pair already stored keeps
+    /// the larger `learn_count` and has its search keys refreshed; a new pair is inserted with its keys
+    /// (and may evict past the cap). Every pair is claimed in the sync ledger as the user's own evidence.
+    /// Returns the pairs merged.
+    pub fn import_merge(&self, rows: Vec<(String, String, i64)>) -> Result<usize, UserDataDatabaseError> {
+        let mut candidates = Vec::with_capacity(rows.len());
+        for (hanji, canonical_tl, count) in rows {
+            if hanji.is_empty() || canonical_tl.is_empty() {
+                continue;
+            }
+            if let Some(keys) = (self.derive_search_keys)(&canonical_tl).filter(|k| !k.is_empty()) {
+                candidates.push((hanji, canonical_tl, count.clamp(1, Self::MAX_LEARN_COUNT), keys));
+            }
+        }
+        if candidates.is_empty() {
+            return Ok(0);
+        }
+        let limit = self.limit;
+        self.database.perform(move |connection| {
+            immediate_transaction::<_, UserDataDatabaseError>(connection, |connection| {
+                let mut last_inserted_id = 0i64;
+                for (hanzi, canonical_tl, count, search_keys) in &candidates {
+                    let existing: Option<i64> = connection
+                        .query_row(
+                            &format!("SELECT id FROM {TABLE_NAME} WHERE hanzi = ? AND roman = ?;"),
+                            params![hanzi, canonical_tl],
+                            |row| row.get(0),
+                        )
+                        .optional()?;
+                    if let Some(row_id) = existing {
+                        connection.execute(
+                            &format!("UPDATE {TABLE_NAME} SET learn_count = MAX(learn_count, ?), updated_at = CURRENT_TIMESTAMP WHERE id = ?;"),
+                            params![count, row_id],
+                        )?;
+                        delete_search_keys(connection, row_id)?;
+                        write_search_keys(connection, row_id, search_keys)?;
+                    } else {
+                        let row_id: i64 = connection.query_row(
+                            &format!("INSERT INTO {TABLE_NAME} (roman, hanzi, learn_count, updated_at)\nVALUES (?, ?, ?, CURRENT_TIMESTAMP)\nRETURNING id;"),
+                            params![canonical_tl, hanzi, count],
+                            |row| row.get(0),
+                        )?;
+                        write_search_keys(connection, row_id, search_keys)?;
+                        last_inserted_id = row_id;
+                    }
+                    sync_ledger::claim(connection, hanzi, canonical_tl)?;
+                }
+                if last_inserted_id > 0 {
+                    evict_past_cap(connection, limit, last_inserted_id)?;
+                }
+                Ok(candidates.len())
+            })
+        })
+    }
+
     /// The pairs the lect sync copied here (not the user's own evidence).
     pub fn copied_pairs(&self) -> Option<std::collections::HashSet<(String, String)>> {
         self.database.wait_for_queued_writes();

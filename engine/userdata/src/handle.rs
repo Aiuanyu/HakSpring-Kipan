@@ -33,7 +33,12 @@ struct Opened {
 /// must never wait behind an open (its takeover can take seconds).
 pub struct UserDataHandle {
     opened: OnceLock<Opened>,
+    /// Hakfa fork: the parts of a backup file received so far (`ImportBackup.part`).
+    pending_backup: Mutex<Vec<u8>>,
 }
+
+/// Hakfa fork: the largest backup file the engine joins from parts.
+const MAX_BACKUP_FILE_BYTES: usize = 64 * 1024 * 1024;
 
 impl UserDataHandle {
     /// A handle of its own, for tests that must not share the process one (Hakfa fork: public for
@@ -41,6 +46,7 @@ impl UserDataHandle {
     pub const fn new() -> Self {
         Self {
             opened: OnceLock::new(),
+            pending_backup: Mutex::new(Vec::new()),
         }
     }
 
@@ -67,6 +73,22 @@ impl UserDataHandle {
             // Hakfa fork: how much each lect has learned.
             user_data_request::Method::CountLearning(count) => {
                 user_data_response::Result::LearningCounts(self.count_learning(count)?)
+            }
+            // Hakfa fork: a backup file sent in parts is joined first, then imported as one.
+            user_data_request::Method::ImportBackup(import) if import.part > 0 || import.more => {
+                match self.join_backup_parts(import)? {
+                    None => user_data_response::Result::BackupImported(
+                        protos::engine::BackupImported::default(),
+                    ),
+                    Some(whole) => return self.handle_whole_import(&whole),
+                }
+            }
+            // Hakfa fork: the all-lects backup bundle needs every lect's stores, so it is answered here.
+            user_data_request::Method::ExportBackup(export) if export.all_lects => {
+                user_data_response::Result::BackupExported(self.export_bundle(export)?)
+            }
+            user_data_request::Method::ImportBackup(import) if crate::is_bundle(&import.backup) => {
+                user_data_response::Result::BackupImported(self.import_bundle(import)?)
             }
             // Hakfa fork: a page acts on the learning stores of the lect it names.
             page => {
@@ -173,6 +195,80 @@ impl UserDataHandle {
         stores.association.open_blocking();
         stores.learned_phrases.open_blocking();
         Ok(stores)
+    }
+
+    /// Hakfa fork: adds one part of a backup file to the pending bytes. `None` while more parts are
+    /// due; the whole request, parts joined, when the last part arrives.
+    fn join_backup_parts(
+        &self,
+        import: &protos::engine::ImportBackup,
+    ) -> Result<Option<protos::engine::ImportBackup>, RequestError> {
+        let mut pending = self
+            .pending_backup
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if import.part == 0 {
+            pending.clear();
+        }
+        if pending.len() + import.backup.len() > MAX_BACKUP_FILE_BYTES {
+            pending.clear();
+            return Err(RequestError::Invalid("backup file is too large"));
+        }
+        pending.extend_from_slice(&import.backup);
+        if import.more {
+            return Ok(None);
+        }
+        Ok(Some(protos::engine::ImportBackup {
+            backup: std::mem::take(&mut *pending),
+            lect: import.lect,
+            part: 0,
+            more: false,
+        }))
+    }
+
+    /// Hakfa fork: a joined backup file takes the same road a one-request file does.
+    fn handle_whole_import(
+        &self,
+        whole: &protos::engine::ImportBackup,
+    ) -> Result<UserDataResponse, RequestError> {
+        let request = UserDataRequest {
+            method: Some(user_data_request::Method::ImportBackup(whole.clone())),
+        };
+        self.handle(&request)
+    }
+
+    /// Hakfa fork: the lects with their own learning data in the shipped dictionary (四縣, 海陸, 南四縣).
+    const BUNDLE_LECTS: [u32; 3] = [1, 2, 6];
+
+    /// Hakfa fork: every shipped lect's learning plus the custom dictionary, as one version-4 file.
+    fn export_bundle(
+        &self,
+        export: &protos::engine::ExportBackup,
+    ) -> Result<protos::engine::BackupExported, RequestError> {
+        let custom = Arc::clone(&self.settled_stores()?.custom_dictionary);
+        let mut lects = Vec::with_capacity(Self::BUNDLE_LECTS.len());
+        for lect in Self::BUNDLE_LECTS {
+            lects.push((lect, self.settled_stores_for_lect(lect)?));
+        }
+        let backup = crate::export_bundle(
+            &custom,
+            &lects,
+            &export.platform,
+            &export.app_version,
+            crate::unix_seconds_now(),
+        )
+        .map_err(|error| RequestError::Store(error.to_string()))?;
+        Ok(protos::engine::BackupExported { backup })
+    }
+
+    /// Hakfa fork: restores a version-4 bundle into each lect's stores and the shared custom dictionary.
+    fn import_bundle(
+        &self,
+        import: &protos::engine::ImportBackup,
+    ) -> Result<protos::engine::BackupImported, RequestError> {
+        let custom = Arc::clone(&self.settled_stores()?.custom_dictionary);
+        let stores_for = |lect: u32| self.settled_stores_for_lect(lect).ok();
+        Self::backup_result(crate::import_bundle(&custom, &stores_for, &import.backup))
     }
 
     /// Hakfa fork: the rows of each lect's three learning stores.

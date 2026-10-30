@@ -91,12 +91,25 @@ protocol UserDataClient: Sendable {
     func scoped(to lect: UInt32) -> any UserDataClient
     /// How much each lect has learned; a client that cannot say reports nothing.
     func countLearning() throws -> [Taigi_Engine_LectLearningCount]
+    /// Hakfa fork: every lect's learning (learned phrases included) and the custom dictionary, as the
+    /// bytes of one `.hakfa` file.
+    func exportBackup(appVersion: String) throws -> Data
+    /// Hakfa fork: merges a `.hakfa` file into what is stored.
+    func importBackup(at url: URL) throws -> Taigi_Engine_BackupImported
 }
 
 extension UserDataClient {
     func scoped(to _: UInt32) -> any UserDataClient { self }
 
     func countLearning() throws -> [Taigi_Engine_LectLearningCount] { [] }
+
+    func exportBackup(appVersion _: String) throws -> Data {
+        throw UserDataClientError.engineUnavailable(op: "exportBackup")
+    }
+
+    func importBackup(at _: URL) throws -> Taigi_Engine_BackupImported {
+        throw UserDataClientError.engineUnavailable(op: "importBackup")
+    }
 
     /// Doubles that do not exercise it need not state it.
     func syncLects(dryRun _: Bool) throws -> Taigi_Engine_LectsSynced {
@@ -185,6 +198,31 @@ struct EngineUserDataClient: UserDataClient {
             imported: Int(imported.imported),
             skipped: Int(imported.skipped),
         )
+    }
+
+    /// The largest backup an import reads (a bundle holds three lects' learning).
+    static let maxBackupFileBytes = 50 * 1024 * 1024
+
+    func exportBackup(appVersion: String) throws -> Data {
+        guard let data = RustEngineBridge.exportBundle(appVersion: appVersion) else {
+            throw UserDataClientError.engineUnavailable(op: "exportBundle")
+        }
+        return data
+    }
+
+    func importBackup(at url: URL) throws -> Taigi_Engine_BackupImported {
+        let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard size <= Self.maxBackupFileBytes else {
+            throw UserDataClientError.refused(detail: "file is larger than 50 MB")
+        }
+        guard let imported = try RustEngineBridge.importBackup(Data(contentsOf: url)) else {
+            throw UserDataClientError.engineUnavailable(op: "importBackup")
+        }
+        guard imported.refusal == .none else {
+            throw UserDataClientError.refused(detail: imported.refusal == .unsupportedVersion
+                ? "unsupported backup version" : "not a .hakfa backup")
+        }
+        return imported
     }
 
     func syncLects(dryRun: Bool) throws -> Taigi_Engine_LectsSynced {

@@ -68,16 +68,19 @@ class DataManagementActivity : ComponentActivity() {
             lifecycleScope.launch {
                 try {
                     val result = viewModel.importBackup(uri) ?: return@launch
-                    Toast
-                        .makeText(
-                            this@DataManagementActivity,
+                    // Hakfa fork: a bundle reports its learned phrases and lects too (wording is Hakfa-only).
+                    val summary =
+                        if (result.lects > 0) {
+                            "匯入完成：自訂詞 ${result.customDict}、詞頻 ${result.frequency}、關聯 ${result.association}、" +
+                                "詞組 ${result.learnedPhrases}，共 ${result.lects} 腔"
+                        } else {
                             currentStringResolver().dictionaryImportBackupResult(
                                 customDict = result.customDict,
                                 frequency = result.frequency,
                                 association = result.association,
-                            ),
-                            Toast.LENGTH_LONG,
-                        ).show()
+                            )
+                        }
+                    Toast.makeText(this@DataManagementActivity, summary, Toast.LENGTH_LONG).show()
                 } catch (_: Exception) {
                     Toast.makeText(this@DataManagementActivity, commonString(StringKey.COMMON_IMPORT_FAILED), Toast.LENGTH_SHORT).show()
                 }

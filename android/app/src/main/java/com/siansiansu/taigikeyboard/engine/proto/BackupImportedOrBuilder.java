@@ -38,4 +38,24 @@ public interface BackupImportedOrBuilder extends
    * @return The association.
    */
   int getAssociation();
+
+  /**
+   * <pre>
+   * Hakfa fork: learned phrases merged (version-4 bundle only; 0 for older files).
+   * </pre>
+   *
+   * <code>uint32 learned_phrases = 5;</code>
+   * @return The learnedPhrases.
+   */
+  int getLearnedPhrases();
+
+  /**
+   * <pre>
+   * Hakfa fork: lects the file carried a section for (version-4 bundle only; 0 for older files).
+   * </pre>
+   *
+   * <code>uint32 lects = 6;</code>
+   * @return The lects.
+   */
+  int getLects();
 }

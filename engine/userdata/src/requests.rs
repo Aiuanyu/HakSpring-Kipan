@@ -290,6 +290,30 @@ impl UserDataHandle {
         }
     }
 
+    pub(crate) fn backup_result(
+        result: Result<crate::BackupImported, BackupError>,
+    ) -> Result<BackupImported, RequestError> {
+        let refused = |refusal: BackupRefusal| BackupImported {
+            refusal: refusal as i32,
+            ..BackupImported::default()
+        };
+        match result {
+            Ok(merged) => Ok(BackupImported {
+                refusal: BackupRefusal::None as i32,
+                custom_dictionary: u32::try_from(merged.custom_dictionary).unwrap_or(u32::MAX),
+                frequency: u32::try_from(merged.frequency).unwrap_or(u32::MAX),
+                association: u32::try_from(merged.association).unwrap_or(u32::MAX),
+                learned_phrases: u32::try_from(merged.learned_phrases).unwrap_or(u32::MAX),
+                lects: u32::try_from(merged.lects).unwrap_or(u32::MAX),
+            }),
+            Err(BackupError::Unreadable(_)) => Ok(refused(BackupRefusal::Unreadable)),
+            Err(BackupError::UnsupportedVersion(_)) => {
+                Ok(refused(BackupRefusal::UnsupportedVersion))
+            }
+            Err(error @ BackupError::Store(_)) => Err(store_error(error)),
+        }
+    }
+
     fn import_backup(
         stores: &UserDataStores,
         import: &ImportBackup,
@@ -304,6 +328,8 @@ impl UserDataHandle {
                 custom_dictionary: u32::try_from(merged.custom_dictionary).unwrap_or(u32::MAX),
                 frequency: u32::try_from(merged.frequency).unwrap_or(u32::MAX),
                 association: u32::try_from(merged.association).unwrap_or(u32::MAX),
+                learned_phrases: u32::try_from(merged.learned_phrases).unwrap_or(u32::MAX),
+                lects: u32::try_from(merged.lects).unwrap_or(u32::MAX),
             }),
             Err(BackupError::Unreadable(_)) => Ok(refused(BackupRefusal::Unreadable)),
             Err(BackupError::UnsupportedVersion(_)) => {
@@ -1073,6 +1099,7 @@ mod tests {
                 platform: "linux".into(),
                 app_version: "3.6.10".into(),
                 lect: 0,
+                all_lects: false,
             }),
         ) {
             user_data_response::Result::BackupExported(exported) => exported.backup,
@@ -1086,7 +1113,7 @@ mod tests {
             .unwrap();
         let restore = |bytes: Vec<u8>| match call(
             &target,
-            user_data_request::Method::ImportBackup(ImportBackup { backup: bytes, lect: 0 }),
+            user_data_request::Method::ImportBackup(ImportBackup { backup: bytes, lect: 0, part: 0, more: false }),
         ) {
             user_data_response::Result::BackupImported(imported) => imported,
             other => panic!("expected an import, got {other:?}"),

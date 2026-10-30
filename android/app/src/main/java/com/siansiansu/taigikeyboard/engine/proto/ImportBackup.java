@@ -89,6 +89,82 @@ public  final class ImportBackup extends
     lect_ = 0;
   }
 
+  public static final int PART_FIELD_NUMBER = 3;
+  private int part_;
+  /**
+   * <pre>
+   * Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+   * parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+   * sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+   * a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+   * whole file, as before.
+   * </pre>
+   *
+   * <code>uint32 part = 3;</code>
+   * @return The part.
+   */
+  @java.lang.Override
+  public int getPart() {
+    return part_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+   * parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+   * sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+   * a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+   * whole file, as before.
+   * </pre>
+   *
+   * <code>uint32 part = 3;</code>
+   * @param value The part to set.
+   */
+  private void setPart(int value) {
+
+    part_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+   * parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+   * sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+   * a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+   * whole file, as before.
+   * </pre>
+   *
+   * <code>uint32 part = 3;</code>
+   */
+  private void clearPart() {
+
+    part_ = 0;
+  }
+
+  public static final int MORE_FIELD_NUMBER = 4;
+  private boolean more_;
+  /**
+   * <code>bool more = 4;</code>
+   * @return The more.
+   */
+  @java.lang.Override
+  public boolean getMore() {
+    return more_;
+  }
+  /**
+   * <code>bool more = 4;</code>
+   * @param value The more to set.
+   */
+  private void setMore(boolean value) {
+
+    more_ = value;
+  }
+  /**
+   * <code>bool more = 4;</code>
+   */
+  private void clearMore() {
+
+    more_ = false;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.ImportBackup parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -261,6 +337,86 @@ public  final class ImportBackup extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+     * parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+     * sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+     * a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+     * whole file, as before.
+     * </pre>
+     *
+     * <code>uint32 part = 3;</code>
+     * @return The part.
+     */
+    @java.lang.Override
+    public int getPart() {
+      return instance.getPart();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+     * parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+     * sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+     * a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+     * whole file, as before.
+     * </pre>
+     *
+     * <code>uint32 part = 3;</code>
+     * @param value The part to set.
+     * @return This builder for chaining.
+     */
+    public Builder setPart(int value) {
+      copyOnWrite();
+      instance.setPart(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+     * parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+     * sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+     * a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+     * whole file, as before.
+     * </pre>
+     *
+     * <code>uint32 part = 3;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearPart() {
+      copyOnWrite();
+      instance.clearPart();
+      return this;
+    }
+
+    /**
+     * <code>bool more = 4;</code>
+     * @return The more.
+     */
+    @java.lang.Override
+    public boolean getMore() {
+      return instance.getMore();
+    }
+    /**
+     * <code>bool more = 4;</code>
+     * @param value The more to set.
+     * @return This builder for chaining.
+     */
+    public Builder setMore(boolean value) {
+      copyOnWrite();
+      instance.setMore(value);
+      return this;
+    }
+    /**
+     * <code>bool more = 4;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearMore() {
+      copyOnWrite();
+      instance.clearMore();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.ImportBackup)
   }
   @java.lang.Override
@@ -279,10 +435,12 @@ public  final class ImportBackup extends
           java.lang.Object[] objects = new java.lang.Object[] {
             "backup_",
             "lect_",
+            "part_",
+            "more_",
           };
           java.lang.String info =
-              "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\n\u0002\u000b" +
-              "";
+              "\u0000\u0004\u0000\u0000\u0001\u0004\u0004\u0000\u0000\u0000\u0001\n\u0002\u000b" +
+              "\u0003\u000b\u0004\u0007";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

@@ -25,4 +25,24 @@ public interface ImportBackupOrBuilder extends
    * @return The lect.
    */
   int getLect();
+
+  /**
+   * <pre>
+   * Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+   * parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+   * sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+   * a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+   * whole file, as before.
+   * </pre>
+   *
+   * <code>uint32 part = 3;</code>
+   * @return The part.
+   */
+  int getPart();
+
+  /**
+   * <code>bool more = 4;</code>
+   * @return The more.
+   */
+  boolean getMore();
 }

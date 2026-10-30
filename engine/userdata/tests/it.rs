@@ -5,6 +5,7 @@
 mod common;
 
 mod backup;
+mod backup_bundle;
 mod stores;
 mod takeover;
 

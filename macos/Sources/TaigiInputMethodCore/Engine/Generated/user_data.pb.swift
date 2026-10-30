@@ -1003,6 +1003,10 @@ public nonisolated struct Taigi_Engine_ExportBackup: Sendable {
   /// Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
   public var lect: UInt32 = 0
 
+  /// Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+  /// phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+  public var allLects: Bool = false
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -1034,6 +1038,15 @@ public nonisolated struct Taigi_Engine_ImportBackup: Sendable {
   /// Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
   public var lect: UInt32 = 0
 
+  /// Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+  /// parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+  /// sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+  /// a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+  /// whole file, as before.
+  public var part: UInt32 = 0
+
+  public var more: Bool = false
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -1052,6 +1065,12 @@ public nonisolated struct Taigi_Engine_BackupImported: Sendable {
   public var frequency: UInt32 = 0
 
   public var association: UInt32 = 0
+
+  /// Hakfa fork: learned phrases merged (version-4 bundle only; 0 for older files).
+  public var learnedPhrases: UInt32 = 0
+
+  /// Hakfa fork: lects the file carried a section for (version-4 bundle only; 0 for older files).
+  public var lects: UInt32 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -2753,7 +2772,7 @@ nonisolated extension Taigi_Engine_CustomCsvExported: SwiftProtobuf.Message, Swi
 
 nonisolated extension Taigi_Engine_ExportBackup: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ExportBackup"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}platform\0\u{3}app_version\0\u{1}lect\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}platform\0\u{3}app_version\0\u{1}lect\0\u{3}all_lects\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2764,6 +2783,7 @@ nonisolated extension Taigi_Engine_ExportBackup: SwiftProtobuf.Message, SwiftPro
       case 1: try { try decoder.decodeSingularStringField(value: &self.platform) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.appVersion) }()
       case 3: try { try decoder.decodeSingularUInt32Field(value: &self.lect) }()
+      case 4: try { try decoder.decodeSingularBoolField(value: &self.allLects) }()
       default: break
       }
     }
@@ -2779,6 +2799,9 @@ nonisolated extension Taigi_Engine_ExportBackup: SwiftProtobuf.Message, SwiftPro
     if self.lect != 0 {
       try visitor.visitSingularUInt32Field(value: self.lect, fieldNumber: 3)
     }
+    if self.allLects != false {
+      try visitor.visitSingularBoolField(value: self.allLects, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2786,6 +2809,7 @@ nonisolated extension Taigi_Engine_ExportBackup: SwiftProtobuf.Message, SwiftPro
     if lhs.platform != rhs.platform {return false}
     if lhs.appVersion != rhs.appVersion {return false}
     if lhs.lect != rhs.lect {return false}
+    if lhs.allLects != rhs.allLects {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2823,7 +2847,7 @@ nonisolated extension Taigi_Engine_BackupExported: SwiftProtobuf.Message, SwiftP
 
 nonisolated extension Taigi_Engine_ImportBackup: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ImportBackup"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}backup\0\u{1}lect\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}backup\0\u{1}lect\0\u{1}part\0\u{1}more\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2833,6 +2857,8 @@ nonisolated extension Taigi_Engine_ImportBackup: SwiftProtobuf.Message, SwiftPro
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularBytesField(value: &self.backup) }()
       case 2: try { try decoder.decodeSingularUInt32Field(value: &self.lect) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.part) }()
+      case 4: try { try decoder.decodeSingularBoolField(value: &self.more) }()
       default: break
       }
     }
@@ -2845,12 +2871,20 @@ nonisolated extension Taigi_Engine_ImportBackup: SwiftProtobuf.Message, SwiftPro
     if self.lect != 0 {
       try visitor.visitSingularUInt32Field(value: self.lect, fieldNumber: 2)
     }
+    if self.part != 0 {
+      try visitor.visitSingularUInt32Field(value: self.part, fieldNumber: 3)
+    }
+    if self.more != false {
+      try visitor.visitSingularBoolField(value: self.more, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Taigi_Engine_ImportBackup, rhs: Taigi_Engine_ImportBackup) -> Bool {
     if lhs.backup != rhs.backup {return false}
     if lhs.lect != rhs.lect {return false}
+    if lhs.part != rhs.part {return false}
+    if lhs.more != rhs.more {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2858,7 +2892,7 @@ nonisolated extension Taigi_Engine_ImportBackup: SwiftProtobuf.Message, SwiftPro
 
 nonisolated extension Taigi_Engine_BackupImported: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".BackupImported"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}refusal\0\u{3}custom_dictionary\0\u{1}frequency\0\u{1}association\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}refusal\0\u{3}custom_dictionary\0\u{1}frequency\0\u{1}association\0\u{3}learned_phrases\0\u{1}lects\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2870,6 +2904,8 @@ nonisolated extension Taigi_Engine_BackupImported: SwiftProtobuf.Message, SwiftP
       case 2: try { try decoder.decodeSingularUInt32Field(value: &self.customDictionary) }()
       case 3: try { try decoder.decodeSingularUInt32Field(value: &self.frequency) }()
       case 4: try { try decoder.decodeSingularUInt32Field(value: &self.association) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.learnedPhrases) }()
+      case 6: try { try decoder.decodeSingularUInt32Field(value: &self.lects) }()
       default: break
       }
     }
@@ -2888,6 +2924,12 @@ nonisolated extension Taigi_Engine_BackupImported: SwiftProtobuf.Message, SwiftP
     if self.association != 0 {
       try visitor.visitSingularUInt32Field(value: self.association, fieldNumber: 4)
     }
+    if self.learnedPhrases != 0 {
+      try visitor.visitSingularUInt32Field(value: self.learnedPhrases, fieldNumber: 5)
+    }
+    if self.lects != 0 {
+      try visitor.visitSingularUInt32Field(value: self.lects, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2896,6 +2938,8 @@ nonisolated extension Taigi_Engine_BackupImported: SwiftProtobuf.Message, SwiftP
     if lhs.customDictionary != rhs.customDictionary {return false}
     if lhs.frequency != rhs.frequency {return false}
     if lhs.association != rhs.association {return false}
+    if lhs.learnedPhrases != rhs.learnedPhrases {return false}
+    if lhs.lects != rhs.lects {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

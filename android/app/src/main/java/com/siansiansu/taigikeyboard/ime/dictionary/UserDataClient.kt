@@ -28,9 +28,9 @@ import com.siansiansu.taigikeyboard.engine.proto.LectsSynced
 import com.siansiansu.taigikeyboard.engine.proto.ResetUserData
 import com.siansiansu.taigikeyboard.engine.syncLects
 import com.siansiansu.taigikeyboard.engine.userDataReset
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 /** One word in the user's own dictionary, as the screens show and edit it. */
 data class CustomDictionaryWord(
@@ -50,6 +50,10 @@ data class BackupImportResult(
     val customDict: Int,
     val frequency: Int,
     val association: Int,
+    /** Hakfa fork: learned phrases merged (bundle files only). */
+    val learnedPhrases: Int = 0,
+    /** Hakfa fork: lect sections the file carried (bundle files only; 0 = an older single-lect file). */
+    val lects: Int = 0,
 )
 
 /** Why a user-data request did nothing. */
@@ -227,6 +231,8 @@ object EngineUserDataClient : UserDataClient {
             customDict = imported.customDictionary,
             frequency = imported.frequency,
             association = imported.association,
+            learnedPhrases = imported.learnedPhrases,
+            lects = imported.lects,
         )
     }
 

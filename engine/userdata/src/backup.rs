@@ -19,14 +19,21 @@
 //! whatever `serde_json` features the build unifies.
 
 use std::fmt::Display;
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
 use crate::timestamp::format_rfc3339_utc;
-use crate::{AssociationPair, AssociationRow, CustomDictionaryRow, UserDataStores};
+use crate::{
+    AssociationPair, AssociationRow, CustomDictionaryRow, CustomDictionaryStore, UserDataStores,
+};
 
 /// The version this codec writes.
 pub const BACKUP_VERSION: i64 = 3;
+
+/// Hakfa fork: the version of the all-lects bundle (`export_bundle`). It carries every lect's
+/// learning (learned phrases too) and the custom dictionary with each row's lect.
+pub const BUNDLE_VERSION: i64 = 4;
 
 /// The first version whose bigram readings restore unchanged.
 const VERBATIM_READINGS_VERSION: i64 = 3;
@@ -97,6 +104,10 @@ pub struct BackupImported {
     pub custom_dictionary: usize,
     pub frequency: usize,
     pub association: usize,
+    /// Hakfa fork: learned phrases merged (bundle only).
+    pub learned_phrases: usize,
+    /// Hakfa fork: lect sections read (bundle only).
+    pub lects: usize,
 }
 
 /// The stores as a `.hakfa` file. `platform` / `app_version` name the
@@ -222,5 +233,206 @@ pub fn import_backup(stores: &UserDataStores, bytes: &[u8]) -> Result<BackupImpo
         custom_dictionary,
         frequency,
         association,
+        ..BackupImported::default()
     })
+}
+
+// ---- Hakfa fork: the all-lects bundle (version 4) ----
+
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+struct Bundle {
+    app_version: String,
+    custom_dictionary: Vec<BundleCustomEntry>,
+    exported_at: String,
+    lects: Vec<LectSection>,
+    platform: String,
+    version: i64,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default)]
+struct BundleCustomEntry {
+    hanzi: String,
+    lect: u32,
+    roman: String,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+struct LectSection {
+    lect: u32,
+    learned_phrases: Vec<PhraseEntry>,
+    user_association: Vec<AssociationEntry>,
+    user_frequency: Vec<FrequencyEntry>,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default)]
+struct PhraseEntry {
+    count: i64,
+    hanzi: String,
+    tl: String,
+}
+
+/// True when `bytes` is a version-4 bundle (a `lects` array and `version` >= 4), so the importer
+/// routes it to [`import_bundle`] rather than the single-lect [`import_backup`].
+pub fn is_bundle(bytes: &[u8]) -> bool {
+    #[derive(Deserialize, Default)]
+    #[serde(default)]
+    struct Probe {
+        version: i64,
+        lects: Option<Vec<serde::de::IgnoredAny>>,
+    }
+    serde_json::from_slice::<Probe>(bytes)
+        .map(|probe| probe.version >= BUNDLE_VERSION && probe.lects.is_some())
+        .unwrap_or(false)
+}
+
+/// Every lect's frequency, association and learned phrases, plus the whole custom dictionary with
+/// each row's lect, as one version-4 `.hakfa` document. `lects` pairs a lect code with the stores
+/// that lect learns into.
+pub fn export_bundle(
+    custom_dictionary: &CustomDictionaryStore,
+    lects: &[(u32, Arc<UserDataStores>)],
+    platform: &str,
+    app_version: &str,
+    now_seconds: u64,
+) -> Result<Vec<u8>, BackupError> {
+    let custom = custom_dictionary.all_rows().map_err(store_error)?;
+    let mut sections = Vec::with_capacity(lects.len());
+    for (lect, stores) in lects {
+        let frequency = stores
+            .frequency
+            .all_rows()
+            .ok_or_else(|| store_error("frequency store not readable"))?;
+        let association = stores
+            .association
+            .all_rows()
+            .ok_or_else(|| store_error("association store not readable"))?;
+        let phrases = stores
+            .learned_phrases
+            .all_rows()
+            .ok_or_else(|| store_error("learned phrase store not readable"))?;
+        sections.push(LectSection {
+            lect: *lect,
+            learned_phrases: phrases
+                .into_iter()
+                .map(|row| PhraseEntry {
+                    count: row.learn_count,
+                    hanzi: row.hanji,
+                    tl: row.canonical_tl,
+                })
+                .collect(),
+            user_association: association
+                .into_iter()
+                .map(|row| AssociationEntry {
+                    count: row.count,
+                    last_used: String::new(),
+                    next_tl: row.pair.next_tl,
+                    next_word: row.pair.next,
+                    prev_tl: Some(row.pair.previous_tl),
+                    prev_word: row.pair.previous,
+                })
+                .collect(),
+            user_frequency: frequency
+                .into_iter()
+                .map(|row| FrequencyEntry {
+                    count: row.count,
+                    last_used: String::new(),
+                    tl: Some(row.tl),
+                    word: row.word,
+                })
+                .collect(),
+        });
+    }
+    let bundle = Bundle {
+        app_version: app_version.to_owned(),
+        custom_dictionary: custom
+            .into_iter()
+            .map(|row| BundleCustomEntry {
+                hanzi: row.hanji,
+                lect: row.lect,
+                roman: row.roman,
+            })
+            .collect(),
+        exported_at: format_rfc3339_utc(now_seconds),
+        lects: sections,
+        platform: platform.to_owned(),
+        version: BUNDLE_VERSION,
+    };
+    serde_json::to_vec_pretty(&bundle).map_err(store_error)
+}
+
+/// Restores a version-4 bundle, merging with what is there: the custom dictionary keeps each row's
+/// lect; each lect section merges into `stores_for(lect)` (a lect with no stores is skipped), with
+/// counts keeping the larger of the two. Readings are restored unchanged.
+pub fn import_bundle(
+    custom_dictionary: &CustomDictionaryStore,
+    stores_for: &dyn Fn(u32) -> Option<Arc<UserDataStores>>,
+    bytes: &[u8],
+) -> Result<BackupImported, BackupError> {
+    let bundle: Bundle = serde_json::from_slice(bytes)
+        .map_err(|error| BackupError::Unreadable(error.to_string()))?;
+    if bundle.version < BUNDLE_VERSION {
+        return Err(BackupError::UnsupportedVersion(bundle.version));
+    }
+    let custom: Vec<CustomDictionaryRow> = bundle
+        .custom_dictionary
+        .iter()
+        .filter(|entry| !entry.roman.is_empty() && !entry.hanzi.is_empty())
+        .map(|entry| CustomDictionaryRow::new_with_lect(&entry.roman, &entry.hanzi, entry.lect))
+        .collect();
+    let mut merged = BackupImported {
+        custom_dictionary: custom_dictionary
+            .import_until_full(&custom)
+            .map_err(store_error)?
+            .imported,
+        ..BackupImported::default()
+    };
+    for section in bundle.lects {
+        let Some(stores) = stores_for(section.lect) else {
+            continue;
+        };
+        merged.frequency += stores
+            .frequency
+            .import_merge(
+                section
+                    .user_frequency
+                    .into_iter()
+                    .map(|entry| (entry.word, entry.tl.unwrap_or_default(), entry.count.max(1)))
+                    .collect(),
+            )
+            .map_err(store_error)?;
+        merged.association += stores
+            .association
+            .import_merge(
+                section
+                    .user_association
+                    .into_iter()
+                    .map(|entry| AssociationRow {
+                        pair: AssociationPair {
+                            previous: entry.prev_word,
+                            previous_tl: entry.prev_tl.unwrap_or_default(),
+                            next: entry.next_word,
+                            next_tl: entry.next_tl,
+                        },
+                        count: entry.count.max(1),
+                    })
+                    .collect(),
+            )
+            .map_err(store_error)?;
+        merged.learned_phrases += stores
+            .learned_phrases
+            .import_merge(
+                section
+                    .learned_phrases
+                    .into_iter()
+                    .map(|entry| (entry.hanzi, entry.tl, entry.count))
+                    .collect(),
+            )
+            .map_err(store_error)?;
+        merged.lects += 1;
+    }
+    Ok(merged)
 }

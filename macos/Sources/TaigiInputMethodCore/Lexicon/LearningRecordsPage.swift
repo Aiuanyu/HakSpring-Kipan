@@ -9,6 +9,7 @@
 // Design: `docs/architecture/learning-records-page-roadmap.md`.
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Reads and writes the learning stores on behalf of the page, one page of
 /// rows at a time (`UserDataPagedList`).
@@ -180,6 +181,50 @@ final class LearningRecordsPageModel {
         }
     }
 
+    /// Hakfa fork: the `.hakfa` file type (extension `hakfa`, JSON inside).
+    static let backupType = UTType(filenameExtension: "hakfa", conformingTo: .json) ?? .json
+
+    /// Hakfa fork: 全部腔備份, export — every lect's learning (learned phrases included) and the whole
+    /// custom dictionary, in one `.hakfa` file.
+    func exportBackup(in window: NSWindow) async {
+        guard beginWork() else { return }
+        defer { activity = .idle }
+        do {
+            let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+            let data = try await UserDataRequests.run(on: client) { try $0.exportBackup(appVersion: version) }
+            _ = try await UserDataFilePanels.write(
+                data,
+                suggestedName: UserDataFilePanels.exportFileName(prefix: "hakfa_backup", extension: "hakfa"),
+                contentTypes: [Self.backupType],
+                in: window,
+            )
+        } catch {
+            message = .failure(.commonExportFailed, error)
+        }
+    }
+
+    /// Hakfa fork: 全部腔備份, import — merges, never replaces: counts keep the larger, rows already
+    /// there are left alone.
+    func importBackup(in window: NSWindow) async {
+        guard beginWork() else { return }
+        defer { activity = .idle }
+        guard let url = await UserDataFilePanels.chooseFileToOpen(
+            contentTypes: [Self.backupType, .json],
+            in: window,
+        ) else { return }
+        do {
+            let imported = try await UserDataRequests.run(on: client) { try $0.importBackup(at: url) }
+            let lects = imported.lects > 0 ? "，共 \(imported.lects) 腔" : "（舊式單腔備份，入四縣）"
+            message = .text(
+                title: "匯入完成",
+                detail: "自訂詞 \(imported.customDictionary)、詞頻 \(imported.frequency)、關聯 \(imported.association)、詞組 \(imported.learnedPhrases)\(lects)",
+            )
+        } catch {
+            message = .failure(.commonImportFailed, error)
+        }
+        await loadFirstPage()
+    }
+
     /// Hakfa fork: 各腔互學, step two — copies for real, then reloads the list.
     func confirmSync() async {
         syncPreview = nil
@@ -248,6 +293,24 @@ struct LearningRecordsPage: View {
         _model = State(initialValue: LearningRecordsPageModel(client: client))
     }
 
+    /// Hakfa fork: a link-style row that opens a panel on the settings window (drawn like `WideActionRow`).
+    private func backupButton(
+        _ title: String,
+        action: @escaping @MainActor (NSWindow) async -> Void,
+    ) -> some View {
+        Button {
+            Task {
+                await UserDataFilePanels.withSettingsWindow(action)
+            }
+        } label: {
+            Text(title)
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(Color.accentColor)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
     var body: some View {
         Form {
             // Hakfa fork (D5): learning data is kept per lect; pick whose to look at.
@@ -312,6 +375,20 @@ struct LearningRecordsPage: View {
                 .buttonStyle(.plain)
             } footer: {
                 Text("把一腔學過个詞，共到別腔：別腔詞典有共隻漢字、又淨有一種讀音正共；毋確定个跳過。")
+            }
+
+            // Hakfa fork: one file for every lect (the upstream backup is one lect, and omits learned phrases).
+            Section {
+                backupButton("匯出全部紀錄⋯") { window in
+                    await model.exportBackup(in: window)
+                }
+                backupButton("匯入備份⋯") { window in
+                    await model.importBackup(in: window)
+                }
+            } header: {
+                Text("備份（全部腔）")
+            } footer: {
+                Text("一隻 .hakfa 檔包四縣、海陸、南四縣个詞頻、關聯、學詞，摎自訂詞庫（記得各詞屬佗一腔）。匯入係合併，毋會蓋掉現有：次數留較大个。學詞係你打過个詞組，分人以前愛細膩。")
             }
 
             Section {

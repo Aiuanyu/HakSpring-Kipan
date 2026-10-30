@@ -178,6 +178,44 @@ extension RustEngineBridge {
         return counts
     }
 
+    /// Hakfa fork: the version-4 `.hakfa` bundle — every lect's learning (learned phrases too) and the
+    /// whole custom dictionary — as the file's bytes.
+    static func exportBundle(appVersion: String) -> Data? {
+        var export = Taigi_Engine_ExportBackup()
+        export.platform = "macos"
+        export.appVersion = appVersion
+        export.allLects = true
+        guard case let .backupExported(exported)? = userDataResult(.exportBackup(export), op: "exportBundle") else {
+            return nil
+        }
+        return exported.backup
+    }
+
+    /// Hakfa fork: restores a `.hakfa` file (a version-4 bundle, or an older single-lect backup into 四縣).
+    ///
+    /// Sent in parts of `backupPartBytes`: a bundle can pass the FFI request cap (2 MiB), and the engine
+    /// joins the parts (`ImportBackup.part` / `more`). Only the last part's answer carries the counts.
+    static func importBackup(_ data: Data) -> Taigi_Engine_BackupImported? {
+        var offset = 0
+        var part: UInt32 = 0
+        while true {
+            let end = min(offset + backupPartBytes, data.count)
+            var backup = Taigi_Engine_ImportBackup()
+            backup.backup = data.subdata(in: offset ..< end)
+            backup.part = part
+            backup.more = end < data.count
+            guard case let .backupImported(imported)? = userDataResult(.importBackup(backup), op: "importBackup") else {
+                return nil
+            }
+            if !backup.more { return imported }
+            offset = end
+            part += 1
+        }
+    }
+
+    /// A part stays well under the FFI request cap (2 MiB), leaving room for the envelope.
+    private static let backupPartBytes = 1024 * 1024
+
     /// `nil` for a failed round-trip, a refusal (a request before the open),
     /// or an answer of the wrong kind — the caller's `case let` rejects the
     /// last, and every one is logged.

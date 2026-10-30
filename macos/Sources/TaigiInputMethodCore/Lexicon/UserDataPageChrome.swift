@@ -65,6 +65,8 @@ enum UserDataPageMessage: Identifiable, Hashable {
     /// explanations on two pages.
     case notUTF8
     case imported(Int, skipped: Int)
+    /// Hakfa fork: a receipt whose wording is Hakfa-only (no i18n key), such as a backup's counts.
+    case text(title: String, detail: String?)
 
     var id: Self {
         self
@@ -80,6 +82,7 @@ enum UserDataPageMessage: Identifiable, Hashable {
         case let .done(key): language.resolve(key)
         case .notUTF8: language.resolve(.commonImportFailed)
         case .imported: language.resolve(.desktopImportComplete)
+        case let .text(title, _): title
         }
     }
 
@@ -92,6 +95,7 @@ enum UserDataPageMessage: Identifiable, Hashable {
         case .notUTF8: language.resolve(.desktopNotUTF8Detail)
         case let .imported(imported, skipped):
             language.dictionaryImportResult(imported: imported, skipped: skipped)
+        case let .text(_, detail): detail
         }
     }
 }

@@ -283,6 +283,9 @@ message ExportBackup {
   string app_version = 2;
   // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
   uint32 lect = 3;
+  // Hakfa fork: write one version-4 bundle with every lect's frequency, association and learned
+  // phrases, plus the whole custom dictionary with each row's lect. `lect` is then ignored.
+  bool all_lects = 4;
 }
 
 message BackupExported { bytes backup = 1; }
@@ -295,6 +298,13 @@ message ImportBackup {
   bytes backup = 1;
   // Hakfa fork: the lect whose learning stores this acts on (lect code; 0 = 四縣, the original files).
   uint32 lect = 2;
+  // Hakfa fork: a whole-lect bundle can pass the FFI request cap (2 MiB), so a file may arrive in
+  // parts. Parts are numbered from 0 (part 0 discards anything pending); every part but the last
+  // sets `more`. The engine joins the parts and imports when the last arrives; the answer to
+  // a part with `more` is an empty BackupImported. One request with part 0 and no `more` is the
+  // whole file, as before.
+  uint32 part = 3;
+  bool more = 4;
 }
 
 enum BackupRefusal {
@@ -311,6 +321,10 @@ message BackupImported {
   uint32 custom_dictionary = 2;
   uint32 frequency = 3;
   uint32 association = 4;
+  // Hakfa fork: learned phrases merged (version-4 bundle only; 0 for older files).
+  uint32 learned_phrases = 5;
+  // Hakfa fork: lects the file carried a section for (version-4 bundle only; 0 for older files).
+  uint32 lects = 6;
 }
 
 // ---- The Learning Records pages (learning-records-page-roadmap) ----
