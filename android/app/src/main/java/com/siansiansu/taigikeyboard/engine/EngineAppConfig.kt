@@ -53,8 +53,8 @@ internal fun appConfig(
         .setCandidateDisplayMode(candidateDisplayMode.toProto())
         .setSyllableSeparator(syllableSeparator.toProto())
         .setTpsOrMapsToEr(isTpsOrMappedToER)
-        // Hakfa fork: Android has no lect setting yet; 1 = 四縣 (see LexiconBridge.kt).
-        .setLect(1)
+        // Hakfa fork: the active input-method subtype's lect (see CurrentLect.kt).
+        .setLect(CurrentLect.code)
         .build()
 
 /**

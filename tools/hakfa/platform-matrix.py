@@ -54,9 +54,9 @@ FEATURES = {
         "the punctuation / symbol picker",
         r"SymbolPicker|SymbolTable|symbol_picker|SymbolData|halfWidthRows",
     ),
-    "腔別 (lects)": (
-        "the lect choice (Xiien / Namxiian / Hoiliug)",
-        r"Namxiian|Hoiliug|Xiien",
+    "腔別切換 (lect switching)": (
+        "the lect choice (Xiien / Namxiian / Hoiliug) or the Android subtype's lect",
+        r"Namxiian|Hoiliug|Xiien|CurrentLect",
     ),
 }
 

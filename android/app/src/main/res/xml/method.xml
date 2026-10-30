@@ -10,9 +10,23 @@
          (Multiple languages) keeps "Chinese" out of the OS keyboard list; do NOT use nan/zh.
          imeSubtypeLocale is intentionally absent (deprecated; an OEM reading it could re-surface
          "Min Nan Chinese"). -->
+    <!-- Hakfa fork: one subtype per lect, so the system language menu switches them. `lect=` in the extra
+         value is read by engine/CurrentLect.kt (xiien = 1, namxiian = 6, hoiliug = 2). languageTag stays
+         "mul" for all three (decision pending on `hak`; OEM menus need a device check). -->
     <subtype
         android:label="@string/ime_subtype_sixian"
         android:languageTag="mul"
-        android:imeSubtypeMode="keyboard" />
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=xiien" />
+    <subtype
+        android:label="@string/ime_subtype_namxiian"
+        android:languageTag="mul"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=namxiian" />
+    <subtype
+        android:label="@string/ime_subtype_hoiliug"
+        android:languageTag="mul"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=hoiliug" />
 
 </input-method>

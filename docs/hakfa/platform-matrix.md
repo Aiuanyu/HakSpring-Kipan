@@ -14,5 +14,5 @@ Which platform's source mentions which Hakfa feature. It exists so a feature tha
 | 數字調打法 (digit tones) | - | 11 | - | 1 | 6 | 2 | 1 |
 | 備份匯出入 (backup) | 3 | - | 5 | 5 | - | - | - |
 | 符號面板 (symbol panel) | - | 7 | 2 | 2 | 10 | 3 | 3 |
-| 腔別 (lects) | - | 6 | - | - | 2 | - | - |
+| 腔別切換 (lect switching) | - | 6 | - | 4 | 2 | - | - |
 <!-- matrix:end -->

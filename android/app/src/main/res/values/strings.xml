@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">客源翠企盤</string>
     <string name="ime_subtype_sixian">臺灣客話四縣腔</string>
+    <string name="ime_subtype_namxiian">臺灣客話南四縣腔</string>
+    <string name="ime_subtype_hoiliug">臺灣客話海陸腔</string>
 
     <!-- Key labels (referenced by KeyContent and layout XML) -->
     <string name="key__phone_pause">Pause</string>

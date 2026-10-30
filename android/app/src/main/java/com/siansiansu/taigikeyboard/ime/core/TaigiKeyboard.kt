@@ -16,6 +16,7 @@ import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.InputMethodSubtype
 import androidx.compose.runtime.Recomposer
 import androidx.compose.ui.platform.AndroidUiDispatcher
 import androidx.compose.ui.platform.ComposeView
@@ -24,6 +25,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.siansiansu.taigikeyboard.BuildConfig
 import com.siansiansu.taigikeyboard.R
 import com.siansiansu.taigikeyboard.TaigiKeyboardApplication
+import com.siansiansu.taigikeyboard.engine.CurrentLect
 import com.siansiansu.taigikeyboard.i18n.DisplayLanguage
 import com.siansiansu.taigikeyboard.i18n.StringResolver
 import com.siansiansu.taigikeyboard.i18n.buildStringResolver
@@ -440,10 +442,29 @@ class TaigiKeyboard : LifecycleInputMethodService() {
         // and system render modes before this input shows.
         if (syncForcedLight()) rebuildInputView()
 
+        // Hakfa fork: the active subtype names the lect (also right after the service starts).
+        applySubtypeLect((getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).currentInputMethodSubtype)
+
         super.onStartInputView(info, restarting)
         clearSpaceMarks()
         textInputManager.onStartInputView(info, restarting)
         mediaInputManager.onStartInputView(info, restarting)
+    }
+
+    /** Hakfa fork: the system language menu switched lect (one subtype per lect, `res/xml/method.xml`). */
+    override fun onCurrentInputMethodSubtypeChanged(newSubtype: InputMethodSubtype?) {
+        super.onCurrentInputMethodSubtypeChanged(newSubtype)
+        applySubtypeLect(newSubtype)
+    }
+
+    /**
+     * Hands [subtype]'s lect to the engine bridge ([CurrentLect]). A change is handled like an input-mode change: the
+     * in-flight composition and the cached candidates belong to the old lect, so they are dropped and the layout reloads.
+     */
+    private fun applySubtypeLect(subtype: InputMethodSubtype?) {
+        if (!CurrentLect.setFromExtraValue(subtype?.extraValue)) return
+        compositionRoot.logger.debug(TAG) { "Lect changed to: ${CurrentLect.code}" }
+        onInputModeChanged(prefs.inputMode)
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
