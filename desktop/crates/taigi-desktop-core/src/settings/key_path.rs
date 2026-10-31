@@ -56,7 +56,12 @@ pub fn key_path_settings() -> Vec<KeyPathSetting> {
         keys::lect_enabled(Lect::Xiien),
         keys::lect_enabled(Lect::Namxiian),
         keys::lect_enabled(Lect::Hoiliug),
+        keys::lect_enabled(Lect::Taibu),
+        keys::lect_enabled(Lect::Ngiaupin),
+        keys::lect_enabled(Lect::Zhioon),
         keys::IS_MEINONG_ENABLED,
+        keys::IS_ZHUOLAN_ENABLED,
+        keys::IS_TAOYUAN_ENABLED,
         keys::IS_TONE33_ENABLED,
     ]
     .into_iter()

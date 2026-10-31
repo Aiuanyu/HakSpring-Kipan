@@ -208,9 +208,11 @@ pub(crate) fn dictionary_toggles(toggles: &DictionarySourceToggles) -> WireDicti
             name_appendix: subcollections.name_appendix,
             alt_reading: subcollections.alt_reading,
         }),
-        // Hakfa fork: the lect the dictionary answers in (1 四縣, 2 海陸).
+        // Hakfa fork: the lect the dictionary answers in ("四南海大平安").
         lect: toggles.lect.code(),
         meinong: toggles.meinong,
+        zhuolan: toggles.zhuolan,
+        taoyuan: toggles.taoyuan,
     }
 }
 
@@ -412,6 +414,8 @@ mod tests {
                 },
             lect: _,
             meinong: _,
+            zhuolan: _,
+            taoyuan: _,
         } = DictionarySourceToggles::DEFAULT;
         vec![
             source!(kautian),
@@ -427,6 +431,9 @@ mod tests {
             source!(khiin),
             source!(lkk),
             source!(dev),
+            source!(meinong),
+            source!(zhuolan),
+            source!(taoyuan),
             subcollection!(accent_lukang),
             subcollection!(accent_sansia),
             subcollection!(accent_taipak),

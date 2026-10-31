@@ -18,7 +18,8 @@
 use crate::dictionary_reader::{
     KAUTIAN_SUBTAG_ACCENT_COUNT, KAUTIAN_SUBTAG_ACCENT_SHIFT, KAUTIAN_SUBTAG_ALT_READING_BIT,
     KAUTIAN_SUBTAG_MAIN_BIT, KAUTIAN_SUBTAG_NAME_BIT, WIRE_KAUTIAN_SUBCOLL_ACTIVE_BIT,
-    WIRE_KAUTIAN_SUBCOLL_MASK, WIRE_KAUTIAN_SUBCOLL_SHIFT, WIRE_LECT_MASK, WIRE_LECT_SHIFT, WIRE_MEINONG_BIT,
+    WIRE_KAUTIAN_SUBCOLL_MASK, WIRE_KAUTIAN_SUBCOLL_SHIFT, WIRE_LECT_MASK, WIRE_LECT_SHIFT,
+    WIRE_MEINONG_BIT, WIRE_TAOYUAN_BIT, WIRE_ZHUOLAN_BIT,
 };
 use protos::engine::{DictionaryFiltersResponse, DictionarySourceCode, DictionarySourceToggles};
 use DictionarySourceCode as C;
@@ -78,6 +79,13 @@ pub fn dictionary_filter_bitmask(t: &DictionarySourceToggles) -> u32 {
     if t.meinong {
         mask |= WIRE_MEINONG_BIT;
     }
+    // Hakfa fork: Raoping Zhuolan / Taoyuan sub-toggles ride wire bits 25 / 26.
+    if t.zhuolan {
+        mask |= WIRE_ZHUOLAN_BIT;
+    }
+    if t.taoyuan {
+        mask |= WIRE_TAOYUAN_BIT;
+    }
     mask
 }
 
@@ -91,6 +99,9 @@ pub fn dictionary_filter_bitmask(t: &DictionarySourceToggles) -> u32 {
 /// unconditionally when present: main is not a user toggle — it is
 /// always on whenever the kautian master is on.
 fn encode_kautian_subcoll_wire(t: &DictionarySourceToggles) -> u32 {
+    if t.lect != 0 {
+        return 0;
+    }
     let Some(sub) = t.kautian_subcollections.as_ref() else {
         return 0;
     };
@@ -243,6 +254,8 @@ mod tests {
             kautian_subcollections: None,
             lect: 0,
             meinong: false,
+            zhuolan: false,
+            taoyuan: false,
         }
     }
 

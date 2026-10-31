@@ -430,6 +430,8 @@ impl SettingsDocument {
             },
             lect: self.effective_lect(),
             meinong: self.bool(&keys::IS_MEINONG_ENABLED),
+            zhuolan: self.bool(&keys::IS_ZHUOLAN_ENABLED),
+            taoyuan: self.bool(&keys::IS_TAOYUAN_ENABLED),
         }
     }
 }
@@ -1033,10 +1035,24 @@ mod tests {
     #[test]
     fn the_cycle_steps_through_the_available_lects_in_pane_order() {
         let all = Lect::ALL;
-        assert_eq!(all, [Lect::Xiien, Lect::Namxiian, Lect::Hoiliug], "南四縣 is the second row");
+        assert_eq!(
+            all,
+            [
+                Lect::Xiien,
+                Lect::Namxiian,
+                Lect::Hoiliug,
+                Lect::Taibu,
+                Lect::Ngiaupin,
+                Lect::Zhioon,
+            ],
+            "四南海大平安 order"
+        );
         assert_eq!(Lect::Xiien.next_among(all), Lect::Namxiian);
         assert_eq!(Lect::Namxiian.next_among(all), Lect::Hoiliug);
-        assert_eq!(Lect::Hoiliug.next_among(all), Lect::Xiien);
+        assert_eq!(Lect::Hoiliug.next_among(all), Lect::Taibu);
+        assert_eq!(Lect::Taibu.next_among(all), Lect::Ngiaupin);
+        assert_eq!(Lect::Ngiaupin.next_among(all), Lect::Zhioon);
+        assert_eq!(Lect::Zhioon.next_among(all), Lect::Xiien);
         // a lect switched off is skipped; with nothing else on, the lect stays
         assert_eq!(Lect::Xiien.next_among(&[Lect::Xiien, Lect::Hoiliug]), Lect::Hoiliug);
         assert_eq!(Lect::Xiien.next_among(&[Lect::Xiien]), Lect::Xiien);
@@ -1046,24 +1062,41 @@ mod tests {
     fn a_lect_switched_off_in_the_pane_is_not_typed_in_and_comes_back_when_switched_on() {
         let mut doc = SettingsDocument::default();
         assert_eq!(doc.available_lects(), Lect::ALL);
-        doc.set_choice(&keys::LECT, Lect::Hoiliug);
-        doc.set_bool(&keys::lect_enabled(Lect::Hoiliug), false);
-        assert_eq!(doc.available_lects(), [Lect::Xiien, Lect::Namxiian]);
-        assert_eq!(doc.effective_lect(), Lect::Xiien, "the next available one after 海陸");
+        doc.set_choice(&keys::LECT, Lect::Zhioon);
+        doc.set_bool(&keys::lect_enabled(Lect::Zhioon), false);
+        assert_eq!(
+            doc.available_lects(),
+            [
+                Lect::Xiien,
+                Lect::Namxiian,
+                Lect::Hoiliug,
+                Lect::Taibu,
+                Lect::Ngiaupin,
+            ]
+        );
+        assert_eq!(doc.effective_lect(), Lect::Xiien, "the next available one after 詔安");
         assert_eq!(doc.dictionary_sources().lect, Lect::Xiien, "the engine gets the effective lect");
-        assert_eq!(doc.choice(&keys::LECT), Lect::Hoiliug, "the stored choice is not rewritten");
-        doc.set_bool(&keys::lect_enabled(Lect::Hoiliug), true);
-        assert_eq!(doc.effective_lect(), Lect::Hoiliug);
+        assert_eq!(doc.choice(&keys::LECT), Lect::Zhioon, "the stored choice is not rewritten");
+        doc.set_bool(&keys::lect_enabled(Lect::Zhioon), true);
+        assert_eq!(doc.effective_lect(), Lect::Zhioon);
     }
 
     #[test]
-    fn meinong_is_off_until_switched_on_and_reset_puts_it_back() {
+    fn meinong_and_raoping_sub_toggles_are_off_until_switched_on_and_reset_puts_them_back() {
         let mut doc = SettingsDocument::default();
         assert!(!doc.dictionary_sources().meinong);
+        assert!(!doc.dictionary_sources().zhuolan);
+        assert!(!doc.dictionary_sources().taoyuan);
         doc.set_bool(&keys::IS_MEINONG_ENABLED, true);
+        doc.set_bool(&keys::IS_ZHUOLAN_ENABLED, true);
+        doc.set_bool(&keys::IS_TAOYUAN_ENABLED, true);
         assert!(doc.dictionary_sources().meinong);
+        assert!(doc.dictionary_sources().zhuolan);
+        assert!(doc.dictionary_sources().taoyuan);
         doc.reset_dictionary_sources();
         assert!(!doc.dictionary_sources().meinong);
+        assert!(!doc.dictionary_sources().zhuolan);
+        assert!(!doc.dictionary_sources().taoyuan);
     }
 
     #[test]

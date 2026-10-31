@@ -75,13 +75,25 @@ impl ToneInputScheme {
     }
 }
 
-/// 方案 1：將五度調值字串（如 "24", "33"）依腔調轉為 TL 調號字符 ('2', '3', '5', '6', '7', '1', '4')。
+/// 方案 1：將五度調值字串（如 "24", "33", "113"）依腔調轉為 TL 調號字符 ('2', '3', '5', '6', '7', '1', '4')。
 pub fn resolve_scale_tone(lect: Lect, scale_input: &str, is_checked: bool) -> Option<char> {
     if is_checked {
-        return match scale_input {
-            "2" => Some('3'), // 陰入 (à)
-            "5" => Some('4'), // 陽入 (無標)
-            _ => None,
+        return match lect {
+            Lect::Xiien | Lect::Namxiian | Lect::Hoiliug | Lect::Ngiaupin => match scale_input {
+                "2" => Some('3'), // 陰入／陽入 (à)
+                "5" => Some('4'), // 入聲無標
+                _ => None,
+            },
+            Lect::Taibu => match scale_input {
+                "21" => Some('5'), // 陰入 (â)
+                "54" => Some('3'), // 陽入 (à)
+                _ => None,
+            },
+            Lect::Zhioon => match scale_input {
+                "24" => Some('2'), // 陰入 (á)
+                "43" => Some('3'), // 陽入 (à)
+                _ => None,
+            },
         };
     }
     match lect {
@@ -98,6 +110,29 @@ pub fn resolve_scale_tone(lect: Lect, scale_input: &str, is_checked: bool) -> Op
             "11" => Some('6'), // 陰去 (ǎ)
             "33" => Some('7'), // 陽去 (ā)
             "55" => Some('1'), // 陽平 (無標)
+            _ => None,
+        },
+        Lect::Taibu => match scale_input {
+            "33" => Some('7'),          // 陰平 (ā)
+            "11" | "113" => Some('6'),  // 陽平 (ǎ)
+            "31" => Some('5'),          // 上聲 (â)
+            "53" => Some('3'),          // 去聲 (à)
+            "35" => Some('2'),          // 超陰平 (á)
+            _ => None,
+        },
+        Lect::Ngiaupin => match scale_input {
+            "11" => Some('6'), // 陰平 (ǎ)
+            "53" => Some('3'), // 上聲 (à)
+            "24" => Some('2'), // 去聲 (á)
+            "55" => Some('1'), // 陽平 (無標)
+            "31" => Some('5'), // 上聲（卓蘭／桃園） (â)
+            _ => None,
+        },
+        Lect::Zhioon => match scale_input {
+            "11" => Some('6'), // 陰平 (ǎ)
+            "31" => Some('5'), // 上聲 (â)
+            "53" => Some('3'), // 陽平 (à)
+            "55" => Some('1'), // 去聲 (無標)
             _ => None,
         },
     }
@@ -208,5 +243,32 @@ mod tests {
         assert_eq!(resolve_scale_tone(Lect::Hoiliug, "55", false), Some('1'));
         assert_eq!(resolve_scale_tone(Lect::Hoiliug, "2", true), Some('3'));
         assert_eq!(resolve_scale_tone(Lect::Hoiliug, "5", true), Some('4'));
+
+        // 大埔: 33->7, 113/11->6, 31->5, 53->3, 35->2; checked 21->5, 54->3
+        assert_eq!(resolve_scale_tone(Lect::Taibu, "33", false), Some('7'));
+        assert_eq!(resolve_scale_tone(Lect::Taibu, "113", false), Some('6'));
+        assert_eq!(resolve_scale_tone(Lect::Taibu, "11", false), Some('6'));
+        assert_eq!(resolve_scale_tone(Lect::Taibu, "31", false), Some('5'));
+        assert_eq!(resolve_scale_tone(Lect::Taibu, "53", false), Some('3'));
+        assert_eq!(resolve_scale_tone(Lect::Taibu, "35", false), Some('2'));
+        assert_eq!(resolve_scale_tone(Lect::Taibu, "21", true), Some('5'));
+        assert_eq!(resolve_scale_tone(Lect::Taibu, "54", true), Some('3'));
+
+        // 饒平: 11->6, 53->3, 24->2, 55->1, 31->5; checked 2->3, 5->4
+        assert_eq!(resolve_scale_tone(Lect::Ngiaupin, "11", false), Some('6'));
+        assert_eq!(resolve_scale_tone(Lect::Ngiaupin, "53", false), Some('3'));
+        assert_eq!(resolve_scale_tone(Lect::Ngiaupin, "24", false), Some('2'));
+        assert_eq!(resolve_scale_tone(Lect::Ngiaupin, "55", false), Some('1'));
+        assert_eq!(resolve_scale_tone(Lect::Ngiaupin, "31", false), Some('5'));
+        assert_eq!(resolve_scale_tone(Lect::Ngiaupin, "2", true), Some('3'));
+        assert_eq!(resolve_scale_tone(Lect::Ngiaupin, "5", true), Some('4'));
+
+        // 詔安: 11->6, 31->5, 53->3, 55->1; checked 24->2, 43->3
+        assert_eq!(resolve_scale_tone(Lect::Zhioon, "11", false), Some('6'));
+        assert_eq!(resolve_scale_tone(Lect::Zhioon, "31", false), Some('5'));
+        assert_eq!(resolve_scale_tone(Lect::Zhioon, "53", false), Some('3'));
+        assert_eq!(resolve_scale_tone(Lect::Zhioon, "55", false), Some('1'));
+        assert_eq!(resolve_scale_tone(Lect::Zhioon, "24", true), Some('2'));
+        assert_eq!(resolve_scale_tone(Lect::Zhioon, "43", true), Some('3'));
     }
 }

@@ -8,7 +8,7 @@ The MOE Hakfa dictionary (教典) and the certification word lists (認證) have
 - Rule: a word whose character count equals its syllable count is aligned character by character. Two kinds of rows, told apart by the `分類` column:
     - `補字典`: the character has no single-character entry in that lect; every reading found in words is kept.
     - `多音字補音` (polyphone readings): the character has a single-character entry, but a reading found in words is missing from it (e.g. 發 has only `bod`; `fad` occurs 65 times in words). Kept from 3 occurrences on. Readings that differ only in tone are skipped by Kipan's `word|toneless` key, since input is toneless anyway.
-- Kipan currently reads only `補字典-四.json` (Sixian), in `dictionary/sources/official/hakspring/extract_and_build.js` step 3.
+- Kipan reads `補字典-{四,南,海,大,平,安}.json` and `data/curated/加詞-{四,南,海,大,平,安}.json` in `dictionary/sources/official/hakspring/extract_and_build.js` steps 2b and 3.
 
 ## Source bit
 

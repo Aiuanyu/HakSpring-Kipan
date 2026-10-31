@@ -126,4 +126,10 @@ interface EngineSettings {
     val isKautianAccentTaichungEnabled: Boolean
     val isKautianNameAppendixEnabled: Boolean
     val isKautianAltReadingEnabled: Boolean
+
+    // Hakfa fork: South Sixian and Raoping sub-dialect / tone-mark toggles.
+    val isMeinongEnabled: Boolean
+    val isTone33Enabled: Boolean
+    val isZhuolanEnabled: Boolean
+    val isTaoyuanEnabled: Boolean
 }

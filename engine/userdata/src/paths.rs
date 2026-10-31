@@ -28,6 +28,9 @@ pub fn lect_file_suffix(lect: u32) -> Option<String> {
     match lect {
         0 | 1 => None,
         2 => Some("hoiliug".to_owned()),
+        3 => Some("taibu".to_owned()),
+        4 => Some("ngiaupin".to_owned()),
+        5 => Some("zhioon".to_owned()),
         6 => Some("namxiian".to_owned()),
         other => Some(format!("lect{other}")),
     }
@@ -90,6 +93,9 @@ mod tests {
         assert_eq!(hailu.learned_phrases, PathBuf::from("/data/learned_phrases.hoiliug.db"));
         assert_eq!(hailu.association, PathBuf::from("/files/user_association.hoiliug.db"));
         assert_eq!(hailu.custom_dictionary, paths.custom_dictionary);
-        assert_eq!(paths.for_lect(5).frequency, PathBuf::from("/data/user_frequency.lect5.db"));
+        assert_eq!(paths.for_lect(3).frequency, PathBuf::from("/data/user_frequency.taibu.db"));
+        assert_eq!(paths.for_lect(4).frequency, PathBuf::from("/data/user_frequency.ngiaupin.db"));
+        assert_eq!(paths.for_lect(5).frequency, PathBuf::from("/data/user_frequency.zhioon.db"));
+        assert_eq!(paths.for_lect(7).frequency, PathBuf::from("/data/user_frequency.lect7.db"));
     }
 }

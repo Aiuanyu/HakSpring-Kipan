@@ -80,6 +80,10 @@ final class SettingsStore: @unchecked Sendable {
         /// Hakfa fork: show the Meinong (美濃) readings of South Sixian — a switch under 南四縣, off by
         /// default (desktop-core `keys::IS_MEINONG_ENABLED`, the same name).
         static let isMeinongEnabled = SettingsKey(name: "meinongEnabled", defaultValue: false)
+        /// Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平)
+        /// (desktop-core `keys::IS_ZHUOLAN_ENABLED`, `keys::IS_TAOYUAN_ENABLED`). Off by default.
+        static let isZhuolanEnabled = SettingsKey(name: "zhuolanEnabled", defaultValue: false)
+        static let isTaoyuanEnabled = SettingsKey(name: "taoyuanEnabled", defaultValue: false)
         /// Hakfa fork: write tone 24 (á) as 33 (ā) in the romanization — an output option for Meinong
         /// speakers, apart from the Meinong readings (desktop-core `keys::IS_TONE33_ENABLED`). Off by default.
         static let isTone33Enabled = SettingsKey(name: "tone33Enabled", defaultValue: false)
@@ -649,6 +653,8 @@ final class SettingsStore: @unchecked Sendable {
             userDefaults.removeObject(forKey: Keys.lectEnabled(lect).name)
         }
         userDefaults.removeObject(forKey: Keys.isMeinongEnabled.name)
+        userDefaults.removeObject(forKey: Keys.isZhuolanEnabled.name)
+        userDefaults.removeObject(forKey: Keys.isTaoyuanEnabled.name)
         userDefaults.removeObject(forKey: Keys.isTone33Enabled.name)
     }
 

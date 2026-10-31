@@ -3,20 +3,26 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Multi-lect custom word entry aggregated across lects by Hanji.
+/// Multi-lect custom word entry aggregated across lects by Hanji ("四南海大平安").
 struct CustomWordRow: Identifiable, Equatable {
     let id: String
     var hanji: String
     var xiienRow: CustomDictionaryRow?
     var namxiianRow: CustomDictionaryRow?
     var hoiliugRow: CustomDictionaryRow?
+    var taibuRow: CustomDictionaryRow?
+    var ngiaupinRow: CustomDictionaryRow?
+    var zhioonRow: CustomDictionaryRow?
 
     var xiienRoman: String { xiienRow?.roman ?? "" }
     var namxiianRoman: String { namxiianRow?.roman ?? "" }
     var hoiliugRoman: String { hoiliugRow?.roman ?? "" }
+    var taibuRoman: String { taibuRow?.roman ?? "" }
+    var ngiaupinRoman: String { ngiaupinRow?.roman ?? "" }
+    var zhioonRoman: String { zhioonRow?.roman ?? "" }
 
     var allRows: [CustomDictionaryRow] {
-        [xiienRow, namxiianRow, hoiliugRow].compactMap { $0 }
+        [xiienRow, namxiianRow, hoiliugRow, taibuRow, ngiaupinRow, zhioonRow].compactMap { $0 }
     }
 
     mutating func addRow(_ row: CustomDictionaryRow) {
@@ -24,10 +30,16 @@ struct CustomWordRow: Identifiable, Equatable {
         case 1: xiienRow = row
         case 6: namxiianRow = row
         case 2: hoiliugRow = row
+        case 3: taibuRow = row
+        case 4: ngiaupinRow = row
+        case 5: zhioonRow = row
         case 0:
             if xiienRow == nil { xiienRow = row }
             if namxiianRow == nil { namxiianRow = row }
             if hoiliugRow == nil { hoiliugRow = row }
+            if taibuRow == nil { taibuRow = row }
+            if ngiaupinRow == nil { ngiaupinRow = row }
+            if zhioonRow == nil { zhioonRow = row }
         default:
             if xiienRow == nil { xiienRow = row }
         }
@@ -141,39 +153,36 @@ final class CustomDictionaryPageModel {
         xiien: String,
         namxiian: String,
         hoiliug: String,
+        taibu: String,
+        ngiaupin: String,
+        zhioon: String,
         original: CustomWordRow?
     ) async {
         let trimmedHanji = hanji.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedXiien = xiien.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNamxiian = namxiian.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedHoiliug = hoiliug.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTaibu = taibu.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNgiaupin = ngiaupin.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedZhioon = zhioon.trimmingCharacters(in: .whitespacesAndNewlines)
 
         await perform(.desktopProgressWorking) {
-            // Xiien (lect 1)
-            if !trimmedXiien.isEmpty {
-                let id = original?.xiienRow?.id ?? UUID().uuidString
-                let row = CustomDictionaryRow(id: id, roman: trimmedXiien, hanji: trimmedHanji, lect: 1)
-                try await UserDataRequests.run(on: self.client) { try $0.save(row) }
-            } else if let old = original?.xiienRow {
-                try await UserDataRequests.run(on: self.client) { try $0.delete(id: old.id) }
-            }
-
-            // Namxiian (lect 6)
-            if !trimmedNamxiian.isEmpty {
-                let id = original?.namxiianRow?.id ?? UUID().uuidString
-                let row = CustomDictionaryRow(id: id, roman: trimmedNamxiian, hanji: trimmedHanji, lect: 6)
-                try await UserDataRequests.run(on: self.client) { try $0.save(row) }
-            } else if let old = original?.namxiianRow {
-                try await UserDataRequests.run(on: self.client) { try $0.delete(id: old.id) }
-            }
-
-            // Hoiliug (lect 2)
-            if !trimmedHoiliug.isEmpty {
-                let id = original?.hoiliugRow?.id ?? UUID().uuidString
-                let row = CustomDictionaryRow(id: id, roman: trimmedHoiliug, hanji: trimmedHanji, lect: 2)
-                try await UserDataRequests.run(on: self.client) { try $0.save(row) }
-            } else if let old = original?.hoiliugRow {
-                try await UserDataRequests.run(on: self.client) { try $0.delete(id: old.id) }
+            let entries: [(String, CustomDictionaryRow?, UInt32)] = [
+                (trimmedXiien, original?.xiienRow, 1),
+                (trimmedNamxiian, original?.namxiianRow, 6),
+                (trimmedHoiliug, original?.hoiliugRow, 2),
+                (trimmedTaibu, original?.taibuRow, 3),
+                (trimmedNgiaupin, original?.ngiaupinRow, 4),
+                (trimmedZhioon, original?.zhioonRow, 5),
+            ]
+            for (roman, oldRow, lect) in entries {
+                if !roman.isEmpty {
+                    let id = oldRow?.id ?? UUID().uuidString
+                    let row = CustomDictionaryRow(id: id, roman: roman, hanji: trimmedHanji, lect: lect)
+                    try await UserDataRequests.run(on: self.client) { try $0.save(row) }
+                } else if let old = oldRow {
+                    try await UserDataRequests.run(on: self.client) { try $0.delete(id: old.id) }
+                }
             }
         }
     }
@@ -252,6 +261,12 @@ struct CustomDictionaryPage: View {
     private var isNamxiianEnabled = SettingsStore.Keys.lectEnabled(.namxiian).defaultValue
     @AppStorage(SettingsStore.Keys.lectEnabled(.hoiliug).name)
     private var isHoiliugEnabled = SettingsStore.Keys.lectEnabled(.hoiliug).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.taibu).name)
+    private var isTaibuEnabled = SettingsStore.Keys.lectEnabled(.taibu).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.ngiaupin).name)
+    private var isNgiaupinEnabled = SettingsStore.Keys.lectEnabled(.ngiaupin).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.zhioon).name)
+    private var isZhioonEnabled = SettingsStore.Keys.lectEnabled(.zhioon).defaultValue
 
     init(client: any UserDataClient) {
         _model = State(initialValue: CustomDictionaryPageModel(client: client))
@@ -292,14 +307,20 @@ struct CustomDictionaryPage: View {
                 word: word,
                 isXiienEnabled: isXiienEnabled,
                 isNamxiianEnabled: isNamxiianEnabled,
-                isHoiliugEnabled: isHoiliugEnabled
-            ) { hanji, xiien, namxiian, hoiliug in
+                isHoiliugEnabled: isHoiliugEnabled,
+                isTaibuEnabled: isTaibuEnabled,
+                isNgiaupinEnabled: isNgiaupinEnabled,
+                isZhioonEnabled: isZhioonEnabled
+            ) { hanji, xiien, namxiian, hoiliug, taibu, ngiaupin, zhioon in
                 Task {
                     await model.saveWord(
                         hanji: hanji,
                         xiien: xiien,
                         namxiian: namxiian,
                         hoiliug: hoiliug,
+                        taibu: taibu,
+                        ngiaupin: ngiaupin,
+                        zhioon: zhioon,
                         original: word.id.isEmpty ? nil : word
                     )
                 }
@@ -342,6 +363,36 @@ struct CustomDictionaryPage: View {
                         .foregroundStyle(.tertiary)
                 } else {
                     Text(word.hoiliugRoman)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            TableColumn("打大埔") { word in
+                if word.taibuRoman.isEmpty {
+                    Text("＋")
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(word.taibuRoman)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            TableColumn("打饒平") { word in
+                if word.ngiaupinRoman.isEmpty {
+                    Text("＋")
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(word.ngiaupinRoman)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            TableColumn("打詔安") { word in
+                if word.zhioonRoman.isEmpty {
+                    Text("＋")
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(word.zhioonRoman)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -415,29 +466,44 @@ struct CustomDictionaryEntrySheet: View {
     @State private var xiien: String
     @State private var namxiian: String
     @State private var hoiliug: String
+    @State private var taibu: String
+    @State private var ngiaupin: String
+    @State private var zhioon: String
 
     private let original: CustomWordRow
     private let isXiienEnabled: Bool
     private let isNamxiianEnabled: Bool
     private let isHoiliugEnabled: Bool
-    private let onSave: (String, String, String, String) -> Void
+    private let isTaibuEnabled: Bool
+    private let isNgiaupinEnabled: Bool
+    private let isZhioonEnabled: Bool
+    private let onSave: (String, String, String, String, String, String, String) -> Void
 
     init(
         word: CustomWordRow,
         isXiienEnabled: Bool,
         isNamxiianEnabled: Bool,
         isHoiliugEnabled: Bool,
-        onSave: @escaping (String, String, String, String) -> Void
+        isTaibuEnabled: Bool,
+        isNgiaupinEnabled: Bool,
+        isZhioonEnabled: Bool,
+        onSave: @escaping (String, String, String, String, String, String, String) -> Void
     ) {
         original = word
         self.isXiienEnabled = isXiienEnabled
         self.isNamxiianEnabled = isNamxiianEnabled
         self.isHoiliugEnabled = isHoiliugEnabled
+        self.isTaibuEnabled = isTaibuEnabled
+        self.isNgiaupinEnabled = isNgiaupinEnabled
+        self.isZhioonEnabled = isZhioonEnabled
         self.onSave = onSave
         _hanji = State(initialValue: word.hanji)
         _xiien = State(initialValue: word.xiienRoman)
         _namxiian = State(initialValue: word.namxiianRoman)
         _hoiliug = State(initialValue: word.hoiliugRoman)
+        _taibu = State(initialValue: word.taibuRoman)
+        _ngiaupin = State(initialValue: word.ngiaupinRoman)
+        _zhioon = State(initialValue: word.zhioonRoman)
     }
 
     var body: some View {
@@ -455,6 +521,15 @@ struct CustomDictionaryEntrySheet: View {
                 if isHoiliugEnabled {
                     TextField("打海陸", text: $hoiliug)
                 }
+                if isTaibuEnabled {
+                    TextField("打大埔", text: $taibu)
+                }
+                if isNgiaupinEnabled {
+                    TextField("打饒平", text: $ngiaupin)
+                }
+                if isZhioonEnabled {
+                    TextField("打詔安", text: $zhioon)
+                }
             }
             .formStyle(.grouped)
 
@@ -467,7 +542,7 @@ struct CustomDictionaryEntrySheet: View {
                 Spacer()
                 Button(language.string(.commonCancel), role: .cancel) { dismiss() }
                 Button(language.string(.commonSave)) {
-                    onSave(hanji, xiien, namxiian, hoiliug)
+                    onSave(hanji, xiien, namxiian, hoiliug, taibu, ngiaupin, zhioon)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -479,10 +554,9 @@ struct CustomDictionaryEntrySheet: View {
     }
 
     private var hasAtLeastOneReading: Bool {
-        let x = xiien.trimmingCharacters(in: .whitespacesAndNewlines)
-        let n = namxiian.trimmingCharacters(in: .whitespacesAndNewlines)
-        let h = hoiliug.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !x.isEmpty || !n.isEmpty || !h.isEmpty
+        [xiien, namxiian, hoiliug, taibu, ngiaupin, zhioon].contains {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
     }
 
     private func autoFillReadings() {
@@ -504,12 +578,29 @@ struct CustomDictionaryEntrySheet: View {
                 hoiliug = reading
             }
         }
+        if isTaibuEnabled && taibu.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let reading = lookupUniqueReading(hanji: text, lect: 3) {
+                taibu = reading
+            }
+        }
+        if isNgiaupinEnabled && ngiaupin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let reading = lookupUniqueReading(hanji: text, lect: 4) {
+                ngiaupin = reading
+            }
+        }
+        if isZhioonEnabled && zhioon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let reading = lookupUniqueReading(hanji: text, lect: 5) {
+                zhioon = reading
+            }
+        }
     }
 
     private func lookupUniqueReading(hanji: String, lect: UInt32) -> String? {
         var toggles = Taigi_Engine_DictionarySourceToggles()
         toggles.lect = lect
         toggles.kautian = true
+        toggles.taigitv = true
+        toggles.kungge = true
 
         var filterReq = Taigi_Engine_DictionaryFiltersRequest()
         filterReq.toggles = toggles

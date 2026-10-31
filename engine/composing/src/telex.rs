@@ -64,7 +64,8 @@ const fn tone(open: char, checked: char) -> TelexKey {
 /// tail (`kh`, `tsh`) reads as checked too: no tone makes it a syllable, so
 /// the digit chosen does not matter.
 fn ends_in_stop_coda(letters: &str) -> bool {
-    letters.chars().last().is_some_and(phonetics::is_stop_coda)
+    let lower = letters.to_ascii_lowercase();
+    lower.chars().last().is_some_and(phonetics::is_stop_coda) && !lower.ends_with("ng")
 }
 
 /// Apply one Telex key to the pending tail `raw`. `None` means the key

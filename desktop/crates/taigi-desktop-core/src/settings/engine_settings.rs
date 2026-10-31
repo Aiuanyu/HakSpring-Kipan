@@ -409,6 +409,9 @@ pub struct DictionarySourceToggles {
     /// Hakfa fork: show the Meinong (美濃) readings of South Sixian (`meinongEnabled`). Off by default
     /// (maintainer's ruling R8-22): Meinong is a switch under 南四縣, not a lect of its own.
     pub meinong: bool,
+    /// Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (`zhuolanEnabled`, `taoyuanEnabled`).
+    pub zhuolan: bool,
+    pub taoyuan: bool,
 }
 
 impl DictionarySourceToggles {
@@ -432,6 +435,8 @@ impl DictionarySourceToggles {
         kautian_subcollections: KautianSubcollections::DEFAULT,
         lect: Lect::DEFAULT,
         meinong: false,
+        zhuolan: false,
+        taoyuan: false,
     };
 }
 

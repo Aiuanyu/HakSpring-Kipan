@@ -22,7 +22,8 @@ pub trait SettingChoice: Copy + PartialEq + std::fmt::Debug + 'static {
 
 /// Hakfa fork: which lect (腔) the dictionary answers in. The code is the one written in
 /// the dictionary (`docs/hakfa/lect.md`) and sent as `DictionarySourceToggles.lect`; the
-/// stored spelling is the lect's Hakka self-name (`IME/names`: 四縣 `xiien`, 海陸 `hoiliug`).
+/// stored spelling is the lect's Hakfa self-name (`IME/names`: 四縣 `xiien`, 南四縣 `namxiian`,
+/// 海陸 `hoiliug`, 大埔 `taibu`, 饒平 `ngiaupin`, 詔安 `zhioon`).
 /// macOS keeps a Swift twin: `Lect` in `EngineSettings.swift`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Lect {
@@ -32,6 +33,9 @@ pub enum Lect {
     /// dictionary, so the settings must not fold it under 四縣).
     Namxiian,
     Hoiliug,
+    Taibu,
+    Ngiaupin,
+    Zhioon,
 }
 
 impl Lect {
@@ -39,8 +43,11 @@ impl Lect {
     pub const fn code(self) -> u32 {
         match self {
             Self::Xiien => 1,
-            Self::Hoiliug => 2,
             Self::Namxiian => 6,
+            Self::Hoiliug => 2,
+            Self::Taibu => 3,
+            Self::Ngiaupin => 4,
+            Self::Zhioon => 5,
         }
     }
 
@@ -56,14 +63,24 @@ impl Lect {
 }
 
 impl SettingChoice for Lect {
-    /// The Dictionary Sources pane's order, and the cycle shortcut's.
-    const ALL: &'static [Self] = &[Self::Xiien, Self::Namxiian, Self::Hoiliug];
+    /// The Dictionary Sources pane's order ("四南海大平安"), and the cycle shortcut's.
+    const ALL: &'static [Self] = &[
+        Self::Xiien,
+        Self::Namxiian,
+        Self::Hoiliug,
+        Self::Taibu,
+        Self::Ngiaupin,
+        Self::Zhioon,
+    ];
     const DEFAULT: Self = Self::Xiien;
     fn raw(self) -> &'static str {
         match self {
             Self::Xiien => "xiien",
             Self::Namxiian => "namxiian",
             Self::Hoiliug => "hoiliug",
+            Self::Taibu => "taibu",
+            Self::Ngiaupin => "ngiaupin",
+            Self::Zhioon => "zhioon",
         }
     }
 }

@@ -38,6 +38,7 @@ internal fun appConfig(
     syllableSeparator: SyllableSeparator = SyllableSeparator.HYPHEN,
     isTpsOrMappedToER: Boolean = false,
     lect: Int = ActiveLect.current,
+    meinongTones: Boolean = false,
 ): AppConfig =
     AppConfig
         .newBuilder()
@@ -54,8 +55,9 @@ internal fun appConfig(
         .setCandidateDisplayMode(candidateDisplayMode.toProto())
         .setSyllableSeparator(syllableSeparator.toProto())
         .setTpsOrMapsToEr(isTpsOrMappedToER)
-        // Hakfa fork: the lect the keyboard is typing in ([ActiveLect]; 1 四縣, 2 海陸, 6 南四縣).
+        // Hakfa fork: the lect the keyboard is typing in ([ActiveLect]; 1 四縣, 6 南四縣, 2 海陸, 3 大埔, 4 饒平, 5 詔安).
         .setLect(lect)
+        .setMeinongTones(meinongTones)
         .build()
 
 /**
@@ -92,6 +94,7 @@ internal fun continuousAppConfig(settings: EngineSettings): AppConfig =
         candidateDisplayMode = settings.candidateDisplayMode,
         syllableSeparator = settings.syllableSeparator,
         isTpsOrMappedToER = settings.isTpsOrMappedToER,
+        meinongTones = settings.isTone33Enabled,
     )
 
 /**

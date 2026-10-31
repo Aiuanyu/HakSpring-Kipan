@@ -686,6 +686,73 @@ public  final class DictionarySourceToggles extends
     meinong_ = false;
   }
 
+  public static final int ZHUOLAN_FIELD_NUMBER = 17;
+  private boolean zhuolan_;
+  /**
+   * <pre>
+   * Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+   * `compute_filters` packs them into wire bits 25 and 26. Off by default.
+   * </pre>
+   *
+   * <code>bool zhuolan = 17;</code>
+   * @return The zhuolan.
+   */
+  @java.lang.Override
+  public boolean getZhuolan() {
+    return zhuolan_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+   * `compute_filters` packs them into wire bits 25 and 26. Off by default.
+   * </pre>
+   *
+   * <code>bool zhuolan = 17;</code>
+   * @param value The zhuolan to set.
+   */
+  private void setZhuolan(boolean value) {
+
+    zhuolan_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+   * `compute_filters` packs them into wire bits 25 and 26. Off by default.
+   * </pre>
+   *
+   * <code>bool zhuolan = 17;</code>
+   */
+  private void clearZhuolan() {
+
+    zhuolan_ = false;
+  }
+
+  public static final int TAOYUAN_FIELD_NUMBER = 18;
+  private boolean taoyuan_;
+  /**
+   * <code>bool taoyuan = 18;</code>
+   * @return The taoyuan.
+   */
+  @java.lang.Override
+  public boolean getTaoyuan() {
+    return taoyuan_;
+  }
+  /**
+   * <code>bool taoyuan = 18;</code>
+   * @param value The taoyuan to set.
+   */
+  private void setTaoyuan(boolean value) {
+
+    taoyuan_ = value;
+  }
+  /**
+   * <code>bool taoyuan = 18;</code>
+   */
+  private void clearTaoyuan() {
+
+    taoyuan_ = false;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.DictionarySourceToggles parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1487,6 +1554,77 @@ public  final class DictionarySourceToggles extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+     * `compute_filters` packs them into wire bits 25 and 26. Off by default.
+     * </pre>
+     *
+     * <code>bool zhuolan = 17;</code>
+     * @return The zhuolan.
+     */
+    @java.lang.Override
+    public boolean getZhuolan() {
+      return instance.getZhuolan();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+     * `compute_filters` packs them into wire bits 25 and 26. Off by default.
+     * </pre>
+     *
+     * <code>bool zhuolan = 17;</code>
+     * @param value The zhuolan to set.
+     * @return This builder for chaining.
+     */
+    public Builder setZhuolan(boolean value) {
+      copyOnWrite();
+      instance.setZhuolan(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+     * `compute_filters` packs them into wire bits 25 and 26. Off by default.
+     * </pre>
+     *
+     * <code>bool zhuolan = 17;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearZhuolan() {
+      copyOnWrite();
+      instance.clearZhuolan();
+      return this;
+    }
+
+    /**
+     * <code>bool taoyuan = 18;</code>
+     * @return The taoyuan.
+     */
+    @java.lang.Override
+    public boolean getTaoyuan() {
+      return instance.getTaoyuan();
+    }
+    /**
+     * <code>bool taoyuan = 18;</code>
+     * @param value The taoyuan to set.
+     * @return This builder for chaining.
+     */
+    public Builder setTaoyuan(boolean value) {
+      copyOnWrite();
+      instance.setTaoyuan(value);
+      return this;
+    }
+    /**
+     * <code>bool taoyuan = 18;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearTaoyuan() {
+      copyOnWrite();
+      instance.clearTaoyuan();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.DictionarySourceToggles)
   }
   @java.lang.Override
@@ -1520,11 +1658,14 @@ public  final class DictionarySourceToggles extends
             "dev_",
             "lect_",
             "meinong_",
+            "zhuolan_",
+            "taoyuan_",
           };
           java.lang.String info =
-              "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\u0007\u0002\u0007" +
+              "\u0000\u0012\u0000\u0001\u0001\u0012\u0012\u0000\u0000\u0000\u0001\u0007\u0002\u0007" +
               "\u0003\u0007\u0004\u0007\u0005\u0007\u0006\u0007\u0007\u0007\b\u0007\t\u0007\n\u0007" +
-              "\u000b\u0007\f\u0007\r\u1009\u0000\u000e\u0007\u000f\u000b\u0010\u0007";
+              "\u000b\u0007\f\u0007\r\u1009\u0000\u000e\u0007\u000f\u000b\u0010\u0007\u0011\u0007" +
+              "\u0012\u0007";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

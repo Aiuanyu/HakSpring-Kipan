@@ -69,12 +69,12 @@ pub fn hpp_boundary(prev: &str, next: &str) -> &'static str {
         'n' if n0 == 'g' => true,
         // 2. a＋i／u
         'a' if matches!(n0, 'i' | 'u') => true,
-        // 3. e＋u
-        'e' if n0 == 'u' => true,
+        // 3. e＋e／u（詔安有 ee 韻母）
+        'e' if matches!(n0, 'e' | 'u') => true,
         // 4. i＋母音
         'i' if is_vowel(n0) => true,
-        // 5. o＋i
-        'o' if n0 == 'i' => true,
+        // 5. o＋i／o（詔安有 oo 韻母）
+        'o' if matches!(n0, 'i' | 'o') => true,
         // 6. u＋a／e／i
         'u' if matches!(n0, 'a' | 'e' | 'i') => true,
         _ => false,
@@ -107,14 +107,16 @@ mod tests {
         // 2. a＋i／u
         assert_eq!(join("ga", "i"), "ga'i");
         assert_eq!(join("ga", "ú"), "ga'ú");
-        // 3. e＋u
+        // 3. e＋e／u
         assert_eq!(join("se", "ù"), "se'ù");
+        assert_eq!(join("mê", "e"), "mê'e");
         // 4. i＋母音
         assert_eq!(join("Dèd", "ǐ"), "Dèd'ǐ");
         assert_eq!(join("ki", "a"), "ki'a");
         assert_eq!(join("zii", "i"), "zii'i");
-        // 5. o＋i
+        // 5. o＋i／o
         assert_eq!(join("go", "í"), "go'í");
+        assert_eq!(join("Zhiô", "ǒn"), "Zhiô'ǒn");
         // 6. u＋a／e／i
         assert_eq!(join("ku", "a"), "ku'a");
         assert_eq!(join("ku", "e"), "ku'e");

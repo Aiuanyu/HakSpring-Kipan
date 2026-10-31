@@ -11,7 +11,7 @@
          imeSubtypeLocale is intentionally absent (deprecated; an OEM reading it could re-surface
          "Min Nan Chinese"). -->
     <!-- Hakfa fork: one subtype per lect (腔), so each shows in the system's keyboard language list.
-         extraValue names the lect code (`HakfaLects`): 1 四縣, 2 海陸, 6 南四縣. -->
+         extraValue names the lect code (`HakfaLects`): 1 四縣, 6 南四縣, 2 海陸, 3 大埔, 4 饒平, 5 詔安. -->
     <subtype
         android:label="@string/ime_subtype_sixian"
         android:languageTag="mul"
@@ -27,5 +27,20 @@
         android:languageTag="mul"
         android:imeSubtypeMode="keyboard"
         android:imeSubtypeExtraValue="lect=2" />
+    <subtype
+        android:label="@string/ime_subtype_taibu"
+        android:languageTag="mul"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=3" />
+    <subtype
+        android:label="@string/ime_subtype_ngiaupin"
+        android:languageTag="mul"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=4" />
+    <subtype
+        android:label="@string/ime_subtype_zhioon"
+        android:languageTag="mul"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lect=5" />
 
 </input-method>

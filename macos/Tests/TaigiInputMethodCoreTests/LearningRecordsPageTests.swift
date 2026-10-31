@@ -57,7 +57,7 @@ final class LearningRecordsPageTests: XCTestCase {
         model.lect = .hoiliug
 
         XCTAssertNil(model.selectedRowID)
-        XCTAssertEqual(Lect.allCases.map(\.code), [1, 6, 2])
+        XCTAssertEqual(Lect.allCases.map(\.code), [1, 6, 2, 3, 4, 5])
     }
 
     /// Hakfa fork (D5) regression: `scoped(to:)` must dispatch to the shipped client's own version

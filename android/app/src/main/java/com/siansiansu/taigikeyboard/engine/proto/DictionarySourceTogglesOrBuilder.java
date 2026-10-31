@@ -183,4 +183,21 @@ public interface DictionarySourceTogglesOrBuilder extends
    * @return The meinong.
    */
   boolean getMeinong();
+
+  /**
+   * <pre>
+   * Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+   * `compute_filters` packs them into wire bits 25 and 26. Off by default.
+   * </pre>
+   *
+   * <code>bool zhuolan = 17;</code>
+   * @return The zhuolan.
+   */
+  boolean getZhuolan();
+
+  /**
+   * <code>bool taoyuan = 18;</code>
+   * @return The taoyuan.
+   */
+  boolean getTaoyuan();
 }

@@ -30,18 +30,19 @@ const KAUTIAN_BITMASK = 1 << 0;
 const CERT_BITMASK = 1 << 1;
 const SUPP_BITMASK = 1 << 6;
 
-// Lects (腔). The lect code rides kautian_subtag bits 13-15, which the engine reader
-// masks off today (KAUTIAN_SUBTAG_USED_MASK in engine/lexicon/src/dictionary_reader.rs),
-// so writing it changes no filtering yet. Code 0 means "no lect" and fails the build.
-// 四 ships today; 海 builds to its own output files (see OUT_SUFFIX) until the engine reads the lect code.
+// Lects (腔). The lect code rides kautian_subtag bits 13-15.
+// Order follows the project-wide "四南海大平安" convention (codes 1, 6, 2, 3, 4, 5).
+// Code 0 means "no lect" and fails the build.
 const LECT_SHIFT = 13;
 const LECTS = {
   '四': { code: 1, name: '四縣', id: 'xiien' },
-  '海': { code: 2, name: '海陸', id: 'hoiliug' },
-  // 南四縣: its own lect in the dictionary (教典南 + 補字典南, no certification list), so the
-  // settings can list it as a lect of its own (Obs IME data-ui R). Code 6; 3-5 stay reserved for
-  // 大埔, 饒平, 詔安.
+  // 南四縣: its own lect in the dictionary (教典南 + 補字典南, certification from 四縣【南】 + 附表),
+  // listed second per "四南海大平安".
   '南': { code: 6, name: '南四縣', id: 'namxiian' },
+  '海': { code: 2, name: '海陸', id: 'hoiliug' },
+  '大': { code: 3, name: '大埔', id: 'taibu' },
+  '平': { code: 4, name: '饒平', id: 'ngiaupin' },
+  '安': { code: 5, name: '詔安', id: 'zhioon' },
 };
 
 // （無參數）／`--lect all`  全腔合併成一份詞庫，這就係出貨詞庫：每腔各跑一次
@@ -129,27 +130,34 @@ function parseSyllableTone(syll) {
   return { toneless: bare, tone, numSyll: bare + tone };
 }
 
-// 調值轉 HagPinPlus 調符（照客源翠 tone_mapping.json default_tones，入聲 2／5 照韻尾分，免另外標）。
-// 四縣：24 á、11 ǎ、31 à、55 無標。海陸：53 à、24 á、11 ǎ、33 ā、55 無標。
+// 調值轉 HagPinPlus 調符（照客源翠 tone_mapping.json default_tones + dialect_maps，入聲 2／5 照韻尾分，免另外標）。
+// 四縣／南四縣：24 á、11 ǎ、31 à、55 無標、2 à、5 無標。
+// 海陸：53 à、24 á、11 ǎ、33 ā、55 無標、2 à、5 無標。
+// 大埔：33 ā、113 ǎ、31 â、53 à、21 â、54 à、35 á、2 à、5 無標。
+// 饒平：11 ǎ、55 無標、53 à、24 á、31 â（卓／桃）、2 à、5 無標。
+// 詔安：11 ǎ、53 à、31 â、55 無標、24 á、43 à、33 ā、2 à、5 無標。
 const TONE_MARKS = {
-  grave: { a: 'à', e: 'è', i: 'ì', o: 'ò', u: 'ù' },
-  acute: { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú' },
-  caron: { a: 'ǎ', e: 'ě', i: 'ǐ', o: 'ǒ', u: 'ǔ' },
-  macron: { a: 'ā', e: 'ē', i: 'ī', o: 'ō', u: 'ū' },
-  none: { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u' },
+  grave: { a: 'à', e: 'è', i: 'ì', o: 'ò', u: 'ù', n: 'ǹ', m: 'm̀' },
+  acute: { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú', n: 'ń', m: 'ḿ' },
+  caron: { a: 'ǎ', e: 'ě', i: 'ǐ', o: 'ǒ', u: 'ǔ', n: 'ň', m: 'm̌' },
+  circumflex: { a: 'â', e: 'ê', i: 'î', o: 'ô', u: 'û', n: 'n̂', m: 'm̂' },
+  macron: { a: 'ā', e: 'ē', i: 'ī', o: 'ō', u: 'ū', n: 'n̄', m: 'm̄' },
+  none: { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u', n: 'n', m: 'm' },
 };
 const LECT_TONES = {
   '四': { '24': 'acute', '11': 'caron', '31': 'grave', '55': 'none', '2': 'grave', '5': 'none' },
-  '海': { '53': 'grave', '24': 'acute', '11': 'caron', '33': 'macron', '55': 'none', '2': 'grave', '5': 'none' },
-  // 南四縣 has the 四縣 tone values (tone_mapping.json dialect_maps only overrides 31, the same grave).
   '南': { '24': 'acute', '11': 'caron', '31': 'grave', '55': 'none', '2': 'grave', '5': 'none' },
+  '海': { '53': 'grave', '24': 'acute', '11': 'caron', '33': 'macron', '55': 'none', '2': 'grave', '5': 'none' },
+  '大': { '33': 'macron', '113': 'caron', '31': 'circumflex', '53': 'grave', '21': 'circumflex', '54': 'grave', '35': 'acute', '2': 'grave', '5': 'none' },
+  '平': { '11': 'caron', '55': 'none', '53': 'grave', '24': 'acute', '31': 'circumflex', '2': 'grave', '5': 'none' },
+  '安': { '11': 'caron', '53': 'grave', '31': 'circumflex', '55': 'none', '24': 'acute', '43': 'grave', '33': 'macron', '2': 'grave', '5': 'none' },
 };
 const TONE_VALUE_MAP = Object.fromEntries(
   Object.entries(LECT_TONES[LECT_KEY] || {}).map(([tone, mark]) => [tone, TONE_MARKS[mark]]));
-// 長調值排前面（53 先於 5），免得 5 吃掉 53 个頭。
+// 長調值排前面（113 先於 11，53 先於 5），免得短調值吃掉長調值个頭。
 const TONE_RE = new RegExp(
   '([a-zA-Z]+)(' + Object.keys(TONE_VALUE_MAP).sort((a, b) => b.length - a.length).join('|') + ')(?=[a-zA-Z]|\\b)', 'g');
-const VOWEL_ORDER = ['a', 'e', 'o', 'u', 'i'];
+const VOWEL_ORDER = ['a', 'o', 'e', 'u', 'i', 'n', 'm'];
 
 function convertToneValuesToDiacritics(str) {
   return str.replace(TONE_RE, (match, syll, tone) => {
@@ -187,8 +195,8 @@ function splitReadingVariants(phonetic) {
   if (!phonetic) return [];
   // 方音符號調號 ˊˇˋ 係原始資料零星混入个雜訊（起屋 `hi ˋ vùg`，查詢欄正確係 hi55 vug2），拿忒
   phonetic = phonetic.replace(/[\s\u00a0]*[ˊˇˋ]/g, '');
-  // 調值數字同音節中央隔空白（海陸 `ciam 33 shi`、`ngiag 5`），接返去
-  phonetic = phonetic.replace(/([a-zA-Z]) (\d{1,2})(?=\s|$)/g, '$1$2');
+  // 調值數字同音節中央隔空白（海陸 `ciam 33 shi`、`ngiag 5`、大埔 `113`），接返去
+  phonetic = phonetic.replace(/([a-zA-Z]) (\d{1,3})(?=\s|$)/g, '$1$2');
   const cleaned = convertToneValuesToDiacritics(phonetic);
   // split 有捕捉群組：[頭前, 註記, 讀音, 註記, 讀音, …]
   const parts = cleaned.split(new RegExp(NOTE_SPLIT.source, 'g'));
@@ -208,19 +216,32 @@ function splitReadingVariants(phonetic) {
 /**
  * 展開同義詞括號（例如 屁（屁卵） / pi (pi lòn)）
  */
+function expandTightSyllableParens(phonetic) {
+  const SYL = '[A-Za-z\u00C0-\u024F\u0300-\u036F]+';
+  const tight = new RegExp(`(${SYL})[（(]([^（(）)\\s]+)[）)]`);
+  if (!tight.test(phonetic)) return [phonetic];
+  const tightGlobal = new RegExp(`(${SYL})[（(]([^（(）)\\s]+)[）)]`, 'g');
+  return [
+    phonetic.replace(tightGlobal, '$1'),
+    phonetic.replace(tightGlobal, '$2'),
+  ];
+}
+
 function expandParens(word, phonetic) {
   const res = [];
+  const wordParenCount = (word.match(/[（(]/g) || []).length;
+  const phonParenCount = (phonetic.match(/[（(]/g) || []).length;
+  // 若詞目無括號，抑係讀音括號比詞目多（巢狀單音節括號，如 giě ma pi(hon mǒ(mǔ) gǔ)），先展開黏等音節个單音節括號
+  if (phonParenCount > wordParenCount) {
+    const expanded = expandTightSyllableParens(phonetic);
+    if (expanded.length > 1) {
+      return expanded.flatMap(p => expandParens(word, p));
+    }
+  }
   // 詞目無括號、讀音有括號：括號係讀音个另一讀（照客源翠 scripts/build_supp_dict.py expand_parens）。
   // 黏等音節个（𠊎等 ngǎi dén(nén)、饒平 má(ma)）係該隻音節个另一讀；前背有空白个，
   // 用音節數分：內容音節數＝字數係整詞換（ngǎi dén (ngǎi nén)），一隻音節係換前一隻（ngǎi dén (nén)）。Obs IME C8-6
   if (!/[（(]/.test(word) && /[（(]/.test(phonetic)) {
-    const SYL = '[A-Za-z\u00C0-\u024F\u0300-\u036F]+';
-    const tight = new RegExp(`(${SYL})[（(]([^）)\\s]+)[）)]`, 'g');
-    if (tight.test(phonetic)) {
-      const outer = phonetic.replace(tight, '$1');
-      const inner = phonetic.replace(tight, '$2');
-      return [{ word, phonetic: outer }, { word, phonetic: inner }];
-    }
     const spaced = phonetic.match(/^(.*?)\s+[（(]([^）)]+)[）)](.*)$/);
     const n = headwordLength(word);
     if (spaced && n > 0 && !/[（(]/.test(spaced[3])) {
@@ -386,10 +407,13 @@ function assignVariantReadings(mainPairs, variantPhonetic, lineWord) {
     // 讀音个 、 摎括號拆做一隻一隻讀音
     // 先拆括號，正拆 、（括號肚裡可能有 、；variant-parser 也會將兩組【】合做幾組括號：
     // 個零月 ge lǎng ngiad (ge nǎng ngiad) (ge go ngiad、zàg go ngiad)）
-    const groups = [...r.phonetic.matchAll(/[（(]([^）)]+)[）)]/g)].map(g => g[1].trim());
-    const outerText = r.phonetic.replace(/\s*[（(][^）)]+[）)]/g, ' ').trim();
-    const parts = [outerText, ...groups];
-    const pieces = parts.flatMap(p => p.split('、')).map(p => p.trim()).filter(Boolean);
+    // 先展開黏等音節个單音節括號（饒平 gîm ngiau(nau) → gîm ngiau、gîm nau），再拆整詞括號摎 、
+    const rawPieces = expandTightSyllableParens(r.phonetic).flatMap(rp => {
+      const groups = [...rp.matchAll(/[（(]([^）)]+)[）)]/g)].map(g => g[1].trim());
+      const outerText = rp.replace(/\s*[（(][^）)]+[）)]/g, ' ').trim();
+      return [outerText, ...groups];
+    });
+    const pieces = rawPieces.flatMap(p => p.split('、')).map(p => p.trim()).filter(Boolean);
     for (const piece of pieces) {
       let best = [];
       let bestDist = Infinity;
@@ -493,6 +517,29 @@ function linePairsSplit(parsed) {
 }
 
 /**
+ * 饒平認證个【】變體分腔：認證饒平个主讀音係新竹（竹），【】內係卓蘭（卓）／桃園（桃）或兩地共用（卓桃）。
+ * 回傳 { main: 新竹, zhuolan: 卓蘭, taoyuan: 桃園, zhuotao: 卓蘭／桃園共用 }，同樣濾掉「…」。
+ */
+function linePairsRaoping(parsed) {
+  const clean = pairs => pairs.filter(p => !p.word.includes('…'));
+  const main = (parsed.main && parsed.main.word && parsed.main.phonetic)
+    ? processWordPhoneticPairs(parsed.main.word, parsed.main.phonetic) : [];
+  const zhuolan = [];
+  const taoyuan = [];
+  const zhuotao = [];
+  for (const v of parsed.variants) {
+    if (!v.phonetic) continue;
+    const pairs = v.word
+      ? processWordPhoneticPairs(v.word, v.phonetic)
+      : (main.length ? assignVariantReadings(main, v.phonetic, parsed.main.word) : []);
+    if (v.label === '卓') zhuolan.push(...pairs);
+    else if (v.label === '桃') taoyuan.push(...pairs);
+    else if (v.label === '卓桃') zhuotao.push(...pairs);
+  }
+  return { main: clean(main), zhuolan: clean(zhuolan), taoyuan: clean(taoyuan), zhuotao: clean(zhuotao) };
+}
+
+/**
  * 南四縣附表（客源翠 data/sub-dialects-fill/南四縣.json）：認證四縣無標【南】个詞條，官方漏標，
  * 毋係「南北共樣」，程式推導个南四縣音。鍵 `來源檔|編號`。教典南四縣層以外个推導音詞頻打折；
  * `待確認`（單字詞，教典音摎推導無共樣）先毋收，推毋出个（待審）本來就毋在附表。
@@ -510,18 +557,47 @@ function loadSouthFill() {
 }
 
 /**
+ * 美濃附表（客源翠 data/sub-dialects-fill/美濃.json）：只收 `用著字級對照 === true`（詞彙／音韻有別，
+ * 例：口涎 hèu nán、冷水 náng sùi），純 24→33 聲調轉換个列由引擎 `tone33Enabled` 輸出選項處理，毋重複收。
+ * 附表內个 24 調已轉長音符（ā ē ī ō ū m̄ n̄），此處還原做銳音符（á é í ó ú ḿ ń），使 `meinongEnabled`
+ * （美濃詞音子開關）摎 `tone33Enabled`（24→33 輸出選項）完全正交。
+ */
+function tone33To24(str) {
+  return str.normalize('NFD').replace(/\u0304/g, '\u0301').normalize('NFC');
+}
+function loadMeinongFill() {
+  const fillPath = path.join(HAKSPRING_DATA, 'sub-dialects-fill', '美濃.json');
+  const fill = new Map();
+  if (!fs.existsSync(fillPath)) return fill;
+  for (const e of JSON.parse(fs.readFileSync(fillPath, 'utf8')).entries) {
+    if (e['待確認'] || !e['用著字級對照']) continue;
+    fill.set(`${e['來源檔']}|${e['編號']}`, e);
+  }
+  return fill;
+}
+
+/**
  * 推毋出个（`待審-南四縣.json`，有音節無南四縣證據，附表毋收）：用戶打字時「北四縣有，南四縣就無」
  * 比「南四縣讀音可能略有差」更傷（20261025 維護者：繼續）。所以暫時用北四縣音權充，詞頻打對折，
  * 有真个南四縣音就排在伊前面。人工審音後會進附表，到時自然取代。SOUTH_INCLUDE_PENDING = false 就毋收。
  */
 const SOUTH_INCLUDE_PENDING = true;
 const SOUTH_PENDING_FREQ_FACTOR = 0.5;
-// 美濃開關開咧時，美濃讀音排南四縣同詞个普通讀音前面（開這個開關个人就係愛打美濃）
+// 美濃／卓蘭／桃園子開關開咧時，變體讀音排同詞普通讀音前面（開這個開關个人就係愛打該變體）
 const MEINONG_FREQ_FACTOR = 1.02;
+const RAOPING_VARIANT_FREQ_FACTOR = 1.02;
 /** 南四縣整隻詞都缺、抄北四縣音个詞頻倍數（--lect all 合併時做） */
 const SOUTH_STAND_IN_FREQ_FACTOR = 0.5;
-/** 美濃變體个 subtag 位元（引擎 KAUTIAN_SUBTAG_MEINONG_BIT，借上游腔口位元 3） */
-const MEINONG_SUBTAG = (1 << 0) | (1 << 3);
+/** 變體个 subtag 位元（借上游腔口位元 1=卓蘭、2=桃園、3=美濃） */
+const ZHUOLAN_SUBTAG_BIT = 1 << 1;
+const TAOYUAN_SUBTAG_BIT = 1 << 2;
+const MEINONG_SUBTAG_BIT = 1 << 3;
+const ZHUOLAN_SUBTAG = (1 << 0) | ZHUOLAN_SUBTAG_BIT;
+const TAOYUAN_SUBTAG = (1 << 0) | TAOYUAN_SUBTAG_BIT;
+const ZHUOTAO_SUBTAG = (1 << 0) | ZHUOLAN_SUBTAG_BIT | TAOYUAN_SUBTAG_BIT;
+const MEINONG_SUBTAG = (1 << 0) | MEINONG_SUBTAG_BIT;
+/** 愛灣語加詞（data/curated/加詞-{腔}.json）詞頻：高於人工沿襲 1200、低於一般詞條 19000 */
+const CURATED_FREQ = 5000;
 function loadSouthPending() {
   const pendingPath = path.join(HAKSPRING_DATA, 'sub-dialects-fill', '待審-南四縣.json');
   const pending = new Map();
@@ -631,12 +707,17 @@ const certFiles = [
   { level: '高', freq: 30000, levelName: '高級' }
 ].map(c => ({ file: `113${CERT_LECT_KEY}${c.level}.json`, freq: c.freq, name: `${LECT.name}${c.levelName}` }));
 const southFill = LECT_KEY === '南' ? loadSouthFill() : new Map();
+const meinongFill = LECT_KEY === '南' ? loadMeinongFill() : new Map();
 const southPending = LECT_KEY === '南' ? loadSouthPending() : new Map();
 let southFromPending = 0;
 let southMeinong = 0;
+let southMeinongFromFill = 0;
 let southFromVariant = 0;
 let southFromFill = 0;
 let southNoReading = 0;
+let raopingZhuolan = 0;
+let raopingTaoyuan = 0;
+let raopingZhuotao = 0;
 
 for (const cf of certFiles) {
   const p = path.join(HAKSPRING_DATA, 'cert', cf.file);
@@ -658,7 +739,8 @@ for (const cf of certFiles) {
 
     // 透過客源翠 variant-parser 展開變體
     const parsed = getLineVariants(row);
-    // 四縣：淨收北四縣主讀音（【】係南四縣／美濃，毋係四縣）。南四縣：【南】變體；無標个用附表
+    // 四縣：淨收北四縣主讀音（【】係南四縣／美濃，毋係四縣）。南四縣：【南】變體；無標个用附表。
+    // 饒平：主讀音係新竹（竹），【】係卓蘭（卓）／桃園（桃）子開關。
     let pairs;
     if (LECT_KEY === '四') {
       pairs = linePairsSplit(parsed).main.map(p => ({ ...p, scale: 1 }));
@@ -689,15 +771,36 @@ for (const cf of certFiles) {
         southNoReading++;
         pairs = [];
       }
+      // 美濃【（）】音：南四縣个子開關（預設關），毋係獨立个腔。標个美濃音做南四縣腔个變體記錄，
+      // subtag 帶美濃位元，引擎淨在美濃開關開咧時正出。附表字級對照推導个美濃音（例：口涎 hèu nán）一併收。
+      const meinongExplicit = split.other.map(p => ({ ...p, scale: MEINONG_FREQ_FACTOR, meinong: true, subtag: MEINONG_SUBTAG, keySuffix: '|美濃' }));
+      southMeinong += meinongExplicit.length;
+      pairs = [...pairs, ...meinongExplicit];
+      const mFillEntry = meinongFill.get(`${stem}|${parts[0]}`);
+      if (mFillEntry && meinongExplicit.length === 0) {
+        const mScale = MEINONG_FREQ_FACTOR * (mFillEntry['推導層'] === '教典南四縣' ? 1 : SOUTH_DERIVED_FREQ_FACTOR);
+        const mPairs = processWordPhoneticPairs(mFillEntry['詞目'], tone33To24(mFillEntry['讀音']))
+          .filter(p => !p.word.includes('…'))
+          .map(p => ({ ...p, scale: mScale, meinong: true, subtag: MEINONG_SUBTAG, keySuffix: '|美濃' }));
+        southMeinongFromFill += mPairs.length;
+        pairs = [...pairs, ...mPairs];
+      }
+    } else if (LECT_KEY === '平') {
+      const rp = linePairsRaoping(parsed);
+      const zhuo = rp.zhuolan.map(p => ({ ...p, scale: RAOPING_VARIANT_FREQ_FACTOR, subtag: ZHUOLAN_SUBTAG, keySuffix: '|平變' }));
+      const tao = rp.taoyuan.map(p => ({ ...p, scale: RAOPING_VARIANT_FREQ_FACTOR, subtag: TAOYUAN_SUBTAG, keySuffix: '|平變' }));
+      const zt = rp.zhuotao.map(p => ({ ...p, scale: RAOPING_VARIANT_FREQ_FACTOR, subtag: ZHUOTAO_SUBTAG, keySuffix: '|平變' }));
+      raopingZhuolan += zhuo.length;
+      raopingTaoyuan += tao.length;
+      raopingZhuotao += zt.length;
+      pairs = [
+        ...rp.main.map(p => ({ ...p, scale: 1 })),
+        ...zhuo,
+        ...tao,
+        ...zt,
+      ];
     } else {
       pairs = linePairs(parsed).map(p => ({ ...p, scale: 1 }));
-    }
-    // 美濃【（）】音：南四縣个子開關（預設關），毋係獨立个腔。標个美濃音做南四縣腔个變體記錄，
-    // subtag 帶美濃位元，引擎淨在美濃開關開咧時正出。詞頻略低，毋搶南四縣自家个音
-    if (LECT_KEY === '南') {
-      const meinong = linePairsSplit(parsed).other.map(p => ({ ...p, scale: MEINONG_FREQ_FACTOR, meinong: true }));
-      southMeinong += meinong.length;
-      pairs = [...pairs, ...meinong];
     }
 
     for (const pair of pairs) {
@@ -715,13 +818,13 @@ for (const cf of certFiles) {
       if (word === '個人' && fusedNotone === 'gengin') {
         word = '个人';
       }
-      // 美濃變體另外一格：同詞同無調音（淨調號無共樣）也毋會被主讀音擋忒
+      // 變體另外一格：同詞同無調音（淨調號無共樣）也毋會被主讀音擋忒
       // 依原則 6：以 (漢字, 帶調標準讀音) 為識別鍵，保全一字多音；同字同音同調者才去重取高頻
       const normTL = hyphenatedPhonetic.normalize('NFC');
-      const key = word + '|' + normTL + (pair.meinong ? '|美濃' : '');
+      const key = word + '|' + normTL + (pair.keySuffix || '');
 
       const boostedFreq = boostFrequency(word, Math.round(cf.freq * pair.scale));
-      if (!map.has(key) || map.get(key).freq < boostedFreq) {
+      if (!map.has(key)) {
         map.set(key, {
           word: word,
           tl: hyphenatedPhonetic,
@@ -732,8 +835,12 @@ for (const cf of certFiles) {
           syllable_count: Math.min(notoneSylls.length, 4),
           syllables: notoneSylls,
           bitmask: CERT_BITMASK,
-          ...(pair.meinong ? { subtag: MEINONG_SUBTAG } : {})
+          ...(pair.subtag !== undefined ? { subtag: pair.subtag } : {})
         });
+      } else {
+        const existing = map.get(key);
+        if (existing.freq < boostedFreq) existing.freq = boostedFreq;
+        if (pair.subtag !== undefined) existing.subtag = (existing.subtag || 1) | pair.subtag;
       }
     }
   }
@@ -741,7 +848,9 @@ for (const cf of certFiles) {
 
 console.log(`  ✓ 認證詞彙（展開變體後）: ${map.size} 筆`);
 if (LECT_KEY === '南') {
-  console.log(`    南四縣認證：標【南】${southFromVariant} 條、附表推導 ${southFromFill} 條、待審以北四縣音權充 ${southFromPending} 條、完全無（毋收）${southNoReading} 條；美濃音（子開關）${southMeinong} 筆`);
+  console.log(`    南四縣認證：標【南】${southFromVariant} 條、附表推導 ${southFromFill} 條、待審以北四縣音權充 ${southFromPending} 條、完全無（毋收）${southNoReading} 條；美濃音（子開關）標註 ${southMeinong} 筆＋附表字級對照 ${southMeinongFromFill} 筆`);
+} else if (LECT_KEY === '平') {
+  console.log(`    饒平認證變體（子開關）：卓蘭 ${raopingZhuolan} 筆、桃園 ${raopingTaoyuan} 筆、卓桃共用 ${raopingZhuotao} 筆`);
 }
 
 // 2. 處理教典（讀取 20250630-<腔>.json，取得正宗 HagPinPlus 顯示欄位）
@@ -809,6 +918,44 @@ if (fs.existsSync(gipJsonPath)) {
   }
 }
 
+// 2b. 愛灣語加詞（data/curated/加詞-{腔}.json）：人工收錄个語氣詞（例：喺 --he／hē、哶 mē）。
+//     沿用 bit 6（SUPP_BITMASK，鎖定開啟），詞頻設為 CURATED_FREQ（5000，高於人工沿襲 1200、低於一般詞條 19000）。
+const curatedJsonPath = path.join(HAKSPRING_DATA, 'curated', `加詞-${LECT_KEY}.json`);
+if (fs.existsSync(curatedJsonPath)) {
+  const curatedLines = JSON.parse(fs.readFileSync(curatedJsonPath, 'utf8')).content.split('\n');
+  let addedCurated = 0;
+  for (let i = 1; i < curatedLines.length; i++) {
+    const line = curatedLines[i];
+    if (!line.trim()) continue;
+    const parts = line.split(',');
+    const word = parts[1];
+    const syll = parts[2];
+    if (!word || !syll) continue;
+    const parsedSyll = parseSyllableTone(syll);
+    const notone = parsedSyll.toneless || removeTone(syll);
+    const numSyll = parsedSyll.numSyll;
+    const normTL = syll.normalize('NFC');
+    const key = word + '|' + normTL;
+    if (map.has(key)) continue;
+    map.set(key, {
+      word,
+      tl: syll,
+      tl_num: numSyll,
+      tl_notone: notone,
+      tl_abbrev: '',
+      freq: CURATED_FREQ,
+      syllable_count: 1,
+      syllables: [notone],
+      bitmask: SUPP_BITMASK,
+      subtag: 0,
+    });
+    addedCurated++;
+  }
+  if (addedCurated > 0) {
+    console.log(`  ✓ 愛灣語加詞（${LECT.name}）: ${addedCurated} 筆`);
+  }
+}
+
 // 3. HakSpring character supplement: single-character readings for characters
 //    that MOE and certification data only have inside words, aligned by HakSpring.
 //    Its own source: bit 6 (upstream's `kungge`, relabelled and locked on).
@@ -832,8 +979,17 @@ if (!fs.existsSync(suppJsonPath)) {
     const notone = parsedSyll.toneless || removeTone(syll);
     const numSyll = parsedSyll.numSyll;
     const normTL = syll.normalize('NFC');
-    const key = word + '|' + normTL;
-    if (map.has(key)) continue;
+    // 饒平補字典：若備註標明僅見於「卓蘭」或「桃園」（不含「新竹」），掛對應子開關位元。
+    let suppSubtag = 0;
+    if (LECT_KEY === '平') {
+      const mSub = line.match(/腔內：([^；,]+)/);
+      if (mSub && !mSub[1].includes('新竹')) {
+        if (mSub[1].includes('卓蘭')) suppSubtag |= ZHUOLAN_SUBTAG_BIT;
+        if (mSub[1].includes('桃園')) suppSubtag |= TAOYUAN_SUBTAG_BIT;
+      }
+    }
+    const key = word + '|' + normTL + (suppSubtag ? '|平變' : '');
+    if (map.has(word + '|' + normTL) || map.has(key)) continue;
     // Frequency grows with how often the character occurs in words, but stays below every real entry.
     // 5b: 擬音字詞頻設為 900（排在所有補字典後面）；人工沿襲設為 1200
     const isNisim = line.includes('擬音') || (parts[8] && parts[8].includes('擬音'));
@@ -857,7 +1013,7 @@ if (!fs.existsSync(suppJsonPath)) {
       syllable_count: 1,
       syllables: [notone],
       bitmask: SUPP_BITMASK,
-      subtag: 0, // not a kautian row (engine/lexicon dictionary_reader.rs passes_filter)
+      subtag: suppSubtag, // not a kautian row (engine/lexicon dictionary_reader.rs passes_filter)
     });
     added++;
   }
@@ -914,13 +1070,25 @@ if (IS_ALL) {
   // 美濃讀音摎南四縣同詞个普通讀音完全共樣，就毋使再標「美」：丟忒美濃那筆，免得候選重複
   {
     const SOUTH = LECTS['南'].code;
-    const isMeinong = r => (r.subtag >> LECT_SHIFT) === SOUTH && (r.subtag & (1 << 3));
-    const plain = new Set(records.filter(r => (r.subtag >> LECT_SHIFT) === SOUTH && !(r.subtag & (1 << 3))).map(r => `${r.word}|${r.tl}`));
+    const isMeinong = r => (r.subtag >> LECT_SHIFT) === SOUTH && (r.subtag & MEINONG_SUBTAG_BIT);
+    const plain = new Set(records.filter(r => (r.subtag >> LECT_SHIFT) === SOUTH && !(r.subtag & MEINONG_SUBTAG_BIT)).map(r => `${r.word}|${r.tl}`));
     const before = records.length;
     for (let i = records.length - 1; i >= 0; i--) {
       if (isMeinong(records[i]) && plain.has(`${records[i].word}|${records[i].tl}`)) records.splice(i, 1);
     }
     if (records.length !== before) console.log(`  ✓ 美濃音摎南四縣普通讀音共樣，合併 ${before - records.length} 筆`);
+  }
+  // 饒平卓蘭／桃園讀音摎新竹普通讀音完全共樣，就毋使再標「卓／桃」：丟忒變體那筆，免得候選重複
+  {
+    const RAOPING = LECTS['平'].code;
+    const RP_MASK = ZHUOLAN_SUBTAG_BIT | TAOYUAN_SUBTAG_BIT;
+    const isRpVariant = r => (r.subtag >> LECT_SHIFT) === RAOPING && (r.subtag & RP_MASK);
+    const plain = new Set(records.filter(r => (r.subtag >> LECT_SHIFT) === RAOPING && !(r.subtag & RP_MASK)).map(r => `${r.word}|${r.tl}`));
+    const before = records.length;
+    for (let i = records.length - 1; i >= 0; i--) {
+      if (isRpVariant(records[i]) && plain.has(`${records[i].word}|${records[i].tl}`)) records.splice(i, 1);
+    }
+    if (records.length !== before) console.log(`  ✓ 卓蘭／桃園音摎饒平普通讀音共樣，合併 ${before - records.length} 筆`);
   }
   // 南四縣缺个，用北四縣个頂著（維護者原則，20261025）：北四縣有、南四縣「整隻詞」都無个
   // （無任何一種讀音），抄北四縣个讀音入南四縣，詞頻 ×0.5。南四縣若有該詞（毋論讀音同北四縣

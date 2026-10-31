@@ -630,6 +630,12 @@ class PrefHelper(
     // Alternative Readings (又唸作) defaults on (CROSS-PLATFORM mirrors iOS SharedSettings.swift isKautianAltReadingEnabledKey)
     var kautianAltReadingEnabled: Boolean by preference(PreferenceKeys.KAUTIAN_ALT_READING_ENABLED, true)
 
+    // Hakfa fork: South Sixian (美濃音, 24 調標成 33 調) and Raoping (卓蘭音, 桃園音) sub-toggles.
+    var meinongEnabled: Boolean by preference(PreferenceKeys.MEINONG_ENABLED, true)
+    var tone33Enabled: Boolean by preference(PreferenceKeys.TONE33_ENABLED, false)
+    var zhuolanEnabled: Boolean by preference(PreferenceKeys.ZHUOLAN_ENABLED, true)
+    var taoyuanEnabled: Boolean by preference(PreferenceKeys.TAOYUAN_ENABLED, true)
+
     // Theme settings (v3.6.2)
     var selectedThemeId: String by preference(PreferenceKeys.SELECTED_THEME_ID, DEFAULT_SELECTED_THEME_ID)
 
@@ -774,6 +780,18 @@ class PrefHelper(
 
     override val isKautianAltReadingEnabled: Boolean
         get() = kautianAltReadingEnabled
+
+    override val isMeinongEnabled: Boolean
+        get() = meinongEnabled
+
+    override val isTone33Enabled: Boolean
+        get() = tone33Enabled
+
+    override val isZhuolanEnabled: Boolean
+        get() = zhuolanEnabled
+
+    override val isTaoyuanEnabled: Boolean
+        get() = taoyuanEnabled
 
     /**
      * Returns `this` as [EngineSettings]. Each property access on the

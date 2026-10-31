@@ -58,6 +58,10 @@ fun DictionarySourcesScreen(
     val focusManager = LocalFocusManager.current
 
     var moeEnabled by remember { mutableStateOf(prefs.moeDictEnabled) }
+    var meinongEnabled by remember { mutableStateOf(prefs.meinongEnabled) }
+    var tone33Enabled by remember { mutableStateOf(prefs.tone33Enabled) }
+    var zhuolanEnabled by remember { mutableStateOf(prefs.zhuolanEnabled) }
+    var taoyuanEnabled by remember { mutableStateOf(prefs.taoyuanEnabled) }
 
     Scaffold(
         topBar = {
@@ -131,6 +135,46 @@ fun DictionarySourcesScreen(
                         url = "https://hakspring.pages.dev/",
                         enabled = false,
                         onCheckedChange = {},
+                    )
+                    SettingsDivider()
+                    DictionarySubToggleRow(
+                        label = "南四縣：美濃音",
+                        checked = meinongEnabled,
+                        enabled = moeEnabled,
+                        onCheckedChange = {
+                            meinongEnabled = it
+                            prefs.meinongEnabled = it
+                        },
+                    )
+                    SettingsDivider()
+                    DictionarySubToggleRow(
+                        label = "南四縣：24 調標成 33 調",
+                        checked = tone33Enabled,
+                        enabled = moeEnabled,
+                        onCheckedChange = {
+                            tone33Enabled = it
+                            prefs.tone33Enabled = it
+                        },
+                    )
+                    SettingsDivider()
+                    DictionarySubToggleRow(
+                        label = "饒平：卓蘭音",
+                        checked = zhuolanEnabled,
+                        enabled = moeEnabled,
+                        onCheckedChange = {
+                            zhuolanEnabled = it
+                            prefs.zhuolanEnabled = it
+                        },
+                    )
+                    SettingsDivider()
+                    DictionarySubToggleRow(
+                        label = "饒平：桃園音",
+                        checked = taoyuanEnabled,
+                        enabled = moeEnabled,
+                        onCheckedChange = {
+                            taoyuanEnabled = it
+                            prefs.taoyuanEnabled = it
+                        },
                     )
                 }
             }

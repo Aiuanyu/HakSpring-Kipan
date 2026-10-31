@@ -8,12 +8,15 @@ package com.siansiansu.taigikeyboard.engine
  * screens share one process, and `PrefHelper.lect` is the persisted copy that keeps this one
  * current. Top-level and Kotlin-only so JVM tests can pin the wire (like `appConfig`).
  *
- * Lect codes are the dictionary's (`docs/hakfa/lect.md`): 1 四縣, 2 海陸, 6 南四縣.
+ * Lect codes are the dictionary's (`docs/hakfa/lect.md`): 1 四縣, 6 南四縣, 2 海陸, 3 大埔, 4 饒平, 5 詔安.
  */
 object ActiveLect {
     const val XIIEN = 1
-    const val HOILIUG = 2
     const val NAMXIIAN = 6
+    const val HOILIUG = 2
+    const val TAIBU = 3
+    const val NGIAUPIN = 4
+    const val ZHIOON = 5
 
     @Volatile
     var current: Int = XIIEN
@@ -34,6 +37,9 @@ object HakfaLects {
             Lect(ActiveLect.XIIEN, "四縣 (Xi'ien)"),
             Lect(ActiveLect.NAMXIIAN, "南四縣 (Nǎm Xi'ian)"),
             Lect(ActiveLect.HOILIUG, "海陸 (Hóiliug)"),
+            Lect(ActiveLect.TAIBU, "大埔 (Tàibú)"),
+            Lect(ActiveLect.NGIAUPIN, "饒平 (Ngiaupin)"),
+            Lect(ActiveLect.ZHIOON, "詔安 (Zhiô'ǒn)"),
         )
 
     fun isKnown(code: Int): Boolean = all.any { it.code == code }

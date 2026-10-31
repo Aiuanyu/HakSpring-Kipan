@@ -192,6 +192,9 @@ internal fun dictionaryTogglesProto(toggles: RustEngineBridge.DictionaryToggles)
         // Hakfa fork: the merged dictionary carries every lect, so a request names the one the
         // keyboard types in ([ActiveLect]). 0 would mix every lect's readings into one list.
         .setLect(ActiveLect.current)
+        .setMeinong(toggles.meinong)
+        .setZhuolan(toggles.zhuolan)
+        .setTaoyuan(toggles.taoyuan)
         // Always set the subcollection message (Android ships the toggles)
         // so the engine runs the gate; absence would signal legacy all-on
         // (DD5). Mirrors iOS RustEngineBridge togglesProto mapping.

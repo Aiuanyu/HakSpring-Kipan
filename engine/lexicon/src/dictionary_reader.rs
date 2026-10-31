@@ -74,6 +74,17 @@ pub const WIRE_KAUTIAN_SUBCOLL_MASK: u32 = KAUTIAN_SUBTAG_USED_MASK as u32;
 /// 13-15 (1 = 四縣, 2 = 海陸, …; 0 = no lect, matches every lect). See `docs/hakfa/lect.md`.
 /// It is NOT part of `KAUTIAN_SUBTAG_USED_MASK`, so it can never reach the subcollection AND.
 pub const KAUTIAN_SUBTAG_LECT_SHIFT: u16 = 13;
+/// Hakfa fork: Raoping sub-dialect variant bits in the kautian subtag (upstream accent slots 1 & 2).
+/// Shown only while the corresponding sub-toggle (`Filter.zhuolan` / `Filter.taoyuan`) is on.
+/// A shared Zhuolan+Taoyuan (`卓桃`) record sets both bits and passes when either toggle is on.
+pub const KAUTIAN_SUBTAG_ZHUOLAN_BIT: u16 = 1;
+pub const KAUTIAN_SUBTAG_TAOYUAN_BIT: u16 = 2;
+pub const KAUTIAN_SUBTAG_RAOPING_MASK: u16 =
+    (1 << KAUTIAN_SUBTAG_ZHUOLAN_BIT) | (1 << KAUTIAN_SUBTAG_TAOYUAN_BIT);
+/// Hakfa fork: Zhuolan / Taoyuan wire bits ride bits 25 and 26 when kautian subcollection gating
+/// is inactive (`WIRE_KAUTIAN_SUBCOLL_ACTIVE_BIT == 0`) or `u32::MAX`.
+pub const WIRE_ZHUOLAN_BIT: u32 = 1 << 25;
+pub const WIRE_TAOYUAN_BIT: u32 = 1 << 26;
 /// Hakfa fork: a record that carries a lect (non-zero) and this subtag bit is a Meinong reading
 /// of South Sixian (美濃), shown only while the Meinong switch is on (`Filter.meinong`, wire bit
 /// 30). The bit is the upstream accent slot 3, which no Hakfa record uses otherwise.
@@ -138,6 +149,10 @@ pub struct Filter {
     pub lect: u8,
     /// Hakfa fork: Meinong readings pass (wire bit 30). `u32::MAX` also means yes.
     pub meinong: bool,
+    /// Hakfa fork: Raoping Zhuolan / Taoyuan sub-dialect readings pass (wire bits 25 / 26 when
+    /// kautian subcollection gating is inactive, or `u32::MAX`).
+    pub zhuolan: bool,
+    pub taoyuan: bool,
 }
 
 impl Filter {
@@ -150,17 +165,22 @@ impl Filter {
     /// Pinned by `INVARIANT_LEX_FILTER_BITMASK` (audit §4); the layout
     /// must stay byte-identical to the platform encoder.
     pub fn from_enabled_bitmask(enabled_sources_bitmask: u32) -> Self {
+        let all_enabled = enabled_sources_bitmask == u32::MAX;
+        let kautian_subcoll_active =
+            (enabled_sources_bitmask & WIRE_KAUTIAN_SUBCOLL_ACTIVE_BIT) != 0;
+        let hakfa_raoping_wire = all_enabled || !kautian_subcoll_active;
         Self {
             variant: (enabled_sources_bitmask & (1 << 12)) != 0,
             khiin: (enabled_sources_bitmask & (1 << 9)) != 0,
-            all_enabled: enabled_sources_bitmask == u32::MAX,
+            all_enabled,
             enabled_mask: (enabled_sources_bitmask & 0x0FFF) as u16,
-            kautian_subcoll_active: (enabled_sources_bitmask & WIRE_KAUTIAN_SUBCOLL_ACTIVE_BIT)
-                != 0,
+            kautian_subcoll_active,
             kautian_subcoll_mask: ((enabled_sources_bitmask >> WIRE_KAUTIAN_SUBCOLL_SHIFT)
                 & WIRE_KAUTIAN_SUBCOLL_MASK) as u16,
             meinong: (enabled_sources_bitmask & WIRE_MEINONG_BIT) != 0,
-            lect: if enabled_sources_bitmask == u32::MAX {
+            zhuolan: hakfa_raoping_wire && (enabled_sources_bitmask & WIRE_ZHUOLAN_BIT) != 0,
+            taoyuan: hakfa_raoping_wire && (enabled_sources_bitmask & WIRE_TAOYUAN_BIT) != 0,
+            lect: if all_enabled {
                 0
             } else {
                 ((enabled_sources_bitmask >> WIRE_LECT_SHIFT) & WIRE_LECT_MASK) as u8
@@ -345,6 +365,24 @@ impl DictionaryReader {
             && (record_subtag & (1 << KAUTIAN_SUBTAG_MEINONG_BIT)) != 0
         {
             return false;
+        }
+        // Hakfa fork: Raoping sub-dialect readings (Zhuolan / Taoyuan / shared Zhuotao) pass only
+        // when at least one of the record's Raoping variant bits is enabled.
+        if (record_subtag & KAUTIAN_SUBTAG_LECT_MASK) != 0
+            && (record_subtag & KAUTIAN_SUBTAG_RAOPING_MASK) != 0
+        {
+            let enabled_raoping = (if filter.zhuolan {
+                1u16 << KAUTIAN_SUBTAG_ZHUOLAN_BIT
+            } else {
+                0
+            }) | (if filter.taoyuan {
+                1u16 << KAUTIAN_SUBTAG_TAOYUAN_BIT
+            } else {
+                0
+            });
+            if (record_subtag & enabled_raoping) == 0 {
+                return false;
+            }
         }
         // Hakfa fork: lect gate. A record with lect 0 (non-Hakfa data) matches every lect.
         if filter.lect != 0 {

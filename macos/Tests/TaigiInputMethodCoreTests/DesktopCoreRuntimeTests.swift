@@ -147,7 +147,9 @@ final class DesktopCoreRuntimeTests: XCTestCase {
             Keys.isKautianNameAppendixEnabled, Keys.isKautianAltReadingEnabled,
             // Hakfa fork: the Dictionary Sources pane's lect rows.
             Keys.lectEnabled(.xiien), Keys.lectEnabled(.namxiian), Keys.lectEnabled(.hoiliug),
+            Keys.lectEnabled(.taibu), Keys.lectEnabled(.ngiaupin), Keys.lectEnabled(.zhioon),
             Keys.isMeinongEnabled, Keys.isTone33Enabled,
+            Keys.isZhuolanEnabled, Keys.isTaoyuanEnabled,
         ]
         var expected: [String: Taigi_DesktopShell_SettingValue.OneOf_Value?] = [
             Keys.inputMode.name: .text(Keys.inputMode.defaultValue.rawValue),

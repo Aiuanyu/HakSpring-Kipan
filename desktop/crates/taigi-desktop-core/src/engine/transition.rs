@@ -128,7 +128,7 @@ pub struct ContinuousCandidate {
     /// Canonical TL, snapshotted before any display recasing. Empty only when
     /// no canonical TL is recoverable.
     pub canonical_tl: String,
-    /// Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian.
+    /// Hakfa fork: 0 = an ordinary reading, 1 = 美濃, 2 = 卓蘭, 3 = 桃園, 4 = 卓桃.
     pub variant: u32,
 }
 
@@ -145,13 +145,15 @@ impl ContinuousCandidate {
         }
     }
 
-    /// The romanization as the candidate window draws it: a Meinong reading carries 「美」 after it.
+    /// The romanization as the candidate window draws it: sub-dialect readings carry 「美」「卓」「桃」「卓桃」.
     /// Display only — a commit goes through the engine's `display_text`.
     pub fn roman_for_display(&self) -> String {
-        if self.variant == 1 {
-            format!("{} 美", self.roman)
-        } else {
-            self.roman.clone()
+        match self.variant {
+            1 => format!("{} 美", self.roman),
+            2 => format!("{} 卓", self.roman),
+            3 => format!("{} 桃", self.roman),
+            4 => format!("{} 卓桃", self.roman),
+            _ => self.roman.clone(),
         }
     }
 

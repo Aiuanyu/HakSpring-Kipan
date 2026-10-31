@@ -76,7 +76,7 @@ impl CustomDictionaryCSV {
     pub const MAX_FILE_SIZE_BYTES: u64 = 5 * 1024 * 1024;
 
     pub fn encode(rows: &[CustomDictionaryRow]) -> String {
-        let mut out = String::from("hanzi,xiien,namxiian,hoiliug\n");
+        let mut out = String::from("hanzi,xiien,namxiian,hoiliug,taibu,ngiaupin,zhioon\n");
         let mut seen = std::collections::HashSet::new();
         for row in rows {
             if !row.hanji.is_empty() {
@@ -87,16 +87,25 @@ impl CustomDictionaryCSV {
                 let mut xiien = "";
                 let mut namxiian = "";
                 let mut hoiliug = "";
+                let mut taibu = "";
+                let mut ngiaupin = "";
+                let mut zhioon = "";
                 for r in rows {
                     if &r.hanji == hanji {
                         match r.lect {
                             1 => xiien = &r.roman,
                             6 => namxiian = &r.roman,
                             2 => hoiliug = &r.roman,
+                            3 => taibu = &r.roman,
+                            4 => ngiaupin = &r.roman,
+                            5 => zhioon = &r.roman,
                             0 => {
                                 if xiien.is_empty() { xiien = &r.roman; }
                                 if namxiian.is_empty() { namxiian = &r.roman; }
                                 if hoiliug.is_empty() { hoiliug = &r.roman; }
+                                if taibu.is_empty() { taibu = &r.roman; }
+                                if ngiaupin.is_empty() { ngiaupin = &r.roman; }
+                                if zhioon.is_empty() { zhioon = &r.roman; }
                             }
                             _ => {
                                 if xiien.is_empty() { xiien = &r.roman; }
@@ -105,30 +114,39 @@ impl CustomDictionaryCSV {
                     }
                 }
                 out.push_str(&format!(
-                    "{},{},{},{}\n",
+                    "{},{},{},{},{},{},{}\n",
                     UserDataCSV::escape(hanji),
                     UserDataCSV::escape(xiien),
                     UserDataCSV::escape(namxiian),
                     UserDataCSV::escape(hoiliug),
+                    UserDataCSV::escape(taibu),
+                    UserDataCSV::escape(ngiaupin),
+                    UserDataCSV::escape(zhioon),
                 ));
             } else {
-                let (x, n, h) = match row.lect {
-                    6 => ("", row.roman.as_str(), ""),
-                    2 => ("", "", row.roman.as_str()),
-                    _ => (row.roman.as_str(), "", ""),
+                let (x, n, h, t, p, z) = match row.lect {
+                    6 => ("", row.roman.as_str(), "", "", "", ""),
+                    2 => ("", "", row.roman.as_str(), "", "", ""),
+                    3 => ("", "", "", row.roman.as_str(), "", ""),
+                    4 => ("", "", "", "", row.roman.as_str(), ""),
+                    5 => ("", "", "", "", "", row.roman.as_str()),
+                    _ => (row.roman.as_str(), "", "", "", "", ""),
                 };
                 out.push_str(&format!(
-                    ",{},{},{}\n",
+                    ",{},{},{},{},{},{}\n",
                     UserDataCSV::escape(x),
                     UserDataCSV::escape(n),
                     UserDataCSV::escape(h),
+                    UserDataCSV::escape(t),
+                    UserDataCSV::escape(p),
+                    UserDataCSV::escape(z),
                 ));
             }
         }
         out
     }
 
-    /// Parses `csv` into rows. Supports multi-lect header (`hanzi,xiien,namxiian,hoiliug`)
+    /// Parses `csv` into rows. Supports multi-lect header (`hanzi,xiien,namxiian,hoiliug,taibu,ngiaupin,zhioon`)
     /// as well as legacy two-column (`roman,hanzi`, defaults to 四縣 lect 1).
     pub fn decode(
         csv: &str,
@@ -164,6 +182,12 @@ impl CustomDictionaryCSV {
                             map.push(Some(6));
                         } else if c == "hoiliug" || c == "海陸" {
                             map.push(Some(2));
+                        } else if c == "taibu" || c == "大埔" {
+                            map.push(Some(3));
+                        } else if c == "ngiaupin" || c == "饒平" {
+                            map.push(Some(4));
+                        } else if c == "zhioon" || c == "詔安" {
+                            map.push(Some(5));
                         } else if c == "generic" || c == "通用" {
                             map.push(Some(0));
                         } else {

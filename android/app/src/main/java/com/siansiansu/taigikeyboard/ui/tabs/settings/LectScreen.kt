@@ -37,13 +37,13 @@ fun LectScreen(
         onBack = onBack,
         footer = {
             Text(
-                text = "鍵盤語言選單（地球鍵）想愛一腔一項，愛先在系統開啟這三腔。",
+                text = "鍵盤語言選單（地球鍵）想愛一腔一項，愛先在系統開啟這六腔。",
                 modifier = Modifier.padding(top = 16.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             TextButton(onClick = { openSubtypeSettings(context) }) {
-                Text("到系統設定開啟三腔")
+                Text("到系統設定開啟六腔")
             }
         },
     )

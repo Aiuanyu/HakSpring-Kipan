@@ -134,6 +134,10 @@ object RustEngineBridge {
         val lkk: Boolean,
         val dev: Boolean,
         val kautianSubcoll: KautianSubcoll,
+        val meinong: Boolean = true,
+        val tone33: Boolean = false,
+        val zhuolan: Boolean = true,
+        val taoyuan: Boolean = true,
     ) {
         /**
          * kautian subcollection enable state (10 accents + name appendix).
@@ -188,6 +192,10 @@ object RustEngineBridge {
                         nameAppendix = settings.isKautianNameAppendixEnabled,
                         altReading = settings.isKautianAltReadingEnabled,
                     ),
+                    meinong = settings.isMeinongEnabled,
+                    tone33 = settings.isTone33Enabled,
+                    zhuolan = settings.isZhuolanEnabled,
+                    taoyuan = settings.isTaoyuanEnabled,
                 )
         }
     }

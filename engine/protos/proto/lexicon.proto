@@ -272,6 +272,10 @@ message DictionarySourceToggles {
   // Hakfa fork: show the Meinong (美濃) readings of South Sixian; `compute_filters` packs it into
   // wire bit 30. Off by default (maintainer's ruling R8-22).
   bool meinong = 16;
+  // Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+  // `compute_filters` packs them into wire bits 25 and 26. Off by default.
+  bool zhuolan = 17;
+  bool taoyuan = 18;
 }
 
 // `KautianSubcollectionToggles` is the per-subcollection enable state for the

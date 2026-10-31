@@ -83,8 +83,8 @@ private const val EXPORTING_HINT = "匯出中⋯"
 
 // The CSV header is the engine's (`CustomDictionaryCSV`): one column per lect.
 private const val CSV_FORMAT_NOTE =
-    "hanzi,xiien,namxiian,hoiliug\n" +
-        "𠊎,ngai,ngai,ngoi\n" +
+    "hanzi,xiien,namxiian,hoiliug,taibu,ngiaupin,zhioon\n" +
+        "𠊎,ngai,ngai,ngoi,ngai,ngai,ngai\n" +
         "舊式兩欄 roman,hanji 也讀得（入四縣）"
 
 // Custom dictionary management — add, edit, import/export, and delete entries

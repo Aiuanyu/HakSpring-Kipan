@@ -201,7 +201,8 @@ impl ComposingManager {
             ToneInputScheme::Standard => {
                 // 方案 3：符號編號（Ctrl+2 3 5 6 7 對應 á à â ǎ ā；Ctrl+1／4 限定無標調）
                 let clean_raw = self.raw_input.trim_end_matches(|c: char| c.is_ascii_digit());
-                let is_checked = matches!(clean_raw.chars().last(), Some('b' | 'd' | 'g' | 'p' | 't' | 'k'));
+                let is_checked = clean_raw.ends_with(['b', 'd', 'p', 't', 'k'])
+                    || (clean_raw.ends_with('g') && !clean_raw.ends_with("ng"));
                 // 無標調的查詢數字：舒聲 `1`、入聲 `4`；兩個鍵打哪個都照音節種類換。
                 let digit = match digit {
                     '1' | '4' => if is_checked { '4' } else { '1' },
@@ -215,32 +216,43 @@ impl ComposingManager {
             ToneInputScheme::Scale => {
                 // 方案 1：五度調值
                 let clean_raw = self.raw_input.trim_end_matches(|c: char| c.is_ascii_digit());
-                let last_char = clean_raw.chars().last();
-                let is_checked = matches!(last_char, Some('b' | 'd' | 'g' | 'p' | 't' | 'k'));
+                let is_checked = clean_raw.ends_with(['b', 'd', 'p', 't', 'k'])
+                    || (clean_raw.ends_with('g') && !clean_raw.ends_with("ng"));
 
-                if is_checked {
-                    // 入聲：單數字成調 (2 陰入、5 陽入)
+                // 單數字入聲（四縣／南四縣／海陸／饒平之 2、5）直接成調；
+                // 大埔（21、54）、詔安（24、43）入聲與各腔舒聲皆為兩位數（大埔陽平 113 亦支援在 11 成調後再按 3 維持 ǎ）。
+                let single_checked = if is_checked {
+                    resolve_scale_tone(lect, &digit.to_string(), true)
+                } else {
+                    None
+                };
+                if let Some(tone_char) = single_checked {
                     self.pending_scale_digit = None;
-                    if let Some(tone_char) = resolve_scale_tone(lect, &digit.to_string(), true) {
+                    if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
+                        self.delete_backward(executor);
+                    }
+                    self.append(&tone_char.to_string(), executor);
+                } else if let Some(first) = self.pending_scale_digit.take() {
+                    let scale_str = format!("{}{}", first, digit);
+                    if let Some(tone_char) = resolve_scale_tone(lect, &scale_str, is_checked) {
                         if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
                             self.delete_backward(executor);
                         }
                         self.append(&tone_char.to_string(), executor);
-                    }
-                } else {
-                    // 舒聲：兩位數成調 (例如 24, 33, 11, 55, 31, 53)
-                    if let Some(first) = self.pending_scale_digit.take() {
-                        let scale_str = format!("{}{}", first, digit);
-                        if let Some(tone_char) = resolve_scale_tone(lect, &scale_str, false) {
-                            if self.raw_input.chars().last().map_or(false, |c| c.is_ascii_digit()) {
-                                self.delete_backward(executor);
-                            }
-                            self.append(&tone_char.to_string(), executor);
+                        if lect == crate::settings::Lect::Taibu && !is_checked && scale_str == "11" {
+                            // 大埔陽平 113：11 已成調 ǎ ('6')，若使用者接著按 '3' 仍視為 113
+                            self.pending_scale_digit = Some('1');
                         }
-                    } else {
-                        // 第一鍵：記錄暫存
-                        self.pending_scale_digit = Some(digit);
                     }
+                } else if lect == crate::settings::Lect::Taibu
+                    && !is_checked
+                    && digit == '3'
+                    && self.raw_input.ends_with('6')
+                {
+                    // 大埔陽平 113 的第三鍵 '3'：維持 '6' (ǎ)
+                } else {
+                    // 第一鍵：記錄暫存
+                    self.pending_scale_digit = Some(digit);
                 }
             }
             ToneInputScheme::Telex => {}

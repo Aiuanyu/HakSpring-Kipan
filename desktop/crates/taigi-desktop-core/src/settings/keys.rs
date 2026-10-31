@@ -67,6 +67,9 @@ pub const fn lect_enabled(lect: Lect) -> SettingsKey<bool> {
         Lect::Xiien => SettingsKey::new("lectEnabled.xiien", true),
         Lect::Namxiian => SettingsKey::new("lectEnabled.namxiian", true),
         Lect::Hoiliug => SettingsKey::new("lectEnabled.hoiliug", true),
+        Lect::Taibu => SettingsKey::new("lectEnabled.taibu", true),
+        Lect::Ngiaupin => SettingsKey::new("lectEnabled.ngiaupin", true),
+        Lect::Zhioon => SettingsKey::new("lectEnabled.zhioon", true),
     }
 }
 
@@ -80,6 +83,13 @@ pub const IS_TONE33_ENABLED: SettingsKey<bool> =
 /// Dictionary Sources pane, off by default.
 pub const IS_MEINONG_ENABLED: SettingsKey<bool> =
     SettingsKey::new("meinongEnabled", ENGINE_DEFAULTS.dictionary_sources.meinong);
+
+/// Hakfa fork: show the Zhuolan (卓蘭) and Taoyuan (桃園) sub-dialect readings of Raoping (饒平).
+/// Switches under 饒平 on the Dictionary Sources pane, off by default.
+pub const IS_ZHUOLAN_ENABLED: SettingsKey<bool> =
+    SettingsKey::new("zhuolanEnabled", ENGINE_DEFAULTS.dictionary_sources.zhuolan);
+pub const IS_TAOYUAN_ENABLED: SettingsKey<bool> =
+    SettingsKey::new("taoyuanEnabled", ENGINE_DEFAULTS.dictionary_sources.taoyuan);
 
 /// Hakfa fork: the lect the dictionary answers in (四縣 `xiien`, 海陸 `hoiliug`).
 /// Not in `GENERAL_KEYS`: the General pane's reset must not switch lect under the user, like the
@@ -328,7 +338,7 @@ pub const APPEARANCE_KEYS: [&str; 4] = [
 
 /// The 13 source toggles + 12 subcollection toggles the Dictionary Sources pane's reset
 /// removes (`SettingsStore.swift` `resetDictionarySources` is the macOS twin).
-pub const DICTIONARY_SOURCE_KEYS: [&str; 30] = [
+pub const DICTIONARY_SOURCE_KEYS: [&str; 35] = [
     IS_KAUTIAN_ENABLED.name,
     IS_TAIGITV_ENABLED.name,
     IS_ITAIGI_ENABLED.name,
@@ -354,11 +364,16 @@ pub const DICTIONARY_SOURCE_KEYS: [&str; 30] = [
     IS_KAUTIAN_ACCENT_TAICHUNG_ENABLED.name,
     IS_KAUTIAN_NAME_APPENDIX_ENABLED.name,
     IS_KAUTIAN_ALT_READING_ENABLED.name,
-    // Hakfa fork: the lect rows.
+    // Hakfa fork: the lect rows ("四南海大平安") and sub-dialect toggles.
     lect_enabled(Lect::Xiien).name,
     lect_enabled(Lect::Namxiian).name,
     lect_enabled(Lect::Hoiliug).name,
+    lect_enabled(Lect::Taibu).name,
+    lect_enabled(Lect::Ngiaupin).name,
+    lect_enabled(Lect::Zhioon).name,
     IS_MEINONG_ENABLED.name,
+    IS_ZHUOLAN_ENABLED.name,
+    IS_TAOYUAN_ENABLED.name,
     IS_TONE33_ENABLED.name,
 ];
 

@@ -179,11 +179,21 @@ pub(super) fn record_to_candidate(
         kautian_subtag,
         walker_cost,
     } = record;
-    // Hakfa fork: a Meinong reading is a Hakfa record (it has a lect) with the Meinong subtag bit.
-    let variant = u8::from(
-        (kautian_subtag & crate::dictionary_reader::KAUTIAN_SUBTAG_LECT_MASK) != 0
-            && (kautian_subtag & (1 << crate::dictionary_reader::KAUTIAN_SUBTAG_MEINONG_BIT)) != 0,
-    );
+    // Hakfa fork: sub-dialect variant tag (1 = 美濃, 2 = 卓蘭, 3 = 桃園, 4 = 卓桃).
+    let variant = if (kautian_subtag & crate::dictionary_reader::KAUTIAN_SUBTAG_LECT_MASK) != 0 {
+        let m = (kautian_subtag & (1 << crate::dictionary_reader::KAUTIAN_SUBTAG_MEINONG_BIT)) != 0;
+        let z = (kautian_subtag & (1 << crate::dictionary_reader::KAUTIAN_SUBTAG_ZHUOLAN_BIT)) != 0;
+        let t = (kautian_subtag & (1 << crate::dictionary_reader::KAUTIAN_SUBTAG_TAOYUAN_BIT)) != 0;
+        match (m, z, t) {
+            (true, _, _) => 1,
+            (false, true, true) => 4,
+            (false, true, false) => 2,
+            (false, false, true) => 3,
+            _ => 0,
+        }
+    } else {
+        0
+    };
     // EFFECTIVE bitmask (kautian bit dropped when its subcollection is
     // disabled) drives `source_tier_rank` so a multi-source survivor ranks by
     // its other source's tier, not kautian's (DD6 ranking-weight drop).

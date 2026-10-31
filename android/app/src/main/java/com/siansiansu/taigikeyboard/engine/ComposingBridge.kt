@@ -328,7 +328,13 @@ private inline fun composingFetchDispatch(
                 consumedSpanEnd = msg.consumedSpanEnd,
                 syllableCount = msg.syllableCount,
                 displayText = msg.displayText,
-                roman = msg.roman,
+                roman = when (msg.variant) {
+                    1 -> "${msg.roman} 美"
+                    2 -> "${msg.roman} 卓"
+                    3 -> "${msg.roman} 桃"
+                    4 -> "${msg.roman} 卓桃"
+                    else -> msg.roman
+                },
                 hanji = if (msg.hasHanji()) msg.hanji else null,
                 canonicalTl = msg.canonicalTl,
             )

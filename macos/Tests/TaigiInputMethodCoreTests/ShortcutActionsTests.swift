@@ -49,18 +49,34 @@ final class ShortcutActionsTests: XCTestCase {
         )
     }
 
-    /// Hakfa fork: the lect cycle steps 四縣 → 海陸 → 四縣, and its raw values are the spellings
+    /// Hakfa fork: the lect cycle steps through "四南海大平安", and its raw values are the spellings
     /// desktop-core's `Lect::raw` reads back from the settings snapshot.
     func testLect_cyclesAndSpellsLikeTheCore() {
         let all = Lect.allCases
         XCTAssertEqual(Lect.xiien.next(among: all), .namxiian)
         XCTAssertEqual(Lect.namxiian.next(among: all), .hoiliug)
-        XCTAssertEqual(Lect.hoiliug.next(among: all), .xiien)
+        XCTAssertEqual(Lect.hoiliug.next(among: all), .taibu)
+        XCTAssertEqual(Lect.taibu.next(among: all), .ngiaupin)
+        XCTAssertEqual(Lect.ngiaupin.next(among: all), .zhioon)
+        XCTAssertEqual(Lect.zhioon.next(among: all), .xiien)
         // a lect switched off is skipped; with nothing else on, the lect stays
         XCTAssertEqual(Lect.xiien.next(among: [.xiien, .hoiliug]), .hoiliug)
         XCTAssertEqual(Lect.xiien.next(among: [.xiien]), .xiien)
-        XCTAssertEqual(Lect.allCases.map(\.rawValue), ["xiien", "namxiian", "hoiliug"])
-        XCTAssertEqual(Lect.allCases.map(\.displayName), ["四縣 (Xi'ien)", "南四縣 (Nǎm Xi'ian)", "海陸 (Hóiliug)"])
+        XCTAssertEqual(
+            Lect.allCases.map(\.rawValue),
+            ["xiien", "namxiian", "hoiliug", "taibu", "ngiaupin", "zhioon"]
+        )
+        XCTAssertEqual(
+            Lect.allCases.map(\.displayName),
+            [
+                "四縣 (Xi'ien)",
+                "南四縣 (Nǎm Xi'ian)",
+                "海陸 (Hóiliug)",
+                "大埔 (Tàibú)",
+                "饒平 (Ngiaupin)",
+                "詔安 (Zhiô'ǒn)",
+            ]
+        )
         XCTAssertEqual(SettingsStore.Keys.lect.name, "lect")
         XCTAssertEqual(SettingsStore.Keys.lect.defaultValue, .xiien)
     }
@@ -68,10 +84,13 @@ final class ShortcutActionsTests: XCTestCase {
     /// Hakfa fork: the bracket-annotation HUD spells 羅馬字 in the lect being typed; text without the
     /// 四縣 spelling (other display languages) is left as it is.
     func testBracketHud_spellsTheRomanScriptInTheLectBeingTyped() {
-        let hakha = "諸夏字 (Lǒmásii)"
-        XCTAssertEqual(Lect.xiien.localizingRomanScriptName(in: hakha), "諸夏字 (Lǒmásii)")
-        XCTAssertEqual(Lect.namxiian.localizingRomanScriptName(in: hakha), "諸夏字 (Lǒmásii)")
-        XCTAssertEqual(Lect.hoiliug.localizingRomanScriptName(in: hakha), "諸夏字 (Lomàsīi)")
+        let hakfa = "諸夏字 (Lǒmásii)"
+        XCTAssertEqual(Lect.xiien.localizingRomanScriptName(in: hakfa), "諸夏字 (Lǒmásii)")
+        XCTAssertEqual(Lect.namxiian.localizingRomanScriptName(in: hakfa), "諸夏字 (Lǒmásii)")
+        XCTAssertEqual(Lect.hoiliug.localizingRomanScriptName(in: hakfa), "諸夏字 (Lomàsīi)")
+        XCTAssertEqual(Lect.taibu.localizingRomanScriptName(in: hakfa), "諸夏字 (Lǒmāsìi)")
+        XCTAssertEqual(Lect.ngiaupin.localizingRomanScriptName(in: hakfa), "諸夏字 (Lomǎsíi)")
+        XCTAssertEqual(Lect.zhioon.localizingRomanScriptName(in: hakfa), "諸夏字 (Lòomǎcu)")
         XCTAssertEqual(Lect.hoiliug.localizingRomanScriptName(in: "Hanji (Lo-má-jī)"), "Hanji (Lo-má-jī)")
     }
 

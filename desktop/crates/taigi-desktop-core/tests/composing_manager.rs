@@ -1468,3 +1468,91 @@ fn hakfa_continuous_composition_and_stepwise_picks() {
         doc.set_choice(&keys::LECT, Lect::Xiien);
     });
 }
+
+#[test]
+fn hakfa_six_lects_curated_words_and_raoping_sub_toggles() {
+    use taigi_desktop_core::settings::Lect;
+
+    let _lock = engine_lock();
+    let mut rig = rig();
+
+    // 1. 愛灣語加詞（curated）：四縣 `喺 --he`（打 he）、海陸 `喺 hē`（打 he）、大埔 `哶 mē`（打 me）、饒平 `喺 --he`（打 he）
+    rig.settings.edit(|doc| doc.set_choice(&keys::LECT, Lect::Xiien));
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("he");
+    let xiien_he = rig.candidates();
+    assert!(
+        xiien_he.iter().any(|c| c.hanji.as_deref() == Some("喺") && c.canonical_tl == "--he"),
+        "四縣 curated 喺 (--he) must be reachable by typing he"
+    );
+    // 擬音 `喺 hì` 已由人工加詞優先蓋掉
+    assert!(
+        !xiien_he.iter().any(|c| c.hanji.as_deref() == Some("喺") && c.canonical_tl == "hì"),
+        "四縣擬音 喺 (hì) must not appear"
+    );
+
+    rig.settings.edit(|doc| doc.set_choice(&keys::LECT, Lect::Hoiliug));
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("he");
+    assert!(
+        rig.candidates().iter().any(|c| c.hanji.as_deref() == Some("喺") && c.canonical_tl == "hē"),
+        "海陸 curated 喺 (hē) must be reachable"
+    );
+
+    rig.settings.edit(|doc| doc.set_choice(&keys::LECT, Lect::Taibu));
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("me");
+    assert!(
+        rig.candidates().iter().any(|c| c.hanji.as_deref() == Some("哶") && c.canonical_tl == "mē"),
+        "大埔 curated 哶 (mē) must be reachable"
+    );
+
+    // 2. 大埔、饒平、詔安詞彙檢索與饒平卓蘭／桃園子開關（姐嬤【外嬤／姐婆】：卓蘭 nguai-ma、桃園 ziâ-pò）
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::LECT, Lect::Ngiaupin);
+        doc.set_bool(&keys::IS_ZHUOLAN_ENABLED, true);
+        doc.set_bool(&keys::IS_TAOYUAN_ENABLED, true);
+    });
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("nguaima");
+    let rp_on = rig.candidates();
+    let zhuolan_cand = rp_on.iter().find(|c| c.hanji.as_deref() == Some("外嬤"));
+    assert!(zhuolan_cand.is_some(), "饒平開啟卓蘭音時，打 nguaima 應出現『外嬤』");
+    assert_eq!(zhuolan_cand.unwrap().variant, 2, "卓蘭音 variant 應為 2 (卓)");
+
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("ziapo");
+    let rp_tao_on = rig.candidates();
+    let taoyuan_cand = rp_tao_on.iter().find(|c| c.hanji.as_deref() == Some("姐婆"));
+    assert!(taoyuan_cand.is_some(), "饒平開啟桃園音時，打 ziapo 應出現『姐婆』");
+    assert_eq!(taoyuan_cand.unwrap().variant, 3, "桃園音 variant 應為 3 (桃)");
+
+    // 關閉卓蘭音後，卓蘭專屬詞『外嬤』不應出現
+    rig.settings.edit(|doc| doc.set_bool(&keys::IS_ZHUOLAN_ENABLED, false));
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("nguaima");
+    let rp_off = rig.candidates();
+    assert!(
+        !rp_off.iter().any(|c| c.hanji.as_deref() == Some("外嬤")),
+        "關閉卓蘭音後，卓蘭專屬詞『外嬤』應被過濾"
+    );
+
+    // 3. 詔安特有詞彙（屋 bbú）
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::LECT, Lect::Zhioon);
+        doc.set_bool(&keys::IS_ZHUOLAN_ENABLED, true);
+    });
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("bbu");
+    assert!(
+        rig.candidates().iter().any(|c| c.hanji.as_deref() == Some("屋") && c.canonical_tl == "bbú"),
+        "詔安打 bbu 應出現『屋 (bbú)』"
+    );
+
+    // 復原環境
+    rig.settings.edit(|doc| {
+        doc.set_choice(&keys::LECT, Lect::Xiien);
+        doc.set_bool(&keys::IS_ZHUOLAN_ENABLED, true);
+        doc.set_bool(&keys::IS_TAOYUAN_ENABLED, true);
+    });
+}

@@ -1,8 +1,8 @@
 # Lects (腔) and dictionary sources
 
-Kipan will type five Hakfa lects (Sixian, Hailu, Dapu, Raoping, Zhao'an), switched as exclusive modes, with sub-lect variants (e.g. Sixian north / south / Meinong) as toggles inside a lect. Dictionary sources (MOE, certification lists, HakSpring supplement, …) are a separate axis. Design and decisions live in the maintainer's Obsidian `dialects` note; this page is the code-bound part.
+Kipan types six Hakfa lects in "四南海大平安" order (Sixian 四縣, South Sixian 南四縣, Hailu 海陸, Dapu 大埔, Raoping 饒平, Zhao'an 詔安), switched as exclusive modes, with sub-lect variants (South Sixian Meinong 美濃音; Raoping Zhuolan 卓蘭音 / Taoyuan 桃園音) as toggles inside a lect. Dictionary sources (MOE, certification lists, HakSpring supplement, …) are a separate axis. Design and decisions live in the maintainer's Obsidian `dialects` note; this page is the code-bound part.
 
-Status: P0 (data foundation) done for Sixian. Nothing filters by lect yet.
+Status: All six lects (`四南海大平安`) and sub-lect toggles (`美濃`, `卓蘭`, `桃園`) are built and wired on macOS and Android.
 
 ## Record layout in `dictionary.bin`
 
@@ -23,31 +23,31 @@ A word found in both MOE and the certification lists is one record with bits 0 a
 | Bits | Meaning |
 |---|---|
 | 0 | main reading (`KAUTIAN_SUBTAG_MAIN_BIT`); set on MOE and certification rows, `0` on supplement rows |
-| 1–10 | upstream accent columns; Kipan will use 1, 2, 3 for the lect's variants (Sixian: north, south, Meinong; Raoping: Hsinchu, Zhuolan, Taoyuan) — not written yet |
+| 1–10 | upstream accent columns; Kipan uses bit 1 (`KAUTIAN_SUBTAG_ZHUOLAN_BIT`), bit 2 (`KAUTIAN_SUBTAG_TAOYUAN_BIT`), and bit 3 (`KAUTIAN_SUBTAG_MEINONG_BIT`) for sub-dialect variants |
 | 11 | upstream name appendix — not used |
 | 12 | upstream alternative reading (又唸作) — candidate for secondary readings split by `splitReadingVariants()`, not written yet |
 | **13–15** | **lect code** (Kipan) |
 
-Lect codes: `1` Sixian (四, `xiien`), `2` Hailu (海陸, `hoiliug`), `6` South Sixian (南, `namxiian`: its own lect, built from the MOE 南 volume, the 南 supplement and the certification list's South readings (below); the settings list it second, never as a sub-choice of Sixian). Reserved: `3` Dapu, `4` Raoping, `5` Zhao'an. `0` means "no lect" and fails the build.
+Lect codes in "四南海大平安" order: `1` Sixian (四, `xiien`), `6` South Sixian (南, `namxiian`), `2` Hailu (海, `hoiliug`), `3` Dapu (大, `taibu`), `4` Raoping (平, `ngiaupin`), `5` Zhao'an (安, `zhioon`). `0` means "no lect" and fails the build.
 
 The engine reader keeps bits 13–15 (`KAUTIAN_SUBTAG_LECT_MASK`) in `DictionaryRecord.kautian_subtag`. They sit outside `KAUTIAN_SUBTAG_USED_MASK` (bits 0–12), so they never reach the subcollection AND. `DictionaryReader::passes_filter` has a lect gate: when the filter's `lect` is non-zero, a record whose lect is non-zero and different is dropped. A record with lect 0 (non-Hakfa data) and a filter with lect 0 (or the `u32::MAX` sentinel) match everything.
 
-The wanted lect rides **wire bits 27–29** of `enabled_sources_bitmask` (`WIRE_LECT_SHIFT`, `WIRE_LECT_MASK`; `0` = all lects, the behaviour before lects). Bits 30–31 are still free. If upstream starts using 27–29, move the lect to its own settings field; the change is confined to `Filter::from_enabled_bitmask` and the platform encoders.
+The wanted lect rides **wire bits 27–29** of `enabled_sources_bitmask` (`WIRE_LECT_SHIFT`, `WIRE_LECT_MASK`; `0` = all lects, the behaviour before lects). Sub-dialect switches ride **wire bit 25** (`WIRE_ZHUOLAN_BIT`), **wire bit 26** (`WIRE_TAOYUAN_BIT`), and **wire bit 30** (`WIRE_MEINONG_BIT`).
 
 ## One merged dictionary
 
-`node dictionary/sources/official/hakspring/extract_and_build.js` (no argument, same as `--lect all`) runs the extraction once per lect (child process `--dump-records`), concatenates, sorts by frequency (ties: Sixian first) and encodes one `dictionary.bin`. That is the shipped dictionary: it overwrites `assets/dictionaries`, `output/hakfa`, `dictionary/output/hakfa` and writes `dictionary/output/hakfa-all`. `--lect 四` and `--lect 海` build one lect alone for debugging and write `dictionary/output/hakfa-<id>/` and `data/hakspring-<id>.csv` only. Lect ids are the Hakka names: `xiien`, `hoiliug`.
+`node dictionary/sources/official/hakspring/extract_and_build.js` (no argument, same as `--lect all`) runs the extraction once per lect (child process `--dump-records`), concatenates, sorts by frequency (ties: Sixian first) and encodes one `dictionary.bin`. That is the shipped dictionary: it overwrites `assets/dictionaries`, `output/hakfa`, `dictionary/output/hakfa` and writes `dictionary/output/hakfa-all`. `--lect 四|南|海|大|平|安` builds one lect alone for debugging and writes `dictionary/output/hakfa-<id>/` and `data/hakspring-<id>.csv` only. Lect ids are the Hakfa names: `xiien`, `namxiian`, `hoiliug`, `taibu`, `ngiaupin`, `zhioon`.
 
 Build from the HakSpring (客源翠) `main` data: set `HAKSPRING_ROOT` to a checkout of `main` when the usual checkout sits on a feature branch (its `data/supp` can carry rows `main` does not have yet).
 
-Test: `engine/lexicon/tests/hakfa_lect.rs` opens the merged dictionary (skips if not built) and checks that lect 1 + lect 2 = every row, lect 0 = every row, lect 3 = none.
+Test: `engine/lexicon/tests/hakfa_lect.rs` opens the merged dictionary (skips if not built) and checks that lects `1 + 6 + 2 + 3 + 4 + 5` = every row, lect 0 = every row, lect 7 = none, and sub-dialect toggles gate Meinong and Zhuolan/Taoyuan rows.
 
 ## The lect setting
 
-- desktop-core: `Lect` (`settings/choices.rs`, stored `xiien` / `hoiliug`), key `lect` (`settings/keys.rs`), default Sixian. It is a key-path setting, so macOS carries it in the settings snapshot; `dictionary_toggles` sends `DictionarySourceToggles.lect = Lect::code()`. The General pane's reset does not touch it.
-- macOS: `Lect` and `SettingsStore.lect` (Swift twins), shortcut `cycleLect` (**⌃⌘L**, first row of the Shortcuts pane and the input-method menu), the mode flash names the lect (`四縣 xiien` / `海陸 hoiliug`). An open candidate bar is fetched again.
+- desktop-core: `Lect` (`settings/choices.rs`, stored `xiien` / `namxiian` / `hoiliug` / `taibu` / `ngiaupin` / `zhioon`), key `lect` (`settings/keys.rs`), default Sixian. It is a key-path setting, so macOS carries it in the settings snapshot; `dictionary_toggles` sends `DictionarySourceToggles.lect = Lect::code()`. The General pane's reset does not touch it.
+- macOS: `Lect` and `SettingsStore.lect` (Swift twins), shortcut `cycleLect` (**⌃⌘L**, first row of the Shortcuts pane and the input-method menu), the mode flash names the lect (`四縣 Xi'ien`, `南四縣 Nam Xi'ian`, `海陸 Hoiliug`, `大埔 Tàibú`, `饒平 Ngiaupin`, `詔安 Zhiô'ǒn`). An open candidate bar is fetched again.
 - Which lects can be typed in: keys `lectEnabled.<id>` (`keys::lect_enabled`), one per lect, switched in the Dictionary Sources pane under the MOE dictionary (macOS `DictionaryTogglesView`). `SettingsDocument::available_lects` / `effective_lect` resolve the lect the engine gets: the stored one, or the next available one when its row was switched off (the stored choice is not rewritten). The cycle shortcut steps through the available lects only. The last lect on cannot be switched off. The certification rows under it are display-only and follow the MOE rows (certification Sixian is on if MOE Sixian or South Sixian is). No engine change: the engine still gets one lect.
-- Android: sends lect 1 (`LexiconBridge.kt`) until it has a setting; lect 0 would mix every lect.
+- Android: `HakfaLects.ALL` (`ActiveLect.kt`) defines all six lects in `四南海大平安` order, with system IME subtypes (`method.xml`), `LectScreen.kt`, and `DictionarySourcesScreen.kt` (including Meinong, Zhuolan, and Taoyuan sub-toggles).
 - Windows / Linux: the lect setting exists in desktop-core (default Sixian) but they have no shortcut or picker for it yet.
 
 ## Ranking

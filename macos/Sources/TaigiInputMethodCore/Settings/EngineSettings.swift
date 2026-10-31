@@ -20,16 +20,19 @@ enum InputMode: String, CaseIterable, Sendable {
     }
 }
 
-/// Hakfa fork: which lect (腔) the dictionary answers in. Raw values are the lect's Hakka
+/// Hakfa fork: which lect (腔) the dictionary answers in. Raw values are the lect's Hakfa
 /// self-names, desktop-core's `Lect::raw` (`settings/choices.rs`), which reads the stored value
 /// from the settings snapshot and sends the code on `DictionarySourceToggles.lect`.
-/// Order = the cycle shortcut's order.
+/// Order = the cycle shortcut's order ("四南海大平安").
 enum Lect: String, CaseIterable, Sendable {
     case xiien
     /// 南四縣: a lect of its own, second in the pane (USER 2026-10-25: the South Sixian community
     /// fought for a sixth place in the MOE dictionary, so it is never folded under 四縣).
     case namxiian
     case hoiliug
+    case taibu
+    case ngiaupin
+    case zhioon
 
     /// The lect the cycle shortcut steps to among the `available` ones, round again from the end
     /// (desktop-core `Lect::next_among`). Itself when nothing else is available.
@@ -44,16 +47,19 @@ enum Lect: String, CaseIterable, Sendable {
     }
 
     /// How this lect says 羅馬字 in HagPinPlus — the readings of 羅、馬、字 in its dictionary,
-    /// run together (四縣 lǒ·má·sii, 海陸 lo·mà·sīi; 南四縣 reads them as 四縣 does). The HUD that
-    /// names the script pair puts it in brackets.
+    /// run together (四縣／南四縣 lǒ·má·sii, 海陸 lo·mà·sīi, 大埔 lǒ·mā·sìi, 饒平 lo·mǎ·síi,
+    /// 詔安 lòo·mǎ·cu). The HUD that names the script pair puts it in brackets.
     var romanScriptName: String {
         switch self {
         case .xiien, .namxiian: "Lǒmásii"
         case .hoiliug: "Lomàsīi"
+        case .taibu: "Lǒmāsìi"
+        case .ngiaupin: "Lomǎsíi"
+        case .zhioon: "Lòomǎcu"
         }
     }
 
-    /// `text` with the 四縣 spelling of 羅馬字 (what the Hakka UI strings are written with) changed to
+    /// `text` with the 四縣 spelling of 羅馬字 (what the Hakfa UI strings are written with) changed to
     /// this lect's. Text without it is unchanged, so other display languages pass through.
     func localizingRomanScriptName(in text: String) -> String {
         text.replacingOccurrences(of: Lect.xiien.romanScriptName, with: romanScriptName)
@@ -65,17 +71,23 @@ enum Lect: String, CaseIterable, Sendable {
         case .xiien: 1
         case .namxiian: 6
         case .hoiliug: 2
+        case .taibu: 3
+        case .ngiaupin: 4
+        case .zhioon: 5
         }
     }
 
     /// What the mode flash says: the Chinese name with its HagPinPlus in brackets, the same shape
     /// as the other HUD texts (`諸夏字 (Lǒmásii)`), so it reads the same in every display
-    /// language. Syllable separator "None" with the apostrophe rule: `Xi'ien` (xi + ien).
+    /// language. Syllable separator "None" with the apostrophe rule: `Xi'ien` (xi + ien), `Zhiô'ǒn` (zhiô + ǒn).
     var displayName: String {
         switch self {
         case .xiien: "四縣 (Xi'ien)"
         case .namxiian: "南四縣 (Nǎm Xi'ian)"
         case .hoiliug: "海陸 (Hóiliug)"
+        case .taibu: "大埔 (Tàibú)"
+        case .ngiaupin: "饒平 (Ngiaupin)"
+        case .zhioon: "詔安 (Zhiô'ǒn)"
         }
     }
 }

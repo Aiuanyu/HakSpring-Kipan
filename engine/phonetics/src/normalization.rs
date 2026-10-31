@@ -87,8 +87,9 @@ fn normalize_syllable(syllable: &str, add_default_tone: bool) -> String {
         }
     }
     if add_default_tone && tone_number.is_empty() {
-        if let Some(last_char) = without_tone.chars().last() {
-            tone_number = if crate::syllable::is_stop_coda(last_char) {
+        let lower = without_tone.to_ascii_lowercase();
+        if let Some(last_char) = lower.chars().last() {
+            tone_number = if crate::syllable::is_stop_coda(last_char) && !lower.ends_with("ng") {
                 "4".to_string()
             } else {
                 "1".to_string()

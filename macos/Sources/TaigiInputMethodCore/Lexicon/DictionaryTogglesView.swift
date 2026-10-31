@@ -23,16 +23,26 @@ struct DictionaryTogglesView: View {
     private var isNamxiianEnabled = SettingsStore.Keys.lectEnabled(.namxiian).defaultValue
     @AppStorage(SettingsStore.Keys.lectEnabled(.hoiliug).name)
     private var isHoiliugEnabled = SettingsStore.Keys.lectEnabled(.hoiliug).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.taibu).name)
+    private var isTaibuEnabled = SettingsStore.Keys.lectEnabled(.taibu).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.ngiaupin).name)
+    private var isNgiaupinEnabled = SettingsStore.Keys.lectEnabled(.ngiaupin).defaultValue
+    @AppStorage(SettingsStore.Keys.lectEnabled(.zhioon).name)
+    private var isZhioonEnabled = SettingsStore.Keys.lectEnabled(.zhioon).defaultValue
 
     @AppStorage(SettingsStore.Keys.isMeinongEnabled.name)
     private var isMeinongEnabled = SettingsStore.Keys.isMeinongEnabled.defaultValue
+    @AppStorage(SettingsStore.Keys.isZhuolanEnabled.name)
+    private var isZhuolanEnabled = SettingsStore.Keys.isZhuolanEnabled.defaultValue
+    @AppStorage(SettingsStore.Keys.isTaoyuanEnabled.name)
+    private var isTaoyuanEnabled = SettingsStore.Keys.isTaoyuanEnabled.defaultValue
     @AppStorage(SettingsStore.Keys.isTone33Enabled.name)
     private var isTone33Enabled = SettingsStore.Keys.isTone33Enabled.defaultValue
 
     // Hakfa fork (Obs IME data-ui D1): only the sources that exist in this keyboard are listed.
     // The upstream Taigi dictionaries (iTaigi, plant names, Taiwanese-Japanese, Tai-Hua, STTI,
     // the accent and appendix sub-options, Khiin / variant / LKK characters, the supplement
-    // word list) have no Hakka data, so a switch for them would do nothing. Their stored values
+    // word list) have no Hakfa data, so a switch for them would do nothing. Their stored values
     // stay as they were and the engine still reads them; they simply cannot be changed here.
     var body: some View {
         Form {
@@ -50,6 +60,15 @@ struct DictionaryTogglesView: View {
                                 .padding(.leading, Metrics.subcollectionIndent)
                                 .disabled(!isNamxiianEnabled)
                         }
+                        // 卓蘭、桃園係饒平底下个子開關（候選標「卓」「桃」「卓桃」）。
+                        if lect == .ngiaupin {
+                            Toggle("卓蘭音", isOn: $isZhuolanEnabled)
+                                .padding(.leading, Metrics.subcollectionIndent)
+                                .disabled(!isNgiaupinEnabled)
+                            Toggle("桃園音", isOn: $isTaoyuanEnabled)
+                                .padding(.leading, Metrics.subcollectionIndent)
+                                .disabled(!isNgiaupinEnabled)
+                        }
                     }
                 }
                 .padding(.leading, Metrics.subcollectionIndent)
@@ -63,10 +82,13 @@ struct DictionaryTogglesView: View {
                 Toggle(language.string(.commonNewwordDict), isOn: .constant(true))
                     .disabled(true)
                 // The certification list has five lects (no 南四縣 of its own): its 四縣 follows
-                // the MOE dictionary's 四縣 or 南四縣, the others follow the same lect.
+                // the MOE dictionary's 四縣 or 南四縣, the others follow the same lect ("四南海大平安").
                 Group {
                     Toggle(Lect.xiien.displayName, isOn: .constant(isOn(.xiien) || isOn(.namxiian)))
                     Toggle(Lect.hoiliug.displayName, isOn: .constant(isOn(.hoiliug)))
+                    Toggle(Lect.taibu.displayName, isOn: .constant(isOn(.taibu)))
+                    Toggle(Lect.ngiaupin.displayName, isOn: .constant(isOn(.ngiaupin)))
+                    Toggle(Lect.zhioon.displayName, isOn: .constant(isOn(.zhioon)))
                 }
                 .padding(.leading, Metrics.subcollectionIndent)
                 .disabled(true)
@@ -78,7 +100,7 @@ struct DictionaryTogglesView: View {
             } header: {
                 Text(language.string(.dictionaryMoeSectionTitle))
             } footer: {
-                Text("客語能力認證詞彙跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸等其他腔同款。\n美濃音：另外收認證標个美濃讀音，候選標「美」。")
+                Text("客語能力認證詞彙跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸、大埔、饒平、詔安同款。\n美濃音：另外收南四縣認證標个美濃讀音，候選標「美」。\n卓蘭音、桃園音：另外收饒平認證標个卓蘭、桃園讀音，候選標「卓」「桃」「卓桃」。")
             }
 
             // Hakfa fork: an output option, switched on its own (USER 2026-10-25) — the Meinong
@@ -116,6 +138,9 @@ struct DictionaryTogglesView: View {
         case .xiien: isXiienEnabled
         case .namxiian: isNamxiianEnabled
         case .hoiliug: isHoiliugEnabled
+        case .taibu: isTaibuEnabled
+        case .ngiaupin: isNgiaupinEnabled
+        case .zhioon: isZhioonEnabled
         }
     }
 
@@ -128,6 +153,9 @@ struct DictionaryTogglesView: View {
         case .xiien: $isXiienEnabled
         case .namxiian: $isNamxiianEnabled
         case .hoiliug: $isHoiliugEnabled
+        case .taibu: $isTaibuEnabled
+        case .ngiaupin: $isNgiaupinEnabled
+        case .zhioon: $isZhioonEnabled
         }
     }
 
