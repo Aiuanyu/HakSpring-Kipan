@@ -51,15 +51,12 @@ pub(crate) fn respond(id: u32, request: &UserDataRequest) -> Response {
     }
 }
 
-/// The lect codes with data in the shipped dictionary (四縣, 南四縣, 海陸).
-const BUILT_LECTS: [u32; 3] = [1, 6, 2];
-
 /// Hakfa fork: 各腔互學. The dictionary's readings of a Hanji in one lect come from the lexicon's
 /// Hanji search with the lect gate (`Filter.lect`, wire bits 27-29) and the exact Hanji kept — the
 /// search also lists words that only start with it.
 fn respond_sync_lects(id: u32, sync: &protos::engine::SyncLects) -> Response {
     let lects: Vec<u32> = if sync.lects.is_empty() {
-        BUILT_LECTS.to_vec()
+        userdata::SHIPPED_LECTS.to_vec()
     } else {
         sync.lects.clone()
     };

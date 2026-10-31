@@ -54,6 +54,7 @@ pub use handle::UserDataHandle;
 pub use learned_phrases::{LearnedPhraseRow, LearnedPhraseStore};
 pub use paths::{
     UserDataPaths, ASSOCIATION_FILE, CUSTOM_DICTIONARY_FILE, FREQUENCY_FILE, LEARNED_PHRASES_FILE,
+    SHIPPED_LECTS,
 };
 pub use requests::RequestError;
 pub use stores::{derive_custom_search_keys, UserDataStores};

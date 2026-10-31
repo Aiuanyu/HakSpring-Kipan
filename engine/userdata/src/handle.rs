@@ -237,17 +237,14 @@ impl UserDataHandle {
         self.handle(&request)
     }
 
-    /// Hakfa fork: the lects with their own learning data in the shipped dictionary (四縣, 南四縣, 海陸).
-    const BUNDLE_LECTS: [u32; 3] = [1, 6, 2];
-
     /// Hakfa fork: every shipped lect's learning plus the custom dictionary, as one version-4 file.
     fn export_bundle(
         &self,
         export: &protos::engine::ExportBackup,
     ) -> Result<protos::engine::BackupExported, RequestError> {
         let custom = Arc::clone(&self.settled_stores()?.custom_dictionary);
-        let mut lects = Vec::with_capacity(Self::BUNDLE_LECTS.len());
-        for lect in Self::BUNDLE_LECTS {
+        let mut lects = Vec::with_capacity(crate::SHIPPED_LECTS.len());
+        for lect in crate::SHIPPED_LECTS {
             lects.push((lect, self.settled_stores_for_lect(lect)?));
         }
         let backup = crate::export_bundle(
@@ -277,7 +274,7 @@ impl UserDataHandle {
         count: &protos::engine::CountLearning,
     ) -> Result<protos::engine::LearningCounts, RequestError> {
         let lects: Vec<u32> = if count.lects.is_empty() {
-            vec![1, 6, 2]
+            crate::SHIPPED_LECTS.to_vec()
         } else {
             count.lects.clone()
         };
@@ -572,7 +569,8 @@ pub(crate) mod tests {
             other => panic!("expected counts, got {other:?}"),
         };
         let frequency: Vec<(u32, u32)> = counts.lects.iter().map(|c| (c.lect, c.frequency)).collect();
-        assert_eq!(frequency, vec![(1, 2), (6, 0), (2, 1)]);
+        // No lect named: every shipped lect, in the project's order 四南海大平安.
+        assert_eq!(frequency, vec![(1, 2), (6, 0), (2, 1), (3, 0), (4, 0), (5, 0)]);
 
         // clearing 海陸 leaves 四縣 alone
         answer(

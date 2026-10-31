@@ -94,6 +94,6 @@ fn a_real_sized_bundle_needs_parts_and_every_part_passes_the_ffi_gate() {
     }
     let result = answer.unwrap();
     assert_eq!(result.refusal, protos::engine::BackupRefusal::None as i32);
-    assert_eq!(result.lects, 3);
+    assert_eq!(result.lects, 6);
     assert!(result.frequency >= 20_000);
 }

@@ -87,7 +87,7 @@ fn a_bundle_carries_every_lects_learning_and_the_custom_dictionary_with_its_lect
     let target = open(to.path());
     let imported = import(&target, file);
     assert_eq!(imported.refusal, protos::engine::BackupRefusal::None as i32);
-    assert_eq!(imported.lects, 3, "四縣, 海陸, 南四縣 sections");
+    assert_eq!(imported.lects, 6, "one section per shipped lect (四南海大平安)");
     assert_eq!(imported.custom_dictionary, 2);
     assert_eq!(imported.learned_phrases, 1);
 
@@ -204,7 +204,7 @@ fn a_bundle_sent_in_parts_imports_like_one_sent_whole() {
     }
     let imported = answer.unwrap();
     assert_eq!(imported.refusal, protos::engine::BackupRefusal::None as i32);
-    assert_eq!(imported.lects, 3);
+    assert_eq!(imported.lects, 6);
     assert_eq!(imported.learned_phrases, 1);
     assert_eq!(
         target
@@ -243,7 +243,7 @@ fn a_new_part_zero_discards_what_an_abandoned_import_left() {
     match response.result {
         Some(Answer::BackupImported(imported)) => {
             assert_eq!(imported.refusal, protos::engine::BackupRefusal::None as i32);
-            assert_eq!(imported.lects, 3);
+            assert_eq!(imported.lects, 6);
         }
         other => panic!("expected BackupImported, got {other:?}"),
     }

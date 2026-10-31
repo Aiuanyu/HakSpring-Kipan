@@ -24,6 +24,11 @@ pub struct UserDataPaths {
 /// sends none) and 1 (四縣) keep the original names, so what was learned before lects existed is
 /// 四縣's without moving anything; 2 (海陸) and the rest get their own files. The custom
 /// dictionary is the user's own explicit entries and stays one file for every lect.
+/// Hakfa fork: every lect with its own learning data, in the project's order 四南海大平安
+/// (四縣, 南四縣, 海陸, 大埔, 饒平, 詔安). What an "all lects" request (backup, lect sync, learning
+/// counts) covers when the platform names none.
+pub const SHIPPED_LECTS: [u32; 6] = [1, 6, 2, 3, 4, 5];
+
 pub fn lect_file_suffix(lect: u32) -> Option<String> {
     match lect {
         0 | 1 => None,

@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -441,13 +443,14 @@ fun CustomDictionaryScreen(
 private fun lectTag(code: Int): String = HakfaLects.nameOf(code).substringBefore(" (")
 
 // Hakfa fork: 「全部」 plus one chip per lect; the chosen one limits the list to words read in that lect.
-@OptIn(ExperimentalMaterial3Api::class)
+// Seven chips do not fit one line of a phone, so they wrap onto a second line instead of running off the edge.
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun LectFilterRow(
     selected: Int?,
     onSelected: (Int?) -> Unit,
 ) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

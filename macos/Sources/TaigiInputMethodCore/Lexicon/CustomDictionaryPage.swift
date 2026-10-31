@@ -21,6 +21,19 @@ struct CustomWordRow: Identifiable, Equatable {
     var ngiaupinRoman: String { ngiaupinRow?.roman ?? "" }
     var zhioonRoman: String { zhioonRow?.roman ?? "" }
 
+    /// Hakfa fork: the readings the word has, in the project's order 四南海大平安, for the table's one
+    /// readings cell (`tag` is the one-character tag, `name` the lect's name for the tooltip).
+    var readings: [(tag: String, name: String, roman: String)] {
+        [
+            ("四", "四縣", xiienRoman),
+            ("南", "南四縣", namxiianRoman),
+            ("海", "海陸", hoiliugRoman),
+            ("大", "大埔", taibuRoman),
+            ("平", "饒平", ngiaupinRoman),
+            ("安", "詔安", zhioonRoman),
+        ].filter { !$0.2.isEmpty }
+    }
+
     var allRows: [CustomDictionaryRow] {
         [xiienRow, namxiianRow, hoiliugRow, taibuRow, ngiaupinRow, zhioonRow].compactMap { $0 }
     }
@@ -329,72 +342,46 @@ struct CustomDictionaryPage: View {
         .userDataPageChrome(activity: model.activity, message: $model.message)
     }
 
+    /// Hakfa fork: every lect's reading in one cell — six per-lect columns do not fit the 545-point pane
+    /// (the window cannot be widened), and a table cell is not edited in place anyway (a row opens the
+    /// sheet). Two lines: `四 南 海` on the first, `大 平 安` on the second (a line with no reading is
+    /// left out); a long reading shortens, and hover lists them by lect name.
+    @ViewBuilder
+    private func readingsCell(_ word: CustomWordRow) -> some View {
+        let readings = word.readings
+        if readings.isEmpty {
+            Text("＋")
+                .foregroundStyle(.tertiary)
+        } else {
+            let first = readings.filter { ["四", "南", "海"].contains($0.tag) }
+            let second = readings.filter { ["大", "平", "安"].contains($0.tag) }
+            VStack(alignment: .leading, spacing: 1) {
+                if !first.isEmpty {
+                    Text(first.map { "\($0.tag) \($0.roman)" }.joined(separator: "　"))
+                }
+                if !second.isEmpty {
+                    Text(second.map { "\($0.tag) \($0.roman)" }.joined(separator: "　"))
+                }
+            }
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .padding(.vertical, 2)
+            .help(readings.map { "\($0.name)　\($0.roman)" }.joined(separator: "\n"))
+        }
+    }
+
     private var entryTable: some View {
         Table(model.wordRows, selection: $model.selectedWordID) {
             TableColumn("諸夏字") { word in
                 Text(word.hanji.isEmpty ? "—" : word.hanji)
                     .fontWeight(.medium)
+                    .lineLimit(1)
             }
-            .width(min: 80, ideal: 100)
+            .width(min: 56, ideal: 70)
 
-            TableColumn("打四縣") { word in
-                if word.xiienRoman.isEmpty {
-                    Text("＋")
-                        .foregroundStyle(.tertiary)
-                } else {
-                    Text(word.xiienRoman)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            TableColumn("打南四縣") { word in
-                if word.namxiianRoman.isEmpty {
-                    Text("＋")
-                        .foregroundStyle(.tertiary)
-                } else {
-                    Text(word.namxiianRoman)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            TableColumn("打海陸") { word in
-                if word.hoiliugRoman.isEmpty {
-                    Text("＋")
-                        .foregroundStyle(.tertiary)
-                } else {
-                    Text(word.hoiliugRoman)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            TableColumn("打大埔") { word in
-                if word.taibuRoman.isEmpty {
-                    Text("＋")
-                        .foregroundStyle(.tertiary)
-                } else {
-                    Text(word.taibuRoman)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            TableColumn("打饒平") { word in
-                if word.ngiaupinRoman.isEmpty {
-                    Text("＋")
-                        .foregroundStyle(.tertiary)
-                } else {
-                    Text(word.ngiaupinRoman)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            TableColumn("打詔安") { word in
-                if word.zhioonRoman.isEmpty {
-                    Text("＋")
-                        .foregroundStyle(.tertiary)
-                } else {
-                    Text(word.zhioonRoman)
-                        .foregroundStyle(.secondary)
-                }
+            TableColumn("各腔讀音（四南海大平安）") { word in
+                readingsCell(word)
             }
         }
         .tableStyle(.inset)
@@ -532,6 +519,7 @@ struct CustomDictionaryEntrySheet: View {
                 }
             }
             .formStyle(.grouped)
+            .frame(minHeight: 120, maxHeight: 360)
 
             HStack {
                 Button("各腔自動補音") {
@@ -550,7 +538,7 @@ struct CustomDictionaryEntrySheet: View {
             }
         }
         .padding(20)
-        .frame(width: 400)
+        .frame(width: 420)
     }
 
     private var hasAtLeastOneReading: Bool {
