@@ -50,6 +50,9 @@ class CandidateOverlayView : FrameLayout {
     // composition (both read off the SmartbarManager cache on show/update).
     private val suggestionsState = mutableStateOf<List<TaigiWord>>(emptyList())
     private val hanjiFirstState = mutableStateOf(false)
+
+    // Hakfa fork: Annotate in Brackets (effective) — the second line wears brackets; re-read on every show / update.
+    private val outputBothState = mutableStateOf(false)
     private val fullWidthPunctuationState = mutableStateOf(false)
     private val candidateDisplayModeState = mutableStateOf(CandidateDisplayMode.SIDE_BY_SIDE)
 
@@ -132,6 +135,7 @@ class CandidateOverlayView : FrameLayout {
                         isTPSLayout = isTPSLayout,
                         orMapsToER = prefs.tpsOrMapsToER,
                         isHanjiFirst = isHanjiFirst,
+                        annotateInBrackets = outputBothState.value,
                         isFullWidthPunctuation = isFullWidthPunctuation,
                         candidateDisplayMode = candidateDisplayMode,
                         resetKey = resetKey,
@@ -183,6 +187,7 @@ class CandidateOverlayView : FrameLayout {
 
         suggestionsState.value = suggestions
         hanjiFirstState.value = smartbarManager.getCachedIsHanjiFirst()
+        outputBothState.value = prefs.isOutputBothScripts
         fullWidthPunctuationState.value = smartbarManager.getCachedIsFullWidthPunctuation()
         candidateDisplayModeState.value = prefs.candidateDisplayMode
         surfaceState.value = surface
@@ -230,6 +235,7 @@ class CandidateOverlayView : FrameLayout {
         }
         suggestionsState.value = suggestions
         hanjiFirstState.value = smartbarManager.getCachedIsHanjiFirst()
+        outputBothState.value = prefs.isOutputBothScripts
         fullWidthPunctuationState.value = smartbarManager.getCachedIsFullWidthPunctuation()
         candidateDisplayModeState.value = prefs.candidateDisplayMode
     }

@@ -550,6 +550,13 @@ class SmartbarManager(
         logger.debug(TAG) { "[DISPLAY_MODE] candidateDisplayMode=${prefs.candidateDisplayMode}" }
     }
 
+    /** Hakfa fork: Annotate in Brackets flipped — repaint the shown candidates (strip and overlay) with the new second line. */
+    fun onOutputBothScriptsChanged() {
+        if (currentSuggestions.isEmpty()) return
+        updateCandidates(currentSuggestions)
+        if (isExpanded) candidateOverlayView?.updateSuggestions(currentSuggestions)
+    }
+
     private fun refreshScriptFlagCache() {
         cachedIsHanjiFirst = prefs.isHanjiFirst
         cachedIsFullWidthPunctuation = prefs.isFullWidthPunctuation
@@ -710,6 +717,7 @@ class SmartbarManager(
         val tints = colorSettings.candidateTints
         return CandidateDisplayParams(
             isHanjiFirst = cachedIsHanjiFirst,
+            isOutputBothScripts = prefs.isOutputBothScripts,
             candidateDisplayMode = prefs.candidateDisplayMode,
             fontType = prefs.fontType,
             layoutType = prefs.keyboardLayoutType,

@@ -38,6 +38,8 @@ sealed class CandidateMode {
 data class CandidateDisplayParams(
     /** EFFECTIVE translate-swap (already false under roman-only). */
     val isHanjiFirst: Boolean,
+    /** Hakfa fork: EFFECTIVE Annotate in Brackets (already false under roman-only). */
+    val isOutputBothScripts: Boolean = false,
     /** Carried explicitly: the swap flag alone cannot tell roman-first from roman-only. */
     val candidateDisplayMode: CandidateDisplayMode,
     val fontType: String,
@@ -80,6 +82,8 @@ val CandidateCellText.showsSubtitle: Boolean
  * swap decides the lead otherwise. `displayRoman` is already TPS-converted
  * by the caller when relevant.
  */
+private fun String.inBrackets(on: Boolean): String = if (on && isNotEmpty()) "($this)" else this
+
 fun candidateCellText(
     hanji: String?,
     displayRoman: String,
@@ -87,6 +91,8 @@ fun candidateCellText(
     candidateDisplayMode: CandidateDisplayMode,
     isHanjiFirst: Boolean,
     cellScript: String?,
+    /** Hakfa fork: Annotate in Brackets is on — the second line shows the script in the brackets the commit writes. */
+    annotateInBrackets: Boolean = false,
 ): CandidateCellText =
     when {
         hanji.isNullOrEmpty() -> CandidateCellText(displayRoman, null)
@@ -98,8 +104,10 @@ fun candidateCellText(
             } else {
                 CandidateCellText(hanji, null)
             }
-        isHanjiFirst -> CandidateCellText(hanji, displayRoman)
-        else -> CandidateCellText(displayRoman, hanji)
+        // Hakfa fork (USER 2026-11-01): with Annotate in Brackets on, the two-line cell previews the
+        // output — `臺灣` over `(tǒi-vǎn)`, or `tǒi-vǎn` over `(臺灣)` roman-first.
+        isHanjiFirst -> CandidateCellText(hanji, displayRoman.inBrackets(annotateInBrackets))
+        else -> CandidateCellText(displayRoman, hanji.inBrackets(annotateInBrackets))
     }
 
 /**

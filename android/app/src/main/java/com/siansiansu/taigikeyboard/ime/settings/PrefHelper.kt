@@ -824,6 +824,12 @@ class PrefHelper(
                 prefs[PreferenceKeys.KEYBOARD_LAYOUT_TYPE] ?: DEFAULT_KEYBOARD_LAYOUT_TYPE
             }.distinctUntilChanged()
 
+    /** Hakfa fork: the STORED Annotate in Brackets flag as a Flow; the candidate strip re-renders on each change. */
+    fun observeOutputBothScripts(): Flow<Boolean> =
+        dataStore.data
+            .map { prefs -> prefs[PreferenceKeys.OUTPUT_BOTH_SCRIPTS] ?: false }
+            .distinctUntilChanged()
+
     /**
      * Observes Candidate Display as a Flow — any writer (host picker or in-keyboard overlay). The IME
      * re-renders its live surfaces and re-fetches the open list on each change; the layout

@@ -75,10 +75,20 @@ impl CandidateCellContent {
                 Self::new(candidate.roman_for_display(), None)
             }
             Some(hanji) => {
+                // Hakfa fork: with Annotate in Brackets on, the second script is shown in the
+                // brackets the commit will write (`臺灣` over `(Tǒivǎn)`), so the window previews the
+                // output (USER 2026-10-21). Off, the annotation is the bare script as before.
+                let bracket = |script: String| {
+                    if settings.is_output_both_scripts {
+                        format!("({script})")
+                    } else {
+                        script
+                    }
+                };
                 if settings.is_hanji_first {
-                    Self::new(hanji, Some(candidate.roman_for_display()))
+                    Self::new(hanji, Some(bracket(candidate.roman_for_display())))
                 } else {
-                    Self::new(candidate.roman_for_display(), Some(hanji.to_owned()))
+                    Self::new(candidate.roman_for_display(), Some(bracket(hanji.to_owned())))
                 }
             }
         }
@@ -109,6 +119,31 @@ mod tests {
         assert_eq!(
             CandidateCellContent::cell(&c, &settings(true)),
             CandidateCellContent::new("交--人", Some("kau--lâng".to_owned()))
+        );
+    }
+
+    #[test]
+    fn annotate_in_brackets_shows_the_second_script_in_the_brackets_the_commit_writes() {
+        // Hakfa fork (USER 2026-10-21): the window previews `臺灣 (Tǒivǎn)`.
+        let c = candidate("tǒi-vǎn", Some("臺灣"), 0);
+        let mut brackets = settings(true);
+        brackets.is_output_both_scripts = true;
+        assert_eq!(
+            CandidateCellContent::cell(&c, &brackets),
+            CandidateCellContent::new("臺灣", Some("(tǒi-vǎn)".to_owned()))
+        );
+        // Roman-first: the Hanji is the one in brackets, as `tǒi-vǎn (臺灣)` is written.
+        let mut roman_first = settings(false);
+        roman_first.is_output_both_scripts = true;
+        assert_eq!(
+            CandidateCellContent::cell(&c, &roman_first),
+            CandidateCellContent::new("tǒi-vǎn", Some("(臺灣)".to_owned()))
+        );
+        // A candidate with no Hanji has no second script, so nothing to bracket.
+        let plain = candidate("tǒi-vǎn", None, 0);
+        assert_eq!(
+            CandidateCellContent::cell(&plain, &brackets),
+            CandidateCellContent::new("tǒi-vǎn", None)
         );
     }
 

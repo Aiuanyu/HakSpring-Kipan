@@ -273,6 +273,14 @@ class TaigiKeyboard : LifecycleInputMethodService() {
             }
         }
 
+        // Hakfa fork: Annotate in Brackets toggled in the settings: the shown candidates re-render at once
+        // (the second line gains / loses its brackets), as on desktop.
+        serviceScope.launch {
+            prefs.observeOutputBothScripts().collect {
+                smartbarManager.onOutputBothScriptsChanged()
+            }
+        }
+
         // Observe display-language changes and refresh the legacy View smartbar /
         // media-input a11y labels. Compose overlays follow the picker via
         // ProvideDisplayLanguage; the non-Compose buttons need this imperative

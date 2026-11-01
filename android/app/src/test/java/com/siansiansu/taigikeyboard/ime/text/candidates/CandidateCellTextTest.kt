@@ -23,12 +23,30 @@ class CandidateCellTextTest {
         mode: CandidateDisplayMode = CandidateDisplayMode.SIDE_BY_SIDE,
         isHanjiFirst: Boolean = false,
         cellScript: String? = null,
-    ) = candidateCellText(hanji, displayRoman, isTPSLayout, mode, isHanjiFirst, cellScript)
+        annotateInBrackets: Boolean = false,
+    ) = candidateCellText(hanji, displayRoman, isTPSLayout, mode, isHanjiFirst, cellScript, annotateInBrackets)
 
     // INVARIANT_CANDIDATE_CELL_SHOWS_BOTH_SCRIPTS (behavioral-invariants.md §42)
     @Test
     fun sideBySide_romanLeads_hanjiSubtitle() {
         assertEquals(CandidateCellText("tâi-gí", "台語"), cell())
+    }
+
+    // Hakfa fork (USER 2026-11-01): Annotate in Brackets previews the output on the second line.
+    @Test
+    fun annotateInBrackets_wrapsTheSecondLineInTheBracketsTheCommitWrites() {
+        assertEquals(CandidateCellText("台語", "(tâi-gí)"), cell(isHanjiFirst = true, annotateInBrackets = true))
+        assertEquals(CandidateCellText("tâi-gí", "(台語)"), cell(isHanjiFirst = false, annotateInBrackets = true))
+    }
+
+    @Test
+    fun annotateInBrackets_leavesOneLineCellsAlone() {
+        assertEquals(CandidateCellText("tâi-gí", null), cell(hanji = null, annotateInBrackets = true))
+        assertEquals(
+            CandidateCellText("tâi-gí", null),
+            cell(mode = CandidateDisplayMode.ROMAN_ONLY, annotateInBrackets = true),
+        )
+        assertEquals(CandidateCellText("台語", null), cell(isTPSLayout = true, annotateInBrackets = true))
     }
 
     /** The strip's content-level sizing scan and the per-cell render gate share this predicate. */
