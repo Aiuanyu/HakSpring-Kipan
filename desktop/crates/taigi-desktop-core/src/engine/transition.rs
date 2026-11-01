@@ -130,6 +130,9 @@ pub struct ContinuousCandidate {
     pub canonical_tl: String,
     /// Hakfa fork: 0 = an ordinary reading, 1 = 美濃, 2 = 卓蘭, 3 = 桃園, 4 = 卓桃.
     pub variant: u32,
+    /// Hakfa fork: 0 = whole readings (full syllables, a learned phrase, a composed sentence), 1 = a
+    /// strict prefix of the reading, 2 = an abbreviation of it.
+    pub coverage_kind: u32,
 }
 
 impl ContinuousCandidate {
@@ -142,6 +145,7 @@ impl ContinuousCandidate {
             hanji: message.hanji.clone(),
             canonical_tl: message.canonical_tl.clone(),
             variant: message.variant,
+            coverage_kind: message.coverage_kind,
         }
     }
 
@@ -202,6 +206,7 @@ pub(crate) mod test_support {
             hanji: hanji.map(str::to_owned),
             canonical_tl: roman.to_owned(),
             variant: 0,
+            coverage_kind: 0,
         }
     }
 }

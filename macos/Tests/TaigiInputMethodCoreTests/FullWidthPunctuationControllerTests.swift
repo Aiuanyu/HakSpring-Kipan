@@ -143,7 +143,7 @@ final class FullWidthPunctuationControllerTests: XCTestCase {
     /// the same approximation this round removed from the auto-space gate,
     /// left standing because which marks Hanji mode types is a Full-width Punctuation policy
     /// question, not an auto-space one.
-    func testPunctuationMidComposition_commitsWithTheFullWidthForm_inOneMutation() throws {
+    func testPunctuationMidComposition_commitsTheSentenceThenTheFullWidthMark() throws {
         // BOTH domains: `withHanjiFirst` moves `.standard` (the lifecycle
         // snapshot), `configure` the controller's own store (what each key
         // request carries). A case about "the user is in Hanji mode" needs them to agree.
@@ -157,8 +157,9 @@ final class FullWidthPunctuationControllerTests: XCTestCase {
 
             _ = try session.controller.handle(TestFixtures.keyDownEvent(characters: "?"), client: session.client)
 
-            XCTAssertEqual(session.client.insertedTexts.count, 1, "commit and punctuation stay one mutation")
-            XCTAssertEqual(session.client.insertedTexts.last, "taigi？ ")
+            // Hakfa fork: the engine's composed sentence (大佢), then the full-width mark — a Hanji commit
+            // earns no auto space.
+            XCTAssertEqual(session.client.insertedTexts, ["大佢", "？"])
         }
     }
 

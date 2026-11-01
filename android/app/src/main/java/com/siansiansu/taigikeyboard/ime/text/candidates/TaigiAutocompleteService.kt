@@ -251,4 +251,5 @@ private fun continuousSidechannels(candidate: RustEngineBridge.ContinuousCandida
         // R2: canonical TL identity → round-trips to
         // commitContinuous(associationTl) for the NextWord write.
         TaigiWord.MetadataKeys.CANONICAL_TL to candidate.canonicalTl,
+        TaigiWord.MetadataKeys.COVERAGE_KIND to candidate.coverageKind.toString(),
     )

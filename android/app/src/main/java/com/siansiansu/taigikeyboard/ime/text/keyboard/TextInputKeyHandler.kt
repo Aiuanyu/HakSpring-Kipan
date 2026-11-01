@@ -25,7 +25,9 @@ import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
 import com.siansiansu.taigikeyboard.ime.text.CandidateUpdateCoordinator
 import com.siansiansu.taigikeyboard.ime.text.CapsStateManager
 import com.siansiansu.taigikeyboard.ime.text.CharacterInputPipeline
+import com.siansiansu.taigikeyboard.ime.text.candidates.appendAutoSpaceForEngineCommit
 import com.siansiansu.taigikeyboard.ime.text.candidates.appendAutoSpaceIfEarned
+import com.siansiansu.taigikeyboard.ime.text.candidates.isSentencePunctuation
 import com.siansiansu.taigikeyboard.ime.text.candidates.rawPreeditWritesRomanization
 import com.siansiansu.taigikeyboard.ime.text.composing.ComposingManager
 import com.siansiansu.taigikeyboard.ime.text.composing.clearHostComposingRegion
@@ -572,7 +574,18 @@ internal class TextInputKeyHandler(
             candidateCoordinator.updateTaigiCandidates()
         } else {
             if (manager.isComposing()) {
-                manager.commitComposition(ic)
+                // Hakfa fork: punctuation sends the sentence the engine composed for the whole pending
+                // input (and teaches it, as a pick) instead of the romanization as typed.
+                val pendingBytes = manager.getRawInput()?.toByteArray(Charsets.UTF_8)?.size ?: 0
+                val sentence =
+                    if (isSentencePunctuation(char)) smartbarManager.wholeInputSentencePick(pendingBytes) else null
+                val outcome = sentence?.let { manager.commitContinuous(it, ic) }
+                if (outcome is RustEngineBridge.ContinuousCommitOutcome.Finalized) {
+                    appendAutoSpaceForEngineCommit(taigikeyboard, ic, outcome.earnsAutoSpace)
+                } else {
+                    // No whole sentence, or the pick did not end the composition: what is left commits as typed.
+                    manager.commitComposition(ic)
+                }
             }
             commitNonComposingCharacter(ic, char)
             smartbarManager.clearCandidates()

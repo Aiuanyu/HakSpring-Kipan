@@ -337,6 +337,7 @@ private inline fun composingFetchDispatch(
                 },
                 hanji = if (msg.hasHanji()) msg.hanji else null,
                 canonicalTl = msg.canonicalTl,
+                coverageKind = msg.coverageKind,
             )
         }
     } else {

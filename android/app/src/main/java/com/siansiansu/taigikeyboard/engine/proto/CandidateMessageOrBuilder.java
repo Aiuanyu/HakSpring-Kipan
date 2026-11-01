@@ -121,4 +121,17 @@ public interface CandidateMessageOrBuilder extends
    * @return The variant.
    */
   int getVariant();
+
+  /**
+   * <pre>
+   * Hakfa fork: how the candidate matches the typed input — 0 = whole readings (full syllables,
+   * learned phrase, composed sentence), 1 = the typed letters are a prefix of the reading
+   * (partial syllable), 2 = an abbreviation (initials). A platform that commits the composed
+   * sentence on punctuation accepts only 0 that ends where the pending input ends.
+   * </pre>
+   *
+   * <code>uint32 coverage_kind = 12;</code>
+   * @return The coverageKind.
+   */
+  int getCoverageKind();
 }

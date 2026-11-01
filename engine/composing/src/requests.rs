@@ -486,6 +486,7 @@ fn raw_to_proto_candidate(c: RawCandidate) -> CandidateMessage {
         // TPS-OOV hanji-absent candidates with no recoverable dict TL.
         canonical_tl: c.canonical_tl,
         variant: u32::from(c.variant),
+        coverage_kind: u32::from(c.coverage_kind),
     }
 }
 

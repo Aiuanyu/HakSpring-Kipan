@@ -425,14 +425,58 @@ fn enter_on_the_literal_writes_it_spaced_and_space_on_it_writes_nothing() {
 }
 
 #[test]
-fn punctuation_mid_composition_commits_both_in_one_write_and_arms_the_space() {
-    // trace (read by running): Hanji-first maps `?` to `？`; the preedit as
-    // typed is romanization, so the one write carries the auto space too.
+fn punctuation_mid_composition_commits_the_composed_sentence_then_the_mark() {
+    // Hakfa fork (USER 2026-10-31): typing punctuation sends the sentence the engine composed for all
+    // of the pending input (and teaches it, as a pick) instead of the romanization as typed.
+    // trace (read by running): `ngaigiongzu` composes 𠊎薑著; Hanji earns no auto space.
     let mut rig = new_rig(true);
-    rig.type_word("ho");
-    let key = KeyEventSnapshot::text("?", KeyModifiers::NONE);
-    assert!(rig.run(ComposingKeyIntent::CommitThenInsert("?".to_owned()), &key));
-    assert_eq!(rig.calls(), ["commit ho？ ", "list closed", "arm"]);
+    rig.type_word("ngaigiongzu");
+    let key = KeyEventSnapshot::text(",", KeyModifiers::NONE);
+    assert!(rig.run(ComposingKeyIntent::CommitThenInsert(",".to_owned()), &key));
+    let calls = rig.surface.calls.clone();
+    assert!(
+        calls.iter().any(|call| call.starts_with("commit ") && call.contains('薑')),
+        "{calls:?}"
+    );
+    assert!(
+        !calls.iter().any(|call| call.contains("ngǎi")),
+        "the romanization is not what is written: {calls:?}"
+    );
+    assert_eq!(calls.last().map(String::as_str), Some("insert \"，\""), "{calls:?}");
+}
+
+#[test]
+fn punctuation_after_a_half_typed_syllable_or_an_abbreviation_commits_as_typed() {
+    // `t` completes to 大 `tai` only as a prefix, and `qzx` reads as 青竹絲 only as initials: neither
+    // is a sentence for the whole input, so punctuation keeps committing what was typed.
+    for typed in ["t", "qzx"] {
+        let mut rig = new_rig(true);
+        rig.type_word(typed);
+        let key = KeyEventSnapshot::text(",", KeyModifiers::NONE);
+        assert!(rig.run(ComposingKeyIntent::CommitThenInsert(",".to_owned()), &key));
+        let calls = rig.surface.calls.clone();
+        assert!(
+            calls.iter().any(|call| call.starts_with(&format!("commit {typed}"))),
+            "`{typed}` is written as typed: {calls:?}"
+        );
+    }
+}
+
+#[test]
+fn a_digit_or_space_after_a_composition_keeps_committing_as_typed() {
+    // Only punctuation sends the composed sentence; a digit is a slot key or document text and a
+    // space has its own rules.
+    for mark in ["1", " "] {
+        let mut rig = new_rig(true);
+        rig.type_word("ngaigiongzu");
+        let key = KeyEventSnapshot::text(mark, KeyModifiers::NONE);
+        assert!(rig.run(ComposingKeyIntent::CommitThenInsert(mark.to_owned()), &key));
+        assert!(
+            rig.surface.calls.iter().any(|call| call.starts_with("commit ") && !call.contains('薑')),
+            "{mark:?}: {:?}",
+            rig.surface.calls
+        );
+    }
 }
 
 #[test]

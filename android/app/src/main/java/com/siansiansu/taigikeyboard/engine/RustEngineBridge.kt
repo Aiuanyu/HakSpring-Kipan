@@ -373,6 +373,8 @@ object RustEngineBridge {
          * with no dict TL.
          */
         val canonicalTl: String,
+        /** Hakfa fork: 0 = whole readings, 1 = a prefix of the reading, 2 = an abbreviation (`CandidateMessage.coverage_kind`). */
+        val coverageKind: Int = 0,
     )
 
     /**

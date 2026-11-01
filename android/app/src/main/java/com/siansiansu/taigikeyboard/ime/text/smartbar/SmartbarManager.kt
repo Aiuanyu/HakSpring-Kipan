@@ -504,6 +504,11 @@ class SmartbarManager(
         pushCandidateState(CandidateMode.Taigi(suggestions))
     }
 
+    /** Hakfa fork: the engine's composed sentence for all of the pending input, from the strip now shown (see [wholeInputSentencePick]). */
+    fun wholeInputSentencePick(pendingBytes: Int): com.siansiansu.taigikeyboard.engine.RustEngineBridge.ContinuousPick? =
+        com.siansiansu.taigikeyboard.ime.text.candidates
+            .wholeInputSentencePick(currentSuggestions, pendingBytes)
+
     fun getCachedIsHanjiFirst(): Boolean = cachedIsHanjiFirst
 
     /** Layout-facing punctuation width, cached beside the candidate projection; feeds the layout / appearance providers. */

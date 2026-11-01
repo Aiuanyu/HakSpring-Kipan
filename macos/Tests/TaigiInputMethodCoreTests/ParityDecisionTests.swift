@@ -61,7 +61,9 @@ final class ParityDecisionTests: XCTestCase {
         // Positive control: the same session's map is on.
         let control = try composedSession()
         _ = try control.controller.handle(TestFixtures.keyDownEvent(characters: "."), client: control.client)
-        XCTAssertEqual(control.client.insertedTexts, ["taigi\u{3002}"])
+        // Hakfa fork: a lone mark after a composition sends the sentence the engine composed for it
+        // (大佢), then the mark — two writes, not the romanization as typed.
+        XCTAssertEqual(control.client.insertedTexts, ["大佢", "\u{3002}"])
     }
 
     /// E2 under Telex, idle: `vx` is two letters, not a tone key with nothing

@@ -149,6 +149,31 @@ impl CandidateSource {
         self.presented.is_empty()
     }
 
+    /// Hakfa fork: the sentence the engine composed for ALL of the still-pending input — the first
+    /// cell, in display order, whose candidate carries Hanji and ends where the pending input ends
+    /// (`pending_len` bytes; the literal-romanization cell has no Hanji and is skipped) and matches
+    /// the typed letters as whole readings — not a completion of a half-typed syllable, not an
+    /// abbreviation. `None` when the engine composed no such sentence, e.g. the input does not read
+    /// as words. Typing punctuation commits this one instead of the romanization as typed.
+    pub fn whole_input_sentence(
+        &self,
+        pending_len: usize,
+    ) -> Option<(&ContinuousCandidate, CandidateScript)> {
+        if pending_len == 0 {
+            return None;
+        }
+        self.presented.iter().find_map(|presented| {
+            let candidate = self.candidates.get(presented.candidate_index)?;
+            // Whole readings only (`coverage_kind` 0): not a completion of a half-typed syllable
+            // (`t` → 大) and not an abbreviation (`qzx` → 青竹絲).
+            let whole = candidate.hanji.is_some()
+                && candidate.syllable_count > 0
+                && candidate.coverage_kind == 0
+                && candidate.consumed_span_end as usize == pending_len;
+            whole.then_some((candidate, presented.script))
+        })
+    }
+
     /// How many cells the window draws — `cells().len()` without copying them.
     pub fn len(&self) -> usize {
         self.presented.len()

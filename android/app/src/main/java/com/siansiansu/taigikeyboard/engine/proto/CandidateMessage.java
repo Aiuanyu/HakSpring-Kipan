@@ -436,6 +436,53 @@ public  final class CandidateMessage extends
     variant_ = 0;
   }
 
+  public static final int COVERAGE_KIND_FIELD_NUMBER = 12;
+  private int coverageKind_;
+  /**
+   * <pre>
+   * Hakfa fork: how the candidate matches the typed input — 0 = whole readings (full syllables,
+   * learned phrase, composed sentence), 1 = the typed letters are a prefix of the reading
+   * (partial syllable), 2 = an abbreviation (initials). A platform that commits the composed
+   * sentence on punctuation accepts only 0 that ends where the pending input ends.
+   * </pre>
+   *
+   * <code>uint32 coverage_kind = 12;</code>
+   * @return The coverageKind.
+   */
+  @java.lang.Override
+  public int getCoverageKind() {
+    return coverageKind_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: how the candidate matches the typed input — 0 = whole readings (full syllables,
+   * learned phrase, composed sentence), 1 = the typed letters are a prefix of the reading
+   * (partial syllable), 2 = an abbreviation (initials). A platform that commits the composed
+   * sentence on punctuation accepts only 0 that ends where the pending input ends.
+   * </pre>
+   *
+   * <code>uint32 coverage_kind = 12;</code>
+   * @param value The coverageKind to set.
+   */
+  private void setCoverageKind(int value) {
+
+    coverageKind_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: how the candidate matches the typed input — 0 = whole readings (full syllables,
+   * learned phrase, composed sentence), 1 = the typed letters are a prefix of the reading
+   * (partial syllable), 2 = an abbreviation (initials). A platform that commits the composed
+   * sentence on punctuation accepts only 0 that ends where the pending input ends.
+   * </pre>
+   *
+   * <code>uint32 coverage_kind = 12;</code>
+   */
+  private void clearCoverageKind() {
+
+    coverageKind_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.CandidateMessage parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -962,6 +1009,55 @@ public  final class CandidateMessage extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: how the candidate matches the typed input — 0 = whole readings (full syllables,
+     * learned phrase, composed sentence), 1 = the typed letters are a prefix of the reading
+     * (partial syllable), 2 = an abbreviation (initials). A platform that commits the composed
+     * sentence on punctuation accepts only 0 that ends where the pending input ends.
+     * </pre>
+     *
+     * <code>uint32 coverage_kind = 12;</code>
+     * @return The coverageKind.
+     */
+    @java.lang.Override
+    public int getCoverageKind() {
+      return instance.getCoverageKind();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: how the candidate matches the typed input — 0 = whole readings (full syllables,
+     * learned phrase, composed sentence), 1 = the typed letters are a prefix of the reading
+     * (partial syllable), 2 = an abbreviation (initials). A platform that commits the composed
+     * sentence on punctuation accepts only 0 that ends where the pending input ends.
+     * </pre>
+     *
+     * <code>uint32 coverage_kind = 12;</code>
+     * @param value The coverageKind to set.
+     * @return This builder for chaining.
+     */
+    public Builder setCoverageKind(int value) {
+      copyOnWrite();
+      instance.setCoverageKind(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: how the candidate matches the typed input — 0 = whole readings (full syllables,
+     * learned phrase, composed sentence), 1 = the typed letters are a prefix of the reading
+     * (partial syllable), 2 = an abbreviation (initials). A platform that commits the composed
+     * sentence on punctuation accepts only 0 that ends where the pending input ends.
+     * </pre>
+     *
+     * <code>uint32 coverage_kind = 12;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearCoverageKind() {
+      copyOnWrite();
+      instance.clearCoverageKind();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.CandidateMessage)
   }
   @java.lang.Override
@@ -986,10 +1082,11 @@ public  final class CandidateMessage extends
             "hanji_",
             "canonicalTl_",
             "variant_",
+            "coverageKind_",
           };
           java.lang.String info =
-              "\u0000\u0007\u0000\u0001\u0002\u000b\u0007\u0000\u0000\u0000\u0002\u000b\u0003\u000b" +
-              "\u0004\u0208\b\u0208\t\u1208\u0000\n\u0208\u000b\u000b";
+              "\u0000\b\u0000\u0001\u0002\f\b\u0000\u0000\u0000\u0002\u000b\u0003\u000b\u0004\u0208" +
+              "\b\u0208\t\u1208\u0000\n\u0208\u000b\u000b\f\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

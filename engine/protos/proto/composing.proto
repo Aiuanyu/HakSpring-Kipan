@@ -504,6 +504,11 @@ message CandidateMessage {
   // Hakfa fork: 0 = an ordinary reading, 1 = a Meinong (美濃) reading of South Sixian, which the
   // candidate window marks 「美」. Display only; the commit goes through `display_text`.
   uint32         variant             = 11;
+  // Hakfa fork: how the candidate matches the typed input — 0 = whole readings (full syllables,
+  // learned phrase, composed sentence), 1 = the typed letters are a prefix of the reading
+  // (partial syllable), 2 = an abbreviation (initials). A platform that commits the composed
+  // sentence on punctuation accepts only 0 that ends where the pending input ends.
+  uint32         coverage_kind       = 12;
 }
 
 // Platform-neutral effects. The wrapper maps document-mutation effects

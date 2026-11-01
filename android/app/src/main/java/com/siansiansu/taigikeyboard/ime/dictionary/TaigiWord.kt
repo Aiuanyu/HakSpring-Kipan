@@ -53,6 +53,9 @@ data class TaigiWord(
         /** Decimal-string `consumedSpanEnd` (UInt32) — passed verbatim to `commitContinuous`. */
         const val CONSUMED_BYTES = "consumedBytes"
 
+        /** Hakfa fork: decimal-string `coverage_kind` — 0 = whole readings, 1 = prefix of a reading, 2 = abbreviation. */
+        const val COVERAGE_KIND = "coverageKind"
+
         /** Decimal-string `syllableCount` (UInt32) — passed verbatim to `commitContinuous`. */
         const val SYLLABLE_COUNT = "syllableCount"
 

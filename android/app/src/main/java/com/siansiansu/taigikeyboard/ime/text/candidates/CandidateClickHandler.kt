@@ -380,3 +380,55 @@ internal fun shouldAppendAutoSpace(
     wroteRomanization: Boolean,
     committedText: String,
 ): Boolean = isAutoSpaceEnabled && wroteRomanization && !committedText.endsWith("-")
+
+/**
+ * Hakfa fork: the sentence the engine composed for ALL of the pending input — the first Continuous cell
+ * with Hanji, whole readings ([TaigiWord.MetadataKeys.COVERAGE_KIND] 0: not a completion of a half-typed
+ * syllable, not an abbreviation) that ends where the pending input ends ([pendingBytes], UTF-8). Typing
+ * punctuation commits this pick instead of the romanization as typed. `null` when there is none.
+ * Mirrors desktop-core `CandidateSource::whole_input_sentence`.
+ */
+internal fun wholeInputSentencePick(
+    words: List<TaigiWord>,
+    pendingBytes: Int,
+): RustEngineBridge.ContinuousPick? {
+    if (pendingBytes <= 0) return null
+    val word =
+        words.firstOrNull { candidate ->
+            val info = candidate.additionalInfo
+            info[TaigiWord.MetadataKeys.IS_CONTINUOUS] == "true" &&
+                !candidate.hanji.isNullOrEmpty() &&
+                info[TaigiWord.MetadataKeys.COVERAGE_KIND] == "0" &&
+                info[TaigiWord.MetadataKeys.CONSUMED_BYTES]?.toIntOrNull() == pendingBytes &&
+                (info[TaigiWord.MetadataKeys.SYLLABLE_COUNT]?.toIntOrNull() ?: 0) > 0
+        } ?: return null
+    return continuousPick(word)
+}
+
+/**
+ * Hakfa fork: punctuation (Unicode general categories Pc Pd Ps Pe Pi Pf Po — ASCII marks, the CJK and
+ * full-width ones). Not a letter, a digit, whitespace, a zero-width format character or an emoji: those
+ * keep committing the preedit as typed. Mirrors desktop-core `is_sentence_punctuation`.
+ */
+internal fun isSentencePunctuation(text: String): Boolean =
+    text.isNotEmpty() &&
+        text.all {
+            when (Character.getType(it).toByte()) {
+                Character.CONNECTOR_PUNCTUATION,
+                Character.DASH_PUNCTUATION,
+                Character.START_PUNCTUATION,
+                Character.END_PUNCTUATION,
+                Character.INITIAL_QUOTE_PUNCTUATION,
+                Character.FINAL_QUOTE_PUNCTUATION,
+                Character.OTHER_PUNCTUATION,
+                -> true
+                else -> false
+            }
+        }
+
+/** Hakfa fork: the auto space after an engine commit that earned one (what a candidate tap does). */
+internal fun appendAutoSpaceForEngineCommit(
+    taigikeyboard: TaigiKeyboard,
+    ic: android.view.inputmethod.InputConnection,
+    earnsAutoSpace: Boolean,
+) = appendAutoSpace(taigikeyboard, ic, taigikeyboard.prefs.isAutoSpaceEnabled && earnsAutoSpace)

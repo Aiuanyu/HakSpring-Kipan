@@ -154,16 +154,15 @@ final class AutoSpaceControllerTests: XCTestCase {
 
     // MARK: - Punctuation mid-composition (one mutation)
 
-    func testAttachingPunctuationMidComposition_landsBeforeTheSpace_inOneMutation() throws {
+    func testAttachingPunctuationMidComposition_landsBeforeTheSpace() throws {
         let session = try composedSession()
 
         _ = try session.controller.handle(TestFixtures.keyDownEvent(characters: "?"), client: session.client)
 
-        XCTAssertEqual(session.client.insertedTexts.count, 1, "commit and punctuation are one mutation")
-        XCTAssertTrue(
-            try XCTUnwrap(session.client.insertedTexts.last).hasSuffix("? "),
-            "got \(session.client.insertedTexts)",
-        )
+        // Hakfa fork: the composed sentence is committed first, then the mark with the space behind it
+        // (no reading of the document back, so no swap): two writes.
+        XCTAssertEqual(session.client.insertedTexts.count, 2, "the sentence, then the mark")
+        XCTAssertEqual(session.client.insertedTexts.last, "? ", "got \(session.client.insertedTexts)")
     }
 
     func testAnOpeningBracketMidComposition_keepsTheLeadingSpace() throws {
@@ -171,11 +170,8 @@ final class AutoSpaceControllerTests: XCTestCase {
 
         _ = try session.controller.handle(TestFixtures.keyDownEvent(characters: "("), client: session.client)
 
-        XCTAssertEqual(session.client.insertedTexts.count, 1)
-        XCTAssertTrue(
-            try XCTUnwrap(session.client.insertedTexts.last).hasSuffix(" ("),
-            "got \(session.client.insertedTexts)",
-        )
+        XCTAssertEqual(session.client.insertedTexts.count, 2, "the sentence, then the mark")
+        XCTAssertEqual(session.client.insertedTexts.last, " (", "got \(session.client.insertedTexts)")
     }
 
     // MARK: - The smart-punctuation swap

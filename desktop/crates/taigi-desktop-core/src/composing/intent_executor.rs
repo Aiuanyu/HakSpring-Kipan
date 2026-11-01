@@ -152,6 +152,31 @@ pub fn perform_intent(
             true
         }
         ComposingKeyIntent::CommitThenInsert(text) => {
+            // Hakfa fork: punctuation sends the sentence the engine composed (and learns it, as a
+            // pick), instead of the romanization as typed. Digits, spaces and letters keep the
+            // old commit; so does a composition the engine could not read as a whole sentence.
+            if !is_tps(settings) && is_sentence_punctuation(text) {
+                if let Some((candidate, script)) = list
+                    .whole_input_sentence(manager.raw_input().len())
+                    .map(|(candidate, script)| (candidate.clone(), script))
+                {
+                    let outcome = manager.commit_candidate(&candidate, script, surface);
+                    log::debug!("punctuation.commitSentence {outcome:?}");
+                    if let CandidateCommitOutcome::Finalized { earns_auto_space } = outcome {
+                        close_list(list, surface);
+                        insert_punctuation_after_sentence(
+                            text,
+                            &candidate.roman,
+                            earns_auto_space,
+                            settings,
+                            manager,
+                            surface,
+                        );
+                        return true;
+                    }
+                    // The candidate did not end the composition: what is left commits as typed below.
+                }
+            }
             // Mapped before the auto-space augmentation so the full-width
             // character rides the same single mutation as the commit. Both
             // rewrites CAN fire: this path commits the preedit as typed —
@@ -422,6 +447,54 @@ fn commit_candidate(
         CandidateCommitOutcome::Nailed { refetch: true }
         | CandidateCommitOutcome::Ignored
         | CandidateCommitOutcome::Unavailable => refresh(settings, manager, list, surface),
+    }
+}
+
+/// Hakfa fork: whether `text` is punctuation — ASCII marks and the CJK / full-width / general
+/// punctuation blocks. Not a letter, a digit (a slot key or document text), whitespace, a
+/// zero-width format character or an emoji: those keep committing the preedit as typed.
+fn is_sentence_punctuation(text: &str) -> bool {
+    !text.is_empty()
+        && text.chars().all(|c| {
+            c.is_ascii_punctuation()
+                || matches!(
+                    c,
+                    '¡' | '¿' | '«' | '»' | '·'
+                        | '\u{2010}'..='\u{2027}'
+                        | '\u{2030}'..='\u{205E}'
+                        | '\u{3001}'..='\u{3003}'
+                        | '\u{3008}'..='\u{3011}'
+                        | '\u{3014}'..='\u{301F}'
+                        | '\u{FE10}'..='\u{FE19}'
+                        | '\u{FE30}'..='\u{FE6B}'
+                        | '\u{FF01}'..='\u{FF0F}'
+                        | '\u{FF1A}'..='\u{FF20}'
+                        | '\u{FF3B}'..='\u{FF40}'
+                        | '\u{FF5B}'..='\u{FF65}'
+                )
+        })
+}
+
+/// Hakfa fork: the punctuation `text` written right after the composed sentence. The mark is
+/// placed as the old one-write commit placed it (`augment_insert`): attaching punctuation lands before
+/// the auto space (`guá? `), anything else after it (`guá (`), and only a sentence written as
+/// romanization (`earned_auto_space`) carries a space at all. One write of its own, so it does not
+/// depend on reading the document back, as the swap does.
+fn insert_punctuation_after_sentence(
+    text: &str,
+    committed_roman: &str,
+    earned_auto_space: bool,
+    settings: &SettingsDocument,
+    manager: &mut ComposingManager,
+    surface: &mut impl IntentSurface,
+) {
+    let document_text = document_punctuation(settings, text).unwrap_or_else(|| text.to_owned());
+    let gate = auto_space_gate(settings, earned_auto_space);
+    let insert = policies::augment_insert(&document_text, committed_roman, gate);
+    surface.insert_external(&insert.text);
+    manager.note_character_typed_outside_composition(&document_text);
+    if insert.leaves_trailing_auto_space && !surface.has_write_failed() {
+        surface.arm_swap();
     }
 }
 
