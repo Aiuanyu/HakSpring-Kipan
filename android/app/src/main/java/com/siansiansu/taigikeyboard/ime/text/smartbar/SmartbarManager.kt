@@ -12,6 +12,7 @@ import com.siansiansu.taigikeyboard.ime.core.logging.TraceContext
 import com.siansiansu.taigikeyboard.ime.core.logging.TraceId
 import com.siansiansu.taigikeyboard.ime.core.logging.debug
 import com.siansiansu.taigikeyboard.ime.dictionary.TaigiWord
+import com.siansiansu.taigikeyboard.ime.settings.BracketAnnotation
 import com.siansiansu.taigikeyboard.ime.settings.CandidateDisplayMode
 import com.siansiansu.taigikeyboard.ime.settings.OneHandedMode
 import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
@@ -718,6 +719,7 @@ class SmartbarManager(
         return CandidateDisplayParams(
             isHanjiFirst = cachedIsHanjiFirst,
             isOutputBothScripts = prefs.isOutputBothScripts,
+            annotationTemplates = BracketAnnotation(prefs.annotationTemplateHanjiFirst, prefs.annotationTemplateRomanFirst),
             candidateDisplayMode = prefs.candidateDisplayMode,
             fontType = prefs.fontType,
             layoutType = prefs.keyboardLayoutType,

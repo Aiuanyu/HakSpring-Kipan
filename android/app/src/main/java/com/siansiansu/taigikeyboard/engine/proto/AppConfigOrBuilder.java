@@ -153,4 +153,40 @@ public interface AppConfigOrBuilder extends
    * @return The meinongTones.
    */
   boolean getMeinongTones();
+
+  /**
+   * <pre>
+   * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+   * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+   * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+   * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+   * </pre>
+   *
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+   * @return The enum numeric value on the wire for annotationTemplateHanjiFirst.
+   */
+  int getAnnotationTemplateHanjiFirstValue();
+  /**
+   * <pre>
+   * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+   * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+   * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+   * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+   * </pre>
+   *
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+   * @return The annotationTemplateHanjiFirst.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate getAnnotationTemplateHanjiFirst();
+
+  /**
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+   * @return The enum numeric value on the wire for annotationTemplateRomanFirst.
+   */
+  int getAnnotationTemplateRomanFirstValue();
+  /**
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+   * @return The annotationTemplateRomanFirst.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate getAnnotationTemplateRomanFirst();
 }

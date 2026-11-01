@@ -1,6 +1,8 @@
 package com.siansiansu.taigikeyboard.ime.text.candidates
 
 import com.siansiansu.taigikeyboard.ime.dictionary.TaigiWord
+import com.siansiansu.taigikeyboard.ime.settings.BracketAnnotation
+import com.siansiansu.taigikeyboard.ime.settings.BracketTemplate
 import com.siansiansu.taigikeyboard.ime.settings.CandidateDisplayMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,8 +25,8 @@ class CandidateCellTextTest {
         mode: CandidateDisplayMode = CandidateDisplayMode.SIDE_BY_SIDE,
         isHanjiFirst: Boolean = false,
         cellScript: String? = null,
-        annotateInBrackets: Boolean = false,
-    ) = candidateCellText(hanji, displayRoman, isTPSLayout, mode, isHanjiFirst, cellScript, annotateInBrackets)
+        annotation: BracketAnnotation? = null,
+    ) = candidateCellText(hanji, displayRoman, isTPSLayout, mode, isHanjiFirst, cellScript, annotation)
 
     // INVARIANT_CANDIDATE_CELL_SHOWS_BOTH_SCRIPTS (behavioral-invariants.md §42)
     @Test
@@ -35,18 +37,28 @@ class CandidateCellTextTest {
     // Hakfa fork (USER 2026-11-01): Annotate in Brackets previews the output on the second line.
     @Test
     fun annotateInBrackets_wrapsTheSecondLineInTheBracketsTheCommitWrites() {
-        assertEquals(CandidateCellText("台語", "(tâi-gí)"), cell(isHanjiFirst = true, annotateInBrackets = true))
-        assertEquals(CandidateCellText("tâi-gí", "(台語)"), cell(isHanjiFirst = false, annotateInBrackets = true))
+        assertEquals(CandidateCellText("台語", "(tâi-gí)"), cell(isHanjiFirst = true, annotation = BracketAnnotation()))
+        assertEquals(CandidateCellText("tâi-gí", "(台語)"), cell(isHanjiFirst = false, annotation = BracketAnnotation()))
+    }
+
+    // Hakfa fork (USER 2026-11-01): one template per lead order; ruby previews as `ᴿᵀ ` ahead of the reading.
+    @Test
+    fun annotation_followsTheTemplateOfTheLead_andRubyShowsAhead() {
+        val annotation = BracketAnnotation(hanjiFirst = BracketTemplate.SQUARE, romanFirst = BracketTemplate.RUBY)
+        assertEquals(CandidateCellText("台語", "[tâi-gí]"), cell(isHanjiFirst = true, annotation = annotation))
+        assertEquals(CandidateCellText("tâi-gí", "ᴿᵀ 台語"), cell(isHanjiFirst = false, annotation = annotation))
+        val curly = BracketAnnotation(hanjiFirst = BracketTemplate.CURLY)
+        assertEquals(CandidateCellText("台語", "{tâi-gí}"), cell(isHanjiFirst = true, annotation = curly))
     }
 
     @Test
     fun annotateInBrackets_leavesOneLineCellsAlone() {
-        assertEquals(CandidateCellText("tâi-gí", null), cell(hanji = null, annotateInBrackets = true))
+        assertEquals(CandidateCellText("tâi-gí", null), cell(hanji = null, annotation = BracketAnnotation()))
         assertEquals(
             CandidateCellText("tâi-gí", null),
-            cell(mode = CandidateDisplayMode.ROMAN_ONLY, annotateInBrackets = true),
+            cell(mode = CandidateDisplayMode.ROMAN_ONLY, annotation = BracketAnnotation()),
         )
-        assertEquals(CandidateCellText("台語", null), cell(isTPSLayout = true, annotateInBrackets = true))
+        assertEquals(CandidateCellText("台語", null), cell(isTPSLayout = true, annotation = BracketAnnotation()))
     }
 
     /** The strip's content-level sizing scan and the per-cell render gate share this predicate. */

@@ -310,7 +310,7 @@ final class SettingsWindowTests: XCTestCase {
         XCTAssertEqual(
             SettingsPane.allCases.map(\.rawValue),
             [
-                "general", "appearance", "shortcuts", "dictionarySources", "customDictionary",
+                "general", "annotation", "appearance", "shortcuts", "dictionarySources", "customDictionary",
                 "learningRecords", "fontManagement", "about",
             ],
         )
@@ -338,15 +338,15 @@ final class SettingsWindowTests: XCTestCase {
     func testPaneLabels_followTheDisplayLanguage() {
         let hanji = makeStore(.hanji)
         XCTAssertEqual(
-            SettingsPane.allCases.map { hanji.string($0.labelKey) },
-            ["一般", "外觀", "快速齒", "辭典管理", "自訂詞庫", "學習紀錄", "字型管理", "關於齒盤"],
+            SettingsPane.allCases.map { $0.title(in: hanji) },
+            ["一般", "括號標註", "外觀", "快速齒", "辭典管理", "自訂詞庫", "學習紀錄", "字型管理", "關於齒盤"],
         )
 
         let english = makeStore(.english)
         XCTAssertEqual(
-            SettingsPane.allCases.map { english.string($0.labelKey) },
+            SettingsPane.allCases.map { $0.title(in: english) },
             [
-                "General", "Appearance", "Shortcuts", "Manage Dictionaries", "Custom Dictionary",
+                "General", "括號標註", "Appearance", "Shortcuts", "Manage Dictionaries", "Custom Dictionary",
                 "Learning Records", "Manage Fonts", "About the Keyboard",
             ],
         )

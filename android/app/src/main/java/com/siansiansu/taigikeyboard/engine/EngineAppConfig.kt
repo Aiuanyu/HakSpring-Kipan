@@ -4,11 +4,13 @@
 package com.siansiansu.taigikeyboard.engine
 
 import com.siansiansu.taigikeyboard.engine.proto.AppConfig
+import com.siansiansu.taigikeyboard.ime.settings.BracketTemplate
 import com.siansiansu.taigikeyboard.ime.settings.CandidateDisplayMode
 import com.siansiansu.taigikeyboard.ime.settings.EngineSettings
 import com.siansiansu.taigikeyboard.ime.settings.InputMode
 import com.siansiansu.taigikeyboard.ime.settings.PojMarkerOptions
 import com.siansiansu.taigikeyboard.ime.settings.SyllableSeparator
+import com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate as ProtoAnnotationTemplate
 import com.siansiansu.taigikeyboard.engine.proto.CandidateDisplayMode as ProtoCandidateDisplayMode
 import com.siansiansu.taigikeyboard.engine.proto.SyllableSeparator as ProtoSyllableSeparator
 
@@ -39,6 +41,8 @@ internal fun appConfig(
     isTpsOrMappedToER: Boolean = false,
     lect: Int = ActiveLect.current,
     meinongTones: Boolean = false,
+    annotationHanjiFirst: BracketTemplate = BracketTemplate.ROUND,
+    annotationRomanFirst: BracketTemplate = BracketTemplate.ROUND,
 ): AppConfig =
     AppConfig
         .newBuilder()
@@ -58,6 +62,9 @@ internal fun appConfig(
         // Hakfa fork: the lect the keyboard is typing in ([ActiveLect]; 1 四縣, 6 南四縣, 2 海陸, 3 大埔, 4 饒平, 5 詔安).
         .setLect(lect)
         .setMeinongTones(meinongTones)
+        // Hakfa fork: the Annotate in Brackets template per lead order.
+        .setAnnotationTemplateHanjiFirst(annotationHanjiFirst.toProto())
+        .setAnnotationTemplateRomanFirst(annotationRomanFirst.toProto())
         .build()
 
 /**
@@ -95,6 +102,8 @@ internal fun continuousAppConfig(settings: EngineSettings): AppConfig =
         syllableSeparator = settings.syllableSeparator,
         isTpsOrMappedToER = settings.isTpsOrMappedToER,
         meinongTones = settings.isTone33Enabled,
+        annotationHanjiFirst = settings.annotationTemplateHanjiFirst,
+        annotationRomanFirst = settings.annotationTemplateRomanFirst,
     )
 
 /**
@@ -140,4 +149,13 @@ internal fun SyllableSeparator.toProto(): ProtoSyllableSeparator =
         SyllableSeparator.HYPHEN -> ProtoSyllableSeparator.SYLLABLE_SEPARATOR_HYPHEN
         SyllableSeparator.SPACE -> ProtoSyllableSeparator.SYLLABLE_SEPARATOR_SPACE
         SyllableSeparator.NONE -> ProtoSyllableSeparator.SYLLABLE_SEPARATOR_NONE
+    }
+
+/** `AppConfig.annotation_template_*` (fields 17, 18); explicit, like [toProto] above. */
+internal fun BracketTemplate.toProto(): ProtoAnnotationTemplate =
+    when (this) {
+        BracketTemplate.ROUND -> ProtoAnnotationTemplate.ANNOTATION_TEMPLATE_ROUND
+        BracketTemplate.SQUARE -> ProtoAnnotationTemplate.ANNOTATION_TEMPLATE_SQUARE
+        BracketTemplate.CURLY -> ProtoAnnotationTemplate.ANNOTATION_TEMPLATE_CURLY
+        BracketTemplate.RUBY -> ProtoAnnotationTemplate.ANNOTATION_TEMPLATE_RUBY
     }

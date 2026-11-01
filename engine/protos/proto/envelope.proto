@@ -157,6 +157,20 @@ message AppConfig {
   // the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
   // only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
   bool meinong_tones = 16;
+  // Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+  // (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+  // `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+  // Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+  AnnotationTemplate annotation_template_hanji_first = 17;
+  AnnotationTemplate annotation_template_roman_first = 18;
+}
+
+// How Annotate in Brackets writes a pick's two scripts, `X` leading and `Y` annotating.
+enum AnnotationTemplate {
+  ANNOTATION_TEMPLATE_ROUND = 0;   // X (Y)
+  ANNOTATION_TEMPLATE_SQUARE = 1;  // X [Y]
+  ANNOTATION_TEMPLATE_CURLY = 2;   // X {Y}
+  ANNOTATION_TEMPLATE_RUBY = 3;    // <ruby>X<rt>Y</rt></ruby>
 }
 
 // Hanji conversion in the preedit

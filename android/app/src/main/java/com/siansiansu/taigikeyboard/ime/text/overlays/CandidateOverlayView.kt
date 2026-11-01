@@ -19,6 +19,7 @@ import com.siansiansu.taigikeyboard.ime.core.CompositionRoot
 import com.siansiansu.taigikeyboard.ime.core.TaigiKeyboard
 import com.siansiansu.taigikeyboard.ime.core.logging.debug
 import com.siansiansu.taigikeyboard.ime.dictionary.TaigiWord
+import com.siansiansu.taigikeyboard.ime.settings.BracketAnnotation
 import com.siansiansu.taigikeyboard.ime.settings.CandidateDisplayMode
 import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
 import com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarManager
@@ -52,7 +53,7 @@ class CandidateOverlayView : FrameLayout {
     private val hanjiFirstState = mutableStateOf(false)
 
     // Hakfa fork: Annotate in Brackets (effective) — the second line wears brackets; re-read on every show / update.
-    private val outputBothState = mutableStateOf(false)
+    private val annotationState = mutableStateOf<BracketAnnotation?>(null)
     private val fullWidthPunctuationState = mutableStateOf(false)
     private val candidateDisplayModeState = mutableStateOf(CandidateDisplayMode.SIDE_BY_SIDE)
 
@@ -135,7 +136,7 @@ class CandidateOverlayView : FrameLayout {
                         isTPSLayout = isTPSLayout,
                         orMapsToER = prefs.tpsOrMapsToER,
                         isHanjiFirst = isHanjiFirst,
-                        annotateInBrackets = outputBothState.value,
+                        annotation = annotationState.value,
                         isFullWidthPunctuation = isFullWidthPunctuation,
                         candidateDisplayMode = candidateDisplayMode,
                         resetKey = resetKey,
@@ -187,7 +188,7 @@ class CandidateOverlayView : FrameLayout {
 
         suggestionsState.value = suggestions
         hanjiFirstState.value = smartbarManager.getCachedIsHanjiFirst()
-        outputBothState.value = prefs.isOutputBothScripts
+        annotationState.value = prefs.bracketAnnotation
         fullWidthPunctuationState.value = smartbarManager.getCachedIsFullWidthPunctuation()
         candidateDisplayModeState.value = prefs.candidateDisplayMode
         surfaceState.value = surface
@@ -235,7 +236,7 @@ class CandidateOverlayView : FrameLayout {
         }
         suggestionsState.value = suggestions
         hanjiFirstState.value = smartbarManager.getCachedIsHanjiFirst()
-        outputBothState.value = prefs.isOutputBothScripts
+        annotationState.value = prefs.bracketAnnotation
         fullWidthPunctuationState.value = smartbarManager.getCachedIsFullWidthPunctuation()
         candidateDisplayModeState.value = prefs.candidateDisplayMode
     }

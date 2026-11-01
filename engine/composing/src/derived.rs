@@ -217,6 +217,8 @@ mod tests {
             hanji_conversion: None,
             lect: 0,
             meinong_tones: false,
+            annotation_template_hanji_first: 0,
+            annotation_template_roman_first: 0,
         }
     }
 

@@ -280,6 +280,12 @@ class TaigiKeyboard : LifecycleInputMethodService() {
                 smartbarManager.onOutputBothScriptsChanged()
             }
         }
+        // …and when the template it writes in is changed.
+        serviceScope.launch {
+            prefs.observeAnnotationTemplates().collect {
+                smartbarManager.onOutputBothScriptsChanged()
+            }
+        }
 
         // Observe display-language changes and refresh the legacy View smartbar /
         // media-input a11y labels. Compose overlays follow the picker via

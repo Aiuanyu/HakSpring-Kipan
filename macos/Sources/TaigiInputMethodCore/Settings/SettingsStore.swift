@@ -110,6 +110,15 @@ final class SettingsStore: @unchecked Sendable {
             name: "nasalMarkerUppercaseEnabled",
             defaultValue: EngineSettings.defaults.isNasalMarkerUppercaseEnabled,
         )
+        /// Hakfa fork: the Annotate in Brackets template per lead order, stored as the enum's raw value.
+        static let annotationTemplateHanjiFirst = SettingsKey(
+            name: "annotationTemplateHanjiFirst",
+            defaultValue: EngineSettings.defaults.annotationTemplateHanjiFirst,
+        )
+        static let annotationTemplateRomanFirst = SettingsKey(
+            name: "annotationTemplateRomanFirst",
+            defaultValue: EngineSettings.defaults.annotationTemplateRomanFirst,
+        )
         static let isCustomDictEnabled = SettingsKey(
             name: "customDictEnabled",
             defaultValue: EngineSettings.defaults.isCustomDictEnabled,
@@ -609,6 +618,15 @@ final class SettingsStore: @unchecked Sendable {
             Keys.isLiteralRomanCandidateEnabled.name,
             Keys.syllableSeparator.name,
             Keys.isNasalMarkerUppercaseEnabled.name,
+        )
+    }
+
+    /// Puts the Annotate in Brackets page back to shipped state (the round brackets for both leads).
+    func resetAnnotationSettings() {
+        removeStoredValues(
+            Keys.isOutputBothScripts.name,
+            Keys.annotationTemplateHanjiFirst.name,
+            Keys.annotationTemplateRomanFirst.name,
         )
     }
 

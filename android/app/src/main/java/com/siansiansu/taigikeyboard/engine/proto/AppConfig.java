@@ -592,6 +592,127 @@ public  final class AppConfig extends
     meinongTones_ = false;
   }
 
+  public static final int ANNOTATION_TEMPLATE_HANJI_FIRST_FIELD_NUMBER = 17;
+  private int annotationTemplateHanjiFirst_;
+  /**
+   * <pre>
+   * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+   * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+   * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+   * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+   * </pre>
+   *
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+   * @return The enum numeric value on the wire for annotationTemplateHanjiFirst.
+   */
+  @java.lang.Override
+  public int getAnnotationTemplateHanjiFirstValue() {
+    return annotationTemplateHanjiFirst_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+   * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+   * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+   * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+   * </pre>
+   *
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+   * @return The annotationTemplateHanjiFirst.
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate getAnnotationTemplateHanjiFirst() {
+    com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate result = com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate.forNumber(annotationTemplateHanjiFirst_);
+    return result == null ? com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate.UNRECOGNIZED : result;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+   * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+   * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+   * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+   * </pre>
+   *
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+   * @param value The enum numeric value on the wire for annotationTemplateHanjiFirst to set.
+   */
+  private void setAnnotationTemplateHanjiFirstValue(int value) {
+      annotationTemplateHanjiFirst_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+   * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+   * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+   * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+   * </pre>
+   *
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+   * @param value The annotationTemplateHanjiFirst to set.
+   * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+   */
+  private void setAnnotationTemplateHanjiFirst(com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate value) {
+    annotationTemplateHanjiFirst_ = value.getNumber();
+
+  }
+  /**
+   * <pre>
+   * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+   * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+   * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+   * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+   * </pre>
+   *
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+   */
+  private void clearAnnotationTemplateHanjiFirst() {
+
+    annotationTemplateHanjiFirst_ = 0;
+  }
+
+  public static final int ANNOTATION_TEMPLATE_ROMAN_FIRST_FIELD_NUMBER = 18;
+  private int annotationTemplateRomanFirst_;
+  /**
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+   * @return The enum numeric value on the wire for annotationTemplateRomanFirst.
+   */
+  @java.lang.Override
+  public int getAnnotationTemplateRomanFirstValue() {
+    return annotationTemplateRomanFirst_;
+  }
+  /**
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+   * @return The annotationTemplateRomanFirst.
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate getAnnotationTemplateRomanFirst() {
+    com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate result = com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate.forNumber(annotationTemplateRomanFirst_);
+    return result == null ? com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate.UNRECOGNIZED : result;
+  }
+  /**
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+   * @param value The enum numeric value on the wire for annotationTemplateRomanFirst to set.
+   */
+  private void setAnnotationTemplateRomanFirstValue(int value) {
+      annotationTemplateRomanFirst_ = value;
+  }
+  /**
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+   * @param value The annotationTemplateRomanFirst to set.
+   * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+   */
+  private void setAnnotationTemplateRomanFirst(com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate value) {
+    annotationTemplateRomanFirst_ = value.getNumber();
+
+  }
+  /**
+   * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+   */
+  private void clearAnnotationTemplateRomanFirst() {
+
+    annotationTemplateRomanFirst_ = 0;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.AppConfig parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1296,6 +1417,135 @@ public  final class AppConfig extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+     * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+     * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+     * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+     * </pre>
+     *
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+     * @return The enum numeric value on the wire for annotationTemplateHanjiFirst.
+     */
+    @java.lang.Override
+    public int getAnnotationTemplateHanjiFirstValue() {
+      return instance.getAnnotationTemplateHanjiFirstValue();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+     * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+     * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+     * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+     * </pre>
+     *
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+     * @param value The annotationTemplateHanjiFirst to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     * @return This builder for chaining.
+     */
+    public Builder setAnnotationTemplateHanjiFirstValue(int value) {
+      copyOnWrite();
+      instance.setAnnotationTemplateHanjiFirstValue(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+     * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+     * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+     * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+     * </pre>
+     *
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+     * @return The annotationTemplateHanjiFirst.
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate getAnnotationTemplateHanjiFirst() {
+      return instance.getAnnotationTemplateHanjiFirst();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+     * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+     * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+     * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+     * </pre>
+     *
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+     * @param value The enum numeric value on the wire for annotationTemplateHanjiFirst to set.
+     * @return This builder for chaining.
+     */
+    public Builder setAnnotationTemplateHanjiFirst(com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate value) {
+      copyOnWrite();
+      instance.setAnnotationTemplateHanjiFirst(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+     * (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+     * `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+     * Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+     * </pre>
+     *
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_hanji_first = 17;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearAnnotationTemplateHanjiFirst() {
+      copyOnWrite();
+      instance.clearAnnotationTemplateHanjiFirst();
+      return this;
+    }
+
+    /**
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+     * @return The enum numeric value on the wire for annotationTemplateRomanFirst.
+     */
+    @java.lang.Override
+    public int getAnnotationTemplateRomanFirstValue() {
+      return instance.getAnnotationTemplateRomanFirstValue();
+    }
+    /**
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+     * @param value The annotationTemplateRomanFirst to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     * @return This builder for chaining.
+     */
+    public Builder setAnnotationTemplateRomanFirstValue(int value) {
+      copyOnWrite();
+      instance.setAnnotationTemplateRomanFirstValue(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+     * @return The annotationTemplateRomanFirst.
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate getAnnotationTemplateRomanFirst() {
+      return instance.getAnnotationTemplateRomanFirst();
+    }
+    /**
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+     * @param value The enum numeric value on the wire for annotationTemplateRomanFirst to set.
+     * @return This builder for chaining.
+     */
+    public Builder setAnnotationTemplateRomanFirst(com.siansiansu.taigikeyboard.engine.proto.AnnotationTemplate value) {
+      copyOnWrite();
+      instance.setAnnotationTemplateRomanFirst(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.AnnotationTemplate annotation_template_roman_first = 18;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearAnnotationTemplateRomanFirst() {
+      copyOnWrite();
+      instance.clearAnnotationTemplateRomanFirst();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.AppConfig)
   }
   @java.lang.Override
@@ -1325,11 +1575,13 @@ public  final class AppConfig extends
             "syllableSeparator_",
             "lect_",
             "meinongTones_",
+            "annotationTemplateHanjiFirst_",
+            "annotationTemplateRomanFirst_",
           };
           java.lang.String info =
-              "\u0000\f\u0000\u0001\u0002\u0010\f\u0000\u0000\u0000\u0002\u0208\u0003\u0007\u0004" +
-              "\u0007\u0005\u0007\b\u0007\t\f\u000b\u0007\f\u0007\r\u1009\u0000\u000e\f\u000f\u000b" +
-              "\u0010\u0007";
+              "\u0000\u000e\u0000\u0001\u0002\u0012\u000e\u0000\u0000\u0000\u0002\u0208\u0003\u0007" +
+              "\u0004\u0007\u0005\u0007\b\u0007\t\f\u000b\u0007\f\u0007\r\u1009\u0000\u000e\f\u000f" +
+              "\u000b\u0010\u0007\u0011\f\u0012\f";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

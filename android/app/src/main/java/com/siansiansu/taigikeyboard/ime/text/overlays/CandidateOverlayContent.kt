@@ -59,6 +59,7 @@ import com.siansiansu.taigikeyboard.engine.tlDisplayToTps
 import com.siansiansu.taigikeyboard.i18n.generated.StringKey
 import com.siansiansu.taigikeyboard.i18n.stringRes
 import com.siansiansu.taigikeyboard.ime.dictionary.TaigiWord
+import com.siansiansu.taigikeyboard.ime.settings.BracketAnnotation
 import com.siansiansu.taigikeyboard.ime.settings.CandidateDisplayMode
 import com.siansiansu.taigikeyboard.ime.text.candidates.CandidateRowLayout
 import com.siansiansu.taigikeyboard.ime.text.candidates.candidateCellBackground
@@ -116,7 +117,7 @@ fun CandidateOverlayContent(
     isTPSLayout: Boolean,
     orMapsToER: Boolean,
     isHanjiFirst: Boolean,
-    annotateInBrackets: Boolean = false,
+    annotation: BracketAnnotation? = null,
     /** Lights the 文/A control button — the punctuation width it flips, not the candidate projection above. */
     isFullWidthPunctuation: Boolean,
     candidateDisplayMode: CandidateDisplayMode,
@@ -161,7 +162,7 @@ fun CandidateOverlayContent(
     // on candidateDisplayMode: a mixed cell — marked split cell or the unmarked hanji-led
     // NextWord row (§42 second exception) — measures its rendered single-line title.
     val rows =
-        remember(suggestions, isTPSLayout, orMapsToER, typeface, candidateDisplayMode, annotateInBrackets) {
+        remember(suggestions, isTPSLayout, orMapsToER, typeface, candidateDisplayMode, annotation) {
             CandidateRowLayout.arrangeRows(suggestions, availableWidthPx, spacingPx) { word ->
                 measureCellWidth(
                     word,
@@ -172,7 +173,7 @@ fun CandidateOverlayContent(
                     subtitlePaint,
                     minCellWidthPx,
                     cellPaddingPx,
-                    annotateInBrackets,
+                    annotation,
                 )
             }
         }
@@ -217,7 +218,7 @@ fun CandidateOverlayContent(
                     isTPSLayout = isTPSLayout,
                     orMapsToER = orMapsToER,
                     isHanjiFirst = isHanjiFirst,
-                    annotateInBrackets = annotateInBrackets,
+                    annotation = annotation,
                     candidateDisplayMode = candidateDisplayMode,
                     isClickEnabled = isClickEnabled,
                     onCellClick = { word, index ->
@@ -280,7 +281,7 @@ private fun CandidateRow(
     isTPSLayout: Boolean,
     orMapsToER: Boolean,
     isHanjiFirst: Boolean,
-    annotateInBrackets: Boolean = false,
+    annotation: BracketAnnotation? = null,
     candidateDisplayMode: CandidateDisplayMode,
     isClickEnabled: Boolean,
     onCellClick: (TaigiWord, Int) -> Unit,
@@ -315,7 +316,7 @@ private fun CandidateRow(
                     isTPSLayout = isTPSLayout,
                     orMapsToER = orMapsToER,
                     isHanjiFirst = isHanjiFirst,
-                    annotateInBrackets = annotateInBrackets,
+                    annotation = annotation,
                     candidateDisplayMode = candidateDisplayMode,
                     onClick = { if (isClickEnabled) onCellClick(item.word, item.originalIndex) },
                 )
@@ -343,7 +344,7 @@ private fun CandidateCell(
     isTPSLayout: Boolean,
     orMapsToER: Boolean,
     isHanjiFirst: Boolean,
-    annotateInBrackets: Boolean = false,
+    annotation: BracketAnnotation? = null,
     candidateDisplayMode: CandidateDisplayMode,
     onClick: () -> Unit,
 ) {
@@ -398,7 +399,7 @@ private fun CandidateCell(
                     isTPSLayout = isTPSLayout,
                     candidateDisplayMode = candidateDisplayMode,
                     isHanjiFirst = isHanjiFirst,
-                    annotateInBrackets = annotateInBrackets,
+                    annotation = annotation,
                     cellScript = word.additionalInfo[TaigiWord.MetadataKeys.CELL_SCRIPT],
                 )
 
@@ -585,7 +586,7 @@ private fun measureCellWidth(
     minCellWidthPx: Int,
     cellPaddingPx: Int,
     // Hakfa fork: the second line wears brackets, whichever script it holds (the swap does not reflow rows).
-    annotateInBrackets: Boolean = false,
+    annotation: BracketAnnotation? = null,
 ): Int {
     if (isTPSLayout) {
         val title =
@@ -613,6 +614,15 @@ private fun measureCellWidth(
     }
     val romanWidth = primaryPaint.measureText(word.roman)
     val hanjiWidth = if (!word.hanji.isNullOrEmpty()) subtitlePaint.measureText(word.hanji) else 0f
-    val bracketWidth = if (annotateInBrackets && hanjiWidth > 0f) subtitlePaint.measureText("()") else 0f
+    // The second line wears its template whichever script it holds (the swap does not reflow rows): reserve the widest.
+    val bracketWidth =
+        if (annotation != null && hanjiWidth > 0f) {
+            maxOf(
+                subtitlePaint.measureText(annotation.hanjiFirst.preview("")),
+                subtitlePaint.measureText(annotation.romanFirst.preview("")),
+            )
+        } else {
+            0f
+        }
     return maxOf(minCellWidthPx, (maxOf(romanWidth, hanjiWidth) + bracketWidth + cellPaddingPx + 0.5f).toInt())
 }

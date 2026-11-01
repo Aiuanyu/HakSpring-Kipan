@@ -158,6 +158,9 @@ final class DesktopCoreRuntimeTests: XCTestCase {
             Keys.toneInputScheme.name: .text(Keys.toneInputScheme.defaultValue.rawValue),
             // Hakfa fork: the lect rides every dictionary request.
             Keys.lect.name: .text(Keys.lect.defaultValue.rawValue),
+            // Hakfa fork: the Annotate in Brackets templates ride the engine config.
+            Keys.annotationTemplateHanjiFirst.name: .text(Keys.annotationTemplateHanjiFirst.defaultValue.rawValue),
+            Keys.annotationTemplateRomanFirst.name: .text(Keys.annotationTemplateRomanFirst.defaultValue.rawValue),
         ]
         for key in booleans {
             expected[key.name] = .boolean(key.defaultValue)

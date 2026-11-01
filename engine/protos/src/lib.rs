@@ -15,7 +15,29 @@ pub mod engine {
     include!(concat!(env!("OUT_DIR"), "/taigi.engine.rs"));
 }
 
+impl engine::AnnotationTemplate {
+    /// Hakfa fork: the pair `lead` + `annotation` written in this template (Annotate in Brackets).
+    pub fn wrap(self, lead: &str, annotation: &str) -> String {
+        match self {
+            Self::Round => format!("{lead} ({annotation})"),
+            Self::Square => format!("{lead} [{annotation}]"),
+            Self::Curly => format!("{lead} {{{annotation}}}"),
+            Self::Ruby => format!("<ruby>{lead}<rt>{annotation}</rt></ruby>"),
+        }
+    }
+}
+
 impl engine::AppConfig {
+    /// Hakfa fork: the template Annotate in Brackets writes under, for the lead the commit takes.
+    /// An unknown value from a newer platform reads as the round brackets (prost's accessor).
+    pub fn annotation_template(&self, hanji_leads: bool) -> engine::AnnotationTemplate {
+        if hanji_leads {
+            self.annotation_template_hanji_first()
+        } else {
+            self.annotation_template_roman_first()
+        }
+    }
+
     /// Whether candidate cells render romanization only (Candidate Display = Romanization Only).
     ///
     /// The single normalisation point for `candidate_display_mode`: the

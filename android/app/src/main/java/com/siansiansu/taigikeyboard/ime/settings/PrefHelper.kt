@@ -351,6 +351,29 @@ class PrefHelper(
             )
         set(value) = updateCacheAndPersist(PreferenceKeys.SYLLABLE_SEPARATOR, value.storageValue)
 
+    // Hakfa fork: Annotate in Brackets template per lead order. Unknown stored values coerce to ROUND.
+    override var annotationTemplateHanjiFirst: BracketTemplate
+        get() =
+            BracketTemplate.fromStorage(
+                cached(PreferenceKeys.ANNOTATION_TEMPLATE_HANJI_FIRST, BracketTemplate.ROUND.storageValue),
+            )
+        set(value) = updateCacheAndPersist(PreferenceKeys.ANNOTATION_TEMPLATE_HANJI_FIRST, value.storageValue)
+    override var annotationTemplateRomanFirst: BracketTemplate
+        get() =
+            BracketTemplate.fromStorage(
+                cached(PreferenceKeys.ANNOTATION_TEMPLATE_ROMAN_FIRST, BracketTemplate.ROUND.storageValue),
+            )
+        set(value) = updateCacheAndPersist(PreferenceKeys.ANNOTATION_TEMPLATE_ROMAN_FIRST, value.storageValue)
+
+    /** Hakfa fork: the EFFECTIVE Annotate in Brackets — its templates while it is on, `null` while it is off. */
+    val bracketAnnotation: BracketAnnotation?
+        get() =
+            if (isOutputBothScripts) {
+                BracketAnnotation(annotationTemplateHanjiFirst, annotationTemplateRomanFirst)
+            } else {
+                null
+            }
+
     // Taigi-specific settings
     var enableDoubleTapOO: Boolean by preference(PreferenceKeys.ENABLE_DOUBLE_TAP_OO, true)
 
@@ -829,6 +852,16 @@ class PrefHelper(
         dataStore.data
             .map { prefs -> prefs[PreferenceKeys.OUTPUT_BOTH_SCRIPTS] ?: false }
             .distinctUntilChanged()
+
+    /** Hakfa fork: the Annotate in Brackets templates as a Flow, so a template change repaints the candidates like the switch. */
+    fun observeAnnotationTemplates(): Flow<BracketAnnotation> =
+        dataStore.data
+            .map { prefs ->
+                BracketAnnotation(
+                    BracketTemplate.fromStorage(prefs[PreferenceKeys.ANNOTATION_TEMPLATE_HANJI_FIRST]),
+                    BracketTemplate.fromStorage(prefs[PreferenceKeys.ANNOTATION_TEMPLATE_ROMAN_FIRST]),
+                )
+            }.distinctUntilChanged()
 
     /**
      * Observes Candidate Display as a Flow — any writer (host picker or in-keyboard overlay). The IME

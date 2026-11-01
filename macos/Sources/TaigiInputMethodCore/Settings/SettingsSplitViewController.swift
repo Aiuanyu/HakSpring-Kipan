@@ -151,7 +151,7 @@ final class SettingsSplitViewController: NSSplitViewController {
     }
 
     private func updateTitle() {
-        let paneTitle = language.string(SettingsStore().selectedSettingsPane.labelKey)
+        let paneTitle = SettingsStore().selectedSettingsPane.title(in: language)
         if title != paneTitle {
             title = paneTitle
         }

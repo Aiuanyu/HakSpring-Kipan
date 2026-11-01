@@ -274,6 +274,57 @@ impl SettingChoice for SyllableSeparator {
     }
 }
 
+/// Hakfa fork: how Annotate in Brackets writes the pair of scripts, one choice per lead order
+/// (`annotationTemplateHanjiFirst` / `annotationTemplateRomanFirst`). Stored spellings are the same
+/// on macOS (`BracketTemplate`) and Android (`BracketTemplate.storageValue`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum BracketTemplate {
+    /// `X (Y)`
+    Round,
+    /// `X [Y]`
+    Square,
+    /// `X {Y}`
+    Curly,
+    /// `<ruby>X<rt>Y</rt></ruby>`
+    Ruby,
+}
+
+impl BracketTemplate {
+    /// The `AppConfig.annotation_template_*` wire value.
+    pub fn wire(self) -> protos::engine::AnnotationTemplate {
+        match self {
+            Self::Round => protos::engine::AnnotationTemplate::Round,
+            Self::Square => protos::engine::AnnotationTemplate::Square,
+            Self::Curly => protos::engine::AnnotationTemplate::Curly,
+            Self::Ruby => protos::engine::AnnotationTemplate::Ruby,
+        }
+    }
+
+    /// The annotation as a candidate cell previews it: the brackets the commit writes around it,
+    /// or `ᴿᵀ ` ahead of it for ruby, whose tags would fill the cell.
+    pub fn preview(self, annotation: &str) -> String {
+        match self {
+            Self::Round => format!("({annotation})"),
+            Self::Square => format!("[{annotation}]"),
+            Self::Curly => format!("{{{annotation}}}"),
+            Self::Ruby => format!("ᴿᵀ {annotation}"),
+        }
+    }
+}
+
+impl SettingChoice for BracketTemplate {
+    const ALL: &'static [Self] = &[Self::Round, Self::Square, Self::Curly, Self::Ruby];
+    const DEFAULT: Self = Self::Round;
+    fn raw(self) -> &'static str {
+        match self {
+            Self::Round => "round",
+            Self::Square => "square",
+            Self::Curly => "curly",
+            Self::Ruby => "ruby",
+        }
+    }
+}
+
 /// Immutable snapshot of everything the engine needs to render a composition.
 ///
 /// A snapshot rather than a set of getters because a single user intent can
@@ -331,6 +382,10 @@ pub struct EngineSettings {
     /// Meinong (美濃) speakers (`tone33Enabled`), separate from the Meinong readings switch
     /// (`DictionarySourceToggles.meinong`). Off by default.
     pub meinong_tones: bool,
+    /// Hakfa fork: the template Annotate in Brackets writes in when the Hanji leads / when the
+    /// romanization leads (`annotationTemplateHanjiFirst` / `…RomanFirst`).
+    pub annotation_template_hanji_first: BracketTemplate,
+    pub annotation_template_roman_first: BracketTemplate,
     pub dictionary_sources: DictionarySourceToggles,
 }
 
@@ -359,6 +414,8 @@ impl EngineSettings {
             is_nasal_marker_uppercase_enabled: true,
             is_custom_dict_enabled: true,
             meinong_tones: false,
+            annotation_template_hanji_first: BracketTemplate::DEFAULT,
+            annotation_template_roman_first: BracketTemplate::DEFAULT,
             dictionary_sources: DictionarySourceToggles::DEFAULT,
         }
     };

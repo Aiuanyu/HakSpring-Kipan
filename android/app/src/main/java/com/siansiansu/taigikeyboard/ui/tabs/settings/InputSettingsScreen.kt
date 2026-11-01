@@ -69,6 +69,7 @@ fun InputSettingsScreen(
     var showDisplayLanguagePicker by remember { mutableStateOf(false) }
     var showInputModePicker by remember { mutableStateOf(false) }
     var showLectPicker by remember { mutableStateOf(false) }
+    var showAnnotationPicker by remember { mutableStateOf(false) }
     var showCandidateDisplayModePicker by remember { mutableStateOf(false) }
     var showNasalMarkerStylePicker by remember { mutableStateOf(false) }
     var showSyllableSeparatorPicker by remember { mutableStateOf(false) }
@@ -87,6 +88,8 @@ fun InputSettingsScreen(
     var outputBoth by remember(resetCounter) { mutableStateOf(prefs.storedOutputBothScripts) }
     var literalRomanCandidate by remember(resetCounter) { mutableStateOf(prefs.literalRomanCandidateEnabled) }
     var syllableSeparator by remember(resetCounter) { mutableStateOf(prefs.syllableSeparator) }
+    var annotationHanjiFirst by remember(resetCounter) { mutableStateOf(prefs.annotationTemplateHanjiFirst) }
+    var annotationRomanFirst by remember(resetCounter) { mutableStateOf(prefs.annotationTemplateRomanFirst) }
     var autoCap by remember(resetCounter) { mutableStateOf(prefs.autoCapitalizationEnabled) }
     var autoSpace by remember(resetCounter) { mutableStateOf(prefs.isAutoSpaceEnabled) }
     var doubleOO by remember(resetCounter) { mutableStateOf(prefs.enableDoubleTapOO) }
@@ -117,6 +120,20 @@ fun InputSettingsScreen(
                 prefs.lect = it
             },
             onBack = { showLectPicker = false },
+        )
+    } else if (showAnnotationPicker) {
+        AnnotationScreen(
+            hanjiFirst = annotationHanjiFirst,
+            romanFirst = annotationRomanFirst,
+            onHanjiFirstSelected = {
+                annotationHanjiFirst = it
+                prefs.annotationTemplateHanjiFirst = it
+            },
+            onRomanFirstSelected = {
+                annotationRomanFirst = it
+                prefs.annotationTemplateRomanFirst = it
+            },
+            onBack = { showAnnotationPicker = false },
         )
     } else if (showInputModePicker) {
         InputModeScreen(
@@ -252,6 +269,12 @@ fun InputSettingsScreen(
                             outputBoth = it
                             prefs.storedOutputBothScripts = it
                         },
+                    )
+                    SettingsDivider()
+                    SettingNavigationRow(
+                        label = ANNOTATION_SETTING_LABEL,
+                        value = "${annotationHanjiFirst.shortWrap("漢", "羅")}　${annotationRomanFirst.shortWrap("羅", "漢")}",
+                        onClick = { showAnnotationPicker = true },
                     )
                     SettingsDivider()
                     SettingNavigationRow(

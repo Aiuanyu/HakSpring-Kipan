@@ -23,7 +23,7 @@ use super::choices::{
 use super::document::SettingsKey;
 use super::engine_settings::{
     CandidateDisplayMode, DictionarySourceToggles, EngineSettings, InputMode, Romanization,
-    SyllableSeparator,
+    BracketTemplate, SyllableSeparator,
 };
 use crate::strings::DisplayLanguage;
 
@@ -95,6 +95,16 @@ pub const IS_TAOYUAN_ENABLED: SettingsKey<bool> =
 /// Not in `GENERAL_KEYS`: the General pane's reset must not switch lect under the user, like the
 /// display language. Read by the key path (`key_path.rs`) so macOS sends it in the snapshot.
 pub const LECT: SettingsKey<Lect> = SettingsKey::new("lect", ENGINE_DEFAULTS.dictionary_sources.lect);
+/// Hakfa fork: the Annotate in Brackets template per lead order. Not in `GENERAL_KEYS`: they have
+/// their own page, and the General pane's reset leaves them.
+pub const ANNOTATION_TEMPLATE_HANJI_FIRST: SettingsKey<BracketTemplate> = SettingsKey::new(
+    "annotationTemplateHanjiFirst",
+    ENGINE_DEFAULTS.annotation_template_hanji_first,
+);
+pub const ANNOTATION_TEMPLATE_ROMAN_FIRST: SettingsKey<BracketTemplate> = SettingsKey::new(
+    "annotationTemplateRomanFirst",
+    ENGINE_DEFAULTS.annotation_template_roman_first,
+);
 pub const SYLLABLE_SEPARATOR: SettingsKey<SyllableSeparator> =
     SettingsKey::new("syllableSeparator", ENGINE_DEFAULTS.syllable_separator);
 /// RETIRED 2026-10-06: the No Hyphens switch, replaced by `SYLLABLE_SEPARATOR`.

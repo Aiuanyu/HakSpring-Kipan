@@ -88,6 +88,8 @@ fn tl_config() -> AppConfig {
         hanji_conversion: None,
         lect: 0,
         meinong_tones: false,
+        annotation_template_hanji_first: 0,
+        annotation_template_roman_first: 0,
     }
 }
 
@@ -105,6 +107,8 @@ fn poj_config(oo: bool, nn: bool) -> AppConfig {
         hanji_conversion: None,
         lect: 0,
         meinong_tones: false,
+        annotation_template_hanji_first: 0,
+        annotation_template_roman_first: 0,
     }
 }
 

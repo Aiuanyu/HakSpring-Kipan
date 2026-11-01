@@ -83,6 +83,9 @@ pub fn key_path_settings() -> Vec<KeyPathSetting> {
         KeyPathSetting::choice(keys::TONE_INPUT_SCHEME),
         KeyPathSetting::choice(keys::CANDIDATE_DISPLAY_MODE),
         KeyPathSetting::choice(keys::SYLLABLE_SEPARATOR),
+        // Hakfa fork: the Annotate in Brackets templates ride the engine config and the cell preview.
+        KeyPathSetting::choice(keys::ANNOTATION_TEMPLATE_HANJI_FIRST),
+        KeyPathSetting::choice(keys::ANNOTATION_TEMPLATE_ROMAN_FIRST),
         // Hakfa fork: the lect rides every dictionary request (`DictionarySourceToggles.lect`).
         KeyPathSetting::choice(keys::LECT),
     ]
@@ -116,6 +119,8 @@ mod tests {
                 keys::CANDIDATE_DISPLAY_MODE.name,
                 keys::IS_CUSTOM_DICT_ENABLED.name,
                 keys::LECT.name,
+                keys::ANNOTATION_TEMPLATE_HANJI_FIRST.name,
+                keys::ANNOTATION_TEMPLATE_ROMAN_FIRST.name,
             ])
             .map(|name| (*name).to_owned())
             .chain(

@@ -85,6 +85,13 @@ interface EngineSettings {
     val syllableSeparator: SyllableSeparator
 
     /**
+     * Hakfa fork: the template Annotate in Brackets writes in when the Hanji leads / when the romanization leads
+     * (`AppConfig.annotation_template_hanji_first` / `_roman_first`).
+     */
+    val annotationTemplateHanjiFirst: BracketTemplate
+    val annotationTemplateRomanFirst: BracketTemplate
+
+    /**
      * The POJ marker options (double-tap folds + Nasal mark in POJ capitals, §53) bundled as a
      * live-read value so `ComposingState` / `ToneConverter` can stay
      * Kotlin-stdlib-pure.

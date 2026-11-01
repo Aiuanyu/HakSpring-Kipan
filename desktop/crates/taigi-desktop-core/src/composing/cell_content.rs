@@ -4,7 +4,7 @@
 //! `CandidateCellContent.swift`.
 
 use crate::engine::{self, ContinuousCandidate};
-use crate::settings::{CandidateDisplayMode, EngineSettings, InputMode};
+use crate::settings::{BracketTemplate, CandidateDisplayMode, EngineSettings, InputMode};
 
 /// Which of a candidate's two scripts a commit writes. RELATIVE to the
 /// output settings, never absolute: `Primary` is what Enter writes,
@@ -78,17 +78,22 @@ impl CandidateCellContent {
                 // Hakfa fork: with Annotate in Brackets on, the second script is shown in the
                 // brackets the commit will write (`臺灣` over `(Tǒivǎn)`), so the window previews the
                 // output (USER 2026-10-21). Off, the annotation is the bare script as before.
-                let bracket = |script: String| {
+                let bracket = |script: String, template: BracketTemplate| {
                     if settings.is_output_both_scripts {
-                        format!("({script})")
+                        template.preview(&script)
                     } else {
                         script
                     }
                 };
                 if settings.is_hanji_first {
-                    Self::new(hanji, Some(bracket(candidate.roman_for_display())))
+                    let template = settings.annotation_template_hanji_first;
+                    Self::new(hanji, Some(bracket(candidate.roman_for_display(), template)))
                 } else {
-                    Self::new(candidate.roman_for_display(), Some(bracket(hanji.to_owned())))
+                    let template = settings.annotation_template_roman_first;
+                    Self::new(
+                        candidate.roman_for_display(),
+                        Some(bracket(hanji.to_owned(), template)),
+                    )
                 }
             }
         }
@@ -119,6 +124,33 @@ mod tests {
         assert_eq!(
             CandidateCellContent::cell(&c, &settings(true)),
             CandidateCellContent::new("交--人", Some("kau--lâng".to_owned()))
+        );
+    }
+
+    #[test]
+    fn the_preview_follows_the_template_of_the_lead_and_ruby_shows_ahead() {
+        // Hakfa fork (USER 2026-11-01): one template per lead order; ruby previews as `ᴿᵀ ` + reading.
+        let c = candidate("tǒi-vǎn", Some("臺灣"), 0);
+        let mut hanji_first = settings(true);
+        hanji_first.is_output_both_scripts = true;
+        hanji_first.annotation_template_hanji_first = BracketTemplate::Square;
+        hanji_first.annotation_template_roman_first = BracketTemplate::Curly;
+        assert_eq!(
+            CandidateCellContent::cell(&c, &hanji_first),
+            CandidateCellContent::new("臺灣", Some("[tǒi-vǎn]".to_owned()))
+        );
+        let mut roman_first = settings(false);
+        roman_first.is_output_both_scripts = true;
+        roman_first.annotation_template_hanji_first = BracketTemplate::Square;
+        roman_first.annotation_template_roman_first = BracketTemplate::Ruby;
+        assert_eq!(
+            CandidateCellContent::cell(&c, &roman_first),
+            CandidateCellContent::new("tǒi-vǎn", Some("ᴿᵀ 臺灣".to_owned()))
+        );
+        roman_first.is_output_both_scripts = false;
+        assert_eq!(
+            CandidateCellContent::cell(&c, &roman_first),
+            CandidateCellContent::new("tǒi-vǎn", Some("臺灣".to_owned()))
         );
     }
 

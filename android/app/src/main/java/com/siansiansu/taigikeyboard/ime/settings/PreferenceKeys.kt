@@ -83,6 +83,10 @@ object PreferenceKeys {
     /** Hakfa fork: the lect (腔) the keyboard types in; 1 四縣, 6 南四縣, 2 海陸, 3 大埔, 4 饒平, 5 詔安. */
     val LECT = intPreferencesKey("hakfa__lect")
 
+    /** Hakfa fork: the Annotate in Brackets template per lead order (`BracketTemplate.storageValue`). */
+    val ANNOTATION_TEMPLATE_HANJI_FIRST = stringPreferencesKey("hakfa__annotation_template_hanji_first")
+    val ANNOTATION_TEMPLATE_ROMAN_FIRST = stringPreferencesKey("hakfa__annotation_template_roman_first")
+
     /** Hakfa fork: sub-dialect and tone-mark toggles under South Sixian and Raoping. */
     val MEINONG_ENABLED = booleanPreferencesKey("hakfa__meinong_enabled")
     val TONE33_ENABLED = booleanPreferencesKey("hakfa__tone33_enabled")

@@ -2,6 +2,8 @@ package com.siansiansu.taigikeyboard.ime.text.candidates
 
 import androidx.compose.ui.graphics.Color
 import com.siansiansu.taigikeyboard.ime.dictionary.TaigiWord
+import com.siansiansu.taigikeyboard.ime.settings.BracketAnnotation
+import com.siansiansu.taigikeyboard.ime.settings.BracketTemplate
 import com.siansiansu.taigikeyboard.ime.settings.CandidateDisplayMode
 import com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarManager
 
@@ -40,6 +42,8 @@ data class CandidateDisplayParams(
     val isHanjiFirst: Boolean,
     /** Hakfa fork: EFFECTIVE Annotate in Brackets (already false under roman-only). */
     val isOutputBothScripts: Boolean = false,
+    /** Hakfa fork: the template per lead order Annotate in Brackets writes in. */
+    val annotationTemplates: BracketAnnotation = BracketAnnotation(),
     /** Carried explicitly: the swap flag alone cannot tell roman-first from roman-only. */
     val candidateDisplayMode: CandidateDisplayMode,
     val fontType: String,
@@ -52,7 +56,10 @@ data class CandidateDisplayParams(
     val themeKeyBgColor: Int,
     val themePressedHighlightColor: Int,
     val smartbarHeightPx: Int,
-)
+) {
+    /** Hakfa fork: the templates while Annotate in Brackets is on, `null` while it is off. */
+    val annotation: BracketAnnotation? get() = if (isOutputBothScripts) annotationTemplates else null
+}
 
 /** Title / optional subtitle of one candidate cell (strip + expanded overlay share it). */
 data class CandidateCellText(
@@ -82,7 +89,7 @@ val CandidateCellText.showsSubtitle: Boolean
  * swap decides the lead otherwise. `displayRoman` is already TPS-converted
  * by the caller when relevant.
  */
-private fun String.inBrackets(on: Boolean): String = if (on && isNotEmpty()) "($this)" else this
+private fun String.annotated(template: BracketTemplate?): String = if (template != null && isNotEmpty()) template.preview(this) else this
 
 fun candidateCellText(
     hanji: String?,
@@ -91,8 +98,8 @@ fun candidateCellText(
     candidateDisplayMode: CandidateDisplayMode,
     isHanjiFirst: Boolean,
     cellScript: String?,
-    /** Hakfa fork: Annotate in Brackets is on — the second line shows the script in the brackets the commit writes. */
-    annotateInBrackets: Boolean = false,
+    /** Hakfa fork: Annotate in Brackets is on — the second line shows the script as the commit writes it (null = off). */
+    annotation: BracketAnnotation? = null,
 ): CandidateCellText =
     when {
         hanji.isNullOrEmpty() -> CandidateCellText(displayRoman, null)
@@ -106,8 +113,8 @@ fun candidateCellText(
             }
         // Hakfa fork (USER 2026-11-01): with Annotate in Brackets on, the two-line cell previews the
         // output — `臺灣` over `(tǒi-vǎn)`, or `tǒi-vǎn` over `(臺灣)` roman-first.
-        isHanjiFirst -> CandidateCellText(hanji, displayRoman.inBrackets(annotateInBrackets))
-        else -> CandidateCellText(displayRoman, hanji.inBrackets(annotateInBrackets))
+        isHanjiFirst -> CandidateCellText(hanji, displayRoman.annotated(annotation?.hanjiFirst))
+        else -> CandidateCellText(displayRoman, hanji.annotated(annotation?.romanFirst))
     }
 
 /**

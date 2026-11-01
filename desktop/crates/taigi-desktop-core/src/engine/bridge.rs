@@ -114,6 +114,8 @@ pub(super) fn app_config(settings: &EngineSettings) -> AppConfig {
         syllable_separator: settings.syllable_separator.wire() as i32,
         lect: settings.dictionary_sources.lect.code(),
         meinong_tones: settings.meinong_tones,
+        annotation_template_hanji_first: settings.annotation_template_hanji_first.wire() as i32,
+        annotation_template_roman_first: settings.annotation_template_roman_first.wire() as i32,
         force_lowercase_nasal_marker: !settings.is_nasal_marker_uppercase_enabled,
         tps_or_maps_to_er: super::TPS_OR_MAPS_TO_ER,
         hanji_conversion: (settings.input_mode == InputMode::Tps).then(|| HanjiConversion {

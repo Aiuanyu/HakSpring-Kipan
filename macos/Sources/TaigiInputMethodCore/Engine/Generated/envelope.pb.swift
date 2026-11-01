@@ -191,6 +191,57 @@ public nonisolated enum Taigi_Engine_SyllableSeparator: SwiftProtobuf.Enum, Swif
 
 }
 
+/// How Annotate in Brackets writes a pick's two scripts, `X` leading and `Y` annotating.
+public nonisolated enum Taigi_Engine_AnnotationTemplate: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+
+  /// X (Y)
+  case round // = 0
+
+  /// X [Y]
+  case square // = 1
+
+  /// X {Y}
+  case curly // = 2
+
+  /// <ruby>X<rt>Y</rt></ruby>
+  case ruby // = 3
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .round
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .round
+    case 1: self = .square
+    case 2: self = .curly
+    case 3: self = .ruby
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .round: return 0
+    case .square: return 1
+    case .curly: return 2
+    case .ruby: return 3
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Taigi_Engine_AnnotationTemplate] = [
+    .round,
+    .square,
+    .curly,
+    .ruby,
+  ]
+
+}
+
 /// 2026-09-01 added `candidate_display_mode`: Romanization Only cells hide the hanji, so
 /// rows that differ only in hanji (homophones 食/𤆬 tsia̍h) become visible
 /// duplicates that only the engine can collapse consistently for four
@@ -286,6 +337,14 @@ public nonisolated struct Taigi_Engine_AppConfig: Sendable {
   /// the 24 syllables of Sixian and South Sixian as 33 (maintainer's ruling R2-16). Display romanization
   /// only: the canonical TL, the hanji and the dictionary stay as they are. Honoured for lect 0/1/6.
   public var meinongTones: Bool = false
+
+  /// Hakfa fork: the template Annotate in Brackets writes the pair in, one per lead order
+  /// (`engine/composing/src/commit_text.rs`): `*_hanji_first` when the Hanji leads (`X` = Hanji,
+  /// `Y` = romanization), `*_roman_first` when the romanization leads (`X` = romanization, `Y` =
+  /// Hanji). Unset reads as `ANNOTATION_TEMPLATE_ROUND`, what the fork always wrote.
+  public var annotationTemplateHanjiFirst: Taigi_Engine_AnnotationTemplate = .round
+
+  public var annotationTemplateRomanFirst: Taigi_Engine_AnnotationTemplate = .round
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -513,9 +572,13 @@ nonisolated extension Taigi_Engine_SyllableSeparator: SwiftProtobuf._ProtoNamePr
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SYLLABLE_SEPARATOR_UNSPECIFIED\0\u{1}SYLLABLE_SEPARATOR_HYPHEN\0\u{1}SYLLABLE_SEPARATOR_NONE\0\u{1}SYLLABLE_SEPARATOR_SPACE\0")
 }
 
+nonisolated extension Taigi_Engine_AnnotationTemplate: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0ANNOTATION_TEMPLATE_ROUND\0\u{1}ANNOTATION_TEMPLATE_SQUARE\0\u{1}ANNOTATION_TEMPLATE_CURLY\0\u{1}ANNOTATION_TEMPLATE_RUBY\0")
+}
+
 nonisolated extension Taigi_Engine_AppConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".AppConfig"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{2}input_mode\0\u{3}oo_doubletap_enabled\0\u{3}nn_doubletap_enabled\0\u{3}is_hanji_first\0\u{4}\u{3}output_both_scripts\0\u{3}candidate_display_mode\0\u{4}\u{2}force_lowercase_nasal_marker\0\u{3}tps_or_maps_to_er\0\u{3}hanji_conversion\0\u{3}syllable_separator\0\u{1}lect\0\u{3}meinong_tones\0\u{b}tone_mode\0\u{b}is_association_recording_enabled\0\u{b}platform_id\0\u{b}hyphenless_roman\0\u{c}\u{1}\u{1}\u{c}\u{6}\u{1}\u{c}\u{7}\u{1}\u{c}\u{a}\u{1}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{2}input_mode\0\u{3}oo_doubletap_enabled\0\u{3}nn_doubletap_enabled\0\u{3}is_hanji_first\0\u{4}\u{3}output_both_scripts\0\u{3}candidate_display_mode\0\u{4}\u{2}force_lowercase_nasal_marker\0\u{3}tps_or_maps_to_er\0\u{3}hanji_conversion\0\u{3}syllable_separator\0\u{1}lect\0\u{3}meinong_tones\0\u{3}annotation_template_hanji_first\0\u{3}annotation_template_roman_first\0\u{b}tone_mode\0\u{b}is_association_recording_enabled\0\u{b}platform_id\0\u{b}hyphenless_roman\0\u{c}\u{1}\u{1}\u{c}\u{6}\u{1}\u{c}\u{7}\u{1}\u{c}\u{a}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -535,6 +598,8 @@ nonisolated extension Taigi_Engine_AppConfig: SwiftProtobuf.Message, SwiftProtob
       case 14: try { try decoder.decodeSingularEnumField(value: &self.syllableSeparator) }()
       case 15: try { try decoder.decodeSingularUInt32Field(value: &self.lect) }()
       case 16: try { try decoder.decodeSingularBoolField(value: &self.meinongTones) }()
+      case 17: try { try decoder.decodeSingularEnumField(value: &self.annotationTemplateHanjiFirst) }()
+      case 18: try { try decoder.decodeSingularEnumField(value: &self.annotationTemplateRomanFirst) }()
       default: break
       }
     }
@@ -581,6 +646,12 @@ nonisolated extension Taigi_Engine_AppConfig: SwiftProtobuf.Message, SwiftProtob
     if self.meinongTones != false {
       try visitor.visitSingularBoolField(value: self.meinongTones, fieldNumber: 16)
     }
+    if self.annotationTemplateHanjiFirst != .round {
+      try visitor.visitSingularEnumField(value: self.annotationTemplateHanjiFirst, fieldNumber: 17)
+    }
+    if self.annotationTemplateRomanFirst != .round {
+      try visitor.visitSingularEnumField(value: self.annotationTemplateRomanFirst, fieldNumber: 18)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -597,6 +668,8 @@ nonisolated extension Taigi_Engine_AppConfig: SwiftProtobuf.Message, SwiftProtob
     if lhs.syllableSeparator != rhs.syllableSeparator {return false}
     if lhs.lect != rhs.lect {return false}
     if lhs.meinongTones != rhs.meinongTones {return false}
+    if lhs.annotationTemplateHanjiFirst != rhs.annotationTemplateHanjiFirst {return false}
+    if lhs.annotationTemplateRomanFirst != rhs.annotationTemplateRomanFirst {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

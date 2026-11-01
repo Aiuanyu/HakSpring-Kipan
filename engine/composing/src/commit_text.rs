@@ -14,7 +14,9 @@
 //! pick, and the whole of a Hanji-less pick (R5 P2, USER 2026-09-30).
 
 use phonetics::api::tl_display_to_tps;
-use protos::engine::{AppConfig, CandidateDisplayMode, CommitOutcome, CommitResolution};
+use protos::engine::{
+    AnnotationTemplate, AppConfig, CandidateDisplayMode, CommitOutcome, CommitResolution,
+};
 
 use crate::api::CommitScript;
 
@@ -74,6 +76,8 @@ impl Bopomofo {
 struct OutputScripts {
     hanji_leads: bool,
     annotate_in_brackets: bool,
+    /// Hakfa fork: the template the pair is written in, for the lead this commit takes.
+    template: AnnotationTemplate,
     shows_hanji: bool,
     bopomofo: Option<Bopomofo>,
 }
@@ -84,6 +88,7 @@ impl OutputScripts {
             return Self {
                 hanji_leads: true,
                 annotate_in_brackets: config.output_both_scripts,
+                template: config.annotation_template(true),
                 shows_hanji: true,
                 bopomofo: Some(Bopomofo {
                     or_maps_to_er: config.tps_or_maps_to_er,
@@ -94,13 +99,16 @@ impl OutputScripts {
             return Self {
                 hanji_leads: false,
                 annotate_in_brackets: false,
+                template: AnnotationTemplate::Round,
                 shows_hanji: false,
                 bopomofo: None,
             };
         }
+        let hanji_leads = hanji_leads(config);
         Self {
-            hanji_leads: hanji_leads(config),
+            hanji_leads,
             annotate_in_brackets: config.output_both_scripts,
+            template: config.annotation_template(hanji_leads),
             shows_hanji: true,
             bopomofo: None,
         }
@@ -130,7 +138,8 @@ pub(crate) fn resolve_commit_text(
     match (script, hanji) {
         (CommitScript::Hanji, Some(hanji)) => {
             Some(if scripts.annotate_in_brackets && !roman.is_empty() {
-                ResolvedCommit::romanization(format!("{hanji} ({roman})"))
+                // A split Hanji cell leads with the Hanji whichever way the lead is set.
+                ResolvedCommit::romanization(config.annotation_template(true).wrap(hanji, roman))
             } else {
                 ResolvedCommit::hanji(hanji)
             })
@@ -169,9 +178,9 @@ fn lead(roman: &str, hanji: Option<&str>, scripts: &OutputScripts) -> ResolvedCo
             None => roman.to_owned(),
         };
         let text = if scripts.hanji_leads {
-            format!("{hanji} ({bracket_roman})")
+            scripts.template.wrap(hanji, &bracket_roman)
         } else {
-            format!("{bracket_roman} ({hanji})")
+            scripts.template.wrap(&bracket_roman, hanji)
         };
         return ResolvedCommit::romanization(text);
     }
@@ -280,6 +289,68 @@ mod tests {
                 "{script:?} swapped={swapped} brackets={brackets} {display:?} {roman:?} {hanji:?}"
             );
         }
+    }
+
+    #[test]
+    fn the_annotation_template_follows_the_lead_and_wraps_the_pair() {
+        // Hakfa fork (USER 2026-11-01): one template per lead order, four templates.
+        use AnnotationTemplate::{Curly, Round, Ruby, Square};
+        let with = |swapped: bool,
+                    hanji_first: AnnotationTemplate,
+                    roman_first: AnnotationTemplate| AppConfig {
+            input_mode: "tl".into(),
+            is_hanji_first: swapped,
+            output_both_scripts: true,
+            annotation_template_hanji_first: hanji_first as i32,
+            annotation_template_roman_first: roman_first as i32,
+            ..AppConfig::default()
+        };
+        let text = |config: &AppConfig, script| {
+            resolve_commit_text(script, "tǒi-vǎn", Some("臺灣"), config)
+                .map(|resolved| resolved.text)
+        };
+        // Hanji leads: the hanji-first slot decides, X = Hanji.
+        let cfg = with(true, Square, Curly);
+        assert_eq!(
+            text(&cfg, CommitScript::Lead).as_deref(),
+            Some("臺灣 [tǒi-vǎn]")
+        );
+        assert_eq!(
+            text(&cfg, CommitScript::Hanji).as_deref(),
+            Some("臺灣 [tǒi-vǎn]")
+        );
+        // Romanization leads: the roman-first slot decides, X = romanization.
+        let cfg = with(false, Square, Curly);
+        assert_eq!(
+            text(&cfg, CommitScript::Lead).as_deref(),
+            Some("tǒi-vǎn {臺灣}")
+        );
+        // The split Hanji cell still leads with the Hanji: the hanji-first slot.
+        assert_eq!(
+            text(&cfg, CommitScript::Hanji).as_deref(),
+            Some("臺灣 [tǒi-vǎn]")
+        );
+        // Ruby, both ways round.
+        assert_eq!(
+            text(&with(true, Ruby, Round), CommitScript::Lead).as_deref(),
+            Some("<ruby>臺灣<rt>tǒi-vǎn</rt></ruby>")
+        );
+        assert_eq!(
+            text(&with(false, Round, Ruby), CommitScript::Lead).as_deref(),
+            Some("<ruby>tǒi-vǎn<rt>臺灣</rt></ruby>")
+        );
+        // Unset reads as the round brackets; no romanization writes no template.
+        assert_eq!(
+            text(&with(true, Round, Round), CommitScript::Lead).as_deref(),
+            Some("臺灣 (tǒi-vǎn)")
+        );
+        let no_roman = with(true, Ruby, Ruby);
+        assert_eq!(
+            resolve_commit_text(CommitScript::Lead, "", Some("臺灣"), &no_roman)
+                .map(|r| r.text)
+                .as_deref(),
+            Some("臺灣")
+        );
     }
 
     #[test]

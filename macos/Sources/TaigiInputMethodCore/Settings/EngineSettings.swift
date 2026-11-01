@@ -186,6 +186,32 @@ enum SyllableSeparator: String, CaseIterable, Sendable {
     }
 }
 
+/// Hakfa fork: how Annotate in Brackets writes the pair of scripts, one choice per lead order
+/// (`annotationTemplateHanjiFirst` / `annotationTemplateRomanFirst`). `X` leads, `Y` annotates.
+/// CROSS-PLATFORM INVARIANT — mirrors desktop-core `BracketTemplate::raw` and the Android
+/// `BracketTemplate.storageValue`; desktop-core reads the stored raw value through its key-path
+/// snapshot (`key_path.rs`) and previews it in the candidate cell.
+enum BracketTemplate: String, CaseIterable, Sendable {
+    /// `X (Y)`
+    case round
+    /// `X [Y]`
+    case square
+    /// `X {Y}`
+    case curly
+    /// `<ruby>X<rt>Y</rt></ruby>`
+    case ruby
+
+    /// The picker row: the template with `X`, `Y` standing for the lead and the annotation.
+    var exampleLabel: String {
+        switch self {
+        case .round: "X (Y)"
+        case .square: "X [Y]"
+        case .curly: "X {Y}"
+        case .ruby: "<ruby>X<rt>Y</rt></ruby>"
+        }
+    }
+}
+
 /// What a fresh install composes under: the default table `SettingsStore.Keys`
 /// reads its engine-setting defaults from. Desktop-core reads the settings
 /// themselves, from the snapshot each request carries
@@ -252,6 +278,11 @@ struct EngineSettings: Sendable {
     /// which defaults it ON.
     let isCustomDictEnabled: Bool
 
+    /// Hakfa fork: the Annotate in Brackets template when the Hanji leads / when the romanization
+    /// leads. Not read by Swift — desktop-core reads the stored raw values from the snapshot.
+    let annotationTemplateHanjiFirst: BracketTemplate
+    let annotationTemplateRomanFirst: BracketTemplate
+
     /// Which bundled dictionaries the engine may draw candidates from. Reaches
     /// the engine as `FetchAtPos.toggles`, which it resolves into its source
     /// filter.
@@ -272,6 +303,8 @@ struct EngineSettings: Sendable {
         syllableSeparator: .noSeparator,
         isNasalMarkerUppercaseEnabled: true,
         isCustomDictEnabled: true,
+        annotationTemplateHanjiFirst: .round,
+        annotationTemplateRomanFirst: .round,
         dictionarySources: .defaults,
     )
 }

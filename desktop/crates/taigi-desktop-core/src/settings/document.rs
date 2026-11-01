@@ -360,6 +360,8 @@ impl SettingsDocument {
             is_nasal_marker_uppercase_enabled: self.bool(&keys::IS_NASAL_MARKER_UPPERCASE_ENABLED),
             is_custom_dict_enabled: self.bool(&keys::IS_CUSTOM_DICT_ENABLED),
             meinong_tones: self.bool(&keys::IS_TONE33_ENABLED),
+            annotation_template_hanji_first: self.choice(&keys::ANNOTATION_TEMPLATE_HANJI_FIRST),
+            annotation_template_roman_first: self.choice(&keys::ANNOTATION_TEMPLATE_ROMAN_FIRST),
             dictionary_sources: self.dictionary_sources(),
         }
     }
@@ -909,6 +911,8 @@ mod tests {
             is_nasal_marker_uppercase_enabled: false,
             is_custom_dict_enabled: false,
             meinong_tones: false,
+            annotation_template_hanji_first: crate::settings::BracketTemplate::Round,
+            annotation_template_roman_first: crate::settings::BracketTemplate::Round,
             dictionary_sources: DictionarySourceToggles {
                 kautian: false,
                 khiin: true,

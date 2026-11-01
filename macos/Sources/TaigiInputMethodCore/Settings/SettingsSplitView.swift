@@ -12,6 +12,8 @@ import SwiftUI
 /// cleared at launch (`RetiredSettingsCleanup`), landing on the default, General.
 enum SettingsPane: String, CaseIterable, Identifiable {
     case general
+    /// Hakfa fork: the Annotate in Brackets switch and its templates (USER 2026-11-01: its own page).
+    case annotation
     case appearance
     case shortcuts
     /// The sources before the user's own words on top of them (USER
@@ -40,6 +42,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     /// the current display language instead of the one it was built in.
     var labelKey: StringKey {
         switch self {
+        case .annotation: .desktopGeneralTab // unused: `title(in:)` answers for this pane
         case .general: .desktopGeneralTab
         case .appearance: .desktopAppearanceTab
         case .shortcuts: .desktopShortcutsTab
@@ -51,11 +54,19 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The sidebar row and window title. The Annotate page is Hakfa-only wording with no i18n key,
+    /// like the other fork-only screens.
+    @MainActor
+    func title(in language: DisplayLanguageStore) -> String {
+        self == .annotation ? "括號標註" : language.string(labelKey)
+    }
+
     /// The sidebar row's icon; About has no row, and names the symbol its
     /// title would carry anywhere else.
     var symbolName: String {
         switch self {
         case .general: "gearshape"
+        case .annotation: "curlybraces"
         case .appearance: "paintpalette"
         case .shortcuts: "keyboard"
         case .customDictionary: "character.book.closed"
@@ -142,7 +153,7 @@ struct SettingsSidebarView: View {
         // listing for the dictionary rows.
         List(selection: listSelection) {
             ForEach(SettingsPane.sidebar) { pane in
-                Label(language.string(pane.labelKey), systemImage: pane.symbolName)
+                Label(pane.title(in: language), systemImage: pane.symbolName)
                     .tag(pane)
             }
         }
@@ -168,6 +179,8 @@ struct SettingsDetailView: View {
         switch selectedPane {
         case .general:
             GeneralSettingsView()
+        case .annotation:
+            AnnotationSettingsView()
         case .appearance:
             AppearanceSettingsView()
         case .shortcuts:
