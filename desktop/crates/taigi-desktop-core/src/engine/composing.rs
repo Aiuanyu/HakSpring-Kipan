@@ -224,6 +224,10 @@ pub fn fetch_at_pos(
         literal_roman_candidate_disabled: !settings.is_literal_roman_candidate_enabled,
         // The engine reads the user's dictionary only with this setting on.
         custom_dictionary_disabled: !settings.is_custom_dict_enabled,
+        // Hakfa fork: with the caret moved mid-tail the syllable is cut there and only the part before it is
+        // found again (the engine ignores this with the caret at the end, and under a TPS Hanji conversion,
+        // whose list is the caret's own word).
+        before_caret: true,
     };
     let response = composing_response(
         composing_request::Method::FetchAtPos(fetch),

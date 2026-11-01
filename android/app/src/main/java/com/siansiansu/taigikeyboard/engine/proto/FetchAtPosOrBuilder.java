@@ -44,4 +44,18 @@ public interface FetchAtPosOrBuilder extends
    * @return The toggles.
    */
   com.siansiansu.taigikeyboard.engine.proto.DictionarySourceToggles getToggles();
+
+  /**
+   * <pre>
+   * Hakfa fork: list the candidates of the pending tail only up to the caret, cutting the
+   * syllable there (`MoveCaret` put it mid-tail): the part before the caret is what gets found
+   * again, the rest waits. The spans stay in the tail's byte coordinates, so a pick nails the
+   * prefix and keeps the rest pending. Ignored with the caret at the tail's end, so a sender may
+   * always set it; unset keeps the whole tail (desktop).
+   * </pre>
+   *
+   * <code>bool before_caret = 10;</code>
+   * @return The beforeCaret.
+   */
+  boolean getBeforeCaret();
 }

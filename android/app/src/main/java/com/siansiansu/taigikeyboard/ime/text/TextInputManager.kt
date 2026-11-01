@@ -478,7 +478,16 @@ class TextInputManager(
         // §11.10; `INVARIANT_composing_external_region_clear_
         // discards_state`), but it may also be older than our own last write
         // — the manager reconciles against the host before discarding.
-        composingManager?.onHostSelectionUpdate(candidatesStart, candidatesEnd, taigikeyboard.currentInputConnection)
+        val caretMoved =
+            composingManager?.onHostSelectionUpdate(
+                candidatesStart,
+                candidatesEnd,
+                taigikeyboard.currentInputConnection,
+                selectionStart = newSelStart,
+                selectionEnd = newSelEnd,
+            ) == true
+        // Hakfa fork: the caret moved into the composition — cut the syllable there and find the part before it again.
+        if (caretMoved) candidateCoordinator.updateTaigiCandidates()
     }
 
     /** Forwarder kept for external callers — [SmartbarManager],

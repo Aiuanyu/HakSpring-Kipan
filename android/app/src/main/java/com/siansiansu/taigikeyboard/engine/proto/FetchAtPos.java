@@ -218,6 +218,56 @@ public  final class FetchAtPos extends
     bitField0_ = (bitField0_ & ~0x00000001);
   }
 
+  public static final int BEFORE_CARET_FIELD_NUMBER = 10;
+  private boolean beforeCaret_;
+  /**
+   * <pre>
+   * Hakfa fork: list the candidates of the pending tail only up to the caret, cutting the
+   * syllable there (`MoveCaret` put it mid-tail): the part before the caret is what gets found
+   * again, the rest waits. The spans stay in the tail's byte coordinates, so a pick nails the
+   * prefix and keeps the rest pending. Ignored with the caret at the tail's end, so a sender may
+   * always set it; unset keeps the whole tail (desktop).
+   * </pre>
+   *
+   * <code>bool before_caret = 10;</code>
+   * @return The beforeCaret.
+   */
+  @java.lang.Override
+  public boolean getBeforeCaret() {
+    return beforeCaret_;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: list the candidates of the pending tail only up to the caret, cutting the
+   * syllable there (`MoveCaret` put it mid-tail): the part before the caret is what gets found
+   * again, the rest waits. The spans stay in the tail's byte coordinates, so a pick nails the
+   * prefix and keeps the rest pending. Ignored with the caret at the tail's end, so a sender may
+   * always set it; unset keeps the whole tail (desktop).
+   * </pre>
+   *
+   * <code>bool before_caret = 10;</code>
+   * @param value The beforeCaret to set.
+   */
+  private void setBeforeCaret(boolean value) {
+
+    beforeCaret_ = value;
+  }
+  /**
+   * <pre>
+   * Hakfa fork: list the candidates of the pending tail only up to the caret, cutting the
+   * syllable there (`MoveCaret` put it mid-tail): the part before the caret is what gets found
+   * again, the rest waits. The spans stay in the tail's byte coordinates, so a pick nails the
+   * prefix and keeps the rest pending. Ignored with the caret at the tail's end, so a sender may
+   * always set it; unset keeps the whole tail (desktop).
+   * </pre>
+   *
+   * <code>bool before_caret = 10;</code>
+   */
+  private void clearBeforeCaret() {
+
+    beforeCaret_ = false;
+  }
+
   public static com.siansiansu.taigikeyboard.engine.proto.FetchAtPos parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -522,6 +572,58 @@ public  final class FetchAtPos extends
       return this;
     }
 
+    /**
+     * <pre>
+     * Hakfa fork: list the candidates of the pending tail only up to the caret, cutting the
+     * syllable there (`MoveCaret` put it mid-tail): the part before the caret is what gets found
+     * again, the rest waits. The spans stay in the tail's byte coordinates, so a pick nails the
+     * prefix and keeps the rest pending. Ignored with the caret at the tail's end, so a sender may
+     * always set it; unset keeps the whole tail (desktop).
+     * </pre>
+     *
+     * <code>bool before_caret = 10;</code>
+     * @return The beforeCaret.
+     */
+    @java.lang.Override
+    public boolean getBeforeCaret() {
+      return instance.getBeforeCaret();
+    }
+    /**
+     * <pre>
+     * Hakfa fork: list the candidates of the pending tail only up to the caret, cutting the
+     * syllable there (`MoveCaret` put it mid-tail): the part before the caret is what gets found
+     * again, the rest waits. The spans stay in the tail's byte coordinates, so a pick nails the
+     * prefix and keeps the rest pending. Ignored with the caret at the tail's end, so a sender may
+     * always set it; unset keeps the whole tail (desktop).
+     * </pre>
+     *
+     * <code>bool before_caret = 10;</code>
+     * @param value The beforeCaret to set.
+     * @return This builder for chaining.
+     */
+    public Builder setBeforeCaret(boolean value) {
+      copyOnWrite();
+      instance.setBeforeCaret(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * Hakfa fork: list the candidates of the pending tail only up to the caret, cutting the
+     * syllable there (`MoveCaret` put it mid-tail): the part before the caret is what gets found
+     * again, the rest waits. The spans stay in the tail's byte coordinates, so a pick nails the
+     * prefix and keeps the rest pending. Ignored with the caret at the tail's end, so a sender may
+     * always set it; unset keeps the whole tail (desktop).
+     * </pre>
+     *
+     * <code>bool before_caret = 10;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearBeforeCaret() {
+      copyOnWrite();
+      instance.clearBeforeCaret();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.FetchAtPos)
   }
   @java.lang.Override
@@ -543,10 +645,11 @@ public  final class FetchAtPos extends
             "literalRomanCandidateDisabled_",
             "customDictionaryDisabled_",
             "toggles_",
+            "beforeCaret_",
           };
           java.lang.String info =
-              "\u0000\u0004\u0000\u0001\u0003\t\u0004\u0000\u0000\u0000\u0003\u0002\u0006\u0007" +
-              "\b\u0007\t\u1009\u0000";
+              "\u0000\u0005\u0000\u0001\u0003\n\u0005\u0000\u0000\u0000\u0003\u0002\u0006\u0007" +
+              "\b\u0007\t\u1009\u0000\n\u0007";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

@@ -270,10 +270,14 @@ object RustEngineBridge {
         val displayText: String,
         val effects: List<Effect>,
         val isComposing: Boolean,
+        /** Where the caret sits in [displayText], a UTF-16 offset; the end unless the user moved it into the composition. */
+        val caretUtf16: Int = displayText.length,
     ) {
         sealed class Effect {
             data class UpdatePreedit(
                 val display: String,
+                /** UTF-16 offset of the caret in [display]; the end (the old behaviour) unless it was moved. */
+                val caretUtf16: Int = display.length,
             ) : Effect()
 
             object ClearPreeditWithoutCommit : Effect()

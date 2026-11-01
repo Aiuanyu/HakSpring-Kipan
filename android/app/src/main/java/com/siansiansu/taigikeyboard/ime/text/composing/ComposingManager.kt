@@ -18,10 +18,12 @@ import com.siansiansu.taigikeyboard.engine.composingCommitPreeditThenInsertExter
 import com.siansiansu.taigikeyboard.engine.composingCommitRaw
 import com.siansiansu.taigikeyboard.engine.composingDeleteBackward
 import com.siansiansu.taigikeyboard.engine.composingFetchAtPos
+import com.siansiansu.taigikeyboard.engine.composingMoveCaret
 import com.siansiansu.taigikeyboard.engine.composingReplaceLast
 import com.siansiansu.taigikeyboard.engine.composingReset
 import com.siansiansu.taigikeyboard.engine.composingStart
 import com.siansiansu.taigikeyboard.engine.continuousAppConfig
+import com.siansiansu.taigikeyboard.engine.proto.CaretDirection
 import com.siansiansu.taigikeyboard.ime.core.logging.LoggerBackend
 import com.siansiansu.taigikeyboard.ime.core.logging.NullLoggerBackend
 import com.siansiansu.taigikeyboard.ime.core.logging.tdebug
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.abs
 
 /**
  * Android platform wrapper around the Rust shared-core composing engine
@@ -75,6 +78,14 @@ class ComposingManager(
     val isComposing: StateFlow<Boolean> = _isComposing.asStateFlow()
 
     /**
+     * Hakfa fork: where the engine's caret sits in [displayText] (UTF-16 offset). The end unless the user moved the
+     * host cursor into the composition ([onHostSelectionUpdate]); the engine then edits there. Plain field like
+     * [selfCommitInProgress]: written on the main thread with the other mirror fields, read by the same.
+     */
+    @Volatile
+    private var caretUtf16: Int = 0
+
+    /**
      * Generation source. Lives on the companion so it survives
      * `ComposingManager` reconstruction across `onStartInputView` calls.
      * Engine-side `last_generation` is also process-singleton; both must
@@ -93,9 +104,11 @@ class ComposingManager(
     data class StateToken(
         val rawInput: String?,
         val generation: Long,
+        /** Hakfa fork: candidates are listed up to the caret, so a fetch from another caret is stale. */
+        val caretUtf16: Int = 0,
     )
 
-    fun stateToken(): StateToken = StateToken(getRawInput(), currentGeneration)
+    fun stateToken(): StateToken = StateToken(getRawInput(), currentGeneration, caretUtf16)
 
     /**
      * `true` while the manager is dispatching effects from a self-driven
@@ -129,6 +142,7 @@ class ComposingManager(
         _rawInput.value = ""
         _displayText.value = ""
         _isComposing.value = false
+        caretUtf16 = 0
         sharedGeneration.incrementAndGet()
     }
 
@@ -151,6 +165,9 @@ class ComposingManager(
         // initializes to 0 so the very first request is already a
         // mismatch (silent reset of fresh engine = no-op).
         private val sharedGeneration: AtomicLong = AtomicLong(1L)
+
+        // A composition is a few dozen characters; the cap only stops a runaway walk.
+        private const val MAX_CARET_STEPS = 256
     }
 
     // region Intent dispatch API
@@ -335,6 +352,9 @@ class ComposingManager(
             // §34/S22 — invert of the Show Typed Text First setting.
             literalRomanCandidateDisabled = !settings.isLiteralRomanCandidateEnabled,
             customDictionaryDisabled = !settings.isCustomDictEnabled,
+            // Hakfa fork: with the caret moved into the composition, the syllable is cut there and only the
+            // part before it is found again (the engine ignores this with the caret at the end).
+            beforeCaret = true,
         )
     }
 
@@ -418,9 +438,93 @@ class ComposingManager(
         candidatesStart: Int,
         candidatesEnd: Int,
         ic: InputConnection?,
-    ) {
-        if (hostReportsNoComposingRegion(candidatesStart, candidatesEnd)) reconcileWithHost(ic)
+        selectionStart: Int = -1,
+        selectionEnd: Int = -1,
+    ): Boolean {
+        if (hostReportsNoComposingRegion(candidatesStart, candidatesEnd)) {
+            reconcileWithHost(ic)
+        } else if (selectionStart >= 0 && selectionStart == selectionEnd) {
+            return followHostCaret(candidatesStart, candidatesEnd, selectionStart, ic)
+        }
+        return false
     }
+
+    /**
+     * Hakfa fork: the host's cursor now sits inside our composing region (the user tapped into it, or swiped the
+     * space bar) — move the engine's caret there, so the next key is inserted at the cursor, not at the end of
+     * the composition. Acts only when the report is current: the region is the preedit we last wrote, and one
+     * `getExtractedText` snapshot shows that text at the region with the cursor where the report says (a report
+     * that predates our own write fails one of these and is left alone, as [reconcileWithHost] does).
+     * Returns whether the caret moved — the caller re-lists the candidates, now cut at the caret.
+     */
+    private fun followHostCaret(
+        candidatesStart: Int,
+        candidatesEnd: Int,
+        selection: Int,
+        ic: InputConnection?,
+    ): Boolean {
+        if (ic == null || selfCommitInProgress || !_isComposing.value) return false
+        val expected = _displayText.value
+        if (expected.isEmpty() || candidatesEnd - candidatesStart != expected.length) return false
+        val target = selection - candidatesStart
+        if (target !in 0..expected.length || target == caretUtf16) return false
+        val extracted = ic.getExtractedText(ExtractedTextRequest(), 0) ?: return false
+        val text = extracted.text ?: return false
+        val local = candidatesStart - extracted.startOffset
+        if (extracted.selectionStart != extracted.selectionEnd || extracted.startOffset + extracted.selectionEnd != selection) return false
+        if (local < 0 || local + expected.length > text.length || text.subSequence(local, local + expected.length).toString() != expected) return false
+        logger.tdebug(TAG) { "[COMPOSE] fn=followHostCaret target=$target from=$caretUtf16 len=${expected.length}" }
+        return moveCaretTo(target, ic)
+    }
+
+    /** The engine round trip that moves its caret; tests replace it with a fake (the real one is JNI). */
+    internal var caretMove: (CaretDirection) -> RustEngineBridge.ComposingTransition = ::engineMoveCaret
+
+    /**
+     * Steps the engine's caret to the display offset nearest [target] — a jump to the nearer edge, then LEFT /
+     * RIGHT one character at a time (a character is not one display unit once tone marks fold in, so the walk
+     * can land beside [target] and keeps whichever side is nearer) — then writes the final preedit and host
+     * cursor once.
+     */
+    internal fun moveCaretTo(
+        target: Int,
+        ic: InputConnection,
+    ): Boolean {
+        val before = caretUtf16
+        var last = caretMove(startingJump(target))
+        var steps = 0
+        while (last.isComposing && steps++ < MAX_CARET_STEPS) {
+            val here = last.caretUtf16
+            if (here == target) break
+            val direction = if (here < target) CaretDirection.CARET_DIRECTION_RIGHT else CaretDirection.CARET_DIRECTION_LEFT
+            val next = caretMove(direction)
+            if (!next.isComposing || next.caretUtf16 == here) break
+            val overshot = (next.caretUtf16 - target) * (here - target) < 0
+            if (overshot) {
+                last = if (abs(next.caretUtf16 - target) < abs(here - target)) next else caretMove(opposite(direction))
+                break
+            }
+            last = next
+        }
+        if (!last.isComposing) return false
+        val preedit = RustEngineBridge.ComposingTransition.Effect.UpdatePreedit(last.displayText, last.caretUtf16)
+        val rest = last.effects.filterNot { it is RustEngineBridge.ComposingTransition.Effect.UpdatePreedit }
+        applyAsSelfCommit(last.copy(effects = listOf(preedit) + rest), ic)
+        return last.caretUtf16 != before
+    }
+
+    private fun startingJump(target: Int): CaretDirection =
+        when {
+            target <= 0 -> CaretDirection.CARET_DIRECTION_START
+            target >= _displayText.value.length -> CaretDirection.CARET_DIRECTION_END
+            // Start from the nearer end of the tail so a long composition costs few round trips.
+            target < _displayText.value.length - target -> CaretDirection.CARET_DIRECTION_START
+            else -> CaretDirection.CARET_DIRECTION_END
+        }
+
+    private fun opposite(direction: CaretDirection): CaretDirection = if (direction == CaretDirection.CARET_DIRECTION_RIGHT) CaretDirection.CARET_DIRECTION_LEFT else CaretDirection.CARET_DIRECTION_RIGHT
+
+    private fun engineMoveCaret(direction: CaretDirection): RustEngineBridge.ComposingTransition = RustEngineBridge.composingMoveCaret(direction, settingsProvider.current, currentGeneration)
 
     /**
      * Re-reads the host to decide whether a "no composing region" signal is
@@ -509,6 +613,7 @@ class ComposingManager(
         _rawInput.value = transition.rawInput
         _displayText.value = transition.displayText
         _isComposing.value = transition.isComposing
+        caretUtf16 = transition.caretUtf16
         for (effect in transition.effects) {
             logger.tdebug("ComposingDelegate") {
                 "[COMMIT] fn=applyTransition effect=${effect.describeKind()}"

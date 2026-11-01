@@ -629,6 +629,8 @@ pub enum Intent {
         now_ms: i64,
         enabled_sources_bitmask: u32,
         literal_roman_candidate_disabled: bool,
+        /// Hakfa fork: list the tail only up to the caret (`FetchAtPos.before_caret`).
+        before_caret: bool,
         user_rows: UserRows,
         /// The previous word's continuations, user-learned and bundled
         /// (`dispatch::context`), ranked into the candidate order (§56).

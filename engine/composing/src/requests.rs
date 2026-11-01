@@ -105,6 +105,7 @@ pub fn fetch_at_pos_intent(
         now_ms: fetch.now_ms,
         enabled_sources_bitmask: source_filter_bitmask(fetch.toggles.as_ref()),
         literal_roman_candidate_disabled: fetch.literal_roman_candidate_disabled,
+        before_caret: fetch.before_caret,
         user_rows,
         context,
     }
@@ -154,6 +155,7 @@ pub fn query(intent: &Intent, engine: &Engine, config: &AppConfig) -> ComposingR
             now_ms,
             enabled_sources_bitmask,
             literal_roman_candidate_disabled,
+            before_caret,
             user_rows,
             context,
         } => handle_fetch_at_pos(
@@ -163,6 +165,7 @@ pub fn query(intent: &Intent, engine: &Engine, config: &AppConfig) -> ComposingR
             context,
             *enabled_sources_bitmask,
             *literal_roman_candidate_disabled,
+            *before_caret,
             config,
         ),
         mutating => unreachable!("query() called with mutating intent {mutating:?}"),
@@ -193,11 +196,15 @@ fn handle_fetch_at_pos(
     context: &ranking::ContextRanks,
     enabled_sources_bitmask: u32,
     literal_roman_candidate_disabled: bool,
+    before_caret: bool,
     config: &AppConfig,
 ) -> ComposingResponse {
     let snapshot = engine.snapshot(config);
     let state = engine.snapshot_state();
-    let Phase::Continuous { raw: tail, .. } = &state.phase else {
+    let Phase::Continuous {
+        raw: tail, caret, ..
+    } = &state.phase
+    else {
         return snapshot;
     };
     let word_list_start = engine.word_list_start(config);
@@ -206,7 +213,17 @@ fn handle_fetch_at_pos(
         None => ListShape::Sentence,
     };
     let list_start = word_list_start.unwrap_or(0);
-    let raw = &tail[list_start..];
+    // Hakfa fork: with the caret mid-tail, the part before it is what is found again.
+    // (Not under a Hanji conversion: its word list is already the caret's own.)
+    let list_end = if before_caret && word_list_start.is_none() && *caret < tail.len() {
+        (*caret).max(list_start)
+    } else {
+        tail.len()
+    };
+    let raw = &tail[list_start..list_end];
+    if raw.is_empty() {
+        return with_continuous(snapshot, ContinuousResponse::default());
+    }
     // v3.5.8 Phase 9 Item 11 — hanji guard (§15.3.E). The only input
     // modes are TL/POJ/TPS romanization; CJK never legitimately enters
     // the composing buffer. When it leaks in (paste, stale selection

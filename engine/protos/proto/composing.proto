@@ -179,6 +179,12 @@ message FetchAtPos {
   // un-wired build keeps the dictionary on.
   bool custom_dictionary_disabled          = 8;
   DictionarySourceToggles toggles          = 9;
+  // Hakfa fork: list the candidates of the pending tail only up to the caret, cutting the
+  // syllable there (`MoveCaret` put it mid-tail): the part before the caret is what gets found
+  // again, the rest waits. The spans stay in the tail's byte coordinates, so a pick nails the
+  // prefix and keeps the rest pending. Ignored with the caret at the tail's end, so a sender may
+  // always set it; unset keeps the whole tail (desktop).
+  bool before_caret                        = 10;
 }
 
 // v3.5.8 Phase 6 — commit a candidate segment in `Phase::Continuous`. The

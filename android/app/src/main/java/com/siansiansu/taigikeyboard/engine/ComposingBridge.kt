@@ -78,6 +78,25 @@ fun RustEngineBridge.composingReplaceLast(
     )
 }
 
+// Moves the caret inside the pending tail (the engine edits at it afterwards: Append inserts there,
+// DeleteBackward removes before it). Answers a snapshot, plus UpdatePreedit when the caret moved.
+fun RustEngineBridge.composingMoveCaret(
+    direction: com.siansiansu.taigikeyboard.engine.proto.CaretDirection,
+    settings: EngineSettings,
+    generation: Long,
+): RustEngineBridge.ComposingTransition {
+    val payload = com.siansiansu.taigikeyboard.engine.proto.MoveCaret
+        .newBuilder()
+        .setDirection(direction)
+        .build()
+    return composingDispatch(
+        methodSetter = { it.moveCaret = payload },
+        op = "composingMoveCaret",
+        generation = generation,
+        config = continuousAppConfig(settings),
+    )
+}
+
 // Engine owns the delete-to-empty → Idle transition and the 1-char delete path that must not eat document text.
 fun RustEngineBridge.composingDeleteBackward(
     settings: EngineSettings,
@@ -175,12 +194,15 @@ fun RustEngineBridge.composingFetchAtPos(
     // Invert of the Enable Custom Dictionary setting: the engine reads the
     // user's dictionary only with it on. Default `false` = read it.
     customDictionaryDisabled: Boolean = false,
+    // Hakfa fork: list only the part of the tail before the caret (the user moved it into the composition).
+    beforeCaret: Boolean = false,
 ): List<RustEngineBridge.ContinuousCandidate> {
     val payload = com.siansiansu.taigikeyboard.engine.proto.FetchAtPos
         .newBuilder()
         .setNowMs(nowMs)
         .setLiteralRomanCandidateDisabled(literalRomanCandidateDisabled)
         .setCustomDictionaryDisabled(customDictionaryDisabled)
+        .setBeforeCaret(beforeCaret)
         .setToggles(dictionaryTogglesProto(dictionaryToggles))
         .build()
     return composingFetchDispatch(
@@ -359,7 +381,10 @@ private fun synthComposing(proto: ComposingResponse): RustEngineBridge.Composing
     val effects: List<RustEngineBridge.ComposingTransition.Effect> = proto.effectList.mapNotNull { eff ->
         when {
             eff.hasUpdatePreedit() -> {
-                RustEngineBridge.ComposingTransition.Effect.UpdatePreedit(eff.updatePreedit.display)
+                RustEngineBridge.ComposingTransition.Effect.UpdatePreedit(
+                    eff.updatePreedit.display,
+                    eff.updatePreedit.caretUtf16.coerceIn(0, eff.updatePreedit.display.length),
+                )
             }
 
             eff.hasClearPreeditWithoutCommit() -> {
@@ -414,6 +439,7 @@ private fun synthComposing(proto: ComposingResponse): RustEngineBridge.Composing
         displayText = proto.preedit.displayText,
         effects = effects,
         isComposing = proto.isComposing,
+        caretUtf16 = proto.preedit.caretUtf16.coerceIn(0, proto.preedit.displayText.length),
     )
 }
 

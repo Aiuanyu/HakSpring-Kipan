@@ -264,13 +264,16 @@ pub fn perform_intent(
             true
         }
         ComposingKeyIntent::MoveCaret(direction) => {
-            // No refetch: the text did not change, so the candidates, the
-            // highlight and the page still describe it. Under TPS the window
-            // goes: it is opened for the word before the caret, and the
-            // caret left it.
+            // Under TPS the window goes: it is opened for the word before
+            // the caret, and the caret left it. Otherwise (Hakfa fork) the
+            // syllable is cut at the caret and the part before it is found
+            // again — the candidates describe the text up to the caret, so
+            // the highlight and the page start over.
             manager.move_caret(*direction, surface);
             if is_tps(settings) {
                 close_open_list(list, surface);
+            } else {
+                refresh(settings, manager, list, surface);
             }
             true
         }

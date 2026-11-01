@@ -1,5 +1,6 @@
 package com.siansiansu.taigikeyboard.ime.text.composing
 
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import com.siansiansu.taigikeyboard.engine.RustEngineBridge
 
@@ -33,6 +34,9 @@ object DefaultComposingDelegate : ComposingDelegate {
         when (effect) {
             is RustEngineBridge.ComposingTransition.Effect.UpdatePreedit -> {
                 ic.setComposingText(effect.display, 1)
+                // Hakfa fork: the caret was moved into the composition (tap / space swipe): put the host's cursor
+                // there too, so the next key is typed where the user sees it.
+                if (effect.caretUtf16 in 0 until effect.display.length) placeCaretInPreedit(ic, effect.display, effect.caretUtf16)
             }
 
             RustEngineBridge.ComposingTransition.Effect.ClearPreeditWithoutCommit -> {
@@ -89,4 +93,25 @@ object NoopNextWordEffectRouter : NextWordEffectRouter {
     override fun route(effect: RustEngineBridge.ComposingTransition.Effect) {
         // intentional no-op — see KDoc on NextWordEffectRouter
     }
+}
+
+/**
+ * Moves the host's cursor to [caret] inside the preedit [display] that `setComposingText(display, 1)` just
+ * wrote (cursor at its end). The composition's absolute start comes from one `getExtractedText` snapshot,
+ * trusted only when the text right before the cursor is the preedit — a host that answers from a stale cache
+ * leaves the cursor at the end, as before.
+ */
+internal fun placeCaretInPreedit(
+    ic: InputConnection,
+    display: String,
+    caret: Int,
+) {
+    val extracted = ic.getExtractedText(ExtractedTextRequest(), 0) ?: return
+    val text = extracted.text ?: return
+    if (extracted.selectionStart != extracted.selectionEnd) return
+    val localEnd = extracted.selectionEnd
+    val localStart = localEnd - display.length
+    if (localStart < 0 || localEnd > text.length || text.subSequence(localStart, localEnd).toString() != display) return
+    val absolute = extracted.startOffset + localStart + caret
+    ic.setSelection(absolute, absolute)
 }

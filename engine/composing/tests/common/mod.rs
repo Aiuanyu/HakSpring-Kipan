@@ -417,6 +417,8 @@ pub struct Fetch {
     pub now_ms: i64,
     pub enabled_sources_bitmask: u32,
     pub literal_roman_candidate_disabled: bool,
+    /// Hakfa fork: list the tail only up to the caret.
+    pub before_caret: bool,
     pub frequency: Vec<Selected>,
     pub custom: Vec<CustomEntry>,
     pub learned: Vec<LearnedEntry>,
@@ -429,6 +431,7 @@ impl Default for Fetch {
             now_ms: 0,
             enabled_sources_bitmask: u32::MAX,
             literal_roman_candidate_disabled: false,
+            before_caret: false,
             frequency: Vec::new(),
             custom: Vec::new(),
             learned: Vec::new(),
@@ -472,6 +475,7 @@ impl Fetch {
             now_ms: self.now_ms,
             enabled_sources_bitmask: self.enabled_sources_bitmask,
             literal_roman_candidate_disabled: self.literal_roman_candidate_disabled,
+            before_caret: self.before_caret,
             user_rows: UserRows {
                 frequency,
                 custom: self.custom,
@@ -561,7 +565,7 @@ pub fn wire_fetch_at_pos_response(
     requests::handle(&req(Method::FetchAtPos(fetch)), &mut engine, config).expect("FetchAtPos")
 }
 
-fn continuous_engine(config: &AppConfig, raw: &str) -> Engine {
+pub fn continuous_engine(config: &AppConfig, raw: &str) -> Engine {
     let mut engine = Engine::new();
     requests::handle(
         &req(Method::Start(Start { text: raw.into() })),

@@ -7,6 +7,7 @@ import android.view.inputmethod.ExtractedText
 import android.view.inputmethod.InputConnection
 import com.siansiansu.taigikeyboard.engine.RustEngineBridge.ComposingTransition
 import com.siansiansu.taigikeyboard.engine.RustEngineBridge.ComposingTransition.Effect
+import com.siansiansu.taigikeyboard.engine.proto.CaretDirection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -30,6 +31,7 @@ class ComposingManagerHostReconciliationTest {
     ) {
         val writes = mutableListOf<String>()
         val regions = mutableListOf<Pair<Int, Int>>()
+        val selections = mutableListOf<Int>()
 
         val ic: InputConnection =
             Proxy.newProxyInstance(
@@ -50,6 +52,10 @@ class ComposingManagerHostReconciliationTest {
                     }
                     "setComposingRegion" -> {
                         regions += (args!![0] as Int) to (args[1] as Int)
+                        true
+                    }
+                    "setSelection" -> {
+                        selections += args!![0] as Int
                         true
                     }
                     "setComposingText", "finishComposingText", "commitText", "deleteSurroundingText" -> {
@@ -267,4 +273,144 @@ class ComposingManagerHostReconciliationTest {
         manager.reconcileWithHost(FakeHost("a", readsForbidden = true).ic)
         assertFalse(manager.isComposing())
     }
+
+    // region Hakfa fork: the host cursor moved into the composition (tap / space swipe)
+
+    /** A fake engine caret over [positions] (display offsets the caret can sit at); records every move asked of it. */
+    private class FakeCaretEngine(
+        private val display: String,
+        private val positions: List<Int>,
+        start: Int = positions.last(),
+    ) {
+        var index = positions.indexOf(start)
+        val moves = mutableListOf<CaretDirection>()
+
+        fun move(direction: CaretDirection): ComposingTransition {
+            moves += direction
+            index =
+                when (direction) {
+                    CaretDirection.CARET_DIRECTION_START -> 0
+                    CaretDirection.CARET_DIRECTION_END -> positions.lastIndex
+                    CaretDirection.CARET_DIRECTION_LEFT -> maxOf(0, index - 1)
+                    CaretDirection.CARET_DIRECTION_RIGHT -> minOf(positions.lastIndex, index + 1)
+                    else -> index
+                }
+            return ComposingTransition(display, display, emptyList(), true, caretUtf16 = positions[index])
+        }
+    }
+
+    private class RecordingDelegate : ComposingDelegate {
+        val effects = mutableListOf<Effect>()
+
+        override fun execute(
+            effect: Effect,
+            ic: InputConnection,
+        ) {
+            effects += effect
+        }
+    }
+
+    @Test
+    fun hostCursorInsideTheComposition_movesTheEngineCaretThere_andWritesItBack() {
+        // trace: "ab" + preedit "tâi" at [2,5); the user taps between "t" and "â": the host cursor is 3 →
+        // display offset 1. Nearer edge is START (0), one RIGHT step lands on 1.
+        val delegate = RecordingDelegate()
+        val manager = composing("tâi", delegate)
+        val engine = FakeCaretEngine("tâi", listOf(0, 1, 2, 3))
+        manager.caretMove = engine::move
+        delegate.effects.clear()
+
+        // The caller re-lists the candidates (cut at the caret) exactly when this answers true.
+        val moved = manager.onHostSelectionUpdate(2, 5, FakeHost("abtâi", cursor = 3).ic, selectionStart = 3, selectionEnd = 3)
+
+        assertTrue(moved)
+        assertEquals(listOf(CaretDirection.CARET_DIRECTION_START, CaretDirection.CARET_DIRECTION_RIGHT), engine.moves)
+        assertEquals(listOf<Effect>(Effect.UpdatePreedit("tâi", 1)), delegate.effects)
+        // The echo of our own cursor write asks for nothing more.
+        assertFalse(manager.onHostSelectionUpdate(2, 5, FakeHost("abtâi", cursor = 3).ic, selectionStart = 3, selectionEnd = 3))
+        assertEquals(2, engine.moves.size)
+    }
+
+    @Test
+    fun hostCursorAtTheEndOfTheComposition_asksNothing() {
+        val manager = composing("tâi")
+        val engine = FakeCaretEngine("tâi", listOf(0, 1, 2, 3))
+        manager.caretMove = engine::move
+
+        manager.onHostSelectionUpdate(2, 5, FakeHost("abtâi", readsForbidden = true).ic, selectionStart = 5, selectionEnd = 5)
+
+        assertTrue(engine.moves.isEmpty())
+    }
+
+    @Test
+    fun aStaleCursorReport_isLeftAlone() {
+        // trace: the report says 3, but the host snapshot (ordered after our write) has the cursor at 5.
+        val manager = composing("tâi")
+        val engine = FakeCaretEngine("tâi", listOf(0, 1, 2, 3))
+        manager.caretMove = engine::move
+
+        manager.onHostSelectionUpdate(2, 5, FakeHost("abtâi", cursor = 5).ic, selectionStart = 3, selectionEnd = 3)
+
+        assertTrue(engine.moves.isEmpty())
+    }
+
+    @Test
+    fun aCursorOutsideTheRegion_orARegionThatIsNotThePreedit_isLeftAlone() {
+        val manager = composing("tâi")
+        val engine = FakeCaretEngine("tâi", listOf(0, 1, 2, 3))
+        manager.caretMove = engine::move
+
+        manager.onHostSelectionUpdate(2, 5, FakeHost("abtâi", cursor = 1).ic, selectionStart = 1, selectionEnd = 1)
+        manager.onHostSelectionUpdate(2, 4, FakeHost("abtâi", cursor = 3).ic, selectionStart = 3, selectionEnd = 3)
+        manager.onHostSelectionUpdate(2, 5, FakeHost("abtâi", cursor = 3, selectionStart = 2).ic, selectionStart = 3, selectionEnd = 4)
+
+        assertTrue(engine.moves.isEmpty())
+    }
+
+    @Test
+    fun whenTheWalkOvershoots_theNearerSideWins() {
+        // trace: the caret can only sit at 0, 2 or 3 (a tone mark folds two characters into one unit); target 2
+        // is reached exactly from the end by one LEFT; target 1 lands between 0 and 2 — a tie keeps 0.
+        val delegate = RecordingDelegate()
+        val manager = composing("tâi", delegate)
+        val engine = FakeCaretEngine("tâi", listOf(0, 2, 3))
+        manager.caretMove = engine::move
+        delegate.effects.clear()
+
+        manager.moveCaretTo(1, FakeHost("tâi").ic)
+
+        assertEquals(listOf<Effect>(Effect.UpdatePreedit("tâi", 0)), delegate.effects)
+    }
+
+    @Test
+    fun theStateTokenChangesWithTheCaret_soAFetchFromAnotherCaretIsStale() {
+        val manager = composing("tâi")
+        val atEnd = manager.stateToken()
+        manager.applyTransition(
+            ComposingTransition("tai", "tâi", listOf(Effect.UpdatePreedit("tâi", 1)), true, caretUtf16 = 1),
+            FakeHost("abtâi").ic,
+        )
+        assertTrue(atEnd != manager.stateToken())
+    }
+
+    @Test
+    fun typingAfterTheCaretMoved_keepsTheEngineCaretFromTheTransition() {
+        val manager = composing("tâi")
+        val host = FakeHost("abtâi")
+        manager.applyTransition(
+            ComposingTransition("tai", "tâi", listOf(Effect.UpdatePreedit("tâi", 1)), true, caretUtf16 = 1),
+            host.ic,
+        )
+        // trace: the default delegate wrote the preedit, then put the host cursor at region start 2 + caret 1.
+        assertEquals(listOf(3), host.selections)
+        val engine = FakeCaretEngine("tâi", listOf(0, 1, 2, 3), start = 1)
+        manager.caretMove = engine::move
+
+        // The host cursor is where the engine says it is: nothing to follow.
+        manager.onHostSelectionUpdate(2, 5, FakeHost("abtâi", readsForbidden = true).ic, selectionStart = 3, selectionEnd = 3)
+
+        assertTrue(engine.moves.isEmpty())
+    }
+
+    // endregion
 }

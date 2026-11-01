@@ -623,21 +623,27 @@ fn tps_moving_the_caret_shuts_the_window() {
     assert_eq!(rig.calls(), ["list closed"]);
 }
 
-/// The caret jumps (Ctrl+↑ / Ctrl+↓) leave a TL window and its list as they
-/// are — no refetch, nothing told to the surface — as a step does; under TPS
-/// they take the window down, as a step does (D7).
+/// Hakfa fork: the caret jumps (Ctrl+↑ / Ctrl+↓) cut a TL composition at the caret and find the part before
+/// it again — at the start nothing is left before it (the list is empty), at the end the whole tail is listed
+/// again; under TPS they take the window down, as a step does (D7).
 #[test]
-fn the_caret_jumps_keep_a_tl_window_and_shut_a_tps_one() {
+fn the_caret_jumps_refetch_a_tl_window_cut_at_the_caret_and_shut_a_tps_one() {
     let mut rig = new_rig(false);
     rig.type_word("tsiah");
     let shown = rig.list.len();
     assert!(shown > 0);
-    for direction in [CaretDirection::Start, CaretDirection::End] {
-        assert!(rig.run(ComposingKeyIntent::MoveCaret(direction), &no_key()));
-        assert_eq!(rig.manager.raw_input(), "tsiah", "{direction:?}");
-        assert_eq!(rig.list.len(), shown, "{direction:?}");
-        assert!(rig.calls().is_empty(), "{direction:?}: {:?}", rig.calls());
-    }
+    assert!(rig.run(
+        ComposingKeyIntent::MoveCaret(CaretDirection::Start),
+        &no_key()
+    ));
+    assert_eq!(rig.manager.raw_input(), "tsiah");
+    assert!(rig.list.is_empty(), "nothing is left before the caret");
+    assert!(rig.run(
+        ComposingKeyIntent::MoveCaret(CaretDirection::End),
+        &no_key()
+    ));
+    assert_eq!(rig.manager.raw_input(), "tsiah");
+    assert_eq!(rig.list.len(), shown, "the caret at the end lists the whole tail");
     drop(rig);
 
     let mut rig = new_tps_rig();

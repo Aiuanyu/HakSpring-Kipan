@@ -307,9 +307,9 @@ impl ComposingManager {
         self.apply(transition, &settings, executor);
     }
 
-    /// Steps the caret inside the pending tail. Not a buffer change: the
-    /// engine asks for no fetch — the candidates on
-    /// screen still describe the same text.
+    /// Steps the caret inside the pending tail. Not a buffer change, so the
+    /// engine asks for no fetch itself; the caller refetches (Hakfa fork: the
+    /// candidates are the part of the tail before the caret).
     pub fn move_caret(
         &mut self,
         direction: CaretDirection,
