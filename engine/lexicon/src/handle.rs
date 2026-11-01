@@ -59,6 +59,8 @@ impl EngineHandle {
     pub fn install(paths: LexiconPaths) -> Result<InstallStats, LexiconError> {
         let prefix_index = PrefixIndex::open(&paths.fst)?;
         let dictionary = DictionaryReader::open(&paths.dictionary_bin)?;
+        // hakfa: build the per-record lect table now, so the first one-letter keystroke does not.
+        dictionary.lect_of(1);
         let association = AssociationReader::open(&paths.association_bin)?;
         let syllable_inventory = paths
             .syllables_fst

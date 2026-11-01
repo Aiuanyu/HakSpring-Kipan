@@ -114,7 +114,17 @@ pub const PARTIAL_PREFIX_HYDRATE_CAP: usize = 500;
 /// `t` in 四縣 never reached `tung` 同, whatever the learned frequency (USER 2026-10-29). The
 /// accepted-row cap keeps the ranker's pool the size it always was; this scan cap only bounds the
 /// worst-case work, as the rowid cap used to.
-pub const PARTIAL_PREFIX_SCAN_CAP: usize = 4_000;
+///
+/// The scan counts only this lect's entries (the other lects' rows are dropped inside the walk,
+/// `PrefixIndex::lookup_prefix_shortest_first_accepting`). 4_000 was enough for the three-lect
+/// dictionary and not for the six-lect one (20261031): a one-letter prefix there matches up to
+/// 35_604 entries across the lects (`s`) — 7_890 in the largest single lect (饒平) — and a common
+/// word with a longer key (`tung` 同, `siid` 食, `gong` 講, `kied` 客) fell off the end of a
+/// shortest-key-first scan before the frequency pick (14 of the 26 one-letter inputs lost words in
+/// 四縣). 16_000 is about twice the largest one-letter prefix of any lect.
+/// `partial_prefix_reach_prod.rs` pins the reported words; a lect that grows past this cap has to
+/// raise it (or index the top rows per prefix at build time).
+pub const PARTIAL_PREFIX_SCAN_CAP: usize = 16_000;
 
 /// Maximum candidates returned from [`fetch_partial_prefix_candidates`]
 /// to the platform candidate strip. Applied AFTER hydration, dedupe,
@@ -1007,12 +1017,22 @@ pub fn fetch_partial_prefix_candidates_unbounded(
         // travels with each rowid so the record guard below validates what
         // the pattern actually hit, not the literal prefix (Codex
         // post-impl 2026-08-19 BLOCK 1). TL/POJ keep the plain lookup.
+        // hakfa: drop the other lects' rows inside the scan (a lect-0 row matches every lect), so the
+        // scan cap bounds this lect's own entries and the records of the other lects are never read.
+        let lect = filter.lect;
+        let in_lect = |rowid: u32| {
+            let record_lect = ctx.dict.lect_of(rowid);
+            lect == 0 || record_lect == 0 || record_lect == lect
+        };
         let hits: Vec<(String, u32)> = if fst_key.starts_with(KeyFamily::Tps.prefix()) {
-            ctx.prefix_index
-                .lookup_prefix_shortest_first_tps_readings(fst_key, PARTIAL_PREFIX_SCAN_CAP)
+            ctx.prefix_index.lookup_prefix_shortest_first_tps_readings_accepting(
+                fst_key,
+                PARTIAL_PREFIX_SCAN_CAP,
+                &in_lect,
+            )
         } else {
             ctx.prefix_index
-                .lookup_prefix_shortest_first(fst_key, PARTIAL_PREFIX_SCAN_CAP)
+                .lookup_prefix_shortest_first_accepting(fst_key, PARTIAL_PREFIX_SCAN_CAP, &in_lect)
                 .into_iter()
                 .map(|rowid| (fst_key.to_string(), rowid))
                 .collect()

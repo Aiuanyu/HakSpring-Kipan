@@ -110,6 +110,19 @@ impl PrefixIndex {
     /// short single-syllable keys from being starved out of the cap. See
     /// [`Self::collect_shortest_first`] for the walk.
     pub fn lookup_prefix_shortest_first(&self, prefix: &str, cap: usize) -> Vec<u32> {
+        self.lookup_prefix_shortest_first_accepting(prefix, cap, &|_| true)
+    }
+
+    /// [`Self::lookup_prefix_shortest_first`] that only counts and returns the rowids `accept` says
+    /// yes to. Hakfa fork: the merged dictionary holds every lect's rows under the same keys, so a
+    /// lect's scan drops the other lects' rows HERE — before they use up `cap` — instead of after
+    /// they were hydrated. The cap then bounds the lect's own entries, not all six lects' together.
+    pub fn lookup_prefix_shortest_first_accepting(
+        &self,
+        prefix: &str,
+        cap: usize,
+        accept: &dyn Fn(u32) -> bool,
+    ) -> Vec<u32> {
         if prefix.is_empty() || cap == 0 {
             return Vec::new();
         }
@@ -124,6 +137,7 @@ impl PrefixIndex {
             prefix.len(),
             cap,
             fst::automaton::AlwaysMatch,
+            accept,
             |matched_key, rowid| buckets.entry(matched_key.len()).or_default().push(rowid),
         );
         buckets.into_values().flatten().take(cap).collect()
@@ -166,6 +180,7 @@ impl PrefixIndex {
         min_key_len: usize,
         cap: usize,
         filter: A,
+        accept: &dyn Fn(u32) -> bool,
         mut on_hit: impl FnMut(&str, u32),
     ) {
         let hi = next_lex_sibling(range_prefix);
@@ -211,6 +226,9 @@ impl PrefixIndex {
                                 continue 'band;
                             }
                         }
+                    }
+                    if !accept(rowid) {
+                        continue;
                     }
                     on_hit(&last_key, rowid);
                     survivors += 1;
@@ -294,6 +312,17 @@ impl PrefixIndex {
         prefix_key: &str,
         cap: usize,
     ) -> Vec<(String, u32)> {
+        self.lookup_prefix_shortest_first_tps_readings_accepting(prefix_key, cap, &|_| true)
+    }
+
+    /// [`Self::lookup_prefix_shortest_first_tps_readings`] with the rowid pre-filter of
+    /// [`Self::lookup_prefix_shortest_first_accepting`].
+    pub fn lookup_prefix_shortest_first_tps_readings_accepting(
+        &self,
+        prefix_key: &str,
+        cap: usize,
+        accept: &dyn Fn(u32) -> bool,
+    ) -> Vec<(String, u32)> {
         if prefix_key.is_empty() || cap == 0 {
             return Vec::new();
         }
@@ -318,6 +347,7 @@ impl PrefixIndex {
             prefix_key.len(),
             cap,
             &pattern,
+            accept,
             |matched_key, rowid| {
                 // Substitutions can only occur inside the typed prefix; the
                 // charwise zip stops at the shorter side, so the shared

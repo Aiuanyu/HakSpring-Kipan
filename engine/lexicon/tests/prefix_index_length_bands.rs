@@ -121,3 +121,21 @@ fn tps_substitution_tiebreak_survives_band_walk() {
         ]
     );
 }
+
+/// Hakfa fork: the rowid pre-filter drops a row BEFORE it counts toward `cap`, so the cap bounds the
+/// rows a lect accepts and the other lects' rows (same keys, merged dictionary) cannot use it up.
+#[test]
+fn a_rejected_row_does_not_use_up_the_cap() {
+    // Rowids 1-4 are another lect's rows under short keys; 5 and 6 are ours under longer ones.
+    let keys = [("tl:ta", 1), ("tl:ti", 2), ("tl:tu", 3), ("tl:te", 4), ("tl:tung", 5), ("tl:tiong", 6)];
+    let idx = build_wire_index("accepting", &keys);
+    let ours = |rowid: u32| rowid >= 5;
+    // Plain: the cap of 2 is spent on the two shortest keys, which are not ours.
+    assert_eq!(idx.lookup_prefix_shortest_first("tl:t", 2).len(), 2);
+    assert!(idx.lookup_prefix_shortest_first("tl:t", 2).iter().all(|r| *r < 5));
+    // Accepting: the cap counts only accepted rows, so both of ours come back.
+    let got = idx.lookup_prefix_shortest_first_accepting("tl:t", 2, &ours);
+    assert_eq!(got, vec![5, 6]);
+    // The same rows under a cap of 1: the shorter of ours.
+    assert_eq!(idx.lookup_prefix_shortest_first_accepting("tl:t", 1, &ours), vec![5]);
+}

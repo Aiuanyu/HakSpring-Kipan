@@ -117,6 +117,10 @@ pub struct DictionaryReader {
     handle: MmapHandle,
     record_count: u32,
     build_timestamp: u32,
+    /// Hakfa fork: every record's lect code (subtag bits 13-15), indexed by `rowid - 1`; built once,
+    /// on the first [`Self::lect_of`]. One byte per record, so a prefix scan can tell a row's lect
+    /// without reading the record.
+    lect_table: std::sync::OnceLock<Box<[u8]>>,
 }
 
 impl std::fmt::Debug for DictionaryReader {
@@ -238,7 +242,39 @@ impl DictionaryReader {
             handle,
             record_count: count,
             build_timestamp,
+            lect_table: std::sync::OnceLock::new(),
         })
+    }
+
+    /// Hakfa fork: the lect code of record `rowid` (0 = no lect, matches every lect; also 0 for an
+    /// unreadable rowid, so the full record check decides). Reads two bytes of the record header,
+    /// once per record for the life of the reader — not the record itself — so a prefix scan over
+    /// tens of thousands of rows can drop the other lects' rows before it counts or hydrates them.
+    pub fn lect_of(&self, rowid: u32) -> u8 {
+        let table = self.lect_table.get_or_init(|| {
+            let bytes = self.handle.as_slice();
+            (0..self.record_count as usize)
+                .map(|idx| {
+                    let offset_pos = HEADER_SIZE + idx * 4;
+                    let Some(offset) = bytes
+                        .get(offset_pos..offset_pos + 4)
+                        .map(|b| u32::from_le_bytes(b.try_into().expect("4 bytes")) as usize)
+                    else {
+                        return 0;
+                    };
+                    // bitmask(2) + frequency(4) + hanzi_len + tl_len + syllable_count, then the subtag.
+                    let subtag_pos = offset + 9;
+                    bytes
+                        .get(subtag_pos..subtag_pos + 2)
+                        .map(|b| (u16::from_le_bytes(b.try_into().expect("2 bytes")) >> KAUTIAN_SUBTAG_LECT_SHIFT) as u8)
+                        .unwrap_or(0)
+                })
+                .collect()
+        });
+        rowid
+            .checked_sub(1)
+            .and_then(|idx| table.get(idx as usize).copied())
+            .unwrap_or(0)
     }
 
     pub fn record_count(&self) -> u32 {
