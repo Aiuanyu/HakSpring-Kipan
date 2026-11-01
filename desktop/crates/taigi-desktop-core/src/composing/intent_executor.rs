@@ -456,25 +456,32 @@ fn commit_candidate(
 /// Hakfa fork: whether `text` is punctuation — ASCII marks and the CJK / full-width / general
 /// punctuation blocks. Not a letter, a digit (a slot key or document text), whitespace, a
 /// zero-width format character or an emoji: those keep committing the preedit as typed.
+///
+/// Hyphen (`-`) is explicitly excluded: in Hakfa romanization, hyphen is a morpheme joiner
+/// inside compounds, not sentence-ending punctuation. Typing `-` while composing inserts a
+/// hyphen into the raw buffer (turning loose phrases into compound learned words) rather than
+/// committing the sentence.
 fn is_sentence_punctuation(text: &str) -> bool {
     !text.is_empty()
+        && text != "-"
         && text.chars().all(|c| {
-            c.is_ascii_punctuation()
-                || matches!(
-                    c,
-                    '¡' | '¿' | '«' | '»' | '·'
-                        | '\u{2010}'..='\u{2027}'
-                        | '\u{2030}'..='\u{205E}'
-                        | '\u{3001}'..='\u{3003}'
-                        | '\u{3008}'..='\u{3011}'
-                        | '\u{3014}'..='\u{301F}'
-                        | '\u{FE10}'..='\u{FE19}'
-                        | '\u{FE30}'..='\u{FE6B}'
-                        | '\u{FF01}'..='\u{FF0F}'
-                        | '\u{FF1A}'..='\u{FF20}'
-                        | '\u{FF3B}'..='\u{FF40}'
-                        | '\u{FF5B}'..='\u{FF65}'
-                )
+            c != '-'
+                && (c.is_ascii_punctuation()
+                    || matches!(
+                        c,
+                        '¡' | '¿' | '«' | '»' | '·'
+                            | '\u{2010}'..='\u{2027}'
+                            | '\u{2030}'..='\u{205E}'
+                            | '\u{3001}'..='\u{3003}'
+                            | '\u{3008}'..='\u{3011}'
+                            | '\u{3014}'..='\u{301F}'
+                            | '\u{FE10}'..='\u{FE19}'
+                            | '\u{FE30}'..='\u{FE6B}'
+                            | '\u{FF01}'..='\u{FF0F}'
+                            | '\u{FF1A}'..='\u{FF20}'
+                            | '\u{FF3B}'..='\u{FF40}'
+                            | '\u{FF5B}'..='\u{FF65}'
+                    ))
         })
 }
 

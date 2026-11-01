@@ -64,6 +64,6 @@ class WholeInputSentenceTest {
     @Test
     fun onlyMarksThatEndAPhraseSendTheSentence() {
         for (mark in listOf(",", ".", "?", "!", "，", "。", "？", "；", "「")) assertTrue(mark, isSentencePunctuation(mark))
-        for (other in listOf("", "a", "5", " ", "字", "\n", "\u200B", "\u200D", "👩‍💻")) assertFalse(other, isSentencePunctuation(other))
+        for (other in listOf("", "a", "5", " ", "-", "字", "\n", "\u200B", "\u200D", "👩‍💻")) assertFalse(other, isSentencePunctuation(other))
     }
 }

@@ -58,7 +58,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     /// like the other fork-only screens.
     @MainActor
     func title(in language: DisplayLanguageStore) -> String {
-        self == .annotation ? "括號標註" : language.string(labelKey)
+        self == .annotation ? "雙書寫標註" : language.string(labelKey)
     }
 
     /// The sidebar row's icon; About has no row, and names the symbol its

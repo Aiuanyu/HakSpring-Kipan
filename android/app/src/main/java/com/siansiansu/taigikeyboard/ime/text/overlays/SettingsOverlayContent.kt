@@ -40,9 +40,11 @@ import com.siansiansu.taigikeyboard.R
 import com.siansiansu.taigikeyboard.i18n.generated.L10n
 import com.siansiansu.taigikeyboard.i18n.generated.StringKey
 import com.siansiansu.taigikeyboard.i18n.stringRes
+import com.siansiansu.taigikeyboard.ime.settings.BracketTemplate
 import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
 import com.siansiansu.taigikeyboard.ime.theme.themeBackground
 import com.siansiansu.taigikeyboard.ui.components.SwitchRow
+import com.siansiansu.taigikeyboard.ui.tabs.settings.ANNOTATION_SETTING_LABEL
 import com.siansiansu.taigikeyboard.ui.tabs.settings.candidateDisplayModeOptions
 import com.siansiansu.taigikeyboard.ui.tabs.settings.nasalMarkerStyleOptions
 import com.siansiansu.taigikeyboard.ui.tabs.settings.syllableSeparatorOptions
@@ -80,6 +82,8 @@ fun SettingsOverlayContent(
     var candidateDisplayMode by remember(refreshTrigger) { mutableStateOf(prefs.candidateDisplayMode) }
     // Annotate in Brackets binds the STORED flag; it is only disabled (not cleared) while roman-only.
     var outputBoth by remember(refreshTrigger) { mutableStateOf(prefs.storedOutputBothScripts) }
+    var annotationHanjiFirst by remember(refreshTrigger) { mutableStateOf(prefs.annotationTemplateHanjiFirst) }
+    var annotationRomanFirst by remember(refreshTrigger) { mutableStateOf(prefs.annotationTemplateRomanFirst) }
     var literalRomanCandidate by remember(refreshTrigger) { mutableStateOf(prefs.literalRomanCandidateEnabled) }
     var autoCap by remember(refreshTrigger) { mutableStateOf(prefs.autoCapitalizationEnabled) }
     var autoSpace by remember(refreshTrigger) { mutableStateOf(prefs.isAutoSpaceEnabled) }
@@ -161,6 +165,30 @@ fun SettingsOverlayContent(
             fontFamily = fontFamily,
             switchColors = switchColors,
         )
+        if (outputBoth && candidateDisplayMode.showsHanji) {
+            val isHanjiFirst = prefs.isHanjiFirst
+            val lead = if (isHanjiFirst) "漢" else "羅"
+            val annotation = if (isHanjiFirst) "羅" else "漢"
+            val currentTemplate = if (isHanjiFirst) annotationHanjiFirst else annotationRomanFirst
+            TextDropdownRow(
+                label = ANNOTATION_SETTING_LABEL,
+                selected = currentTemplate,
+                options = BracketTemplate.entries.map { it to it.shortWrap(lead, annotation) },
+                onSelected = {
+                    if (isHanjiFirst) {
+                        annotationHanjiFirst = it
+                        prefs.annotationTemplateHanjiFirst = it
+                    } else {
+                        annotationRomanFirst = it
+                        prefs.annotationTemplateRomanFirst = it
+                    }
+                    autoDismissIfNeeded()
+                },
+                labelColor = labelColor,
+                accent = appearance.accent,
+                fontFamily = fontFamily,
+            )
+        }
         DropdownRow(
             label = L10n.settingsSyllableSeparator,
             selected = syllableSeparator,
@@ -395,6 +423,83 @@ private fun <T> DropdownRow(
                             )
                         },
                         // Always-present slot keeps the labels left-aligned; only the current value draws the check.
+                        trailingIcon = {
+                            if (value == selected) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(AppStyle.selectionIconSize),
+                                    tint = accent,
+                                )
+                            }
+                        },
+                        onClick = {
+                            expanded = false
+                            if (value != selected) onSelected(value)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Text-labeled dropdown row — identical to DropdownRow above, but takes plain String option labels rather
+// than StringKey resources (e.g. for dynamic BracketTemplate examples like "漢 (羅)").
+@Composable
+private fun <T> TextDropdownRow(
+    label: String,
+    selected: T,
+    options: List<Pair<T, String>>,
+    onSelected: (T) -> Unit,
+    labelColor: Color,
+    accent: Color,
+    fontFamily: FontFamily,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            color = labelColor,
+            fontFamily = fontFamily,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Spacer(Modifier.width(12.dp))
+        Box {
+            Row(
+                modifier = Modifier.clickable { expanded = true },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = options.firstOrNull { it.first == selected }?.second ?: "",
+                    color = labelColor,
+                    fontFamily = fontFamily,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = labelColor,
+                )
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEach { (value, optionText) ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = optionText,
+                                fontFamily = fontFamily,
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        },
                         trailingIcon = {
                             if (value == selected) {
                                 Icon(

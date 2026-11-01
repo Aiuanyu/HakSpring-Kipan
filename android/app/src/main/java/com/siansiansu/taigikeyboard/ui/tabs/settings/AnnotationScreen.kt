@@ -35,7 +35,7 @@ import com.siansiansu.taigikeyboard.ui.components.SettingsDivider
 import com.siansiansu.taigikeyboard.ui.theme.AppStyle
 import com.siansiansu.taigikeyboard.ui.theme.SectionHeader
 
-const val ANNOTATION_SETTING_LABEL = "括號標註樣板"
+const val ANNOTATION_SETTING_LABEL = "雙書寫標註樣板"
 
 private const val SAMPLE_HANJI = "諸夏字"
 private const val SAMPLE_ROMAN = "Lomàsīi"
@@ -107,18 +107,12 @@ private fun TemplateCard(
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = template.exampleLabel,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = template.wrap(lead, annotation),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
+                Text(
+                    text = template.wrap(lead, annotation),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
                 if (selected == template) {
                     Icon(
                         imageVector = Icons.Default.Check,

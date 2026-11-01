@@ -13,7 +13,7 @@
     <string name="i18n_common_other">その他</string>
     <string name="i18n_common_edit">編集</string>
     <string name="i18n_common_toggleTranslateSwapped">漢字／ローマ字を切り替える</string>
-    <string name="i18n_common_toggleOutputBothScripts">括弧で併記の切り替え</string>
+    <string name="i18n_common_toggleOutputBothScripts">二重表記（注釈）の切り替え</string>
     <string name="i18n_common_back">戻る</string>
     <string name="i18n_common_viewWebsite">公式サイト</string>
     <string name="i18n_common_exportFailed">エクスポートに失敗しました</string>
@@ -202,7 +202,7 @@
     <string name="i18n_settings_candidateDisplayModeSideBySide">漢字とローマ字の対応</string>
     <string name="i18n_settings_candidateDisplayModeCombined">漢字＋ローマ字</string>
     <string name="i18n_settings_candidateDisplayModeRomanOnly">ローマ字のみ</string>
-    <string name="i18n_settings_outputBothScripts">括弧で併記</string>
+    <string name="i18n_settings_outputBothScripts">二重表記（注釈）</string>
     <string name="i18n_settings_syllableSeparator">音節の区切り</string>
     <string name="i18n_settings_syllableSeparatorSpace">スペース</string>
     <string name="i18n_settings_syllableSeparatorNone">なし</string>

@@ -16,7 +16,7 @@
     "candidateDisplayModeSideBySide": { "hakha": "漢羅對應" },
     "candidateDisplayModeCombined": { "hakha": "漢羅濫" },
     "candidateDisplayModeRomanOnly": { "hakha": "羅馬字" },
-    "outputBothScripts": { "hakha": "括號標註" },
+    "outputBothScripts": { "hakha": "雙書寫標註" },
     "outputBothScriptsOn": { "hakha": "諸夏字 (Lǒmásii)" },
     "outputBothScriptsOff": { "hakha": "淨一種文字" },
     "inputScript": { "hakha": "輸入文字" },

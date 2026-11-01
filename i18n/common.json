@@ -293,11 +293,11 @@
         ]
       },
       "values": {
-        "hanji": "切換括號標註",
-        "tailo": "Tshiat-uānn kuat-hō phiau-tsù",
-        "poj": "Chhiat-ōaⁿ koat-hō phiau-chù",
-        "en": "Toggle Annotate in Brackets",
-        "ja": "括弧で併記の切り替え"
+        "hanji": "切換雙書寫標註",
+        "tailo": "Tshiat-uānn siang-su-siá phiau-tsù",
+        "poj": "Chhiat-ōaⁿ siang-su-siá phiau-chù",
+        "en": "Toggle Dual-Script Annotation",
+        "ja": "二重表記（注釈）の切り替え"
       }
     },
     "back": {

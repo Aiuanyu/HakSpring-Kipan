@@ -409,21 +409,27 @@ internal fun wholeInputSentencePick(
  * Hakfa fork: punctuation (Unicode general categories Pc Pd Ps Pe Pi Pf Po — ASCII marks, the CJK and
  * full-width ones). Not a letter, a digit, whitespace, a zero-width format character or an emoji: those
  * keep committing the preedit as typed. Mirrors desktop-core `is_sentence_punctuation`.
+ *
+ * Hyphen (`-`) is explicitly excluded: in Hakfa, hyphen is a morpheme joiner inside compounds, not
+ * sentence-ending punctuation. Typing `-` while composing inserts a hyphen into the raw buffer rather
+ * than committing the whole sentence.
  */
 internal fun isSentencePunctuation(text: String): Boolean =
     text.isNotEmpty() &&
+        text != "-" &&
         text.all {
-            when (Character.getType(it).toByte()) {
-                Character.CONNECTOR_PUNCTUATION,
-                Character.DASH_PUNCTUATION,
-                Character.START_PUNCTUATION,
-                Character.END_PUNCTUATION,
-                Character.INITIAL_QUOTE_PUNCTUATION,
-                Character.FINAL_QUOTE_PUNCTUATION,
-                Character.OTHER_PUNCTUATION,
-                -> true
-                else -> false
-            }
+            it != '-' &&
+                when (Character.getType(it).toByte()) {
+                    Character.CONNECTOR_PUNCTUATION,
+                    Character.DASH_PUNCTUATION,
+                    Character.START_PUNCTUATION,
+                    Character.END_PUNCTUATION,
+                    Character.INITIAL_QUOTE_PUNCTUATION,
+                    Character.FINAL_QUOTE_PUNCTUATION,
+                    Character.OTHER_PUNCTUATION,
+                    -> true
+                    else -> false
+                }
         }
 
 /** Hakfa fork: the auto space after an engine commit that earned one (what a candidate tap does). */

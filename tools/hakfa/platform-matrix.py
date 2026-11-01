@@ -54,12 +54,12 @@ FEATURES = {
         "the punctuation / symbol picker",
         r"SymbolPicker|SymbolTable|symbol_picker|SymbolData|halfWidthRows",
     ),
-    "括號標註開關 (annotate in brackets) 設定": (
-        "the Annotate in Brackets switch (stored setting)",
+    "雙書寫標註開關 (dual-script annotation) 設定": (
+        "the Dual-Script Annotation switch (stored setting)",
         r"OutputBothScripts|outputBothScripts|output_both_scripts",
     ),
-    "括號標註樣板 (annotation templates)": (
-        "the per-lead template Annotate in Brackets writes in",
+    "雙書寫標註樣板 (dual-script annotation templates)": (
+        "the per-lead template Dual-Script Annotation writes in",
         r"BracketTemplate|annotationTemplate|annotation_template",
     ),
     "腔別 (lects)": (

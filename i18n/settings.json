@@ -79,7 +79,7 @@
     "outputBothScripts": {
       "comment": "Toggle label: annotate committed text with the other script in brackets.",
       "scope": { "platforms": ["android", "ios", "macos", "windows", "linux"], "surfaces": ["host", "extension"] },
-      "values": { "hanji": "括號標註", "tailo": "Kuat-hō phiau-tsù", "poj": "Koat-hō phiau-chù", "en": "Annotate in Brackets", "ja": "括弧で併記" }
+      "values": { "hanji": "雙書寫標註", "tailo": "Siang-su-siá phiau-tsù", "poj": "Siang-su-siá phiau-chù", "en": "Dual-Script Annotation", "ja": "二重表記（注釈）" }
     },
     "outputBothScriptsOn": {
       "comment": "HUD flash text when Annotate in Brackets is turned on via shortcut.",

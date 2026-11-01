@@ -494,13 +494,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toggle Annotate in Brackets"
+            "value": "Toggle Dual-Script Annotation"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "括弧で併記の切り替え"
+            "value": "二重表記（注釈）の切り替え"
           }
         }
       }
@@ -3860,13 +3860,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Annotate in Brackets"
+            "value": "Dual-Script Annotation"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "括弧で併記"
+            "value": "二重表記（注釈）"
           }
         }
       }

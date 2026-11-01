@@ -13,7 +13,7 @@
     <string name="i18n_common_other">Other</string>
     <string name="i18n_common_edit">Edit</string>
     <string name="i18n_common_toggleTranslateSwapped">Switch Hanji or Romanization</string>
-    <string name="i18n_common_toggleOutputBothScripts">Toggle Annotate in Brackets</string>
+    <string name="i18n_common_toggleOutputBothScripts">Toggle Dual-Script Annotation</string>
     <string name="i18n_common_back">Back</string>
     <string name="i18n_common_viewWebsite">Official Website</string>
     <string name="i18n_common_exportFailed">Export failed</string>
@@ -202,7 +202,7 @@
     <string name="i18n_settings_candidateDisplayModeSideBySide">Hanji–Romanization Pairing</string>
     <string name="i18n_settings_candidateDisplayModeCombined">Hanji with Romanization</string>
     <string name="i18n_settings_candidateDisplayModeRomanOnly">Romanization Only</string>
-    <string name="i18n_settings_outputBothScripts">Annotate in Brackets</string>
+    <string name="i18n_settings_outputBothScripts">Dual-Script Annotation</string>
     <string name="i18n_settings_syllableSeparator">Syllable Separator</string>
     <string name="i18n_settings_syllableSeparatorSpace">Space</string>
     <string name="i18n_settings_syllableSeparatorNone">None</string>

@@ -339,14 +339,14 @@ final class SettingsWindowTests: XCTestCase {
         let hanji = makeStore(.hanji)
         XCTAssertEqual(
             SettingsPane.allCases.map { $0.title(in: hanji) },
-            ["一般", "括號標註", "外觀", "快速齒", "辭典管理", "自訂詞庫", "學習紀錄", "字型管理", "關於齒盤"],
+            ["一般", "雙書寫標註", "外觀", "快速齒", "辭典管理", "自訂詞庫", "學習紀錄", "字型管理", "關於齒盤"],
         )
 
         let english = makeStore(.english)
         XCTAssertEqual(
             SettingsPane.allCases.map { $0.title(in: english) },
             [
-                "General", "括號標註", "Appearance", "Shortcuts", "Manage Dictionaries", "Custom Dictionary",
+                "General", "雙書寫標註", "Appearance", "Shortcuts", "Manage Dictionaries", "Custom Dictionary",
                 "Learning Records", "Manage Fonts", "About the Keyboard",
             ],
         )
