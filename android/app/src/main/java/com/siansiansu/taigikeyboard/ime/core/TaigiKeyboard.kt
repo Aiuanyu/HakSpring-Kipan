@@ -450,7 +450,11 @@ class TaigiKeyboard : LifecycleInputMethodService() {
         info: EditorInfo?,
         restarting: Boolean,
     ) {
-        currentInputConnection?.requestCursorUpdates(InputConnection.CURSOR_UPDATE_MONITOR)
+        try {
+            currentInputConnection?.requestCursorUpdates(InputConnection.CURSOR_UPDATE_MONITOR)
+        } catch (t: Throwable) {
+            compositionRoot.logger.w(TAG, "requestCursorUpdates failed: ${t.message}")
+        }
 
         syncLectFromSubtype((getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager)?.currentInputMethodSubtype)
 

@@ -468,7 +468,12 @@ class ComposingManager(
         if (expected.isEmpty() || candidatesEnd - candidatesStart != expected.length) return false
         val target = selection - candidatesStart
         if (target !in 0..expected.length || target == caretUtf16) return false
-        val extracted = ic.getExtractedText(ExtractedTextRequest(), 0) ?: return false
+        val extracted =
+            try {
+                ic.getExtractedText(ExtractedTextRequest(), 0)
+            } catch (_: Throwable) {
+                null
+            } ?: return false
         val text = extracted.text ?: return false
         val local = candidatesStart - extracted.startOffset
         if (extracted.selectionStart != extracted.selectionEnd || extracted.startOffset + extracted.selectionEnd != selection) return false
@@ -572,7 +577,12 @@ class ComposingManager(
         ic: InputConnection?,
         expected: String,
     ): Pair<Int, Int>? {
-        val extracted = ic?.getExtractedText(ExtractedTextRequest(), 0) ?: return null
+        val extracted =
+            try {
+                ic?.getExtractedText(ExtractedTextRequest(), 0)
+            } catch (_: Throwable) {
+                null
+            } ?: return null
         val text = extracted.text ?: return null
         if (extracted.selectionStart != extracted.selectionEnd) return null
         val localEnd = extracted.selectionEnd

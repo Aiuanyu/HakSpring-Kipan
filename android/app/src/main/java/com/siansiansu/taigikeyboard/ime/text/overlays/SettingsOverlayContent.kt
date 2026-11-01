@@ -1,7 +1,6 @@
 package com.siansiansu.taigikeyboard.ime.text.overlays
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,8 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwitchDefaults
@@ -32,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -364,9 +362,8 @@ private fun SectionHeader(
     )
 }
 
-// Dropdown row — same label / padding shape as the SwitchRow siblings; the trailing slot shows the
-// current value + a drop-down arrow and opens a DropdownMenu of the options (the choices do not fit as
-// segments beside the label at keyboard width with en / ja strings).
+// Inline selector row — replaces the prior WindowManager DropdownMenu popup (which crashes with BadTokenException
+// in an InputMethodService window). Tapping the row expands the options directly inline within the scrollable column.
 @Composable
 private fun <T> DropdownRow(
     label: String,
@@ -377,75 +374,18 @@ private fun <T> DropdownRow(
     accent: Color,
     fontFamily: FontFamily,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            color = labelColor,
-            fontFamily = fontFamily,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Spacer(Modifier.width(12.dp))
-        Box {
-            Row(
-                modifier = Modifier.clickable { expanded = true },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringRes(options.first { it.first == selected }.second),
-                    color = labelColor,
-                    fontFamily = fontFamily,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Icon(
-                    imageVector = Icons.Filled.ArrowDropDown,
-                    contentDescription = null,
-                    tint = labelColor,
-                )
-            }
-            // The menu is an M3 surface popup, not part of the gradient backdrop — default item colours apply.
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                options.forEach { (value, labelKey) ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = stringRes(labelKey),
-                                fontFamily = fontFamily,
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        },
-                        // Always-present slot keeps the labels left-aligned; only the current value draws the check.
-                        trailingIcon = {
-                            if (value == selected) {
-                                Icon(
-                                    imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(AppStyle.selectionIconSize),
-                                    tint = accent,
-                                )
-                            }
-                        },
-                        onClick = {
-                            expanded = false
-                            if (value != selected) onSelected(value)
-                        },
-                    )
-                }
-            }
-        }
-    }
+    TextDropdownRow(
+        label = label,
+        selected = selected,
+        options = options.map { it.first to stringRes(it.second) },
+        onSelected = onSelected,
+        labelColor = labelColor,
+        accent = accent,
+        fontFamily = fontFamily,
+    )
 }
 
-// Text-labeled dropdown row — identical to DropdownRow above, but takes plain String option labels rather
-// than StringKey resources (e.g. for dynamic BracketTemplate examples like "漢 (羅)").
+// Text-labeled inline selector row — renders choices inline without popups.
 @Composable
 private fun <T> TextDropdownRow(
     label: String,
@@ -457,64 +397,79 @@ private fun <T> TextDropdownRow(
     fontFamily: FontFamily,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            color = labelColor,
-            fontFamily = fontFamily,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Spacer(Modifier.width(12.dp))
-        Box {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .clickable { expanded = !expanded }
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label,
+                modifier = Modifier.weight(1f),
+                color = labelColor,
+                fontFamily = fontFamily,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Spacer(Modifier.width(12.dp))
             Row(
-                modifier = Modifier.clickable { expanded = true },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = options.firstOrNull { it.first == selected }?.second ?: "",
-                    color = labelColor,
+                    color = accent,
                     fontFamily = fontFamily,
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Icon(
                     imageVector = Icons.Filled.ArrowDropDown,
                     contentDescription = null,
+                    modifier = Modifier.rotate(if (expanded) 180f else 0f),
                     tint = labelColor,
                 )
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        }
+        if (expanded) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp, end = 20.dp, bottom = 8.dp),
+            ) {
                 options.forEach { (value, optionText) ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = optionText,
-                                fontFamily = fontFamily,
-                                style = MaterialTheme.typography.bodyLarge,
+                    val isSelected = value == selected
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 40.dp)
+                                .clickable {
+                                    if (value != selected) onSelected(value)
+                                    expanded = false
+                                }.padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = optionText,
+                            modifier = Modifier.weight(1f),
+                            color = if (isSelected) accent else labelColor,
+                            fontFamily = fontFamily,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(AppStyle.selectionIconSize),
+                                tint = accent,
                             )
-                        },
-                        trailingIcon = {
-                            if (value == selected) {
-                                Icon(
-                                    imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(AppStyle.selectionIconSize),
-                                    tint = accent,
-                                )
-                            }
-                        },
-                        onClick = {
-                            expanded = false
-                            if (value != selected) onSelected(value)
-                        },
-                    )
+                        }
+                    }
                 }
             }
         }

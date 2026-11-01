@@ -56,9 +56,11 @@ class SettingsSelectionOverlayView : FrameLayout {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
+        // DisposeOnDetachedFromWindow: the IME input view detaches on config change / hide
+        // while the service Lifecycle stays alive, so the composition must dispose at the detach boundary.
         composeView =
             ComposeView(context).apply {
-                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             }
 
         addView(
@@ -95,6 +97,7 @@ class SettingsSelectionOverlayView : FrameLayout {
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        removeAllViews()
         composeView = null
     }
 
