@@ -12,8 +12,8 @@ enum class BracketTemplate(
     /** The settings row: the template with `X`, `Y` standing for the lead and the annotation. */
     val exampleLabel: String,
 ) {
-    ROUND("round", "X (Y)"),
     SQUARE("square", "X [Y]"),
+    ROUND("round", "X (Y)"),
     CURLY("curly", "X {Y}"),
     RUBY("ruby", "<ruby>X<rt>Y</rt></ruby>"),
     ;
@@ -24,8 +24,8 @@ enum class BracketTemplate(
         y: String,
     ): String =
         when (this) {
-            ROUND -> "$x ($y)"
             SQUARE -> "$x [$y]"
+            ROUND -> "$x ($y)"
             CURLY -> "$x {$y}"
             RUBY -> "<ruby>$x<rt>$y</rt></ruby>"
         }
@@ -42,22 +42,22 @@ enum class BracketTemplate(
      */
     fun preview(annotation: String): String =
         when (this) {
-            ROUND -> "($annotation)"
             SQUARE -> "[$annotation]"
+            ROUND -> "($annotation)"
             CURLY -> "{$annotation}"
             RUBY -> "ᴿᵀ $annotation"
         }
 
     companion object {
-        /** Coerce a stored raw string into a template; unknown / absent values fall back to [ROUND]. */
-        fun fromStorage(raw: String?): BracketTemplate = entries.firstOrNull { it.storageValue == raw } ?: ROUND
+        /** Coerce a stored raw string into a template; unknown / absent values fall back to [SQUARE]. */
+        fun fromStorage(raw: String?): BracketTemplate = entries.firstOrNull { it.storageValue == raw } ?: SQUARE
     }
 }
 
 /** Hakfa fork: Annotate in Brackets is on; the template for each lead order. `null` where it is off. */
 data class BracketAnnotation(
-    val hanjiFirst: BracketTemplate = BracketTemplate.ROUND,
-    val romanFirst: BracketTemplate = BracketTemplate.ROUND,
+    val hanjiFirst: BracketTemplate = BracketTemplate.SQUARE,
+    val romanFirst: BracketTemplate = BracketTemplate.SQUARE,
 ) {
     /** The template the commit takes for the lead [isHanjiFirst] names. */
     fun templateFor(isHanjiFirst: Boolean): BracketTemplate = if (isHanjiFirst) hanjiFirst else romanFirst

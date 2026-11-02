@@ -279,10 +279,10 @@ impl SettingChoice for SyllableSeparator {
 /// on macOS (`BracketTemplate`) and Android (`BracketTemplate.storageValue`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BracketTemplate {
-    /// `X (Y)`
-    Round,
     /// `X [Y]`
     Square,
+    /// `X (Y)`
+    Round,
     /// `X {Y}`
     Curly,
     /// `<ruby>X<rt>Y</rt></ruby>`
@@ -293,8 +293,8 @@ impl BracketTemplate {
     /// The `AppConfig.annotation_template_*` wire value.
     pub fn wire(self) -> protos::engine::AnnotationTemplate {
         match self {
-            Self::Round => protos::engine::AnnotationTemplate::Round,
             Self::Square => protos::engine::AnnotationTemplate::Square,
+            Self::Round => protos::engine::AnnotationTemplate::Round,
             Self::Curly => protos::engine::AnnotationTemplate::Curly,
             Self::Ruby => protos::engine::AnnotationTemplate::Ruby,
         }
@@ -304,8 +304,8 @@ impl BracketTemplate {
     /// or `ᴿᵀ ` ahead of it for ruby, whose tags would fill the cell.
     pub fn preview(self, annotation: &str) -> String {
         match self {
-            Self::Round => format!("({annotation})"),
             Self::Square => format!("[{annotation}]"),
+            Self::Round => format!("({annotation})"),
             Self::Curly => format!("{{{annotation}}}"),
             Self::Ruby => format!("ᴿᵀ {annotation}"),
         }
@@ -313,12 +313,12 @@ impl BracketTemplate {
 }
 
 impl SettingChoice for BracketTemplate {
-    const ALL: &'static [Self] = &[Self::Round, Self::Square, Self::Curly, Self::Ruby];
-    const DEFAULT: Self = Self::Round;
+    const ALL: &'static [Self] = &[Self::Square, Self::Round, Self::Curly, Self::Ruby];
+    const DEFAULT: Self = Self::Square;
     fn raw(self) -> &'static str {
         match self {
-            Self::Round => "round",
             Self::Square => "square",
+            Self::Round => "round",
             Self::Curly => "curly",
             Self::Ruby => "ruby",
         }

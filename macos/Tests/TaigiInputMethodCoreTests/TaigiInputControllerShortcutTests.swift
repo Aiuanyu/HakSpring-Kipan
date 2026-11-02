@@ -229,4 +229,34 @@ final class TaigiInputControllerShortcutTests: XCTestCase {
         XCTAssertEqual(userDefaults.persistentDomain(forName: suiteName) as NSDictionary?, settingsBefore)
         XCTAssertEqual(presenter.calls.count, callsBefore)
     }
+
+    /// Hakfa fork: toggleOutputBothScripts HUD dynamically announces the current template and order.
+    func testToggleOutputBothScripts_announcesFormattedTemplate() {
+        controller.displayLanguageOverride = TestFixtures.makeDisplayLanguageStore(
+            .hakha, userDefaults: userDefaults,
+        )
+        // Default: Hanji first, square brackets
+        controller.performShortcutAction(.toggleOutputBothScripts)
+        XCTAssertEqual(flashes.last, "漢字／諸夏字 [Lǒmásii]")
+
+        // Toggle off
+        controller.performShortcutAction(.toggleOutputBothScripts)
+        XCTAssertEqual(flashes.last, "淨一種文字")
+
+        // Round template with Hanji first
+        controller.settings.annotationTemplateHanjiFirst = .round
+        controller.performShortcutAction(.toggleOutputBothScripts)
+        XCTAssertEqual(flashes.last, "漢字／諸夏字 (Lǒmásii)")
+
+        // Swap order while both scripts active: Roman first, curly template
+        controller.settings.annotationTemplateRomanFirst = .curly
+        controller.performShortcutAction(.toggleTranslateSwapped)
+        XCTAssertEqual(flashes.last, "Lǒmásii {漢字／諸夏字}")
+
+        // Switch to Hoiliug lect and restore square template
+        controller.settings.lect = .hoiliug
+        controller.settings.annotationTemplateHanjiFirst = .square
+        controller.performShortcutAction(.toggleTranslateSwapped)
+        XCTAssertEqual(flashes.last, "漢字／諸夏字 [Lomàsīi]")
+    }
 }

@@ -632,7 +632,7 @@ fn hakha(key: StringKey) -> Option<&'static str> {
         StringKey::SettingsCandidateDisplayModeCombined => "漢羅濫",
         StringKey::SettingsCandidateDisplayModeRomanOnly => "羅馬字",
         StringKey::SettingsOutputBothScripts => "雙書寫標註",
-        StringKey::SettingsOutputBothScriptsOn => "諸夏字 (Lǒmásii)",
+        StringKey::SettingsOutputBothScriptsOn => "漢字／諸夏字 (Lǒmásii)",
         StringKey::SettingsOutputBothScriptsOff => "淨一種文字",
         StringKey::SettingsInputScript => "輸入文字",
         StringKey::SettingsOutputScript => "輸出文字",

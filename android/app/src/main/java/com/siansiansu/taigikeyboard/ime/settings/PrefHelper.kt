@@ -355,13 +355,13 @@ class PrefHelper(
     override var annotationTemplateHanjiFirst: BracketTemplate
         get() =
             BracketTemplate.fromStorage(
-                cached(PreferenceKeys.ANNOTATION_TEMPLATE_HANJI_FIRST, BracketTemplate.ROUND.storageValue),
+                cached(PreferenceKeys.ANNOTATION_TEMPLATE_HANJI_FIRST, BracketTemplate.SQUARE.storageValue),
             )
         set(value) = updateCacheAndPersist(PreferenceKeys.ANNOTATION_TEMPLATE_HANJI_FIRST, value.storageValue)
     override var annotationTemplateRomanFirst: BracketTemplate
         get() =
             BracketTemplate.fromStorage(
-                cached(PreferenceKeys.ANNOTATION_TEMPLATE_ROMAN_FIRST, BracketTemplate.ROUND.storageValue),
+                cached(PreferenceKeys.ANNOTATION_TEMPLATE_ROMAN_FIRST, BracketTemplate.SQUARE.storageValue),
             )
         set(value) = updateCacheAndPersist(PreferenceKeys.ANNOTATION_TEMPLATE_ROMAN_FIRST, value.storageValue)
 

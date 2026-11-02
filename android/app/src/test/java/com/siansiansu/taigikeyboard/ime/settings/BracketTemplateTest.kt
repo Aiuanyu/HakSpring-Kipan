@@ -28,10 +28,10 @@ class BracketTemplateTest {
     }
 
     @Test
-    fun storage_roundTripsAndAnUnknownValueFallsBackToRound() {
+    fun storage_roundTripsAndAnUnknownValueFallsBackToSquare() {
         BracketTemplate.entries.forEach { assertEquals(it, BracketTemplate.fromStorage(it.storageValue)) }
-        assertEquals(BracketTemplate.ROUND, BracketTemplate.fromStorage(null))
-        assertEquals(BracketTemplate.ROUND, BracketTemplate.fromStorage("bogus"))
+        assertEquals(BracketTemplate.SQUARE, BracketTemplate.fromStorage(null))
+        assertEquals(BracketTemplate.SQUARE, BracketTemplate.fromStorage("bogus"))
     }
 
     @Test

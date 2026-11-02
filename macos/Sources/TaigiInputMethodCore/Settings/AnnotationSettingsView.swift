@@ -2,18 +2,6 @@
 
 import SwiftUI
 
-extension BracketTemplate {
-    /// What the template writes for a lead `x` annotated by `y` (the engine's `AnnotationTemplate::wrap`).
-    func sample(lead x: String, annotation y: String) -> String {
-        switch self {
-        case .round: "\(x) (\(y))"
-        case .square: "\(x) [\(y)]"
-        case .curly: "\(x) {\(y)}"
-        case .ruby: "<ruby>\(x)<rt>\(y)</rt></ruby>"
-        }
-    }
-}
-
 /// The page of Annotate in Brackets. One template per lead order — the Hanji leads (`諸夏字 [Lomàsīi]`)
 /// or the romanization leads (`Lomàsīi [諸夏字]`) — each with an example of what it writes. The lead
 /// itself still follows the Output Script setting. Wording is Hakfa-only (no i18n key), like the other

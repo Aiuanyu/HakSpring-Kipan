@@ -196,7 +196,7 @@ enum GeneratedStrings {
         .settingsCandidateDisplayModeCombined: "漢羅濫",
         .settingsCandidateDisplayModeRomanOnly: "羅馬字",
         .settingsOutputBothScripts: "雙書寫標註",
-        .settingsOutputBothScriptsOn: "諸夏字 (Lǒmásii)",
+        .settingsOutputBothScriptsOn: "漢字／諸夏字 (Lǒmásii)",
         .settingsOutputBothScriptsOff: "淨一種文字",
         .settingsInputScript: "輸入文字",
         .settingsOutputScript: "輸出文字",

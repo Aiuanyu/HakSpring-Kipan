@@ -911,8 +911,8 @@ mod tests {
             is_nasal_marker_uppercase_enabled: false,
             is_custom_dict_enabled: false,
             meinong_tones: false,
-            annotation_template_hanji_first: crate::settings::BracketTemplate::Round,
-            annotation_template_roman_first: crate::settings::BracketTemplate::Round,
+            annotation_template_hanji_first: crate::settings::BracketTemplate::Square,
+            annotation_template_roman_first: crate::settings::BracketTemplate::Square,
             dictionary_sources: DictionarySourceToggles {
                 kautian: false,
                 khiin: true,

@@ -803,6 +803,17 @@ final class SettingsStore: @unchecked Sendable {
         candidateDisplayMode.effectiveOutputBothScripts(stored: storedIsOutputBothScripts)
     }
 
+    /// Hakfa fork: Annotate in Brackets templates for Hanji-first and Roman-first output orders.
+    var annotationTemplateHanjiFirst: BracketTemplate {
+        get { choice(Keys.annotationTemplateHanjiFirst) }
+        set { userDefaults.set(newValue.rawValue, forKey: Keys.annotationTemplateHanjiFirst.name) }
+    }
+
+    var annotationTemplateRomanFirst: BracketTemplate {
+        get { choice(Keys.annotationTemplateRomanFirst) }
+        set { userDefaults.set(newValue.rawValue, forKey: Keys.annotationTemplateRomanFirst.name) }
+    }
+
     /// Whether committing a word auto-inserts a trailing space. Read by the
     /// controller's commit paths, never by the engine.
     var isAutoSpaceEnabled: Bool {

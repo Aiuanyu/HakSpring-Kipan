@@ -192,10 +192,10 @@ enum SyllableSeparator: String, CaseIterable, Sendable {
 /// `BracketTemplate.storageValue`; desktop-core reads the stored raw value through its key-path
 /// snapshot (`key_path.rs`) and previews it in the candidate cell.
 enum BracketTemplate: String, CaseIterable, Sendable {
-    /// `X (Y)`
-    case round
     /// `X [Y]`
     case square
+    /// `X (Y)`
+    case round
     /// `X {Y}`
     case curly
     /// `<ruby>X<rt>Y</rt></ruby>`
@@ -204,10 +204,20 @@ enum BracketTemplate: String, CaseIterable, Sendable {
     /// The picker row: the template with `X`, `Y` standing for the lead and the annotation.
     var exampleLabel: String {
         switch self {
-        case .round: "X (Y)"
         case .square: "X [Y]"
+        case .round: "X (Y)"
         case .curly: "X {Y}"
         case .ruby: "<ruby>X<rt>Y</rt></ruby>"
+        }
+    }
+
+    /// What the template writes for a lead `x` annotated by `y` (the engine's `AnnotationTemplate::wrap`).
+    func sample(lead x: String, annotation y: String) -> String {
+        switch self {
+        case .square: "\(x) [\(y)]"
+        case .round: "\(x) (\(y))"
+        case .curly: "\(x) {\(y)}"
+        case .ruby: "<ruby>\(x)<rt>\(y)</rt></ruby>"
         }
     }
 }
@@ -303,8 +313,8 @@ struct EngineSettings: Sendable {
         syllableSeparator: .noSeparator,
         isNasalMarkerUppercaseEnabled: true,
         isCustomDictEnabled: true,
-        annotationTemplateHanjiFirst: .round,
-        annotationTemplateRomanFirst: .round,
+        annotationTemplateHanjiFirst: .square,
+        annotationTemplateRomanFirst: .square,
         dictionarySources: .defaults,
     )
 }

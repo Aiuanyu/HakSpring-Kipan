@@ -796,7 +796,11 @@ public final class TaigiInputController: IMKInputController {
             // commit still writes the Hanji, so a flash would announce a
             // change that did not happen.
             if settings.candidateDisplayMode == .sideBySide, !wasListOnScreen {
-                flash(settings.storedIsHanjiFirst ? .settingsOutputScriptHanji : .settingsOutputScriptRoman)
+                if settings.isOutputBothScripts {
+                    flash(literal: annotationHudText())
+                } else {
+                    flash(settings.storedIsHanjiFirst ? .settingsOutputScriptHanji : .settingsOutputScriptRoman)
+                }
             }
         case .toggleOutputBothScripts:
             guard settings.candidateDisplayMode.showsHanji else { return }
@@ -804,11 +808,9 @@ public final class TaigiInputController: IMKInputController {
             settings.storedIsOutputBothScripts.toggle()
             representCandidates(refetch: false)
             if !wasListOnScreen {
-                // Hakfa fork: the bracket HUD spells 羅馬字 in the lect being typed.
+                // Hakfa fork: the bracket HUD formats lead and annotation according to current order and template.
                 if settings.storedIsOutputBothScripts {
-                    flash(literal: settings.effectiveLect.localizingRomanScriptName(
-                        in: displayLanguage.string(.settingsOutputBothScriptsOn),
-                    ))
+                    flash(literal: annotationHudText())
                 } else {
                     flash(.settingsOutputBothScriptsOff)
                 }
@@ -1088,6 +1090,21 @@ public final class TaigiInputController: IMKInputController {
         } else {
             ModeFlashPanel.shared.flash(text)
         }
+    }
+
+    /// Hakfa fork: What Annotate in Brackets HUD announces when toggled or when the swap changes order
+    /// while both-scripts output is active. Formats lead and annotation according to current order and template.
+    @MainActor
+    private func annotationHudText() -> String {
+        let isHanjiFirst = settings.storedIsHanjiFirst
+        let template = isHanjiFirst ? settings.annotationTemplateHanjiFirst : settings.annotationTemplateRomanFirst
+        let hanjiName = displayLanguage.string(.settingsOutputScriptHanji)
+        let romanName = displayLanguage.language == .hakha
+            ? settings.effectiveLect.romanScriptName
+            : displayLanguage.string(.settingsOutputScriptRoman)
+        return isHanjiFirst
+            ? template.sample(lead: hanjiName, annotation: romanName)
+            : template.sample(lead: romanName, annotation: hanjiName)
     }
 
     // MARK: - Candidates

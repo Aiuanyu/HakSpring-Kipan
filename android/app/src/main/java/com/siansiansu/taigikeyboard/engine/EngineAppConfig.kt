@@ -41,8 +41,8 @@ internal fun appConfig(
     isTpsOrMappedToER: Boolean = false,
     lect: Int = ActiveLect.current,
     meinongTones: Boolean = false,
-    annotationHanjiFirst: BracketTemplate = BracketTemplate.ROUND,
-    annotationRomanFirst: BracketTemplate = BracketTemplate.ROUND,
+    annotationHanjiFirst: BracketTemplate = BracketTemplate.SQUARE,
+    annotationRomanFirst: BracketTemplate = BracketTemplate.SQUARE,
 ): AppConfig =
     AppConfig
         .newBuilder()
