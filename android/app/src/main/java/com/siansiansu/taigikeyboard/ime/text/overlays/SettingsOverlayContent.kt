@@ -157,7 +157,9 @@ fun SettingsOverlayContent(
             onCheckedChange = {
                 outputBoth = it
                 prefs.storedOutputBothScripts = it
-                autoDismissIfNeeded()
+                // Turning it on shows the template picker right below: closing the panel now would take that
+                // away before it can be used. Turning it off has nothing more to pick.
+                if (!it) autoDismissIfNeeded()
             },
             labelColor = labelColor,
             fontFamily = fontFamily,

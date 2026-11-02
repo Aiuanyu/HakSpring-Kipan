@@ -230,8 +230,8 @@
     <string name="i18n_settings_resetFailed">恢復設定失敗，請重試</string>
     <string name="i18n_settings_noEmailApp">尋無 Email App</string>
     <string name="i18n_settings_diagnosticSectionTitle">裝置資訊</string>
-    <string name="i18n_settings_diagnosticCopy">Khó͘-phih 裝置資訊</string>
-    <string name="i18n_settings_diagnosticCopied">已 khó͘-phih</string>
+    <string name="i18n_settings_diagnosticCopy">複製裝置資訊（含當機紀錄）</string>
+    <string name="i18n_settings_diagnosticCopied">已經複製</string>
     <string name="i18n_settings_diagnosticShare">分享裝置資訊</string>
     <string name="i18n_settings_diagnosticEmail">Email 回報問題</string>
     <string name="i18n_settings_openApp">去 APP 調整</string>

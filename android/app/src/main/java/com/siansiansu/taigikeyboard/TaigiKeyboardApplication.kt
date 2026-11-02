@@ -5,6 +5,7 @@ import com.siansiansu.taigikeyboard.engine.RustEngineBridge
 import com.siansiansu.taigikeyboard.engine.lexiconInstall
 import com.siansiansu.taigikeyboard.engine.userDataOpen
 import com.siansiansu.taigikeyboard.ime.core.CompositionRoot
+import com.siansiansu.taigikeyboard.ime.core.CrashLog
 import com.siansiansu.taigikeyboard.ime.dictionary.DictionaryConstants
 import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
 import com.siansiansu.taigikeyboard.settings.LauncherIconController
@@ -30,6 +31,9 @@ class TaigiKeyboardApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        // Hakfa fork: keep the last crash readable (Settings → Diagnostic → Copy).
+        CrashLog.install(this)
 
         prefs = PrefHelper(this)
         prefs.warmUp()

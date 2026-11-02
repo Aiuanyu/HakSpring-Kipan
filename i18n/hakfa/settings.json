@@ -55,8 +55,8 @@
     "resetFailed": { "hakha": "恢復設定失敗，請重試" },
     "noEmailApp": { "hakha": "尋無 Email App" },
     "diagnosticSectionTitle": { "hakha": "裝置資訊" },
-    "diagnosticCopy": { "hakha": "Khó͘-phih 裝置資訊" },
-    "diagnosticCopied": { "hakha": "已 khó͘-phih" },
+    "diagnosticCopy": { "hakha": "複製裝置資訊（含當機紀錄）" },
+    "diagnosticCopied": { "hakha": "已經複製" },
     "diagnosticShare": { "hakha": "分享裝置資訊" },
     "diagnosticEmail": { "hakha": "Email 回報問題" },
     "openApp": { "hakha": "去 APP 調整" }

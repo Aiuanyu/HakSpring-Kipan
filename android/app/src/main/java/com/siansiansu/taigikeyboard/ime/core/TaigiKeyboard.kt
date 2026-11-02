@@ -216,8 +216,11 @@ class TaigiKeyboard : LifecycleInputMethodService() {
                     .Builder()
                     .detectLeakedSqlLiteObjects()
                     .detectLeakedClosableObjects()
+                    // Hakfa fork: log only. `penaltyDeath()` killed the whole process (SIGKILL, `SIGNALED status=9` in the
+                    // exit records) on a framework-owned leak — a `SurfaceControl` finalized after a Compose dialog or
+                    // the IME window went away, e.g. when saving a custom-dictionary word. The keyboard and the app share
+                    // one process, so the app died with it.
                     .penaltyLog()
-                    .penaltyDeath()
                     .build(),
             )
         }
