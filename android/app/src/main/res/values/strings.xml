@@ -22,5 +22,6 @@
 
     <!-- AndroidManifest activity label -->
     <string name="copyright__title">版權聲明</string>
+    <string name="process_text__label">客源翠</string>
 
 </resources>

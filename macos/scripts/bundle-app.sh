@@ -165,7 +165,7 @@ echo "==> Copying dictionary data"
 # The repo-root `assets/dictionaries`, the one copy of the bytes every platform
 # packages — nothing to sync, nothing to drift.
 DICTIONARY_SOURCE_DIR="$REPOSITORY_DIR/assets/dictionaries"
-for artifact in dictionary.fst dictionary.bin association.bin syllables.fst; do
+for artifact in dictionary.fst dictionary.bin association.bin syllables.fst gloss.db; do
     source_file="$DICTIONARY_SOURCE_DIR/$artifact"
     # Fail here rather than ship a bundle whose input method launches, receives
     # keys, and produces no candidates at all.

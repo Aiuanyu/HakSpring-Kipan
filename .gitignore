@@ -163,3 +163,4 @@ windows/.build/
 /dictionary/output/hakfa-*/
 assets/dictionaries/backup_taigi/
 commit_msg.txt
+.vscode/

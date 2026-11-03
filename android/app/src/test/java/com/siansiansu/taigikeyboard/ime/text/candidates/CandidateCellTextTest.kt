@@ -34,11 +34,11 @@ class CandidateCellTextTest {
         assertEquals(CandidateCellText("tâi-gí", "台語"), cell())
     }
 
-    // Hakfa fork (USER 2026-11-01): Annotate in Brackets previews the output on the second line.
+    // Hakfa fork: Annotate in Brackets previews the output on the second line. Default template is SQUARE.
     @Test
     fun annotateInBrackets_wrapsTheSecondLineInTheBracketsTheCommitWrites() {
-        assertEquals(CandidateCellText("台語", "(tâi-gí)"), cell(isHanjiFirst = true, annotation = BracketAnnotation()))
-        assertEquals(CandidateCellText("tâi-gí", "(台語)"), cell(isHanjiFirst = false, annotation = BracketAnnotation()))
+        assertEquals(CandidateCellText("台語", "[tâi-gí]"), cell(isHanjiFirst = true, annotation = BracketAnnotation()))
+        assertEquals(CandidateCellText("tâi-gí", "[台語]"), cell(isHanjiFirst = false, annotation = BracketAnnotation()))
     }
 
     // Hakfa fork (USER 2026-11-01): one template per lead order; ruby previews as `ᴿᵀ ` ahead of the reading.

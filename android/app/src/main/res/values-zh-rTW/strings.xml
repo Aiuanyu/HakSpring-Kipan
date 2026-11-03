@@ -4,4 +4,5 @@
     <string name="ime_subtype_sixian">臺灣客話四縣腔</string>
     <string name="ime_subtype_hoiliug">臺灣客話海陸腔</string>
     <string name="ime_subtype_namxiian">臺灣客話南四縣腔</string>
+    <string name="process_text__label">客源翠</string>
 </resources>

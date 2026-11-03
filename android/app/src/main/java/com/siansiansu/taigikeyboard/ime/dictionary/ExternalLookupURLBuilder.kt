@@ -30,4 +30,19 @@ object ExternalLookupURLBuilder {
         val encoded = URLEncoder.encode(tlDigit, "UTF-8")
         return "https://sutian.moe.edu.tw/zh-hant/tshiau/?lui=tai_su&tsha=$encoded"
     }
+
+    /** Hakfa fork: Build HakSpring web lookup URL to play audio and view full examples. */
+    fun hakspringURL(word: String, lectId: String? = null): String {
+        val encodedWord = URLEncoder.encode(word, "UTF-8")
+        val kiongParam = when (lectId) {
+            "xiien" -> "si"
+            "namxiian" -> "na"
+            "hoiliug" -> "ha"
+            "taibu" -> "da"
+            "ngiaupin" -> "rh"
+            "zhioon" -> "zh"
+            else -> "si"
+        }
+        return "https://hakspring.pages.dev/?musiid=hak&ca=$encodedWord&kiong=$kiongParam"
+    }
 }

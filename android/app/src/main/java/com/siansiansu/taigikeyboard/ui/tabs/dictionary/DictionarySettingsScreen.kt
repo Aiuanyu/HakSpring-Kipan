@@ -27,6 +27,7 @@ import com.siansiansu.taigikeyboard.ui.theme.AppStyle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DictionarySettingsScreen(
+    onQuickLookup: () -> Unit,
     onManageDictionaries: () -> Unit,
     onCustomDictionary: () -> Unit,
     onLearningRecords: () -> Unit,
@@ -65,6 +66,12 @@ fun DictionarySettingsScreen(
                     .padding(bottom = AppStyle.scrollContentBottomPadding),
         ) {
             SettingsCard {
+                ActionRow(
+                    label = "客源翠隨身查詞",
+                    onClick = onQuickLookup,
+                    trailingIcon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                )
+                SettingsDivider()
                 ActionRow(
                     label = L10n.desktopDictionarySourcesLink,
                     onClick = onManageDictionaries,

@@ -134,6 +134,14 @@ class SettingsMainActivity : AppCompatActivity() {
 
                             TAB_DICTIONARY -> {
                                 DictionarySettingsScreen(
+                                    onQuickLookup = {
+                                        startActivity(
+                                            Intent(this, ProcessTextLookupActivity::class.java).apply {
+                                                putExtra(Intent.EXTRA_PROCESS_TEXT, "便當")
+                                                putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
+                                            }
+                                        )
+                                    },
                                     onManageDictionaries = {
                                         startActivity(DictionarySourcesActivity.createIntent(this))
                                     },

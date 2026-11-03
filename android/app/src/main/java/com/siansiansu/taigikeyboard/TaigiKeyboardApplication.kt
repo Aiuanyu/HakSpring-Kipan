@@ -96,6 +96,7 @@ class TaigiKeyboardApplication : Application() {
             DictionaryConstants.DICT_BIN_NAME,
             DictionaryConstants.ASSOC_BIN_NAME,
             "syllables.fst",
+            "gloss.db",
         )
         for (fileName in filesToCopy) {
             val destFile = File(filesDir, fileName)

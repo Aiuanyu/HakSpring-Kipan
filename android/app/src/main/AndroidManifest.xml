@@ -140,6 +140,24 @@
             android:parentActivityName="com.siansiansu.taigikeyboard.settings.SettingsMainActivity"
             android:exported="false"/>
 
+        <!-- Hakfa fork: Text Selection Action Mode "客源翠" Lookup & In-place Replacement -->
+        <activity
+            android:name="com.siansiansu.taigikeyboard.settings.ProcessTextLookupActivity"
+            android:label="@string/process_text__label"
+            android:theme="@style/TranslucentLookupTheme"
+            android:excludeFromRecents="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

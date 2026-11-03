@@ -10,7 +10,7 @@ export PATH := $(HOME)/.cargo/bin:$(PATH)
 # with every toolchain installed (docs/BUILDING.md).
 .DEFAULT_GOAL := help
 
-.PHONY: build protos ios-libs android-libs macos-libs test test-crate test-changed doc dict dogfood e2e help \
+.PHONY: build protos ios-libs android-libs macos-libs test test-crate test-changed doc dict gloss-db dogfood e2e help \
         fmt lint hooks scan-secrets scan-secrets-full scan-private \
         i18n i18n-test \
         macos-release desktop-release desktop-patch desktop-announce version-mobile version-desktop \
@@ -99,6 +99,10 @@ dict:
 	  exit 1; }
 	bash $(DICT)/run.sh
 	bash $(DICT)/build.sh
+
+# Hakfa fork: Generate assets/dictionaries/gloss.db (SQLite) from HakSpring cert and gip.
+gloss-db:
+	python3 tools/build_hakfa_gloss_db.py
 
 # Generate i18n native resources + Kotlin accessors from i18n/*.json (mirror of `make dict`:
 # committed output, not a per-compile step). Re-run after editing any i18n/*.json source. (in-app
