@@ -129,6 +129,12 @@ extension KeyboardShortcuts.Name {
         initial: .init(.j, modifiers: [.control, .command]),
     )
 
+    /// Hakfa fork: Quick lookup spotlight panel (⌃⌘K).
+    static let quickLookup = Self(
+        "quickLookup",
+        initial: .init(.k, modifiers: [.control, .command]),
+    )
+
     /// The symbol picker (USER 2026-09-09): punctuation, bracket pairs and
     /// special symbols in a candidate-style window. `,` because the picker is
     /// a punctuation menu and the comma is the punctuation key — and ⌃⌘ is the
@@ -164,6 +170,8 @@ enum ShortcutAction: CaseIterable, Sendable {
     case toggleOutputBothScripts
     /// Steps the Candidate Display picker one place: Hanji–Romanization Pairing → Hanji with Romanization → Romanization Only → Hanji–Romanization Pairing.
     case cycleCandidateDisplayMode
+    /// Hakfa fork: opens the quick lookup spotlight panel.
+    case quickLookup
     /// Opens the symbol picker over the caret.
     case showSymbolPicker
     /// Toggles the floating Telex key table: explains the keyboard rather
@@ -184,7 +192,7 @@ enum ShortcutAction: CaseIterable, Sendable {
     static let groups: [(title: StringKey, actions: [ShortcutAction])] = [
         (.settingsOutputScriptRoman, [.cycleLect, .toggleRomanization, .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode]),
         (.settingsTpsMode, [.toggleTps, .showTpsKeyboard]),
-        (.commonOther, [.showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
+        (.commonOther, [.quickLookup, .showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
     ]
 
     var name: KeyboardShortcuts.Name {
@@ -196,6 +204,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleTranslateSwapped: .toggleTranslateSwapped
         case .toggleOutputBothScripts: .toggleOutputBothScripts
         case .showSymbolPicker: .showSymbolPicker
+        case .quickLookup: .quickLookup
         case .openLastSettingsPane: .openLastSettingsPane
         case .showTelexGuide: .showTelexGuide
         case .showTpsKeyboard: .showTpsKeyboard
@@ -223,7 +232,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         switch self {
         case .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode, .showTelexGuide: mode == .tps
         case .showTpsKeyboard: mode != .tps
-        case .toggleRomanization, .toggleTps, .cycleLect, .showSymbolPicker, .openLastSettingsPane: false
+        case .toggleRomanization, .toggleTps, .cycleLect, .showSymbolPicker, .quickLookup, .openLastSettingsPane: false
         }
     }
 
@@ -253,6 +262,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleTranslateSwapped: language.string(.commonToggleTranslateSwapped)
         case .toggleOutputBothScripts: language.string(.commonToggleOutputBothScripts)
         case .showSymbolPicker: language.string(.desktopShortcutShowSymbolPicker)
+        case .quickLookup: "客源翠隨身查詞"
         case .openLastSettingsPane: language.string(.desktopShortcutOpenSettings)
         case .showTelexGuide: language.string(.desktopShortcutShowTelexGuide)
         case .showTpsKeyboard: language.string(.desktopShortcutShowTpsKeyboard)
@@ -328,6 +338,8 @@ enum ShortcutHotkeys {
         case .toggleRomanization, .toggleTps, .toggleTranslateSwapped, .toggleOutputBothScripts,
              .cycleCandidateDisplayMode, .cycleLect, .showTelexGuide, .showTpsKeyboard:
             ComposingSessionCoordinator.shared.performShortcutAction(action)
+        case .quickLookup:
+            QuickLookupPanel.shared.toggle()
         case .showSymbolPicker:
             // Never registered, so never fires (`firesFromTheKeyPath`).
             break

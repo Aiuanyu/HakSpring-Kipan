@@ -662,6 +662,11 @@ public final class TaigiInputController: IMKInputController {
         performGlobalShortcut(.showTpsKeyboard)
     }
 
+    @objc
+    private func showQuickLookup(_: Any!) {
+        performGlobalShortcut(.quickLookup)
+    }
+
     private func performGlobalShortcut(_ action: ShortcutAction) {
         Self.logger.debug("menu shortcut \(action)")
         onMainActor(nil) { _, _ in
@@ -855,6 +860,8 @@ public final class TaigiInputController: IMKInputController {
             // composition and its list are not touched.
             settings.isTpsKeyboardShown.toggle()
             syncTpsKeyboard()
+        case .quickLookup:
+            QuickLookupPanel.shared.toggle()
         }
     }
 
