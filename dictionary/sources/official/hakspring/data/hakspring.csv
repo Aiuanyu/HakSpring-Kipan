@@ -102801,6 +102801,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "𫣆","én","en2","en","",35600,1,1,四
 "𤸱","hàb","hab3","hab","",35600,1,1,四
 "𤌍","kòg","kog3","kog","",35600,1,1,四
+"𱱿","pug","pug4","pug","",35600,1,1,四
 "𠎷","sàb","sab3","sab","",35600,1,1,四
 "壁直","biag-ciid","biag4-ciid4","biagciid","bc",35600,2,1,四
 "出業","cùd-ngiab","cud3-ngiab4","cudngiab","cng",35600,2,1,四
@@ -103307,6 +103308,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "眾生","zung-sén","zung1-sen2","zungsen","zs",35600,2,1,南
 "𤸱","hàb","hab3","hab","",35600,1,1,南
 "𤌍","kòg","kog3","kog","",35600,1,1,南
+"𱱿","pug","pug4","pug","",35600,1,1,南
 "𠎷","sàb","sab3","sab","",35600,1,1,南
 "暖泡","lón-pó","lon2-po2","lonpo","lp",35600,2,1,南
 "醃瓜","ám-guá","am2-gua2","amgua","ag",35600,2,1,南
@@ -106407,6 +106409,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "竹簡","zhú-giên","zhu2-gien5","zhugien","zhg",35600,2,1,安
 "竹塹","zhú-ciâm","zhu2-ciam5","zhuciam","zhc",35600,2,1,安
 "眾生","zhûng-sěn","zhung5-sen6","zhungsen","zhs",35600,2,1,安
+"𱱿","pòg","pog3","pog","",35600,1,1,安
 "𠎷","sáb","sab2","sab","",35600,1,1,安
 "草猴","côo-hèu","coo5-heu3","cooheu","ch",35600,2,1,安
 "醬瓜","ziông-guǎ","ziong5-gua6","zionggua","zg",35600,2,1,安
@@ -112927,6 +112930,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "峨嵋峎","ngo-mi-gièn","ngo1-mi1-gien3","ngomigien","ngmg",35400,3,1,平
 "和尚仔","vo-shóng-èr","vo1-shong2-er3","voshonger","vshe",35400,3,1,平
 "犯節氣","fám-zièd-kì","fam2-zied3-ki3","famziedki","fzk",35400,3,1,平
+"起𱱿","kì-pug","ki3-pug4","kipug","kp",35400,2,1,平
 "黃腫病","vong-zhùng-piáng","vong1-zhung3-piang2","vongzhungpiang","vzhp",35400,3,1,平
 "激激顫","gid-gid-zhǔn","gid4-gid4-zhun6","gidgidzhun","ggzh",35400,3,1,平
 "嘬心甜","zod-sǐm-tiam","zod4-sim6-tiam1","zodsimtiam","zst",35400,3,1,平
@@ -113990,6 +113994,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "土公伯","tû-gǔng-bá","tu5-gung6-ba2","tugungba","tgb",35400,3,1,安
 "囁囁動","ngiáb-ngiáb-tǔng","ngiab2-ngiab2-tung6","ngiabngiabtung","ngngt",35400,3,1,安
 "犯節氣","fan-ziéd-kî","fan1-zied2-ki5","fanziedki","fzk",35400,3,1,安
+"起𱱿","kî-pòg","ki5-pog3","kipog","kp",35400,2,1,安
 "撿骨師","giâm-gúd-sǐ","giam5-gud2-si6","giamgudsi","ggs",35400,3,1,安
 "撿骨師","giâm-gúd-sǔ","giam5-gud2-su6","giamgudsu","ggs",35400,3,1,安
 "撿骨師","giâm-gúd-sǐi","giam5-gud2-sii6","giamgudsii","ggs",35400,3,1,安
@@ -132552,7 +132557,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "貢疘","gung-góng","gung1-gong2","gunggong","gg",30000,2,3,四
 "貢甲","gung-gàb","gung1-gab3","gunggab","gg",30000,2,3,四
 "氣呼呼仔","hi-fu-fu-è","hi1-fu1-fu1-e3","hifufue","hffe",30000,4,2,四
-"起𱱿","hì-pug","hi3-pug4","hipug","hp",30000,2,2,四
+"起𱱿","hì-pug","hi3-pug4","hipug","hp",30000,2,3,四
 "縛帶","piog-dai","piog4-dai1","piogdai","pd",30000,2,2,四
 "落月死","log-ngied-xì","log4-ngied4-xi3","logngiedxi","lngx",30000,3,2,四
 "擂藥仔","lǔi-iog-è","lui6-iog4-e3","luiioge","lie",30000,3,2,四
@@ -133214,7 +133219,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "剮爛皮","guá-lān-pi","gua2-lan7-pi1","gualanpi","glp",30000,3,2,海
 "脹甲邊","zhǒng-gab-bièn","zhong6-gab4-bien3","zhonggabbien","zhgb",30000,3,2,海
 "氣捙氣急","hǐ-chà-hǐ-gib","hi6-cha3-hi6-gib4","hichahigib","hchhg",30000,4,2,海
-"起𱱿","hí-pùg","hi2-pug3","hipug","hp",30000,2,2,海
+"起𱱿","hí-pùg","hi2-pug3","hipug","hp",30000,2,3,海
 "合口","gab-héu","gab4-heu2","gabheu","gh",30000,2,2,海
 "撓撓","nèu-nèu","neu3-neu3","neuneu","nn",30000,2,2,海
 "腰弇背吊","rhàu-kiem-bǒi-diǎu","rhau3-kiem1-boi6-diau6","rhaukiemboidiau","rhkbd",30000,4,3,海
@@ -133242,7 +133247,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "鼻流鼻串","pī-lau-pī-chǒn","pi7-lau1-pi7-chon6","pilaupichon","plpch",30000,4,3,海
 "鼻水澹汀","pī-shúi-dam-dǐn","pi7-shui2-dam1-din6","pishuidamdin","pshdd",30000,4,2,海
 "病膩膩","piāng-ně-ně","piang7-ne6-ne6","piangnene","pnn",30000,3,2,海
-"𱱿","pùg","pug3","pug","",30000,1,2,海
+"𱱿","pùg","pug3","pug","",30000,1,3,海
 "聲腌腌","shàng-rhab-rhab","shang3-rhab4-rhab4","shangrhabrhab","shrhrh",30000,3,2,海
 "屎哱哱","shí-bùd-bùd","shi2-bud3-bud3","shibudbud","shbb",30000,3,3,海
 "屎棍棍","shí-gǔn-gǔn","shi2-gun6-gun6","shigungun","shgg",30000,3,2,海
@@ -133992,7 +133997,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "氣急急","kì-gîb-gîb","ki3-gib5-gib5","kigibgib","kgg",30000,3,3,大
 "氣呼呼","kì-pù-pù","ki3-pu3-pu3","kipupu","kpp",30000,3,2,大
 "起爛膘","kî-làn-piàu","ki5-lan3-piau3","kilanpiau","klp",30000,3,2,大
-"起𱱿","kî-pùg","ki5-pug3","kipug","kp",30000,2,2,大
+"起𱱿","kî-pùg","ki5-pug3","kipug","kp",30000,2,3,大
 "血汀汀","hiêd-dìn-dìn","hied5-din3-din3","hieddindin","hdd",30000,3,3,大
 "血流血蒂","hiêd-liǔ-hiêd-dì","hied5-liu6-hied5-di3","hiedliuhieddi","hlhd",30000,4,3,大
 "撓撓","niāu-niāu","niau7-niau7","niauniau","nn",30000,2,2,大
@@ -134022,7 +134027,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "鼻槽槽","pì-cǒ-cǒ","pi3-co6-co6","picoco","pcc",30000,3,3,大
 "鼻流鼻串","pì-lǎu-pì-chòn","pi3-lau6-pi3-chon3","pilaupichon","plpch",30000,4,2,大
 "鼻水澹汀","pì-shûi-dǎm-dìn","pi3-shui5-dam6-din3","pishuidamdin","pshdd",30000,4,3,大
-"𱱿","pùg","pug3","pug","",30000,1,2,大
+"𱱿","pùg","pug3","pug","",30000,1,3,大
 "𠎷著","sâb-dô","sab5-do5","sabdo","sd",30000,2,3,大
 "聲腌腌","shāng-rhâb-rhâb","shang7-rhab5-rhab5","shangrhabrhab","shrhrh",30000,3,2,大
 "ㄤ聲ㄤ聲","àng-shāng-àng-shāng","ang3-shang7-ang3-shang7","angshangangshang","ashash",30000,4,2,大
@@ -135001,7 +135006,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "發甲邊","bòd-gàb-biěn","bod3-gab3-bien6","bodgabbien","bgb",30000,3,2,平
 "氣急急","hì-gìb-gìb","hi3-gib3-gib3","higibgib","hgg",30000,3,2,平
 "氣呼呼","hì-pǔ-pǔ","hi3-pu6-pu6","hipupu","hpp",30000,3,2,平
-"起𱱿","hì-pug","hi3-pug4","hipug","hp",30000,2,2,平
+"起𱱿","hì-pug","hi3-pug4","hipug","hp",30000,2,3,平
 "撓撓","něu-něu","neu6-neu6","neuneu","nn",30000,2,2,平
 "腰拑背懸","rhiǎu-kiam-bòi-vièn","rhiau6-kiam1-boi3-vien3","rhiaukiamboivien","rhkbv",30000,4,3,平
 "落月死","log-ngied-sì","log4-ngied4-si3","logngiedsi","lngs",30000,3,2,平
@@ -135021,7 +135026,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "鼻ㄤㄤ仔","pí-ang-ang-èr","pi2-ang1-ang1-er3","pianganger","paae",30000,4,3,平
 "鼻流鼻串","pí-liu-pí-chàn","pi2-liu1-pi2-chan3","piliupichan","plpch",30000,4,3,平
 "病艾艾仔","piáng-ngiè-ngiè-èr","piang2-ngie3-ngie3-er3","piangngiengieer","pngnge",30000,4,2,平
-"𱱿","pug","pug4","pug","",30000,1,2,平
+"𱱿","pug","pug4","pug","",30000,1,3,平
 "聲腌腌","shǎng-rhiàb-rhiàb","shang6-rhiab3-rhiab3","shangrhiabrhiab","shrhrh",30000,3,2,平
 "屎洩洩仔","shì-sied-sied-èr","shi3-sied4-sied4-er3","shisiedsieder","shsse",30000,4,2,平
 "窣鼻","sud-pí","sud4-pi2","sudpi","sp",30000,2,2,平
@@ -140142,7 +140147,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "額巖巖","ngiàg-ngǎm-ngǎm","ngiag3-ngam6-ngam6","ngiagngamngam","ngngng",15000,3,2,南
 "剮爛皮","guà-lan-pǐ","gua3-lan1-pi6","gualanpi","glp",15000,3,2,南
 "氣呼呼仔","hi-fu-fu-ě","hi1-fu1-fu1-e6","hifufue","hffe",15000,4,2,南
-"起𱱿","hì-pug","hi3-pug4","hipug","hp",15000,2,2,南
+"起𱱿","hì-pug","hi3-pug4","hipug","hp",15000,2,3,南
 "縛帶","piog-dai","piog4-dai1","piogdai","pd",15000,2,2,南
 "面呷青","mien-gab-qiáng","mien1-gab4-qiang2","miengabqiang","mgq",15000,3,2,南
 "屙澇屎","ó-lau-sìi","o2-lau1-sii3","olausii","ols",15000,3,2,南
@@ -143805,7 +143810,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "𫝘","ang","ang1","ang","",1200,1,64,四
 "𫠄","gǎi","gai6","gai","",1200,1,64,四
 "𬠖","ngiam","ngiam1","ngiam","",1200,1,64,四
-"𱱿","pug","pug4","pug","",1200,1,64,四
 "妳","ngǐ","ngi6","ngi","",1200,1,64,四
 "妳","nǐ","ni6","ni","",1200,1,64,四
 "妳","ň","n6","n","",1200,1,64,四
