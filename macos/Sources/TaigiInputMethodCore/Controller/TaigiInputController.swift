@@ -112,6 +112,8 @@ public final class TaigiInputController: IMKInputController {
     /// a fresh activation of this session on the way back.
     @MainActor
     private var symbolPickerShortcut: KeyboardShortcuts.Shortcut?
+    @MainActor
+    private var convertKipanTwoLinesShortcut: KeyboardShortcuts.Shortcut?
 
     /// The table the picker draws from. `nil` means the bundle's copy, which
     /// is what production runs with; a test injects the repository's file,
@@ -343,6 +345,7 @@ public final class TaigiInputController: IMKInputController {
             // deactivation IMK sends first already cleared it (`endSession`).
             controller.isSymbolPickerPlaceholderMarked = false
             controller.symbolPickerShortcut = KeyboardShortcuts.getShortcut(for: .showSymbolPicker)
+            controller.convertKipanTwoLinesShortcut = KeyboardShortcuts.getShortcut(for: .convertKipanTwoLines)
             // Whatever space a previous focus left armed was measured against
             // a document this activation may no longer be looking at.
             controller.armedAutoSpaceCaret = nil
@@ -862,6 +865,112 @@ public final class TaigiInputController: IMKInputController {
             syncTpsKeyboard()
         case .quickLookup:
             QuickLookupPanel.shared.toggle()
+        case .convertKipanTwoLines:
+            convertKipanSelectedText(client: nil)
+        }
+    }
+
+    /// Hakfa fork: matches ⌃⌘T chord in the key path.
+    @MainActor
+    private func isConvertKipanTwoLinesChord(_ key: KeyEventSnapshot) -> Bool {
+        let shortcut = convertKipanTwoLinesShortcut ?? KeyboardShortcuts.getShortcut(for: .convertKipanTwoLines)
+        guard let shortcut,
+              let keyCode = key.keyCode, Int(keyCode) == shortcut.carbonKeyCode
+        else { return false }
+        let chording = KeyEventSnapshot.chordingModifiers
+        return key.modifiers.intersection(chording) == shortcut.modifiers.intersection(chording)
+    }
+
+    /// Hakfa fork: in-place conversion of bracket-annotated text into clean two lines.
+    @MainActor
+    private func convertKipanSelectedText(client inputClient: IMKTextInput?) {
+        let targetClient = inputClient ?? ((self.client() as Any) as? IMKTextInput)
+        if let client = targetClient {
+            let range = client.selectedRange()
+            if range.location != NSNotFound && range.length > 0 {
+                if let attrStr = client.attributedSubstring(from: range), !attrStr.string.isEmpty {
+                    let text = attrStr.string
+                    let res = KipanConverter.convertKipanText(text)
+                    if !res.pairs.isEmpty {
+                        client.insertText(res.combinedText, replacementRange: range)
+                        flashKipanConverted()
+                        return
+                    }
+                }
+            }
+        }
+
+        // 2. 檢查系統剪貼簿（若使用者剛按過 ⌘C 複製）
+        let pb = NSPasteboard.general
+        if let raw = pb.string(forType: .string), !raw.isEmpty {
+            let res = KipanConverter.convertKipanText(raw)
+            if !res.pairs.isEmpty {
+                pb.clearContents()
+                pb.setString(res.combinedText, forType: .string)
+                if let client = targetClient {
+                    let range = client.selectedRange()
+                    client.insertText(res.combinedText, replacementRange: range)
+                }
+                flashKipanConverted()
+                return
+            }
+        }
+
+        // 3. Fallback to clipboard pipeline (Cmd+C -> Convert -> Cmd+V)
+        simulateKipanCopyConvertPaste()
+    }
+
+    /// Hakfa fork: flashes HUD in Hakfa based on active lect (四、大、平: 既經轉雙行; 南、海、安: 已經轉雙行).
+    @MainActor
+    private func flashKipanConverted() {
+        let text: String
+        switch settings.effectiveLect {
+        case .xiien, .taibu, .ngiaupin:
+            text = "既經轉雙行"
+        case .namxiian, .hoiliug, .zhioon:
+            text = "已經轉雙行"
+        }
+        flash(literal: text)
+    }
+
+    @MainActor
+    private func simulateKipanCopyConvertPaste() {
+        let src = CGEventSource(stateID: .combinedSessionState)
+        let cKey: CGKeyCode = 0x08 // 'c'
+        let vKey: CGKeyCode = 0x09 // 'v'
+
+        // 1. Simulate Cmd+C to copy selected text
+        if let down = CGEvent(keyboardEventSource: src, virtualKey: cKey, keyDown: true) {
+            down.flags = .maskCommand
+            down.post(tap: .cghidEventTap)
+        }
+        if let up = CGEvent(keyboardEventSource: src, virtualKey: cKey, keyDown: false) {
+            up.flags = .maskCommand
+            up.post(tap: .cghidEventTap)
+        }
+
+        // 2. Read clipboard and convert after a brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(120)) { [weak self] in
+            let pb = NSPasteboard.general
+            guard let raw = pb.string(forType: .string), !raw.isEmpty else { return }
+            let res = KipanConverter.convertKipanText(raw)
+            guard !res.pairs.isEmpty else { return }
+
+            pb.clearContents()
+            pb.setString(res.combinedText, forType: .string)
+
+            // 3. Simulate Cmd+V to paste
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(50)) {
+                if let down = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: true) {
+                    down.flags = .maskCommand
+                    down.post(tap: .cghidEventTap)
+                }
+                if let up = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: false) {
+                    up.flags = .maskCommand
+                    up.post(tap: .cghidEventTap)
+                }
+                self?.flashKipanConverted()
+            }
         }
     }
 
@@ -934,6 +1043,13 @@ public final class TaigiInputController: IMKInputController {
         }
 
         defer { isMarkedTextVisible = backend.isComposing(sessionToken) }
+
+        if isConvertKipanTwoLinesChord(key) {
+            armedAutoSpaceCaret = armedSwap
+            guard !key.isRepeat else { return true }
+            convertKipanSelectedText(client: client)
+            return true
+        }
 
         // The picker chord toggles, so it is read before the picker's own
         // keys: with the list up it is the second way out (Escape is the

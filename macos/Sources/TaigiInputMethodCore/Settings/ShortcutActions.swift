@@ -135,6 +135,12 @@ extension KeyboardShortcuts.Name {
         initial: .init(.k, modifiers: [.control, .command]),
     )
 
+    /// Hakfa fork: converts kipan bracket-annotated text into clean two lines (⌃⌘T).
+    static let convertKipanTwoLines = Self(
+        "convertKipanTwoLines",
+        initial: .init(.t, modifiers: [.control, .command]),
+    )
+
     /// The symbol picker (USER 2026-09-09): punctuation, bracket pairs and
     /// special symbols in a candidate-style window. `,` because the picker is
     /// a punctuation menu and the comma is the punctuation key — and ⌃⌘ is the
@@ -172,6 +178,8 @@ enum ShortcutAction: CaseIterable, Sendable {
     case cycleCandidateDisplayMode
     /// Hakfa fork: opens the quick lookup spotlight panel.
     case quickLookup
+    /// Hakfa fork: converts kipan bracket-annotated text into clean two lines (Hanji & Roman).
+    case convertKipanTwoLines
     /// Opens the symbol picker over the caret.
     case showSymbolPicker
     /// Toggles the floating Telex key table: explains the keyboard rather
@@ -192,7 +200,7 @@ enum ShortcutAction: CaseIterable, Sendable {
     static let groups: [(title: StringKey, actions: [ShortcutAction])] = [
         (.settingsOutputScriptRoman, [.cycleLect, .toggleRomanization, .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode]),
         (.settingsTpsMode, [.toggleTps, .showTpsKeyboard]),
-        (.commonOther, [.quickLookup, .showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
+        (.commonOther, [.quickLookup, .convertKipanTwoLines, .showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
     ]
 
     var name: KeyboardShortcuts.Name {
@@ -205,6 +213,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleOutputBothScripts: .toggleOutputBothScripts
         case .showSymbolPicker: .showSymbolPicker
         case .quickLookup: .quickLookup
+        case .convertKipanTwoLines: .convertKipanTwoLines
         case .openLastSettingsPane: .openLastSettingsPane
         case .showTelexGuide: .showTelexGuide
         case .showTpsKeyboard: .showTpsKeyboard
@@ -232,7 +241,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         switch self {
         case .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode, .showTelexGuide: mode == .tps
         case .showTpsKeyboard: mode != .tps
-        case .toggleRomanization, .toggleTps, .cycleLect, .showSymbolPicker, .quickLookup, .openLastSettingsPane: false
+        case .toggleRomanization, .toggleTps, .cycleLect, .showSymbolPicker, .quickLookup, .convertKipanTwoLines, .openLastSettingsPane: false
         }
     }
 
@@ -263,6 +272,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleOutputBothScripts: language.string(.commonToggleOutputBothScripts)
         case .showSymbolPicker: language.string(.desktopShortcutShowSymbolPicker)
         case .quickLookup: "客源翠隨身查詞"
+        case .convertKipanTwoLines: "企盤雙行文字重組"
         case .openLastSettingsPane: language.string(.desktopShortcutOpenSettings)
         case .showTelexGuide: language.string(.desktopShortcutShowTelexGuide)
         case .showTpsKeyboard: language.string(.desktopShortcutShowTpsKeyboard)
@@ -336,7 +346,7 @@ enum ShortcutHotkeys {
             // the named panes are reached from the menu bar now.
             openSettings(on: nil, in: SettingsStore())
         case .toggleRomanization, .toggleTps, .toggleTranslateSwapped, .toggleOutputBothScripts,
-             .cycleCandidateDisplayMode, .cycleLect, .showTelexGuide, .showTpsKeyboard:
+             .cycleCandidateDisplayMode, .cycleLect, .showTelexGuide, .showTpsKeyboard, .convertKipanTwoLines:
             ComposingSessionCoordinator.shared.performShortcutAction(action)
         case .quickLookup:
             QuickLookupPanel.shared.toggle()
