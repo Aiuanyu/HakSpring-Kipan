@@ -175,7 +175,7 @@ def build_database():
     if gip_dir.exists():
         for lect_id, lect_name, char_key in LECT_ROSTER:
             pattern = f"*-{char_key}.csv"
-            matched_files = list(gip_dir.glob(pattern))
+            matched_files = sorted(gip_dir.glob(pattern), reverse=True)  # newest date first
             if not matched_files:
                 continue
             csv_path = matched_files[0]

@@ -26,6 +26,7 @@ export PATH := $(HOME)/.cargo/bin:$(PATH)
 # order, one after another (sub-makes, so `-j` cannot reorder them): the bindings
 # must be regenerated before any native build compiles the protos crate.
 build:
+	$(MAKE) --no-print-directory gloss-db
 	$(MAKE) --no-print-directory protos
 	$(MAKE) --no-print-directory ios-libs
 	$(MAKE) --no-print-directory android-libs
@@ -101,6 +102,7 @@ dict:
 	bash $(DICT)/build.sh
 
 # Hakfa fork: Generate assets/dictionaries/gloss.db (SQLite) from HakSpring cert and gip.
+# Not tracked in git (34 MB, derived): `make build` makes it, and so does a platform that bundles it.
 gloss-db:
 	python3 tools/build_hakfa_gloss_db.py
 

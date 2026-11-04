@@ -164,3 +164,4 @@ windows/.build/
 assets/dictionaries/backup_taigi/
 commit_msg.txt
 .vscode/
+assets/dictionaries/gloss.db

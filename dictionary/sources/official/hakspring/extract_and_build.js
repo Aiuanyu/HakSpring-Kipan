@@ -72,6 +72,77 @@ const CERT_LECT_KEY = LECT_KEY === '南' ? '四' : LECT_KEY;
 const isShipLect = IS_ALL; // 全腔合併詞庫就係出貨詞庫：覆蓋 assets/dictionaries
 const LECT_KEY_BY_CODE = Object.fromEntries(Object.entries(LECTS).map(([k, v]) => [v.code, k]));
 
+// ── 跟上客源翠網站：用 data/ 底下最新个認證年度摎教典日期，毋寫死 ────────────────
+// 認證：cert/<年度><腔><級>.json，五級都有个最大年度；教典：gip/<日期>-<腔>.json，最新个日期。
+// 必要个檔案缺著就報錯停落來（毋好靜默略過，會當做出無認證、無教典个詞庫）。
+const CERT_LEVELS = ['基', '初', '中', '中高', '高'];
+function latestCertYear() {
+  const dir = path.join(HAKSPRING_DATA, 'cert');
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+  const years = [...new Set(files.map(f => (f.match(/^(\d{3})[^\d]+\.json$/) || [])[1]).filter(Boolean))].sort();
+  for (const year of years.reverse()) {
+    if (CERT_LEVELS.every(l => files.includes(`${year}${CERT_LECT_KEY}${l}.json`))) return year;
+  }
+  throw new Error(`${dir}: 揣無「${CERT_LECT_KEY}」腔五級齊全个認證年度檔（<年度>${CERT_LECT_KEY}<級>.json）`);
+}
+function latestGipDate() {
+  const dir = path.join(HAKSPRING_DATA, 'gip');
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+  const dates = files.map(f => (f.match(new RegExp(`^(\\d{8})-${LECT_KEY}\\.json$`)) || [])[1]).filter(Boolean).sort();
+  if (!dates.length) throw new Error(`${dir}: 揣無「${LECT_KEY}」腔个教典檔（<日期>-${LECT_KEY}.json）`);
+  return dates[dates.length - 1];
+}
+
+// 規範 CSV 解析（引號、引號內个逗號摎換行、雙引號跳脫）。一列一隻字串陣列。
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else quoted = false; }
+      else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      if (row.some(v => v !== '')) rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  row.push(field);
+  if (row.some(v => v !== '')) rows.push(row);
+  return rows;
+}
+
+// 儲存格內个換行（官方資料有幾格：「幼稚園⏎（幼兒園）」「nêeu zû⏎nêu zû」）：詞目掉忒換行，標音換做一隻空白。
+const cellWord = v => v.replace(/\s*[\r\n]+\s*/g, '');
+const cellPhonetic = v => v.replace(/\s*[\r\n]+\s*/g, ' ');
+
+// 私用區（PUA）字：先用客源翠 glyph_mapping.json，再用 data/pua-map.json（企盤自家補个）。
+// 對無著个就毋收該詞條（候選會變方框）並報出來，補去 data/pua-map.json 就會收。
+const PUA_RE = /[\ue000-\uf8ff\u{f0000}-\u{ffffd}]/u;
+const PUA_MAP = (() => {
+  const read = f => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : {});
+  const out = {};
+  for (const [k, v] of Object.entries({ ...read(path.join(HAKSPRING_ROOT, 'glyph_mapping.json')), ...read(path.join(__dirname, 'data/pua-map.json')) })) {
+    out[String.fromCodePoint(parseInt(k.replace(/^U\+/, ''), 16))] = v;
+  }
+  return out;
+})();
+const unmappedPua = new Map(); // 碼點 → 詞條們
+function resolvePua(word, where) {
+  const fixed = [...word].map(ch => PUA_MAP[ch] ?? ch).join('');
+  if (!PUA_RE.test(fixed)) return fixed;
+  for (const ch of fixed) if (PUA_RE.test(ch)) {
+    const k = 'U+' + ch.codePointAt(0).toString(16).toUpperCase();
+    if (!unmappedPua.has(k)) unmappedPua.set(k, []);
+    unmappedPua.get(k).push(`${where}:${word}`);
+  }
+  return null;
+}
+
 // 聲調與母音映射表
 const VOWEL_MAP = {
   'ā': 'a', 'á': 'a', 'ǎ': 'a', 'â': 'a', 'à': 'a',
@@ -705,7 +776,7 @@ const certFiles = [
   { level: '中', freq: 40000, levelName: '中級' },
   { level: '中高', freq: 35000, levelName: '中高級' },
   { level: '高', freq: 30000, levelName: '高級' }
-].map(c => ({ file: `113${CERT_LECT_KEY}${c.level}.json`, freq: c.freq, name: `${LECT.name}${c.levelName}` }));
+].map(c => ({ file: `${latestCertYear()}${CERT_LECT_KEY}${c.level}.json`, freq: c.freq, name: `${LECT.name}${c.levelName}` }));
 const southFill = LECT_KEY === '南' ? loadSouthFill() : new Map();
 const meinongFill = LECT_KEY === '南' ? loadMeinongFill() : new Map();
 const southPending = LECT_KEY === '南' ? loadSouthPending() : new Map();
@@ -721,19 +792,19 @@ let raopingZhuotao = 0;
 
 for (const cf of certFiles) {
   const p = path.join(HAKSPRING_DATA, 'cert', cf.file);
-  if (!fs.existsSync(p)) continue;
+  if (!fs.existsSync(p)) throw new Error(`認證檔 ${p} 無存在`);
   const raw = fs.readFileSync(p, 'utf8');
   const data = JSON.parse(raw);
-  const lines = data.content.split('\n');
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line.trim()) continue;
-    const parts = line.split(',');
+  const csvRows = parseCsv(data.content);
+  for (let i = 1; i < csvRows.length; i++) {
+    const parts = csvRows[i];
     if (parts.length < 4) continue;
+    const certWord = resolvePua(cellWord(parts[1]), cf.file);
+    if (certWord === null) continue;
     const row = {
-      客家語: parts[1],
-      客語標音_顯示: parts[2],
-      客語標音_查詢: parts[3],
+      客家語: certWord,
+      客語標音_顯示: cellPhonetic(parts[2]),
+      客語標音_查詢: cellPhonetic(parts[3]),
       sourceName: cf.name
     };
 
@@ -854,22 +925,25 @@ if (LECT_KEY === '南') {
 }
 
 // 2. 處理教典（讀取 20250630-<腔>.json，取得正宗 HagPinPlus 顯示欄位）
-const gipJsonPath = path.join(HAKSPRING_DATA, 'gip', `20250630-${LECT_KEY}.json`);
-if (fs.existsSync(gipJsonPath)) {
+const gipDate = latestGipDate();
+const gipJsonPath = path.join(HAKSPRING_DATA, 'gip', `${gipDate}-${LECT_KEY}.json`);
+console.log(`    認證 ${latestCertYear()} 年度、教典 ${gipDate}`);
+{
   const rawGip = fs.readFileSync(gipJsonPath, 'utf8');
   const gipData = JSON.parse(rawGip);
-  const lines = gipData.content.split('\n');
-  const gipDefaultFreq = 20000;
+  const gipRows = parseCsv(gipData.content);
+  // 教典詞頻：高過認證中高（35000）、高（30000），低過認證中（40000）。長詞略低，但毋跌破中高。
+  const gipDefaultFreq = 36000;
 
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line.trim()) continue;
-    const parts = line.split(',');
+  for (let i = 1; i < gipRows.length; i++) {
+    const parts = gipRows[i];
     if (parts.length < 4) continue;
+    const gipWord = resolvePua(cellWord(parts[1]), `教典${gipDate}`);
+    if (gipWord === null) continue;
     const row = {
-      客家語: parts[1],
-      客語標音_顯示: parts[2],
-      客語標音_查詢: parts[3],
+      客家語: gipWord,
+      客語標音_顯示: cellPhonetic(parts[2]),
+      客語標音_查詢: cellPhonetic(parts[3]),
       sourceName: `教典${LECT.name}`
     };
 
@@ -894,7 +968,7 @@ if (fs.existsSync(gipJsonPath)) {
       // 依原則 6：以 (漢字, 帶調標準讀音) 為唯一鍵；同字同音同調者併入並加教典 bitmask，不同調者為合法多音詞條獨立保留
       const normTL = hyphenatedPhonetic.normalize('NFC');
       const key = word + '|' + normTL;
-      const baseFreq = Math.max(100, gipDefaultFreq - word.length * 1000);
+      const baseFreq = Math.max(35000, gipDefaultFreq - word.length * 200);
       const freq = boostFrequency(word, baseFreq);
 
       if (map.has(key)) {
@@ -916,6 +990,11 @@ if (fs.existsSync(gipJsonPath)) {
       }
     }
   }
+}
+
+if (unmappedPua.size) {
+  console.log(`  ⚠ 私用區字無映射、該詞條毋收（補去 data/pua-map.json，格式 {"U+E76F": "字"}）：`);
+  for (const [k, list] of unmappedPua) console.log(`    ${k}　${[...new Set(list)].slice(0, 6).join('、')}`);
 }
 
 // 2b. 愛灣語加詞（data/curated/加詞-{腔}.json）：人工收錄个語氣詞（例：喺 --he／hē、哶 mē）。
