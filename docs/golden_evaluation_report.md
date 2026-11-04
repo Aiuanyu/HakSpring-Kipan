@@ -26,7 +26,7 @@
 | 7 | classical_text | 世界人權宣言第一條後段（連詞摎，非落） | `tezunngiamlaukianlisongidludpinden` | 在尊嚴摎權利上一律平等 | 在準拈摎權利上一㪐平等 | ❌ 有錯 | 27.3% | 預期: `té zún-ngiǎm láu kiǎn-li song ìd-lud pǐn-dèn`<br>實際: `té zùn ngiám láu kiǎnli song ìd lùd pǐndèn` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「尊嚴」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「尊嚴」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「一律」未收錄於詞庫，導致單字組詞潰散（需補字典） |
 | 8 | classical_text | 現代客語聖經愛篇：有愛心就會有吞忍㧯慈悲 | `iuoiximqiuvoiutunngiunlauciibi` | 有愛心就會有吞忍摎慈悲 | 有愛心就和有吞銀摎慈悲 | ❌ 有錯 | 18.2% | 預期: `iú oi-xím qiu voi iú tún-ngiún láu cǐi-bí`<br>實際: `iú oixím qiu vǒ iú tún ngiǔn láu cǐibí` | `排序偏後 (Ranking)`: 預期字 '會' 已收錄於詞庫，首選輸出 '和' 權重較高或搶先結巴<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「吞忍」未收錄於詞庫，導致單字組詞潰散（需補字典） |
 | 9 | classical_text | 現代客語聖經愛篇：有愛心就毋會嫉妒 | `iuoiximqiumvoiqiddu` | 有愛心就毋會嫉妒 | 有愛心就毋會七在 | ❌ 有錯 | 25.0% | `iú oi-xím qiu m̌-voi qìd-du` (吻合) | `缺詞（詞組 OOV-Phrase）`: 預期詞組「嫉妒」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「嫉妒」未收錄於詞庫，導致單字組詞潰散（需補字典） |
-| 10 | classical_text | 現代客語聖經愛篇：毋會誇口毋會驕傲 | `mvoikuakieumvoigieungau` | 毋會誇口毋會驕傲 | 毋會誇口毋會噭咬 | ❌ 有錯 | 25.0% | 預期: `m̌-voi kuá-kièu m̌-voi giéu-ngau`<br>實際: `m̌voi kuákièu m̌voi gieu ngáu` | `缺詞（單字 OOV-Char）`: 詞庫真查確認無收錄單字 '驕'<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「驕傲」未收錄於詞庫，導致單字組詞潰散（需補字典） |
+| 10 | classical_text | 現代客語聖經愛篇：毋會誇口毋會驕傲 | `mvoikuakieumvoigieungau` | 毋會誇口毋會驕傲 | 毋會誇口毋會噭咬 | ❌ 有錯 | 25.0% | 預期: `m̌-voi kuá-kièu m̌-voi giéu-ngau`<br>實際: `m̌voi kuákièu m̌voi gieu ngáu` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「驕傲」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「驕傲」未收錄於詞庫，導致單字組詞潰散（需補字典） |
 | 11 | classical_text | 現代客語聖經愛篇：愛心永遠存在 | `oiximiuniencuncai` | 愛心永遠存在 | 愛心永遠伸在 | ❌ 有錯 | 16.7% | 預期: `oi-xím iùn-ièn cǔn-cai`<br>實際: `oixím iùn'ièn cún cai` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「存在」未收錄於詞庫，導致單字組詞潰散（需補字典） |
 | 12 | daily_life | 日常生活問候：食飽無 | `siidbaumang` | 食飽吂 | 食飽吂 | ✅ 全對 | 0.0% | `siid-bàu-mǎng` (吻合) | — |
 | 13 | daily_life | 日常生活句：轉屋下 | `zonvugka` | 轉屋下 | 轉屋下 | ✅ 全對 | 0.0% | `zòn-vùg-ká` (吻合) | — |
@@ -35,7 +35,7 @@
 | 16 | daily_life | 日常生活問候：恁多謝 | `anziise` | 恁仔細 | 恁仔細 | ✅ 全對 | 0.0% | `àn zìi-se` (吻合) | — |
 | 17 | daily_life | 日常生活問候：恁早 | `anzo` | 恁早 | 恁做 | ❌ 有錯 | 50.0% | 預期: `àn-zò`<br>實際: `àn zo` | `排序偏後 (Ranking)`: 預期字 '早' 已收錄於詞庫，且在非首選候選列中出現 |
 | 18 | daily_life | 日常生活句：打拚 | `dabiang` | 打拚 | 打拚 | ✅ 全對 | 0.0% | `dà-biang` (吻合) | — |
-| 19 | daily_life | 日常生活句：去街仔 | `higiaie` | 去街仔 | 去戒仔 | ❌ 有錯 | 33.3% | 預期: `hi giái-è`<br>實際: `hi giai è` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「街仔」未收錄於詞庫，導致單字組詞潰散（需補字典） |
+| 19 | daily_life | 日常生活句：去街仔 | `higiaie` | 去街仔 | 去界仔 | ❌ 有錯 | 33.3% | 預期: `hi giái-è`<br>實際: `hi giai è` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「街仔」未收錄於詞庫，導致單字組詞潰散（需補字典） |
 | 20 | daily_life | 核心族語句：大家共下講客話 | `taigakiunghagonghagfa` | 大家共下講客話 | 大家共下講客話 | ✅ 全對 | 0.0% | `tai-gá kiung-ha gòng hàg-fa` (吻合) | — |
 | 21 | idiom | 常用名詞：想法（四縣 xiongfab） | `xiongfab` | 想法 | 想法 | ✅ 全對 | 0.0% | `xiòng-fàb` (吻合) | — |
 | 22 | idiom | 客語特色熟語：跈時行 | `tensiihang` | 跈時行 | 跈時行 | ✅ 全對 | 0.0% | `těn-sǐi-hǎng` (吻合) | — |
@@ -51,13 +51,13 @@
 | 2 | personal_name | 江瑋平姓名介紹句（含自訂單字瑋 Ví 與學習詞江瑋平） | `ngagemiangeonzogongvipin` | 吾个名仔安做江瑋平 | 吾个名仔安做江瑋平 | ✅ 全對 | 0.0% | `Ngá ge miǎng-è ón-zo Góng Vípǐn` (吻合) | — |
 | 3 | personal_name | 劉源翠姓名介紹句 | `ngagemiangeonzoliungiencui` | 吾个名仔安做劉源翠 | 吾个名仔安做劉源翠 | ✅ 全對 | 0.0% | `Ngá ge miǎng-è ón-zo Liǔ Ngiěncui` (吻合) | — |
 | 4 | personal_name | 歐陽秋月姓名介紹句（測試四字複姓學詞連打） | `ngabungionggemiangeonzoeuiongqiungied` | 吾餔娘个名仔安做歐陽秋月 | 吾餔娘个名仔安做歐陽秋月 | ✅ 全對 | 0.0% | 預期: `Ngá bú-ngiǒng ge miǎng-è ón-zo Éu-iǒng Qiú-ngied`<br>實際: `ngábú'ngiǒng ge miǎng'è ónzo euiongqiungied` | — |
-| 5 | custom_word | 補字典沈 Sìim 參與連打 | `ngigesiizongsiimbagiong` | 你个市長沈伯洋 | 你个市長審百樣 | ❌ 有錯 | 42.9% | 預期: `Ngǐ ge sii-zòng Sìim Bàg'iǒng`<br>實際: `ngǐ ge siizòng sìim bàg'iong` | `排序偏後 (Ranking)`: 預期字 '沈' 已收錄於詞庫，首選輸出 '審' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '伯' 已收錄於詞庫，首選輸出 '百' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '洋' 已收錄於詞庫，首選輸出 '樣' 權重較高或搶先結巴 |
+| 5 | custom_word | 補字典沈 Sìim 參與連打 | `ngigesiizongsiimbagiong` | 你个市長沈伯洋 | 你个市長審百樣 | ❌ 有錯 | 42.9% | 預期: `Ngǐ ge sii-zòng Sìim Bàg'iǒng`<br>實際: `ngǐ ge siizòng sìim bàg'iong` | `缺詞（單字 OOV-Char）`: 詞庫真查確認無收錄單字 '沈'<br>`排序偏後 (Ranking)`: 預期字 '伯' 已收錄於詞庫，首選輸出 '百' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '洋' 已收錄於詞庫，首選輸出 '樣' 權重較高或搶先結巴 |
 
 ## 三、 錯字根本原因分類統計 (Root Cause Analysis)
 
 | 錯誤類型 | 出現頻次 | 改善方向與對應 Queue |
 |---|:---:|---|
-| 缺詞（單字 OOV-Char） | 1 次 | 客源翠補字典增補單字（如「驕」等單字條目） |
-| 排序偏後 (Ranking) | 9 次 | 連打排序與權重調校（Queue 4），加權高頻連詞或接續詞（如「摎」、「請」） |
-| 缺詞（詞組 OOV-Phrase） | 10 個詞組 | 客源翠補字典增補多音節詞組（缺失詞組共 10 個：一律、吞忍、回報、嫉妒、存在、尊嚴、更新、瀏覽器、街仔、驕傲） |
 | 斷詞切分 (Segmentation) | 1 次 | Lattice 斷詞邊界判定與貪婪切分策略調校（如 `higiaie` 誤切贅字） |
+| 缺詞（詞組 OOV-Phrase） | 10 個詞組 | 客源翠補字典增補多音節詞組（缺失詞組共 10 個：一律、吞忍、回報、嫉妒、存在、尊嚴、更新、瀏覽器、街仔、驕傲） |
+| 排序偏後 (Ranking) | 8 次 | 連打排序與權重調校（Queue 4），加權高頻連詞或接續詞（如「摎」、「請」） |
+| 缺詞（單字 OOV-Char） | 1 次 | 客源翠補字典增補單字（如「驕」等單字條目） |

@@ -48,9 +48,14 @@ def apply(namespace: str, data: dict, repo_root: Path) -> dict:
     overlay = _load(path)
     if overlay.get("namespace") != namespace:
         raise ValueError(f"{path}: top-level 'namespace' must equal {namespace!r}")
-    for key, values in overlay.get("keys", {}).items():
+    for key, values_or_entry in overlay.get("keys", {}).items():
         if key not in keys:
+            # Kipan-only key: allowed if it declares full entry with scope and values (docs/hakfa/i18n-overlay.md)
+            if isinstance(values_or_entry, dict) and "scope" in values_or_entry and "values" in values_or_entry:
+                keys[key] = values_or_entry
+                continue
             raise ValueError(f"{path}:{key}: no such key in i18n/{namespace}.json — upstream removed or renamed it")
+        values = values_or_entry
         if not isinstance(values, dict) or not values:
             raise ValueError(f"{path}:{key}: must be a non-empty object of language -> text")
         # Overlay languages first so `hakha` (the base) leads every merged values object.
@@ -66,13 +71,17 @@ def check_orphans(repo_root: Path) -> None:
 
 def stale_keys(repo_root: Path) -> dict:
     # namespace -> overlay keys that no longer exist upstream (removed or renamed by upstream).
+    # Kipan-only keys (declared with 'scope' and 'values') are exempt.
     stale = {}
     for path in sorted((repo_root / OVERLAY_DIR).glob("*.json")):
         base = repo_root / "i18n" / path.name
         if not base.exists():
             continue
         upstream = _load(base).get("keys", {})
-        gone = [key for key in _load(path).get("keys", {}) if key not in upstream]
+        gone = [
+            key for key, entry in _load(path).get("keys", {}).items()
+            if key not in upstream and not (isinstance(entry, dict) and "scope" in entry and "values" in entry)
+        ]
         if gone:
             stale[path.stem] = gone
     return stale

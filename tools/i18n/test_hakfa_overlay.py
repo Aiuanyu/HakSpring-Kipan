@@ -48,6 +48,15 @@ class OverlayTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "upstream removed or renamed"):
             hakfa_overlay.apply("ns", _base({"k": {"hanji": "字"}}), self.root)
 
+    def test_kipan_only_key_with_scope_allowed(self):
+        # A Kipan-only key declaring scope and values merges cleanly without upstream key
+        kipan_entry = {"scope": SCOPE, "values": {"hakha": "新功能", "en": "New Feature"}}
+        self._write("i18n/hakfa/ns.json", {"namespace": "ns", "keys": {"kipanKey": kipan_entry}})
+        data = hakfa_overlay.apply("ns", _base({"k": {"hanji": "字"}}), self.root)
+        self.assertIn("kipanKey", data["keys"])
+        self.assertEqual(data["keys"]["kipanKey"], kipan_entry)
+        self.assertEqual(hakfa_overlay.stale_keys(self.root), {})
+
     def test_overlay_namespace_mismatch_rejected(self):
         self._write("i18n/hakfa/ns.json", {"namespace": "other", "keys": {}})
         with self.assertRaisesRegex(ValueError, "namespace"):

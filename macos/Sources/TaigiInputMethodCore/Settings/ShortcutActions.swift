@@ -267,12 +267,12 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .toggleRomanization: language.string(.desktopShortcutToggleRomanization)
         case .toggleTps: language.string(.desktopShortcutToggleTps)
         case .cycleCandidateDisplayMode: language.string(.desktopShortcutCycleCandidateDisplayMode)
-        case .cycleLect: "切換腔頭"
+        case .cycleLect: language.string(.desktopShortcutCycleLect)
         case .toggleTranslateSwapped: language.string(.commonToggleTranslateSwapped)
         case .toggleOutputBothScripts: language.string(.commonToggleOutputBothScripts)
         case .showSymbolPicker: language.string(.desktopShortcutShowSymbolPicker)
-        case .quickLookup: "客源翠隨身查詞"
-        case .convertKipanTwoLines: "企盤雙行文字重組"
+        case .quickLookup: language.string(.desktopShortcutQuickLookup)
+        case .convertKipanTwoLines: language.string(.desktopShortcutConvertKipanTwoLines)
         case .openLastSettingsPane: language.string(.desktopShortcutOpenSettings)
         case .showTelexGuide: language.string(.desktopShortcutShowTelexGuide)
         case .showTpsKeyboard: language.string(.desktopShortcutShowTpsKeyboard)

@@ -9,9 +9,53 @@
     "shortcutToggleTps": { "hakha": "切換方音符號" },
     "shortcutCycleCandidateDisplayMode": { "hakha": "切換候選詞顯示" },
     "shortcutShowTelexGuide": { "hakha": "打開 Telex 說明" },
+    "shortcutCycleLect": {
+      "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
+      "values": {
+        "hakha": "切換腔頭",
+        "taiha": "切換腔頭",
+        "tailo": "Chhiat-oāⁿ khiuⁿ-thâu",
+        "poj": "Chhiat-oāⁿ khiuⁿ-thâu",
+        "en": "Switch Dialect",
+        "ja": "方言を切り替える"
+      }
+    },
+    "shortcutQuickLookup": {
+      "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
+      "values": {
+        "hakha": "客源翠隨身查詞",
+        "taiha": "客源翠隨身查詞",
+        "tailo": "Khek-goân-chhuī suî-sin cha-sû",
+        "poj": "Khek-goân-chhuī suî-sin cha-sû",
+        "en": "HakSpring Quick Lookup",
+        "ja": "客源翠クイック検索"
+      }
+    },
+    "shortcutConvertKipanTwoLines": {
+      "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
+      "values": {
+        "hakha": "企盤雙行文字重組",
+        "taiha": "企盤雙行文字重組",
+        "tailo": "Khipoân siang-hâng bûn-jī tiông-chó͘",
+        "poj": "Khipoân siang-hâng bûn-jī tiông-chó͘",
+        "en": "Kipan Dual-Line Reordering",
+        "ja": "企盤2行テキスト再構成"
+      }
+    },
+    "hudKipanConverted": {
+      "scope": { "platforms": ["macos", "windows", "linux"], "surfaces": ["host"] },
+      "values": {
+        "hakha": "既經轉雙行",
+        "taiha": "已經轉雙行",
+        "tailo": "í-king tsuán siang-hâng",
+        "poj": "í-keng choán siang-hâng",
+        "en": "Dual Lines Reordered",
+        "ja": "2行テキスト再構成完了"
+      }
+    },
     "shortcutShowTpsKeyboard": { "hakha": "打開方音符號企盤" },
     "shortcutShowSymbolPicker": { "hakha": "打開符號選單" },
-    "shortcutMoveComposingCaret": { "hakha": "修正當咧拍 个 字" },
+    "shortcutMoveComposingCaret": { "hakha": "修正當在打个字" },
     "shortcutSelectCandidateSlot": { "hakha": "直接選字" },
     "shortcutNavigateCandidates": { "hakha": "徙動選字游標" },
     "telexGuideTone": { "hakha": "第 {tone} 調" },
@@ -29,7 +73,7 @@
     "customDictReadFailed": { "hakha": "自訂詞庫讀失敗" },
     "customDictWriteFailed": { "hakha": "自訂詞庫寫入失敗" },
     "settingsWriteFailed": { "hakha": "設定寫入失敗" },
-    "progressWorking": { "hakha": "咧處理…" },
+    "progressWorking": { "hakha": "在處理…" },
     "importComplete": { "hakha": "匯入完成" },
     "notUTF8Detail": { "hakha": "這隻檔案毋是 UTF-8 文字。" },
     "entriesSection": { "hakha": "詞條" },
@@ -49,9 +93,9 @@
     "shortcutsTab": { "hakha": "快速齒" },
     "actionNextCandidate": { "hakha": "後一个字" },
     "actionPreviousCandidate": { "hakha": "頂一个字" },
-    "actionConfirmHighlighted": { "hakha": "確定齒" },
-    "actionCommitLiteral": { "hakha": "輸出當咧拍 个 字" },
-    "actionCommitAlternateScript": { "hakha": "輸出對換 个 文字（漢字/羅馬字）" },
+    "actionConfirmHighlighted": { "hakha": "確定" },
+    "actionCommitLiteral": { "hakha": "輸出當在打个字" },
+    "actionCommitAlternateScript": { "hakha": "輸出對換个文字（漢字/羅馬字）" },
     "shortcutUnbound": { "hakha": "無設定" },
     "shortcutRecording": { "hakha": "撳一个齒…" },
     "shortcutRejectedTaken": { "hakha": "已經分佔用" },
@@ -73,11 +117,11 @@
     "updateOpenNotificationSettings": { "hakha": "去系統設定" },
     "updateDownloadAndInstallAction": { "hakha": "Táng-lóo 安裝" },
     "updateInstallAction": { "hakha": "安裝" },
-    "updateRetryAction": { "hakha": "閣試一擺" },
+    "updateRetryAction": { "hakha": "過試一擺" },
     "updateInstallFailedNote": { "hakha": "安裝失敗" },
-    "installerDllLocked": { "hakha": "客源翠企盤猶咧使用中，檔案換失敗。請先換做別个輸入法，登出 Windows 閣登入，才閣執行安裝程式。免重新開機。" },
+    "installerDllLocked": { "hakha": "客源翠企盤還在使用中，檔案換失敗。請先換做別个輸入法，登出 Windows 過登入，正過執行安裝程式。毋使重新開機。" },
     "installerStepFailed": { "hakha": "安裝步驟失敗：{step}\n若有舊版，已經復原。詳細請看安裝紀錄。" },
-    "installerSignOutNote": { "hakha": "若是輸入法清單內底無看著客源翠企盤，請登出 Windows 閣再登入。" },
+    "installerSignOutNote": { "hakha": "若是輸入法清單內底無看著客源翠企盤，請登出 Windows 過再登入。" },
     "installerUpdateTaskSkippedNote": { "hakha": "自動檢查更新設定失敗，請在設定內底手動檢查。" },
     "customFontAdd": { "hakha": "加入字型" },
     "customFontMissing": { "hakha": "尋無字型，先用系統字型" },

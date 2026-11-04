@@ -111,22 +111,30 @@ final class ShortcutActionsTests: XCTestCase {
             ],
         )
         XCTAssertEqual(
+            labels(.hakha),
+            [
+                "切換腔頭", "切換客拼/白話字", "切換方音符號", "切換漢字/羅馬字", "切換雙書寫標註", "切換候選詞顯示", "客源翠隨身查詞", "企盤雙行文字重組", "打開符號選單", "打開 Telex 說明",
+                "打開方音符號企盤", "打開設定選單",
+            ],
+        )
+        XCTAssertEqual(
             labels(.japanese),
             [
-                "切換腔頭",
+                "方言を切り替える",
                 "台羅／白話字を切り替える",
                 "方音符号を切り替える",
                 "漢字／ローマ字を切り替える",
                 "二重表記（注釈）の切り替え",
                 "候補の表示を切り替え",
-                "客源翠隨身查詞",
-                "企盤雙行文字重組",
+                "客源翠クイック検索",
+                "企盤2行テキスト再構成",
                 "記号メニューを開く",
                 "Telex の説明を開く",
                 "方音符号ミニキーボードを表示",
                 "設定メニューを開く",
             ],
         )
+        XCTAssertEqual(labels(.english).first, "Switch Dialect")
         XCTAssertEqual(labels(.english).dropFirst().first, "Switch Tâi-lô or Pe̍h-ōe-jī")
         // The trap this replaced: composing a row from the setting's own label produced a doubled
         // verb — "括弧で併記を切り替える", "Toggle Annotate in Brackets".

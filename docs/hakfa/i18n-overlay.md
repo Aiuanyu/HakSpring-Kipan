@@ -39,4 +39,13 @@ A seeded line is Taigi text standing in for Hakfa. Rewrite it before release; `-
 
 ## Adding a Kipan-only key
 
-Not supported yet: every key must exist upstream. If Kipan needs one, add support for overlay-only keys in `hakfa_overlay.py` (with `scope`) rather than adding the key to `i18n/*.json`.
+Kipan-only keys are supported in `i18n/hakfa/<namespace>.json`. Unlike upstream overrides which only declare `values` (e.g. `"key": { "hakha": "…" }`), a Kipan-only key must declare a full entry with `"scope"` and `"values"` (including `"hakha"` as the base language):
+
+```json
+"shortcutSwitchDialect": {
+  "scope": { "platforms": ["macos"], "surfaces": ["host"] },
+  "values": { "hakha": "切換腔頭", "en": "Switch Dialect" }
+}
+```
+
+`hakfa_overlay.py` automatically merges it into the namespace without modifying upstream `i18n/*.json`, and `stale_keys` will not flag it.

@@ -920,17 +920,22 @@ public final class TaigiInputController: IMKInputController {
         simulateKipanCopyConvertPaste()
     }
 
-    /// Hakfa fork: flashes HUD in Hakfa based on active lect (四、大、平: 既經轉雙行; 南、海、安: 已經轉雙行).
+    /// Hakfa fork: flashes HUD based on active lect in Hakfa (四、大、平: 既經轉雙行; 南、海、安: 已經轉雙行),
+    /// or localized message via StringKey.desktopHudKipanConverted in non-Hakfa environments.
     @MainActor
     private func flashKipanConverted() {
-        let text: String
-        switch settings.effectiveLect {
-        case .xiien, .taibu, .ngiaupin:
-            text = "既經轉雙行"
-        case .namxiian, .hoiliug, .zhioon:
-            text = "已經轉雙行"
+        if displayLanguage.language == .hakha {
+            let text: String
+            switch settings.effectiveLect {
+            case .xiien, .taibu, .ngiaupin:
+                text = "既經轉雙行"
+            case .namxiian, .hoiliug, .zhioon:
+                text = "已經轉雙行"
+            }
+            flash(literal: text)
+        } else {
+            flash(.desktopHudKipanConverted)
         }
-        flash(literal: text)
     }
 
     @MainActor

@@ -80,9 +80,19 @@ print("### 客源翠資料有多少（原料）\n")
 print("| 腔 | 教典 | 認證五級（列數合計） | 補字典 | 擬音字 | 跨腔對照組成員 |")
 print("|---|---:|---:|---:|---:|---:|")
 for key, name in LECTS:
-    gip = csv_rows(os.path.join(DATA, f"gip/20250630-{key}.json"))
-    cert = [csv_rows(os.path.join(DATA, f"cert/113{key}{lv}.json")) for lv in ("基", "初", "中", "中高", "高")]
-    cert_total = None if all(c is None for c in cert) else sum(c or 0 for c in cert)
+    gip_files = [f for f in (os.listdir(os.path.join(DATA, "gip")) if os.path.exists(os.path.join(DATA, "gip")) else []) if re.match(rf"^\d{{8}}-{key}\.json$", f)]
+    latest_gip = sorted(gip_files)[-1] if gip_files else None
+    gip = csv_rows(os.path.join(DATA, "gip", latest_gip)) if latest_gip else None
+
+    cert_files = [f for f in (os.listdir(os.path.join(DATA, "cert")) if os.path.exists(os.path.join(DATA, "cert")) else []) if re.match(rf"^\d{{3}}{key}", f)]
+    years = sorted(list(set(m.group(1) for m in (re.match(r"^(\d{3})", f) for f in cert_files) if m)))
+    latest_year = years[-1] if years else None
+    if latest_year:
+        cert = [csv_rows(os.path.join(DATA, "cert", f"{latest_year}{key}{lv}.json")) for lv in ("基", "初", "中", "中高", "高")]
+        cert_total = None if all(c is None for c in cert) else sum(c or 0 for c in cert)
+    else:
+        cert_total = None
+
     supp = csv_rows(os.path.join(DATA, f"supp/補字典-{key}.json"))
     nisim = plain_csv_rows(os.path.join(DATA, f"supp/擬音-{key}.csv"))
     print(f"| {name} | {cell(gip)} | {cell(cert_total)} | {cell(supp)} | {cell(nisim)} | {cell(cross.get(key))} |")
