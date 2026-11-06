@@ -37,7 +37,7 @@ internal fun appConfig(
     isHanjiFirst: Boolean = false,
     isOutputBothScripts: Boolean = false,
     candidateDisplayMode: CandidateDisplayMode = CandidateDisplayMode.SIDE_BY_SIDE,
-    syllableSeparator: SyllableSeparator = SyllableSeparator.HYPHEN,
+    syllableSeparator: SyllableSeparator = SyllableSeparator.NONE,
     isTpsOrMappedToER: Boolean = false,
     lect: Int = ActiveLect.current,
     meinongTones: Boolean = false,

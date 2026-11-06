@@ -140,6 +140,7 @@ interface UserDataClient {
         filter: String,
         limit: Int,
         offset: Int,
+        lect: Int = 0,
     ): LearningRecords
 
     /**
@@ -150,10 +151,11 @@ interface UserDataClient {
     suspend fun setLearningRecordCount(
         record: LearningRecord,
         count: Long,
+        lect: Int = 0,
     ): LearningRecord?
 
     /** Forgets the listed [record]; `false` when it was already gone. */
-    suspend fun deleteLearningRecord(record: LearningRecord): Boolean
+    suspend fun deleteLearningRecord(record: LearningRecord, lect: Int = 0): Boolean
 
     /**
      * Adds the listed row [record]'s word to the custom dictionary (TL as
@@ -161,7 +163,7 @@ interface UserDataClient {
      * the engine then forgets a learned phrase and keeps a frequency row. A refusal — a full dictionary, a reading it cannot
      * store — throws [UserDataException.Refused] and keeps the row.
      */
-    suspend fun addLearningRecordToCustomDictionary(record: LearningRecord)
+    suspend fun addLearningRecordToCustomDictionary(record: LearningRecord, lect: Int = 0)
 
     companion object {
         /**
@@ -244,22 +246,25 @@ object EngineUserDataClient : UserDataClient {
         filter: String,
         limit: Int,
         offset: Int,
-    ): LearningRecords = engine("learningRecordsList") { RustEngineBridge.learningRecordsList(kind, order, filter, limit, offset) }
+        lect: Int,
+    ): LearningRecords = engine("learningRecordsList") { RustEngineBridge.learningRecordsList(kind, order, filter, limit, offset, lect) }
 
     override suspend fun setLearningRecordCount(
         record: LearningRecord,
         count: Long,
+        lect: Int,
     ): LearningRecord? =
-        engine("learningRecordSetCount") { RustEngineBridge.learningRecordSetCount(record, count) }
+        engine("learningRecordSetCount") { RustEngineBridge.learningRecordSetCount(record, count, lect) }
             .takeIf { it.hasRecord() }
             ?.record
 
-    override suspend fun deleteLearningRecord(record: LearningRecord): Boolean = engine("learningRecordDelete") { RustEngineBridge.learningRecordDelete(record) }.removed
+    override suspend fun deleteLearningRecord(record: LearningRecord, lect: Int): Boolean =
+        engine("learningRecordDelete") { RustEngineBridge.learningRecordDelete(record, lect) }.removed
 
     override suspend fun syncLects(dryRun: Boolean): LectsSynced = engine("userDataSyncLects") { RustEngineBridge.syncLects(dryRun = dryRun) }
 
-    override suspend fun addLearningRecordToCustomDictionary(record: LearningRecord) {
-        val added = engine("learningRecordAddToCustomDictionary") { RustEngineBridge.learningRecordAddToCustomDictionary(record) }
+    override suspend fun addLearningRecordToCustomDictionary(record: LearningRecord, lect: Int) {
+        val added = engine("learningRecordAddToCustomDictionary") { RustEngineBridge.learningRecordAddToCustomDictionary(record, lect) }
         if (added.refusal != CustomDictionaryRefusal.CUSTOM_DICTIONARY_REFUSAL_NONE) {
             throw UserDataException.Refused(added.refusal, added.detail)
         }

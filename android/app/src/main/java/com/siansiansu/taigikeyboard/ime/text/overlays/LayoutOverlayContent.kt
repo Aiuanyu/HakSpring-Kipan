@@ -150,8 +150,12 @@ fun LayoutOverlayContent(
         SectionHeader(L10n.layoutRomanizationKeyboard, appearance.foreground, topPadding = if (customLayouts.isEmpty()) 0.dp else 12.dp)
         LayoutCardRow(KeyboardLayoutOptions.romanization, builtInKey, previewInputMode, appearance, onSelect)
 
+        // Hakfa fork: TPS phonetic keyboard (KeyboardLayoutOptions.phonetic) commented out
+        // in layout overlay for beta testing — un-comment below to restore directly.
+        /*
         SectionHeader(L10n.settingsTpsMode, appearance.foreground, topPadding = 12.dp)
         LayoutCardRow(KeyboardLayoutOptions.phonetic, builtInKey, previewInputMode, appearance, onSelect)
+        */
     }
 }
 

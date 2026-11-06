@@ -72,6 +72,7 @@ class LearningRecordsViewModelTest {
             filter: String,
             limit: Int,
             offset: Int,
+            lect: Int,
         ): LearningRecords {
             listCalls += ListCall(kind, order, filter, limit, offset)
             listFailure?.let { throw it }
@@ -100,20 +101,21 @@ class LearningRecordsViewModelTest {
         override suspend fun setLearningRecordCount(
             record: LearningRecord,
             count: Long,
+            lect: Int,
         ): LearningRecord? {
             setCalls += record to count
             writeFailure?.let { throw it }
             return if (isRowGone) null else record.toBuilder().setCount(count).build()
         }
 
-        override suspend fun deleteLearningRecord(record: LearningRecord): Boolean {
+        override suspend fun deleteLearningRecord(record: LearningRecord, lect: Int): Boolean {
             deleteCalls += record
             writeFailure?.let { throw it }
             return !isRowGone
         }
 
         /** Like the engine: a learned phrase leaves the list once added, a frequency row stays; a refusal keeps it. */
-        override suspend fun addLearningRecordToCustomDictionary(record: LearningRecord) {
+        override suspend fun addLearningRecordToCustomDictionary(record: LearningRecord, lect: Int) {
             addCalls += record
             writeFailure?.let { throw it }
             if (record.kind == LearningRecordKind.LEARNING_RECORD_KIND_LEARNED_PHRASE) {

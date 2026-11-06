@@ -27,6 +27,7 @@ enum FontType: String, CaseIterable, Codable {
     case iansui // 芫荽
     case genYoMin // 源樣明體
     case genYoGothic // 源樣烏體
+    case marukoGothic // 丸子黑體
 
     /// The factory default keyboard font. Single source for the `fontType`
     /// setting default, `resetToDefaults()`, and the appearance-settings default.
@@ -40,11 +41,12 @@ enum FontType: String, CaseIterable, Codable {
         case .iansui: KeyboardFonts.iansuiFontName
         case .genYoMin: KeyboardFonts.genYoMinFontName
         case .genYoGothic: KeyboardFonts.genYoGothicFontName
+        case .marukoGothic: KeyboardFonts.marukoGothicFontName
         }
     }
 
     // Reactive: resolved at the call site via the environment store, not a non-reactive getter (Codex Q4).
-    // All five names live in the `common` namespace (`.system` = `commonFontSystemDefault`).
+    // All six names live in the `common` namespace (`.system` = `commonFontSystemDefault`).
     var displayNameKey: StringKey {
         switch self {
         case .system: .commonFontSystemDefault
@@ -52,6 +54,7 @@ enum FontType: String, CaseIterable, Codable {
         case .iansui: .commonFontIansui
         case .genYoMin: .commonFontGenYoMin
         case .genYoGothic: .commonFontGenYoGothic
+        case .marukoGothic: .commonFontMarukoGothic
         }
     }
 }

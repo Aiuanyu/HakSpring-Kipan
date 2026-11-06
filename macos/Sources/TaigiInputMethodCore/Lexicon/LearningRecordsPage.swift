@@ -73,7 +73,7 @@ final class LearningRecordsPageModel {
     /// Hakfa fork (D5): which lect's learning stores the page shows and acts on. The original
     /// files are 四縣's. A new lect makes every load in flight stale and drops the selection
     /// (row ids are per store).
-    var lect: Lect = .xiien {
+    var lect: Lect {
         didSet {
             if oldValue != lect {
                 list.invalidate()
@@ -88,8 +88,9 @@ final class LearningRecordsPageModel {
     /// The client for the lect on screen.
     private var client: any UserDataClient { baseClient.scoped(to: lect.code) }
 
-    init(client: any UserDataClient) {
+    init(client: any UserDataClient, initialLect: Lect = SettingsStore().effectiveLect) {
         baseClient = client
+        lect = initialLect
     }
 
     /// Hakfa fork (D5): reads the per-lect counts; a client that cannot say leaves them empty.
@@ -419,6 +420,12 @@ struct LearningRecordsPage: View {
             }
         }
         .userDataPageChrome(activity: model.activity, message: $model.message)
+        .onAppear {
+            let current = SettingsStore().effectiveLect
+            if model.lect != current {
+                model.lect = current
+            }
+        }
     }
 
     /// What the preview says before anything is copied.

@@ -68,6 +68,8 @@ object L10n {
         @Composable get() = stringRes(StringKey.COMMON_FONT_GEN_YO_MIN)
     val commonFontGenYoGothic: String
         @Composable get() = stringRes(StringKey.COMMON_FONT_GEN_YO_GOTHIC)
+    val commonFontMarukoGothic: String
+        @Composable get() = stringRes(StringKey.COMMON_FONT_MARUKO_GOTHIC)
     val desktopTelexGuideHyphen: String
         @Composable get() = stringRes(StringKey.DESKTOP_TELEX_GUIDE_HYPHEN)
     val desktopDictionarySourcesLink: String

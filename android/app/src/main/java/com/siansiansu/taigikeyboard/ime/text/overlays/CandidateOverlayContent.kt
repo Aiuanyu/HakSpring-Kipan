@@ -48,6 +48,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.TextStyle
+import com.siansiansu.taigikeyboard.ime.text.candidates.CANDIDATE_LINE_HEIGHT_FACTOR
+import com.siansiansu.taigikeyboard.ime.text.candidates.CandidateLineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -411,6 +414,8 @@ private fun CandidateCell(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
+                lineHeight = (PRIMARY_TEXT_SIZE_SP * CANDIDATE_LINE_HEIGHT_FACTOR).sp,
+                style = TextStyle(lineHeightStyle = CandidateLineHeightStyle),
             )
             if (subtitle != null) {
                 Text(
@@ -421,6 +426,8 @@ private fun CandidateCell(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
+                    lineHeight = (SUBTITLE_TEXT_SIZE_SP * CANDIDATE_LINE_HEIGHT_FACTOR).sp,
+                    style = TextStyle(lineHeightStyle = CandidateLineHeightStyle),
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }

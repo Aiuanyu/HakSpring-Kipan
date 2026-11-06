@@ -1,6 +1,7 @@
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -92,9 +93,30 @@ android {
     // the assets root, exactly where TaigiKeyboardApplication opens it.
     sourceSets["main"].assets.srcDir(file("$rootDir/../assets/dictionaries"))
 
+    val signingConfigFile = file("${System.getProperty("user.home")}/.android/kipan-signing.properties")
+    val hasSigningConfig = signingConfigFile.exists()
+    val signingProperties = Properties()
+    if (hasSigningConfig) {
+        signingProperties.load(signingConfigFile.inputStream())
+    }
+
+    signingConfigs {
+        if (hasSigningConfig) {
+            create("release") {
+                storeFile = file(signingProperties.getProperty("RELEASE_STORE_FILE"))
+                storePassword = signingProperties.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = signingProperties.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = signingProperties.getProperty("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             versionNameSuffix = "+dev-$buildDate-$buildTime"
+            if (hasSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         release {
             isMinifyEnabled = true
@@ -103,6 +125,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (hasSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             // Full native symbols so Google Play can symbolicate release crashes
             ndk {
                 debugSymbolLevel = "FULL"

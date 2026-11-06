@@ -6,6 +6,8 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -13,30 +15,42 @@ import androidx.compose.ui.unit.sp
 import com.siansiansu.taigikeyboard.R
 
 // ── Typography ──────────────────────────────────────────────────────────────
-// HuninnFontFamily applied to all slots. Four slots customized to align with iOS:
+// Dynamic FontFamily applied to all slots based on the user's picked fontType.
+// Four slots customized to align with iOS:
 //   headlineLarge = 34sp (page title),  titleMedium = 18sp (section header),
 //   bodyLarge     = 17sp (body text),   labelLarge  = 17sp (caption, aligned with body)
-private val HuninnFontFamily = FontFamily(Font(R.font.jf_openhuninn_2_1))
+val LocalAppFontType = compositionLocalOf { "openHuninn" }
+
+fun getAppFontFamily(fontType: String): FontFamily =
+    when (fontType) {
+        "openHuninn" -> FontFamily(Font(R.font.jf_openhuninn_2_1))
+        "iansui" -> FontFamily(Font(R.font.iansui_regular))
+        "genYoMin" -> FontFamily(Font(R.font.genyomin2tw_r))
+        "genYoGothic" -> FontFamily(Font(R.font.genyogothic2tw_r))
+        "marukoGothic" -> FontFamily(Font(R.font.marukogothic_regular))
+        "system" -> FontFamily.Default
+        else -> FontFamily(Font(R.font.jf_openhuninn_2_1))
+    }
 
 private val DefaultTypography = Typography()
 
-private val AppTypography =
+fun createAppTypography(fontFamily: FontFamily): Typography =
     Typography(
-        displayLarge = DefaultTypography.displayLarge.copy(fontFamily = HuninnFontFamily),
-        displayMedium = DefaultTypography.displayMedium.copy(fontFamily = HuninnFontFamily),
-        displaySmall = DefaultTypography.displaySmall.copy(fontFamily = HuninnFontFamily),
-        headlineLarge = DefaultTypography.headlineLarge.copy(fontFamily = HuninnFontFamily, fontSize = 34.sp),
-        headlineMedium = DefaultTypography.headlineMedium.copy(fontFamily = HuninnFontFamily),
-        headlineSmall = DefaultTypography.headlineSmall.copy(fontFamily = HuninnFontFamily),
-        titleLarge = DefaultTypography.titleLarge.copy(fontFamily = HuninnFontFamily),
-        titleMedium = DefaultTypography.titleMedium.copy(fontFamily = HuninnFontFamily, fontSize = 18.sp),
-        titleSmall = DefaultTypography.titleSmall.copy(fontFamily = HuninnFontFamily),
-        bodyLarge = DefaultTypography.bodyLarge.copy(fontFamily = HuninnFontFamily, fontSize = 17.sp),
-        bodyMedium = DefaultTypography.bodyMedium.copy(fontFamily = HuninnFontFamily),
-        bodySmall = DefaultTypography.bodySmall.copy(fontFamily = HuninnFontFamily),
-        labelLarge = DefaultTypography.labelLarge.copy(fontFamily = HuninnFontFamily, fontSize = 17.sp),
-        labelMedium = DefaultTypography.labelMedium.copy(fontFamily = HuninnFontFamily),
-        labelSmall = DefaultTypography.labelSmall.copy(fontFamily = HuninnFontFamily),
+        displayLarge = DefaultTypography.displayLarge.copy(fontFamily = fontFamily),
+        displayMedium = DefaultTypography.displayMedium.copy(fontFamily = fontFamily),
+        displaySmall = DefaultTypography.displaySmall.copy(fontFamily = fontFamily),
+        headlineLarge = DefaultTypography.headlineLarge.copy(fontFamily = fontFamily, fontSize = 34.sp),
+        headlineMedium = DefaultTypography.headlineMedium.copy(fontFamily = fontFamily),
+        headlineSmall = DefaultTypography.headlineSmall.copy(fontFamily = fontFamily),
+        titleLarge = DefaultTypography.titleLarge.copy(fontFamily = fontFamily),
+        titleMedium = DefaultTypography.titleMedium.copy(fontFamily = fontFamily, fontSize = 18.sp),
+        titleSmall = DefaultTypography.titleSmall.copy(fontFamily = fontFamily),
+        bodyLarge = DefaultTypography.bodyLarge.copy(fontFamily = fontFamily, fontSize = 17.sp),
+        bodyMedium = DefaultTypography.bodyMedium.copy(fontFamily = fontFamily),
+        bodySmall = DefaultTypography.bodySmall.copy(fontFamily = fontFamily),
+        labelLarge = DefaultTypography.labelLarge.copy(fontFamily = fontFamily, fontSize = 17.sp),
+        labelMedium = DefaultTypography.labelMedium.copy(fontFamily = fontFamily),
+        labelSmall = DefaultTypography.labelSmall.copy(fontFamily = fontFamily),
     )
 
 // ── Colors ──────────────────────────────────────────────────────────────────
@@ -134,13 +148,15 @@ private val DarkColorScheme =
 @Composable
 fun TaigiKeyboardTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    fontType: String = LocalAppFontType.current,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val typography = remember(fontType) { createAppTypography(getAppFontFamily(fontType)) }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = AppTypography,
+        typography = typography,
         content = content,
     )
 }

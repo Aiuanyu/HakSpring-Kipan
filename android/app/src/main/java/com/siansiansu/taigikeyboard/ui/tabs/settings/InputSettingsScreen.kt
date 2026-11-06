@@ -339,6 +339,10 @@ fun InputSettingsScreen(
 
                 Spacer(Modifier.height(24.dp))
 
+                // Hakfa fork: POJ and TPS specific settings (doubleTapOO, doubleTapNN, nasalMarker,
+                // tpsOrMapsToER) are upstream Taigi features not implemented in Hakfa Kipan yet;
+                // commented out for beta test — un-comment below to restore directly.
+                /*
                 // Mode-specific settings follow Typing / Keyboard (default mode is TL): POJ, then TPS. Feedback closes the settings. Mirrors iOS SettingsTab.
                 SectionHeader(L10n.settingsPojMode)
                 SettingsCard {
@@ -385,6 +389,7 @@ fun InputSettingsScreen(
                 }
 
                 Spacer(Modifier.height(24.dp))
+                */
 
                 SectionHeader(L10n.settingsFeedbackSectionTitle)
                 SettingsCard {

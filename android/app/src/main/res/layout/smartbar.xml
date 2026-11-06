@@ -114,11 +114,13 @@
             android:visibility="gone"
             tools:ignore="HardcodedText">
 
+            <!-- Hakfa fork: PFS mode button hidden for beta test. Remove android:visibility="gone" to restore. -->
             <Button
                 android:id="@+id/toolbar_mode_poj"
                 style="@style/SmartbarToolbarMode"
                 android:singleLine="true"
                 android:ellipsize="none"
+                android:visibility="gone"
                 android:text="PFS" />
 
             <Button
@@ -135,11 +137,13 @@
                 android:ellipsize="none"
                 android:text="EN" />
 
+            <!-- Hakfa fork: TPS mode button hidden for beta test. Remove android:visibility="gone" to restore. -->
             <Button
                 android:id="@+id/toolbar_mode_tps"
                 style="@style/SmartbarToolbarMode"
                 android:singleLine="true"
                 android:ellipsize="none"
+                android:visibility="gone"
                 android:text="TPS" />
 
             <!-- Symbol panel -->

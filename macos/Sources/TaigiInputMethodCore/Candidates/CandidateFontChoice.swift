@@ -31,6 +31,8 @@ enum CandidateFontChoice: String, CaseIterable, Sendable {
     case genYoMin
     /// 源樣烏體 (GenYoGothic), sans-serif.
     case genYoGothic
+    /// 丸子黑體 (Maruko Gothic).
+    case marukoGothic
 
     /// The PostScript name to ask AppKit for, or nil for the system font.
     ///
@@ -45,6 +47,7 @@ enum CandidateFontChoice: String, CaseIterable, Sendable {
         case .iansui: "Iansui-Regular"
         case .genYoMin: "GenYoMin2TW-R"
         case .genYoGothic: "GenYoGothic2TW-R"
+        case .marukoGothic: "MarukoGothicCJKtc-Regular"
         }
     }
 
@@ -57,6 +60,7 @@ enum CandidateFontChoice: String, CaseIterable, Sendable {
         case .iansui: .commonFontIansui
         case .genYoMin: .commonFontGenYoMin
         case .genYoGothic: .commonFontGenYoGothic
+        case .marukoGothic: .commonFontMarukoGothic
         }
     }
 

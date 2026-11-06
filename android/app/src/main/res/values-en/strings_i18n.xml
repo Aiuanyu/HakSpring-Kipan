@@ -32,6 +32,7 @@
     <string name="i18n_common_fontIansui">Iansui</string>
     <string name="i18n_common_fontGenYoMin">GenYoMin</string>
     <string name="i18n_common_fontGenYoGothic">GenYoGothic</string>
+    <string name="i18n_common_fontMarukoGothic">Maruko Gothic</string>
     <string name="i18n_desktop_telexGuideHyphen">Hyphen</string>
     <string name="i18n_desktop_dictionarySourcesLink">Manage Dictionaries</string>
     <string name="i18n_dictionary_customDictionary">Custom Dictionary</string>

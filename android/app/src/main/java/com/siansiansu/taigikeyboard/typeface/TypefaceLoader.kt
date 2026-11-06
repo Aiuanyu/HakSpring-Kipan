@@ -16,6 +16,7 @@ object TypefaceLoader {
         IANSUI("iansui"),
         GEN_YO_MIN("genYoMin"),
         GEN_YO_GOTHIC("genYoGothic"),
+        MARUKO_GOTHIC("marukoGothic"),
     }
 
     private fun loadTypeface(
@@ -36,6 +37,8 @@ object TypefaceLoader {
 
     private fun getGenYoGothicTypeface(context: Context): Typeface = loadTypeface(context, R.font.genyogothic2tw_r)
 
+    private fun getMarukoGothicTypeface(context: Context): Typeface = loadTypeface(context, R.font.marukogothic_regular)
+
     fun getTypefaceByType(
         fontType: String,
         context: Context,
@@ -50,6 +53,8 @@ object TypefaceLoader {
             FontType.GEN_YO_MIN.value -> getGenYoMinTypeface(context)
 
             FontType.GEN_YO_GOTHIC.value -> getGenYoGothicTypeface(context)
+
+            FontType.MARUKO_GOTHIC.value -> getMarukoGothicTypeface(context)
 
             // Default to OpenHuninn for unrecognized values from preferences
             else -> getOpenHuninnTypeface(context)

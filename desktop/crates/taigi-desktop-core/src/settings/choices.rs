@@ -282,6 +282,7 @@ pub enum CandidateFontChoice {
     Iansui,
     GenYoMin,
     GenYoGothic,
+    MarukoGothic,
 }
 
 impl CandidateFontChoice {
@@ -294,6 +295,7 @@ impl CandidateFontChoice {
             Self::Iansui => StringKey::CommonFontIansui,
             Self::GenYoMin => StringKey::CommonFontGenYoMin,
             Self::GenYoGothic => StringKey::CommonFontGenYoGothic,
+            Self::MarukoGothic => StringKey::CommonFontMarukoGothic,
         }
     }
 
@@ -310,6 +312,7 @@ impl CandidateFontChoice {
             Self::Iansui => Some("iansui_regular.ttf"),
             Self::GenYoMin => Some("genyomin2tw_r.otf"),
             Self::GenYoGothic => Some("genyogothic2tw_r.otf"),
+            Self::MarukoGothic => Some("marukogothic_regular.ttf"),
         }
     }
 }
@@ -402,6 +405,7 @@ impl SettingChoice for CandidateFontChoice {
         Self::Iansui,
         Self::GenYoMin,
         Self::GenYoGothic,
+        Self::MarukoGothic,
     ];
     const DEFAULT: Self = Self::System;
     fn raw(self) -> &'static str {
@@ -411,6 +415,7 @@ impl SettingChoice for CandidateFontChoice {
             Self::Iansui => "iansui",
             Self::GenYoMin => "genYoMin",
             Self::GenYoGothic => "genYoGothic",
+            Self::MarukoGothic => "marukoGothic",
         }
     }
 }

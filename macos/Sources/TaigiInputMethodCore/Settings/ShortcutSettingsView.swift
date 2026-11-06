@@ -116,9 +116,23 @@ struct ShortcutSettingsView: View {
             // Three blocks since 2026-10-16 (USER), by what each action is
             // about: Romanization, Phonetic Symbols, Other
             // (`ShortcutAction.groups`).
+            // Hakfa fork: unimplemented TPS mode, Telex guide, and Romanization/POJ toggle
+            // are filtered/commented out for beta test — restore original ForEach to re-enable.
+            /*
             ForEach(ShortcutAction.groups, id: \.title) { group in
                 Section {
                     ForEach(group.actions, id: \.self) { action in
+                        globalRecorderRow(action)
+                    }
+                } header: {
+                    Text(language.string(group.title))
+                }
+            }
+            */
+            ForEach(ShortcutAction.groups.filter { $0.title != .settingsTpsMode }, id: \.title) { group in
+                let visibleActions = group.actions.filter { $0 != .showTelexGuide && $0 != .toggleRomanization }
+                Section {
+                    ForEach(visibleActions, id: \.self) { action in
                         globalRecorderRow(action)
                     }
                 } header: {

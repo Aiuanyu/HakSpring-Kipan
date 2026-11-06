@@ -111,6 +111,24 @@ object CopyrightDataSource {
                         ),
                     ),
             ),
+            // 丸子黑體
+            CopyrightPage(
+                id = 99,
+                title = resolver.resolve(StringKey.COMMON_FONT_MARUKO_GOTHIC),
+                description = "© Maruko Gothic Authors",
+                license = SIL_OPEN_FONT_LICENSE_11,
+                buttons =
+                    listOf(
+                        CopyrightButton(
+                            text = resolver.resolve(StringKey.HOME_VIEW_LICENSE),
+                            url = SIL_OFL_LICENSE_URL,
+                        ),
+                        CopyrightButton(
+                            text = resolver.resolve(StringKey.COMMON_VIEW_WEBSITE),
+                            url = "https://github.com/syimyuz/maruko-gothic",
+                        ),
+                    ),
+            ),
             // Dictionaries
             // 1. 教育部臺灣台語常用詞辭典
             CopyrightPage(

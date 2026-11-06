@@ -3,7 +3,7 @@
     {
       "id": "installIssue",
       "title": {
-        "hanji": "齒盤裝好了後無出現",
+        "hanji": "企盤安裝好之後無出現",
         "tailo": "Khí-puânn tsong hó liáu-āu bô tshut-hiān",
         "poj": "Khí-pôaⁿ chong hó liáu-āu bô chhut-hiān",
         "en": "The keyboard doesn't appear after installing",
@@ -16,7 +16,7 @@
       "paragraphs": [
         {
           "text": {
-            "hanji": "1. 先檢查齒盤敢有照「啟用方法」設定好。",
+            "hanji": "1. 先檢查企盤敢有照「啟用方法」設定好。",
             "tailo": "1. Sian kiám-tsa khí-puânn kám ū tsiàu\"khé-iōng hong-huat\" siat-tīng hó.",
             "poj": "1. Sian kiám-cha khí-pôaⁿ kám ū chiàu\"khé-iōng hong-hoat\" siat-tēng hó.",
             "en": "1. First check whether the keyboard has been set up according to the “How to enable” guide.",
@@ -25,7 +25,7 @@
           "attachment": {
             "type": "navigation",
             "text": {
-              "hanji": "揤遮去看「啟用方法」",
+              "hanji": "按遮看「啟用方法」",
               "tailo": "Tshi̍h jia khì khuànn\"khé-iōng hong-huat\"",
               "poj": "Chhi̍h jia khì khòaⁿ\"khé-iōng hong-hoat\"",
               "en": "Tap here to see “How to enable”",
@@ -40,7 +40,7 @@
         },
         {
           "text": {
-            "hanji": "2. 重開你當咧使用的 App，予 App 重新掠著齒盤。",
+            "hanji": "2. 重開你當在用个 App，分 App 重新捉著企盤。",
             "tailo": "2. Tîng-khui lí tng-teh sú-iōng ê App, hōo App tîng-sin lia̍h-tio̍h khí-puânn.",
             "poj": "2. Têng-khui lí tng-teh sú-iōng ê App, hō͘ App tîng-sin lia̍h-tio̍h khí-pôaⁿ.",
             "en": "2. Restart the app you are using so that it re-detects the keyboard.",
@@ -49,7 +49,7 @@
         },
         {
           "text": {
-            "hanji": "3. 佇會當拍字的所在，揤牢地球圖示就會使切去台語齒盤。",
+            "hanji": "3. 在做得打字各位所，長按地球圖示就做得切換去客源翠企盤。",
             "tailo": "3. Tī ē-tàng phah-jī ê sóo-tsāi, tshi̍h tiâu tuē-kiû tôo-sī tsiū ē-sái tshiat khì tâi-gí khí-puânn.",
             "poj": "3. Tī ē-tàng phah-jī ê só͘-chāi, chhi̍h tiâu tōe-kiû tô͘-sī chiū ē-sái chhiat khì tâi-gí khí-pôaⁿ.",
             "en": "3. Where you can type, press and hold the globe icon to switch to TaigiKeyboard.",
@@ -74,7 +74,7 @@
       "paragraphs": [
         {
           "text": {
-            "hanji": "若回報了後猶未收到回覆，請閣送 1 擺，抑是直接聯絡我。",
+            "hanji": "若回報之後還吂收到回覆，請過送 1 擺，抑係直接聯絡𠊎兜。",
             "tailo": "Nā huê-pò liáu-āu iáu-buē siu-tio̍h huê-hok, tshiánn koh sàng 1 pái, ah-sī ti̍t-tsiap liân-lo̍k guá.",
             "poj": "Nā hôe-pò liáu-āu iáu-bōe siu-tio̍h hôe-hok, chhiáⁿ koh sàng 1 pái, ah-sī ti̍t-chiap liân-lo̍k góa.",
             "en": "If you have not received a reply, send the report again or contact me directly.",
@@ -83,7 +83,7 @@
           "attachment": {
             "type": "navigation",
             "text": {
-              "hanji": "揤遮看「關於」",
+              "hanji": "按遮看「關於」",
               "tailo": "Tshi̍h jia khuànn\"kuan-î\"",
               "poj": "Chhi̍h jia khòaⁿ\"koan-î\"",
               "en": "Tap here to see “About”",
@@ -101,7 +101,7 @@
     {
       "id": "samsungSwitch",
       "title": {
-        "hanji": "三星手機仔齒盤切換",
+        "hanji": "三星手機企盤切換",
         "tailo": "Sann-tshenn tshiú-ki-á khí-puânn tshiat-uānn",
         "poj": "Saⁿ-chheⁿ chhiú-ki-á khí-pôaⁿ chhiat-ōaⁿ",
         "en": "Switching keyboards on Samsung phones",
@@ -114,7 +114,7 @@
       "paragraphs": [
         {
           "text": {
-            "hanji": "若三星齒盤倒爿下跤無地球揤鈕，會當共 mài-kù 揤鈕改做齒盤切換揤鈕。",
+            "hanji": "若三星企盤左手邊下背無地球按鈕，做得摎麥克風按鈕改做企盤切換按鈕。",
             "tailo": "Nā sann-tshenn khí-puânn tò-pîng ē-kha bô tuē-kiû tshi̍h-liú, ē-tàng kā mài-kù tshi̍h-liú kái tsò khí-puânn tshiat-uānn tshi̍h-liú.",
             "poj": "Nā saⁿ-chheⁿ khí-pôaⁿ tò-pêng ē-kha bô tōe-kiû chhi̍h-liú, ē-tàng kā mài-kù chhi̍h-liú kái chò khí-pôaⁿ chhiat-ōaⁿ chhi̍h-liú.",
             "en": "If the Samsung keyboard has no globe key at the bottom-left, you can change the microphone button into a keyboard-switch button.",
@@ -123,7 +123,7 @@
         },
         {
           "text": {
-            "hanji": "1. 揣著三星齒盤倒爿下跤的 mài-kù 揤鈕，伊預設是語音輸入。",
+            "hanji": "1. 尋著三星企盤左手邊下背个麥克風按鈕，佢預設係語音輸入。",
             "tailo": "1. Tshuē-tio̍h sann-tshenn khí-puânn tò-pîn ē-kha ê mài-kù tshi̍h-liú, i ī-siat sī gí-im su-ji̍p.",
             "poj": "1. Chhōe-tio̍h saⁿ-chheⁿ khí-pôaⁿ tò-pîn ē-kha ê mài-kù chhi̍h-liú, i ī-siat sī gí-im su-ji̍p.",
             "en": "1. Find the mic button at the bottom-left of the Samsung keyboard; by default it is voice input.",
@@ -136,7 +136,7 @@
         },
         {
           "text": {
-            "hanji": "2. 揤牢 mài-kù 揤鈕，共伊改做「輸入法」。",
+            "hanji": "2. 長按麥克風按鈕，摎佢改做「輸入法」。",
             "tailo": "2. Tshi̍h tiâu mài-kù tshi̍h-liú, kā-i kué-tsò\"su-ji̍p-hoat\".",
             "poj": "2. Chhi̍h tiâu mài-kù chhi̍h-liú, kā-i kóe-chò\"su-ji̍p-hoat\".",
             "en": "2. Press and hold the mic button and change it to “input method.”",
@@ -149,7 +149,7 @@
         },
         {
           "text": {
-            "hanji": "3. 揤鈕會變做齒盤圖示，閣揤一擺著會當切換齒盤。",
+            "hanji": "3. 按鈕會變做企盤圖示，過按一擺就做得切換企盤。",
             "tailo": "3. Tshi̍h-liú ē piàn-tsò khí-puânn tôo-sī, koh tshi̍h tsi̍t pái tio̍h ē-tàng tshiat-uānn khí-puânn.",
             "poj": "3. Chhi̍h-liú ē piàn-chò khí-pôaⁿ tô͘-sī, koh chhi̍h chi̍t pái tio̍h ē-tàng chhiat-ōaⁿ khí-pôaⁿ.",
             "en": "3. The button becomes a keyboard icon; press it again and you can switch keyboards.",

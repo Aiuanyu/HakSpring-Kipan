@@ -108,6 +108,12 @@ fun FontPickerContent(
                         isSelected = fontType == FontType.GEN_YO_GOTHIC.value,
                         onClick = { onFontSelected(FontType.GEN_YO_GOTHIC.value) },
                     )
+                    SettingsDivider()
+                    FontPickerRow(
+                        label = L10n.commonFontMarukoGothic,
+                        isSelected = fontType == FontType.MARUKO_GOTHIC.value,
+                        onClick = { onFontSelected(FontType.MARUKO_GOTHIC.value) },
+                    )
                 }
             }
         }
@@ -154,5 +160,6 @@ internal fun fontDisplayName(fontType: String): String =
         FontType.IANSUI.value -> L10n.commonFontIansui
         FontType.GEN_YO_MIN.value -> L10n.commonFontGenYoMin
         FontType.GEN_YO_GOTHIC.value -> L10n.commonFontGenYoGothic
+        FontType.MARUKO_GOTHIC.value -> L10n.commonFontMarukoGothic
         else -> fontType
     }

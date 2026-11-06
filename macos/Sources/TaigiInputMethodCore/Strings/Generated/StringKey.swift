@@ -29,6 +29,7 @@ enum StringKey: String {
     case commonFontIansui = "i18n_common_fontIansui"
     case commonFontGenYoMin = "i18n_common_fontGenYoMin"
     case commonFontGenYoGothic = "i18n_common_fontGenYoGothic"
+    case commonFontMarukoGothic = "i18n_common_fontMarukoGothic"
     case desktopGeneralTab = "i18n_desktop_generalTab"
     case desktopShortcutSectionCandidateSelection = "i18n_desktop_shortcutSectionCandidateSelection"
     case desktopShortcutSectionOutput = "i18n_desktop_shortcutSectionOutput"

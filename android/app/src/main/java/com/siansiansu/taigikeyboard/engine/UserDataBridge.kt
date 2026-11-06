@@ -222,6 +222,7 @@ fun RustEngineBridge.learningRecordsList(
     filter: String,
     limit: Int,
     offset: Int,
+    lect: Int = 0,
 ): LearningRecords? {
     val list = ListLearningRecords
         .newBuilder()
@@ -230,6 +231,7 @@ fun RustEngineBridge.learningRecordsList(
         .setFilter(filter)
         .setLimit(limit)
         .setOffset(offset)
+        .setLect(lect)
         .build()
     return userData("learningRecordsList") { setListLearningRecords(list) }
         ?.takeIf { it.hasLearningRecords() }
@@ -240,27 +242,29 @@ fun RustEngineBridge.learningRecordsList(
 fun RustEngineBridge.learningRecordSetCount(
     record: LearningRecord,
     count: Long,
+    lect: Int = 0,
 ): LearningRecordSaved? {
     val set = SetLearningRecordCount
         .newBuilder()
         .setRecord(record)
         .setCount(count)
+        .setLect(lect)
         .build()
     return userData("learningRecordSetCount") { setSetLearningRecordCount(set) }
         ?.takeIf { it.hasLearningRecordSaved() }
         ?.learningRecordSaved
 }
 
-fun RustEngineBridge.learningRecordDelete(record: LearningRecord): LearningRecordDeleted? {
-    val delete = DeleteLearningRecord.newBuilder().setRecord(record).build()
+fun RustEngineBridge.learningRecordDelete(record: LearningRecord, lect: Int = 0): LearningRecordDeleted? {
+    val delete = DeleteLearningRecord.newBuilder().setRecord(record).setLect(lect).build()
     return userData("learningRecordDelete") { setDeleteLearningRecord(delete) }
         ?.takeIf { it.hasLearningRecordDeleted() }
         ?.learningRecordDeleted
 }
 
 /** Adds the listed row's word to the custom dictionary (a learned phrase is then forgotten, a frequency row kept); a refusal keeps the row. */
-fun RustEngineBridge.learningRecordAddToCustomDictionary(record: LearningRecord): LearningRecordAddedToCustomDictionary? {
-    val add = AddLearningRecordToCustomDictionary.newBuilder().setRecord(record).build()
+fun RustEngineBridge.learningRecordAddToCustomDictionary(record: LearningRecord, lect: Int = 0): LearningRecordAddedToCustomDictionary? {
+    val add = AddLearningRecordToCustomDictionary.newBuilder().setRecord(record).setLect(lect).build()
     return userData("learningRecordAddToCustomDictionary") { setAddLearningRecordToCustomDictionary(add) }
         ?.takeIf { it.hasLearningRecordAddedToCustomDictionary() }
         ?.learningRecordAddedToCustomDictionary

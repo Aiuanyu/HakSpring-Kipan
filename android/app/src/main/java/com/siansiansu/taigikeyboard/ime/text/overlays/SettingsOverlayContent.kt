@@ -72,6 +72,7 @@ fun SettingsOverlayContent(
                 "iansui" -> FontFamily(Font(R.font.iansui_regular))
                 "genYoMin" -> FontFamily(Font(R.font.genyomin2tw_r))
                 "genYoGothic" -> FontFamily(Font(R.font.genyogothic2tw_r))
+                "marukoGothic" -> FontFamily(Font(R.font.marukogothic_regular))
                 else -> FontFamily.Default
             }
         }
@@ -253,6 +254,10 @@ fun SettingsOverlayContent(
             switchColors = switchColors,
         )
 
+        // Hakfa fork: POJ and TPS specific settings (doubleTapOO, doubleTapNN, nasalMarker,
+        // tpsOrMapsToER) are upstream Taigi features not implemented in Hakfa Kipan yet;
+        // commented out for beta test — un-comment below to restore directly.
+        /*
         SectionHeader(L10n.settingsPojMode, labelColor)
         SwitchRow(
             label = L10n.settingsDoubleTapOO,
@@ -305,6 +310,7 @@ fun SettingsOverlayContent(
             fontFamily = fontFamily,
             switchColors = switchColors,
         )
+        */
 
         SectionHeader(L10n.settingsFeedbackSectionTitle, labelColor)
         SwitchRow(

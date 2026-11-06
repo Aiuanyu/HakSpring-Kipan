@@ -194,7 +194,7 @@ fun RustEngineBridge.nextwordPredictNext(
     hanjiFirst: Boolean,
     generation: Long,
     candidateDisplayMode: CandidateDisplayMode = CandidateDisplayMode.SIDE_BY_SIDE,
-    syllableSeparator: SyllableSeparator = SyllableSeparator.HYPHEN,
+    syllableSeparator: SyllableSeparator = SyllableSeparator.NONE,
 ): RustEngineBridge.NextWordFilterResult {
     val builder = com.siansiansu.taigikeyboard.engine.proto.PredictNext
         .newBuilder()

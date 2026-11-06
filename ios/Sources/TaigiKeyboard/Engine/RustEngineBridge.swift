@@ -150,7 +150,7 @@ public enum RustEngineBridge {
         isHanjiFirst: Bool = false,
         isOutputBothScripts: Bool = false,
         candidateDisplayMode: CandidateDisplayMode = .sideBySide,
-        syllableSeparator: SyllableSeparator = .hyphen,
+        syllableSeparator: SyllableSeparator = .noSeparator,
         isTpsOrMappedToER: Bool = false,
     ) -> Taigi_Engine_AppConfig {
         var cfg = Taigi_Engine_AppConfig()

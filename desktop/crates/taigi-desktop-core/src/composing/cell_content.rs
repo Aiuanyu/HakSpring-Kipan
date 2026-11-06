@@ -156,20 +156,20 @@ mod tests {
 
     #[test]
     fn annotate_in_brackets_shows_the_second_script_in_the_brackets_the_commit_writes() {
-        // Hakfa fork (USER 2026-10-21): the window previews `臺灣 (Tǒivǎn)`.
+        // Hakfa fork (USER 2026-10-21, 2026-11-01): the window previews `臺灣 [tǒi-vǎn]` (Square brackets).
         let c = candidate("tǒi-vǎn", Some("臺灣"), 0);
         let mut brackets = settings(true);
         brackets.is_output_both_scripts = true;
         assert_eq!(
             CandidateCellContent::cell(&c, &brackets),
-            CandidateCellContent::new("臺灣", Some("(tǒi-vǎn)".to_owned()))
+            CandidateCellContent::new("臺灣", Some("[tǒi-vǎn]".to_owned()))
         );
-        // Roman-first: the Hanji is the one in brackets, as `tǒi-vǎn (臺灣)` is written.
+        // Roman-first: the Hanji is the one in brackets, as `tǒi-vǎn [臺灣]` is written.
         let mut roman_first = settings(false);
         roman_first.is_output_both_scripts = true;
         assert_eq!(
             CandidateCellContent::cell(&c, &roman_first),
-            CandidateCellContent::new("tǒi-vǎn", Some("(臺灣)".to_owned()))
+            CandidateCellContent::new("tǒi-vǎn", Some("[臺灣]".to_owned()))
         );
         // A candidate with no Hanji has no second script, so nothing to bracket.
         let plain = candidate("tǒi-vǎn", None, 0);

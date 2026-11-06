@@ -37,7 +37,7 @@ final class CandidateFontChoiceTests: XCTestCase {
     func testRawValues_areTheIOSFontTypeSpellings() {
         XCTAssertEqual(
             CandidateFontChoice.allCases.map(\.rawValue),
-            ["system", "openHuninn", "iansui", "genYoMin", "genYoGothic"],
+            ["system", "openHuninn", "iansui", "genYoMin", "genYoGothic", "marukoGothic"],
         )
     }
 

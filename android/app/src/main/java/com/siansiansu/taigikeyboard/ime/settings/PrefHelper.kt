@@ -347,7 +347,7 @@ class PrefHelper(
     override var syllableSeparator: SyllableSeparator
         get() =
             SyllableSeparator.fromStorage(
-                cached(PreferenceKeys.SYLLABLE_SEPARATOR, SyllableSeparator.HYPHEN.storageValue),
+                cached(PreferenceKeys.SYLLABLE_SEPARATOR, SyllableSeparator.NONE.storageValue),
             )
         set(value) = updateCacheAndPersist(PreferenceKeys.SYLLABLE_SEPARATOR, value.storageValue)
 
@@ -887,6 +887,16 @@ class PrefHelper(
         dataStore.data
             .map { prefs ->
                 prefs[PreferenceKeys.DISPLAY_LANGUAGE] ?: DisplayLanguage.DEFAULT_TAG
+            }.distinctUntilChanged()
+
+    /**
+     * Observes fontType changes as a Flow, so the app UI recomposes live whenever
+     * the user picks a different typeface in Settings.
+     */
+    fun observeFontType(): Flow<String> =
+        dataStore.data
+            .map { prefs ->
+                prefs[PreferenceKeys.FONT_TYPE] ?: DEFAULT_FONT_TYPE
             }.distinctUntilChanged()
 
     /**

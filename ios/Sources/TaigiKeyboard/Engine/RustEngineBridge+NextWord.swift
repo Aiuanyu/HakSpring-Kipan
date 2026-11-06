@@ -222,7 +222,7 @@ public extension RustEngineBridge {
         mode: InputMode,
         hanjiFirst: Bool,
         candidateDisplayMode: CandidateDisplayMode = .sideBySide,
-        syllableSeparator: SyllableSeparator = .hyphen,
+        syllableSeparator: SyllableSeparator = .noSeparator,
         generation: UInt64,
     ) -> NextWordFilterResult {
         var payload = Taigi_Engine_PredictNext()

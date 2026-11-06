@@ -688,6 +688,28 @@
         "en": "GenYoGothic",
         "ja": "GenYoGothic"
       }
+    },
+    "fontMarukoGothic": {
+      "comment": "Keyboard font option: Maruko Gothic (丸仔烏體) typeface.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "丸仔烏體（Maruko Gothic）",
+        "tailo": "Uân-tsú oo-thé",
+        "poj": "Oân-chú o͘-thé",
+        "en": "Maruko Gothic",
+        "ja": "まるこゴシック"
+      }
     }
   }
 }

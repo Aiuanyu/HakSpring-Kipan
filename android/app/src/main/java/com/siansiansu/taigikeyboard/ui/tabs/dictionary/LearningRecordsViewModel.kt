@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.siansiansu.taigikeyboard.engine.ActiveLect
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecord
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordKind
 import com.siansiansu.taigikeyboard.engine.proto.LearningRecordOrder
@@ -61,6 +62,8 @@ sealed interface LearningRecordsMessage {
 
 data class LearningRecordsState(
     val order: LearningRecordOrder = LearningRecordOrder.LEARNING_RECORD_ORDER_MOST_USED,
+    /** Hakfa fork: the lect whose learning stores are viewed (1, 6, 2, 3, 4, 5). */
+    val lect: Int = ActiveLect.current,
     /** The search box as typed; the engine gets it trimmed. */
     val filter: String = "",
     /** The rows loaded so far, from the first. */
@@ -118,6 +121,13 @@ class LearningRecordsViewModel internal constructor(
         reload()
     }
 
+    /** Hakfa fork: selects the lect whose learning records are viewed. */
+    fun selectLect(lect: Int) {
+        if (lect == _state.value.lect) return
+        _state.update { it.copy(lect = lect, records = emptyList(), total = 0, matchingTotal = 0) }
+        reload()
+    }
+
     fun updateFilter(filter: String) {
         _state.update { it.copy(filter = filter) }
         reload(settleMillis = LEARNING_RECORDS_FILTER_SETTLE_MILLIS)
@@ -147,15 +157,15 @@ class LearningRecordsViewModel internal constructor(
     fun setCount(
         record: LearningRecord,
         count: Long,
-    ) = write { goneUnless(userData.setLearningRecordCount(record, count) != null) }
+    ) = write { goneUnless(userData.setLearningRecordCount(record, count, _state.value.lect) != null) }
 
     /** No confirmation, like deleting one custom word: the keyboard learns the row again on the next pick. */
-    fun delete(record: LearningRecord) = write { goneUnless(userData.deleteLearningRecord(record)) }
+    fun delete(record: LearningRecord) = write { goneUnless(userData.deleteLearningRecord(record, _state.value.lect)) }
 
     /** Offered where `canAddToCustomDictionary` — the engine forgets a learned phrase, keeps a frequency row; a refusal keeps the row and is said. */
     fun addToCustomDictionary(record: LearningRecord) =
         write {
-            userData.addLearningRecordToCustomDictionary(record)
+            userData.addLearningRecordToCustomDictionary(record, _state.value.lect)
             LearningRecordsMessage.AddedToCustomDictionary
         }
 
@@ -250,7 +260,7 @@ class LearningRecordsViewModel internal constructor(
         whenFailed: FailedRead,
     ): LearningRecords? =
         try {
-            userData.listLearningRecords(kind, asked.order, asked.filter.trim(), limit, offset)
+            userData.listLearningRecords(kind, asked.order, asked.filter.trim(), limit, offset, asked.lect)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

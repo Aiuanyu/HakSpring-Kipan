@@ -53,7 +53,7 @@ final class SharedSettings {
     private static let isAutoSpaceEnabledKey: SettingsKey<Bool> = .bool("autoSpaceEnabled", default: false)
     private static let isLiteralRomanCandidateEnabledKey: SettingsKey<Bool> = .bool("literalRomanCandidateEnabled", default: false)
     // Raw string key shared by every platform; unknown / malformed → `.hyphen`.
-    private static let syllableSeparatorKey: SettingsKey<SyllableSeparator> = .rawRep("syllableSeparator", default: .hyphen)
+    private static let syllableSeparatorKey: SettingsKey<SyllableSeparator> = .rawRep("syllableSeparator", default: .noSeparator)
     // Retired 2026-10-06: the No Hyphens switch, carried over by `carryOverHyphenlessRoman()`.
     private static let retiredHyphenlessRomanEnabledKey: SettingsKey<Bool> = .bool("hyphenlessRomanEnabled", default: false)
     private static let isCustomDictEnabledKey: SettingsKey<Bool> = .bool("customDictEnabled", default: true)
@@ -765,7 +765,7 @@ final class SharedSettings {
         storedIsOutputBothScripts = false
         candidateDisplayMode = .sideBySide
         isLiteralRomanCandidateEnabled = false
-        syllableSeparator = .hyphen
+        syllableSeparator = .noSeparator
         fontType = .keyboardDefault
         isAutoSpaceEnabled = false
         keyboardLayoutType = .phahTaigi

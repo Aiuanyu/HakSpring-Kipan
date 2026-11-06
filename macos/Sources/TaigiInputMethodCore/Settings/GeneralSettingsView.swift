@@ -95,8 +95,10 @@ struct GeneralSettingsView: View {
                 // a difference that means something. Input Script / Output Script name
                 // the pair (USER 2026-09-18); mobile keeps Input Mode, whose
                 // picker also holds TPS.
+                // Hakfa fork: only HagPinPlus (tl) is implemented in Hakfa; POJ and TPS are commented out for beta test — un-comment to restore.
                 Picker(language.string(.settingsInputScript), selection: inputModeSelection) {
-                    ForEach(InputMode.allCases, id: \.self) { mode in
+                    // ForEach(InputMode.allCases, id: \.self) { mode in
+                    ForEach([InputMode.tl], id: \.self) { mode in
                         Text(language.string(mode.displayNameKey)).tag(mode)
                     }
                 }
@@ -109,15 +111,14 @@ struct GeneralSettingsView: View {
                 }
                 .disabled(inputMode == .tps)
 
-                // Which keys type a tone is a fact about how the syllable is
-                // spelled, not a shortcut (USER 2026-09-08), and the slot
-                // keys follow from it rather than being chosen on the
-                // shortcut pane. Under Input Script because both say what the
-                // user types.
+                // Tone input schemes for Hakfa:
+                // - standard: symbol indices 1 2 3 4 5 6 7 -> á à â ǎ ā
+                // - scale: 5-degree pitch scale (24 33 53...)
+                // (Telex is commented out for beta test — un-comment to restore)
                 Picker(language.string(.settingsToneInputScheme), selection: $toneInputScheme) {
                     Text(language.string(.settingsToneSchemeStandard)).tag(ToneInputScheme.standard)
                     Text(language.string(.settingsToneSchemeScale)).tag(ToneInputScheme.scale)
-                    Text(language.string(.settingsToneSchemeTelex)).tag(ToneInputScheme.telex)
+                    // Text(language.string(.settingsToneSchemeTelex)).tag(ToneInputScheme.telex)
                 }
 
                 // S33 (USER 2026-09-08): off means no window at all — the
@@ -156,13 +157,16 @@ struct GeneralSettingsView: View {
                     }
                 }
 
+                // Hakfa fork: Nasal mark in POJ capitals (ᴺ/ⁿ) is Taigi-specific and not applicable to Hakfa;
+                // commented out for beta test — un-comment to restore.
+                /*
                 // Nasal mark in POJ capitals (§53): the other setting that shapes the
                 // output's romanization — a pop-up over the stored switch, ᴺ or ⁿ.
                 Picker(language.string(.settingsNasalMarkerUppercase), selection: $isNasalMarkerUppercaseEnabled) {
                     Text(language.string(.settingsNasalMarkerUppercaseCapital)).tag(true)
                     Text(language.string(.settingsNasalMarkerUppercaseSmall)).tag(false)
                 }
-
+                */
                 // The space after a commit: the last thing the output stage
                 // does.
                 Toggle(language.string(.settingsAutoSpace), isOn: $isAutoSpaceEnabled)

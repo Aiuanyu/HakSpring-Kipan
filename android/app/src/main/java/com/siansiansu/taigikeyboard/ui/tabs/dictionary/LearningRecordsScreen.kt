@@ -1,6 +1,10 @@
 package com.siansiansu.taigikeyboard.ui.tabs.dictionary
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilterChip
+import com.siansiansu.taigikeyboard.engine.HakfaLects
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -205,6 +209,12 @@ fun LearningRecordsScreen(
                 item { Spacer(Modifier.height(40.dp)) }
             }
 
+            // Hakfa fork: switch the lect whose learning records are viewed
+            LearningRecordsLectFilterRow(
+                selected = state.lect,
+                onSelected = { viewModel.selectLect(it) },
+            )
+
             // Filter (anchored at bottom) — the engine filters, once typing settles
             FilterSearchBar(
                 value = state.filter,
@@ -394,4 +404,25 @@ private fun EditCountDialog(
             }
         },
     )
+}
+
+// Hakfa fork: one chip per lect; switches the active lect for learning records.
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun LearningRecordsLectFilterRow(
+    selected: Int,
+    onSelected: (Int) -> Unit,
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        HakfaLects.all.forEach { lect ->
+            FilterChip(
+                selected = selected == lect.code,
+                onClick = { onSelected(lect.code) },
+                label = { Text(HakfaLects.nameOf(lect.code).substringBefore(" (")) },
+            )
+        }
+    }
 }

@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.siansiansu.taigikeyboard.i18n.generated.GeneratedTaigiStrings
 import com.siansiansu.taigikeyboard.i18n.generated.StringKey
 import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
+import com.siansiansu.taigikeyboard.ui.theme.LocalAppFontType
 import java.util.Locale
 
 /**
@@ -196,7 +197,12 @@ fun ProvideDisplayLanguage(
     content: @Composable () -> Unit,
 ) {
     val tag by prefs.observeDisplayLanguage().collectAsStateWithLifecycle(initialValue = prefs.displayLanguageTag)
-    ProvideDisplayLanguage(DisplayLanguage.fromTag(tag), content)
+    val fontType by prefs.observeFontType().collectAsStateWithLifecycle(initialValue = prefs.fontType)
+    ProvideDisplayLanguage(DisplayLanguage.fromTag(tag)) {
+        CompositionLocalProvider(LocalAppFontType provides fontType) {
+            content()
+        }
+    }
 }
 
 /** Compose accessor: resolves [key] under the current [LocalStringResolver]. */

@@ -23,6 +23,8 @@ enum KeyboardFonts {
     static let genYoMinFontName = "GenYoMin2TW-R"
     /// PostScript font name for GenYoGothic (源樣烏體)
     static let genYoGothicFontName = "GenYoGothic2TW-R"
+    /// PostScript font name for MarukoGothic (丸子黑體)
+    static let marukoGothicFontName = "MarukoGothicCJKtc-Regular"
 
     /// SwiftUI Font based on the user's font setting.
     /// Used by toolbar buttons and candidate views (not keyboard keys).

@@ -44,14 +44,16 @@ open class StubUserDataClient : UserDataClient {
         filter: String,
         limit: Int,
         offset: Int,
+        lect: Int,
     ): LearningRecords = error("unused")
 
     override suspend fun setLearningRecordCount(
         record: LearningRecord,
         count: Long,
+        lect: Int,
     ): LearningRecord? = error("unused")
 
-    override suspend fun deleteLearningRecord(record: LearningRecord): Boolean = error("unused")
+    override suspend fun deleteLearningRecord(record: LearningRecord, lect: Int): Boolean = error("unused")
 
-    override suspend fun addLearningRecordToCustomDictionary(record: LearningRecord): Unit = error("unused")
+    override suspend fun addLearningRecordToCustomDictionary(record: LearningRecord, lect: Int): Unit = error("unused")
 }

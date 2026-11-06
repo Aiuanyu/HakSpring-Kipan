@@ -83,7 +83,7 @@ class EngineAppConfigTest {
         assertFalse(config.forceLowercaseNasalMarker)
         assertFalse(config.outputBothScripts)
         assertEquals(ProtoCandidateDisplayMode.CANDIDATE_DISPLAY_MODE_SIDE_BY_SIDE, config.candidateDisplayMode)
-        assertEquals(ProtoSyllableSeparator.SYLLABLE_SEPARATOR_HYPHEN, config.syllableSeparator)
+        assertEquals(ProtoSyllableSeparator.SYLLABLE_SEPARATOR_NONE, config.syllableSeparator)
         assertFalse(config.tpsOrMapsToEr)
     }
 

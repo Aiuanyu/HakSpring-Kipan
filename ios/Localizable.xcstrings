@@ -181,6 +181,24 @@
         }
       }
     },
+    "i18n_common_fontMarukoGothic": {
+      "comment": "Keyboard font option: Maruko Gothic (丸仔烏體) typeface.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maruko Gothic"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "まるこゴシック"
+          }
+        }
+      }
+    },
     "i18n_common_fontOpenHuninn": {
       "comment": "Keyboard font option: JF Open Huninn (粉圓) typeface.",
       "extractionState": "manual",

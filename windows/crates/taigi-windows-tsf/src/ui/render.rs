@@ -330,6 +330,7 @@ fn bundled_family_name(choice: CandidateFontChoice) -> Option<&'static str> {
         CandidateFontChoice::Iansui => "Iansui",
         CandidateFontChoice::GenYoMin => "GenYoMin2 TW",
         CandidateFontChoice::GenYoGothic => "GenYoGothic2 TW",
+        CandidateFontChoice::MarukoGothic => "Maruko Gothic CJKtc",
     })
 }
 

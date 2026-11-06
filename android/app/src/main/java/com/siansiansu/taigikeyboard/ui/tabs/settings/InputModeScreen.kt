@@ -10,12 +10,13 @@ import com.siansiansu.taigikeyboard.ui.components.SelectionListScreen
 
 // Shared input-mode key→label-key pairs, used by InputModeScreen and InputSettingsScreen.
 // Structural (no resolved strings) so it stays class-load safe; the label is resolved at render.
+// Hakfa fork: POJ and TPS modes not implemented in Hakfa yet; commented out for beta test — un-comment to restore.
 val inputModeOptions: List<Pair<String, StringKey>> =
     listOf(
-        "poj" to StringKey.SETTINGS_POJ_MODE,
+        // "poj" to StringKey.SETTINGS_POJ_MODE,
         "tl" to StringKey.SETTINGS_TL_MODE,
         "english" to StringKey.SETTINGS_ENGLISH_MODE,
-        "tps" to StringKey.SETTINGS_TPS_MODE,
+        // "tps" to StringKey.SETTINGS_TPS_MODE,
     )
 
 @Composable

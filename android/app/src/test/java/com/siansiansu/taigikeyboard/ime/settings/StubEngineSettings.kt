@@ -8,7 +8,7 @@ internal data class StubEngineSettings(
     override var isHanjiFirst: Boolean = false,
     override var isOutputBothScripts: Boolean = false,
     override var isLiteralRomanCandidateEnabled: Boolean = true,
-    override var syllableSeparator: SyllableSeparator = SyllableSeparator.HYPHEN,
+    override var syllableSeparator: SyllableSeparator = SyllableSeparator.NONE,
     override var annotationTemplateHanjiFirst: BracketTemplate = BracketTemplate.SQUARE,
     override var annotationTemplateRomanFirst: BracketTemplate = BracketTemplate.SQUARE,
     override var pojMarkerOptions: PojMarkerOptions =

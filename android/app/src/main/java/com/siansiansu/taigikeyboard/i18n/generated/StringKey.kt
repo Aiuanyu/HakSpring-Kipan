@@ -39,6 +39,7 @@ enum class StringKey(
     COMMON_FONT_IANSUI(R.string.i18n_common_fontIansui),
     COMMON_FONT_GEN_YO_MIN(R.string.i18n_common_fontGenYoMin),
     COMMON_FONT_GEN_YO_GOTHIC(R.string.i18n_common_fontGenYoGothic),
+    COMMON_FONT_MARUKO_GOTHIC(R.string.i18n_common_fontMarukoGothic),
     DESKTOP_TELEX_GUIDE_HYPHEN(R.string.i18n_desktop_telexGuideHyphen),
     DESKTOP_DICTIONARY_SOURCES_LINK(R.string.i18n_desktop_dictionarySourcesLink),
     DICTIONARY_CUSTOM_DICTIONARY(R.string.i18n_dictionary_customDictionary),

@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -296,6 +297,8 @@ private fun CandidateCell(
                         fontSize = titleSp.sp,
                         fontFamily = fontFamily,
                         textAlign = TextAlign.Center,
+                        lineHeight = (titleSp * CANDIDATE_LINE_HEIGHT_FACTOR).sp,
+                        lineHeightStyle = CandidateLineHeightStyle,
                     ),
             )
             if (showSubtitle) {
@@ -307,6 +310,8 @@ private fun CandidateCell(
                             fontSize = subtitleSp.sp,
                             fontFamily = fontFamily,
                             textAlign = TextAlign.Center,
+                            lineHeight = (subtitleSp * CANDIDATE_LINE_HEIGHT_FACTOR).sp,
+                            lineHeightStyle = CandidateLineHeightStyle,
                         ),
                     modifier = Modifier.padding(top = with(density) { (marginPx * 2).toDp() }),
                 )
@@ -374,6 +379,16 @@ private fun EnglishDivider(color: Color) {
                 .background(color),
     )
 }
+
+// The bundled Maruko Gothic ships tight hhea metrics (ascent 740 / descent -140), so the two rows
+// of a Roman-over-Hanji cell would otherwise sit flush. An explicit line height, split evenly
+// above and below each line, restores the gap — and matches the 1.15 factor the size math assumes.
+internal const val CANDIDATE_LINE_HEIGHT_FACTOR = 1.15f
+internal val CandidateLineHeightStyle =
+    LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.None,
+    )
 
 internal fun computeCandidateFontSizes(
     smartbarHeightPx: Int,

@@ -6,8 +6,8 @@
     "delete": { "hakha": "刪除" },
     "save": { "hakha": "儲存" },
     "settings": { "hakha": "設定" },
-    "pagePrevious": { "hakha": "頂一頁" },
-    "pageNext": { "hakha": "後一頁" },
+    "pagePrevious": { "hakha": "上一頁" },
+    "pageNext": { "hakha": "下一頁" },
     "error": { "hakha": "錯誤" },
     "info": { "hakha": "說明" },
     "close": { "hakha": "關閉" },
@@ -15,7 +15,7 @@
     "edit": { "hakha": "編輯" },
     "toggleTranslateSwapped": { "hakha": "切換漢字/羅馬字" },
     "toggleOutputBothScripts": { "hakha": "切換雙書寫標註" },
-    "back": { "hakha": "倒轉去" },
+    "back": { "hakha": "轉去" },
     "viewWebsite": { "hakha": "官方網站" },
     "exportFailed": { "hakha": "匯出失敗" },
     "importFailed": { "hakha": "匯入失敗" },
@@ -32,6 +32,7 @@
     "fontOpenHuninn": { "hakha": "粉圓" },
     "fontIansui": { "hakha": "芫荽" },
     "fontGenYoMin": { "hakha": "源樣明體" },
-    "fontGenYoGothic": { "hakha": "源樣烏體" }
+    "fontGenYoGothic": { "hakha": "源樣烏體" },
+    "fontMarukoGothic": { "hakha": "丸仔烏體（Maruko Gothic）" }
   }
 }
