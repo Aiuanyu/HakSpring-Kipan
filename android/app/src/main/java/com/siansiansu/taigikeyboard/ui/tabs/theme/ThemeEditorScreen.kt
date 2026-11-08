@@ -3,6 +3,7 @@ package com.siansiansu.taigikeyboard.ui.tabs.theme
 import android.graphics.Bitmap
 import android.net.Uri
 import android.view.HapticFeedbackConstants
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -71,6 +72,7 @@ import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
 import com.siansiansu.taigikeyboard.ime.theme.KeyboardColorSettings
 import com.siansiansu.taigikeyboard.ime.theme.ThemeAppearance
 import com.siansiansu.taigikeyboard.ime.theme.ThemeBackground
+import com.siansiansu.taigikeyboard.ime.theme.ThemeExportImport
 import com.siansiansu.taigikeyboard.ime.theme.ThemeGradient
 import com.siansiansu.taigikeyboard.ime.theme.ThemeImageBackground
 import com.siansiansu.taigikeyboard.ime.theme.ThemeImageVariant
@@ -80,6 +82,7 @@ import com.siansiansu.taigikeyboard.ime.theme.UserThemeSeed
 import com.siansiansu.taigikeyboard.ime.theme.rememberThemePhoto
 import com.siansiansu.taigikeyboard.ui.components.ActionRow
 import com.siansiansu.taigikeyboard.ui.components.ColorRow
+import com.siansiansu.taigikeyboard.ui.components.FileDownload
 import com.siansiansu.taigikeyboard.ui.components.NameDialog
 import com.siansiansu.taigikeyboard.ui.components.SegmentedChoiceRow
 import com.siansiansu.taigikeyboard.ui.components.SettingsCard
@@ -171,6 +174,27 @@ fun ThemeEditorScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val themeImageCache = remember(context) { CompositionRoot.shared(context).themeImages }
+
+    val stringResolver by rememberUpdatedState(LocalStringResolver.current)
+
+    var pendingExportTheme by remember { mutableStateOf<UserTheme?>(null) }
+    val exportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri: Uri? ->
+            val theme = pendingExportTheme ?: return@rememberLauncherForActivityResult
+            uri?.let { destUri ->
+                try {
+                    context.contentResolver.openOutputStream(destUri)?.use { output ->
+                        output.write(ThemeExportImport.exportTheme(theme).toByteArray(Charsets.UTF_8))
+                    }
+                    Toast.makeText(context, stringResolver.resolve(StringKey.DICTIONARY_EXPORT_SUCCESS), Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {
+                    Toast.makeText(context, stringResolver.resolve(StringKey.COMMON_EXPORT_FAILED), Toast.LENGTH_SHORT).show()
+                }
+            }
+            pendingExportTheme = null
+        }
     val photoPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
             uri ?: return@rememberLauncherForActivityResult
@@ -180,10 +204,6 @@ fun ThemeEditorScreen(
                 setBackground(ThemeBackground.Image(ThemeImageBackground(file, dim)))
             }
         }
-
-    // Resolver captured for the name-dialog callback (runs outside composition), so the
-    // blank-name fallback resolves under the live display language at save time.
-    val stringResolver by rememberUpdatedState(LocalStringResolver.current)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -205,6 +225,26 @@ fun ThemeEditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            val themeToExport =
+                                UserTheme(
+                                    id = editing?.id ?: java.util.UUID.randomUUID().toString(),
+                                    name = draftName.ifBlank { editing?.name ?: "Custom Theme" },
+                                    appearance = draft,
+                                    createdAt = editing?.createdAt ?: System.currentTimeMillis(),
+                                    updatedAt = System.currentTimeMillis(),
+                                )
+                            pendingExportTheme = themeToExport
+                            exportLauncher.launch(ThemeExportImport.suggestFileName(themeToExport.name))
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FileDownload,
+                            contentDescription = L10n.commonExportAction,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                     TextButton(
                         onClick = {
                             // Cap-check NEW themes up front so the cap dialog and the name

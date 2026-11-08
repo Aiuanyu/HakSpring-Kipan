@@ -70,6 +70,14 @@ object L10n {
         @Composable get() = stringRes(StringKey.COMMON_FONT_GEN_YO_GOTHIC)
     val commonFontMarukoGothic: String
         @Composable get() = stringRes(StringKey.COMMON_FONT_MARUKO_GOTHIC)
+    val commonExportAction: String
+        @Composable get() = stringRes(StringKey.COMMON_EXPORT_ACTION)
+    val commonImportAction: String
+        @Composable get() = stringRes(StringKey.COMMON_IMPORT_ACTION)
+    val commonImportSuccess: String
+        @Composable get() = stringRes(StringKey.COMMON_IMPORT_SUCCESS)
+    val commonInvalidFormat: String
+        @Composable get() = stringRes(StringKey.COMMON_INVALID_FORMAT)
     val desktopTelexGuideHyphen: String
         @Composable get() = stringRes(StringKey.DESKTOP_TELEX_GUIDE_HYPHEN)
     val desktopDictionarySourcesLink: String
@@ -372,6 +380,16 @@ object L10n {
         @Composable get() = stringRes(StringKey.LAYOUT_MOE1_LAYOUT)
     val layoutMoe2Layout: String
         @Composable get() = stringRes(StringKey.LAYOUT_MOE2_LAYOUT)
+    val layoutExportLayout: String
+        @Composable get() = stringRes(StringKey.LAYOUT_EXPORT_LAYOUT)
+    val layoutImportLayout: String
+        @Composable get() = stringRes(StringKey.LAYOUT_IMPORT_LAYOUT)
+    val layoutExportAllLayouts: String
+        @Composable get() = stringRes(StringKey.LAYOUT_EXPORT_ALL_LAYOUTS)
+    val layoutLayoutCapReachedTitle: String
+        @Composable get() = stringRes(StringKey.LAYOUT_LAYOUT_CAP_REACHED_TITLE)
+    val layoutLayoutCapReachedMessage: String
+        @Composable get() = stringRes(StringKey.LAYOUT_LAYOUT_CAP_REACHED_MESSAGE)
     val navTabHome: String
         @Composable get() = stringRes(StringKey.NAV_TAB_HOME)
     val navTabTheme: String
@@ -594,4 +612,10 @@ object L10n {
         @Composable get() = stringRes(StringKey.THEME_COLOR_GREEN)
     val themeColorBlue: String
         @Composable get() = stringRes(StringKey.THEME_COLOR_BLUE)
+    val themeExportTheme: String
+        @Composable get() = stringRes(StringKey.THEME_EXPORT_THEME)
+    val themeImportTheme: String
+        @Composable get() = stringRes(StringKey.THEME_IMPORT_THEME)
+    val themeExportAllThemes: String
+        @Composable get() = stringRes(StringKey.THEME_EXPORT_ALL_THEMES)
 }

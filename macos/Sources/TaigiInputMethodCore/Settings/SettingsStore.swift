@@ -339,7 +339,7 @@ final class SettingsStore: @unchecked Sendable {
         /// would silently put Open Huninn on a Mac.
         static let fontType = SettingsKey(
             name: "fontType",
-            defaultValue: CandidateFontChoice.system,
+            defaultValue: CandidateFontChoice.marukoGothic,
         )
 
         /// Which typeface the user added the candidate window is set in, by the

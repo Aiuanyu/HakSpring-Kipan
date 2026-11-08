@@ -110,7 +110,7 @@ final class SettingsKeyTests: XCTestCase {
 
         XCTAssertEqual(settings.inputMode, .tl)
         XCTAssertEqual(settings.keyboardLayoutType, .phahTaigi)
-        XCTAssertEqual(settings.fontType, .system)
+        XCTAssertEqual(settings.fontType, .marukoGothic)
         XCTAssertTrue(settings.isDoubleTapOOEnabled)
         XCTAssertTrue(settings.isDoubleTapNNEnabled)
         // Hanji-first out of the box (USER 2026-09-18), on every platform.
@@ -247,7 +247,7 @@ final class SettingsKeyTests: XCTestCase {
 
         XCTAssertEqual(settings.inputMode, .tl)
         XCTAssertEqual(settings.keyboardLayoutType, .phahTaigi)
-        XCTAssertEqual(settings.fontType, .system)
+        XCTAssertEqual(settings.fontType, .marukoGothic)
         XCTAssertEqual(settings.displayLanguage, DisplayLanguage.defaultTag)
         XCTAssertTrue(settings.isDoubleTapOOEnabled)
         XCTAssertTrue(settings.isDoubleTapNNEnabled)

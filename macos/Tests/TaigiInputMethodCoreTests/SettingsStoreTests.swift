@@ -362,7 +362,7 @@ final class SettingsStoreTests: XCTestCase {
         let store = makeStore()
 
         XCTAssertEqual(store.candidateSize, .standard)
-        XCTAssertEqual(store.candidateMetrics, CandidateMetrics(size: .standard))
+        XCTAssertEqual(store.candidateMetrics, CandidateMetrics(size: .standard, fontSelection: .builtIn(.marukoGothic)))
     }
 
     func testCandidateSize_readsEveryStepTheSliderWrites() {
@@ -396,7 +396,7 @@ final class SettingsStoreTests: XCTestCase {
         userDefaults.set("large", forKey: "candidateWindowSize")
 
         XCTAssertEqual(makeStore().candidateSize, .standard)
-        XCTAssertEqual(makeStore().candidateMetrics, CandidateMetrics(size: .standard))
+        XCTAssertEqual(makeStore().candidateMetrics, CandidateMetrics(size: .standard, fontSelection: .builtIn(.marukoGothic)))
     }
 
     /// The Extra Large tier was removed (USER 2026-08-21) before this ladder existed:
@@ -416,8 +416,8 @@ final class SettingsStoreTests: XCTestCase {
     func testCandidateFont_withNothingStored_isTheSystemFont() {
         let store = makeStore()
 
-        XCTAssertEqual(store.candidateFontSelection, .builtIn(.system))
-        XCTAssertEqual(store.candidateMetrics.fontSelection, .builtIn(.system))
+        XCTAssertEqual(store.candidateFontSelection, .builtIn(.marukoGothic))
+        XCTAssertEqual(store.candidateMetrics.fontSelection, .builtIn(.marukoGothic))
     }
 
     @MainActor

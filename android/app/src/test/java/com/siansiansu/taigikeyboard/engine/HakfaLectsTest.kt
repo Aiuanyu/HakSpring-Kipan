@@ -1,5 +1,6 @@
 package com.siansiansu.taigikeyboard.engine
 
+import com.siansiansu.taigikeyboard.ime.text.keyboard.KeyboardAppearance
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -43,5 +44,17 @@ class HakfaLectsTest {
         ActiveLect.current = ActiveLect.HOILIUG
         assertEquals(2, appConfig("tl").lect)
         assertEquals(6, appConfig("tl", lect = ActiveLect.NAMXIIAN).lect)
+    }
+
+    @Test
+    fun confirmKeyLabelReflectsModeAndLect() {
+        assertEquals("擇", KeyboardAppearance.confirmKeyLabel("tl", isHanjiFirst = true))
+        assertEquals("擇", KeyboardAppearance.confirmKeyLabel("tps", isHanjiFirst = false))
+        assertEquals("tog", KeyboardAppearance.confirmKeyLabel("tl", isHanjiFirst = false, lect = ActiveLect.XIIEN))
+        assertEquals("tog", KeyboardAppearance.confirmKeyLabel("tl", isHanjiFirst = false, lect = ActiveLect.NAMXIIAN))
+        assertEquals("tòg", KeyboardAppearance.confirmKeyLabel("tl", isHanjiFirst = false, lect = ActiveLect.HOILIUG))
+        assertEquals("tòg", KeyboardAppearance.confirmKeyLabel("tl", isHanjiFirst = false, lect = ActiveLect.TAIBU))
+        assertEquals("tog", KeyboardAppearance.confirmKeyLabel("tl", isHanjiFirst = false, lect = ActiveLect.NGIAUPIN))
+        assertEquals("too", KeyboardAppearance.confirmKeyLabel("tl", isHanjiFirst = false, lect = ActiveLect.ZHIOON))
     }
 }

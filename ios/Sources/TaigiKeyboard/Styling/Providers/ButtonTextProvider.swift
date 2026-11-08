@@ -181,25 +181,25 @@ final class ButtonTextProvider {
     }
 
     /// Confirmation text for the Enter key during composing mode.
-    /// TPS/translate-swapped: "選"; POJ: "soán"; TL/English: "suán"
+    /// TPS/translate-swapped: "擇"; POJ: "thok"; TL/English: "tog"
     private func confirmKeyText() -> String {
-        // TPS layout: always show "選" (bopomofo users don't read romanization)
+        // TPS layout: always show "擇" (bopomofo users don't read romanization)
         if settings.inputMode == .tps {
-            return "選"
+            return "擇"
         }
 
         if settings.isHanjiFirst {
-            return "選"
+            return "擇"
         }
 
         switch settings.inputMode {
         case .poj:
-            return "soán"
+            return "thok"
         case .tl, .english:
-            return "suán"
+            return "tog"
         case .tps:
             // Unreachable — handled by early return above
-            return "選"
+            return "擇"
         }
     }
 }

@@ -407,7 +407,7 @@ impl SettingChoice for CandidateFontChoice {
         Self::GenYoGothic,
         Self::MarukoGothic,
     ];
-    const DEFAULT: Self = Self::System;
+    const DEFAULT: Self = Self::MarukoGothic;
     fn raw(self) -> &'static str {
         match self {
             Self::System => "system",

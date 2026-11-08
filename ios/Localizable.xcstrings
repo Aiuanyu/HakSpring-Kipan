@@ -109,6 +109,24 @@
         }
       }
     },
+    "i18n_common_exportAction": {
+      "comment": "Generic Export action label (button / menu item).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポート"
+          }
+        }
+      }
+    },
     "i18n_common_exportFailed": {
       "comment": "Error message shown when exporting user dictionary data fails.",
       "extractionState": "manual",
@@ -253,6 +271,24 @@
         }
       }
     },
+    "i18n_common_importAction": {
+      "comment": "Generic Import action label (button / menu item).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポート"
+          }
+        }
+      }
+    },
     "i18n_common_importFailed": {
       "comment": "Error message shown when importing user dictionary data fails (incl. unreadable / non-UTF-8 file on both platforms).",
       "extractionState": "manual",
@@ -267,6 +303,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "インポートに失敗しました"
+          }
+        }
+      }
+    },
+    "i18n_common_importSuccess": {
+      "comment": "Generic Toast/dialog message confirming import succeeded.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import completed"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポート完了"
+          }
+        }
+      }
+    },
+    "i18n_common_invalidFormat": {
+      "comment": "Error message when imported file or JSON structure is invalid.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid format"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "形式が無効です"
           }
         }
       }
@@ -3187,6 +3259,96 @@
         }
       }
     },
+    "i18n_layout_exportAllLayouts": {
+      "comment": "Action label / menu item to export all custom layouts.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export All Layouts"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてのレイアウトをエクスポート"
+          }
+        }
+      }
+    },
+    "i18n_layout_exportLayout": {
+      "comment": "Action label / button to export a custom layout.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Layout"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レイアウトをエクスポート"
+          }
+        }
+      }
+    },
+    "i18n_layout_importLayout": {
+      "comment": "Action label / button to import a custom layout.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Layout"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レイアウトをインポート"
+          }
+        }
+      }
+    },
+    "i18n_layout_layoutCapReachedMessage": {
+      "comment": "Body of the custom-layout cap-reached alert (cap is CustomLayout.MAX_CUSTOM_LAYOUTS = 5).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can save up to 5 custom layouts. Delete one before adding another."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カスタムレイアウトは 5 個まで保存できます。追加する前に 1 個削除してください。"
+          }
+        }
+      }
+    },
+    "i18n_layout_layoutCapReachedTitle": {
+      "comment": "Title of the custom-layout cap-reached alert.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout Limit Reached"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レイアウトの上限に達しました"
+          }
+        }
+      }
+    },
     "i18n_layout_moe1Layout": {
       "comment": "Layout name: MOE Taiwanese romanization key arrangement, variant 1.",
       "extractionState": "manual",
@@ -4645,6 +4807,42 @@
         }
       }
     },
+    "i18n_theme_exportAllThemes": {
+      "comment": "Action label / menu item to export all custom themes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export All Themes"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてのテーマをエクスポート"
+          }
+        }
+      }
+    },
+    "i18n_theme_exportTheme": {
+      "comment": "Action label / button to export a custom theme.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Theme"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テーマをエクスポート"
+          }
+        }
+      }
+    },
     "i18n_theme_familyClassic": {
       "comment": "Built-in theme key-style family header: filled keys.",
       "extractionState": "manual",
@@ -4749,6 +4947,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "開始"
+          }
+        }
+      }
+    },
+    "i18n_theme_importTheme": {
+      "comment": "Action label / button to import a custom theme.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Theme"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テーマをインポート"
           }
         }
       }

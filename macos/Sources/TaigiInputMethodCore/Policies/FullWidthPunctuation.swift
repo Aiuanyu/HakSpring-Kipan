@@ -30,6 +30,7 @@ enum FullWidthPunctuation {
     /// double quote serves as both opening and closing so a one-to-one map
     /// cannot pick a side (the same reason the engine's auto-space attaching set excludes it).
     private static let map: [Character: String] = [
+        "/": "／",
         ",": "，", ".": "。", "?": "？", "!": "！",
         ";": "；", ":": "：",
         "(": "（", ")": "）",

@@ -27,7 +27,7 @@ final class CandidateFontChoiceTests: XCTestCase {
     /// The typeface a fresh Mac renders in (USER 2026-08-23). iOS starts on
     /// Open Huninn instead — the key spelling is shared, the default is not.
     func testSystemFont_isTheMacOSDefault() {
-        XCTAssertEqual(SettingsStore.Keys.fontType.defaultValue, .system)
+        XCTAssertEqual(SettingsStore.Keys.fontType.defaultValue, .marukoGothic)
         XCTAssertNil(CandidateFontChoice.system.postScriptName)
     }
 

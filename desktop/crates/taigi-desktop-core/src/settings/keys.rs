@@ -247,7 +247,7 @@ pub const CANDIDATE_SIZE: SettingsKey<CandidateSizeChoice> =
 // `settings.json` files (Windows has no retired-key sweep), so a future
 // padding knob must use a NEW key rather than inherit those values.
 pub const FONT_TYPE: SettingsKey<CandidateFontChoice> =
-    SettingsKey::new("fontType", CandidateFontChoice::System);
+    SettingsKey::new("fontType", CandidateFontChoice::DEFAULT);
 
 /// Which typeface the user added the candidate window is set in, by the file
 /// name the font library stores it as. Read only while `fontType` holds

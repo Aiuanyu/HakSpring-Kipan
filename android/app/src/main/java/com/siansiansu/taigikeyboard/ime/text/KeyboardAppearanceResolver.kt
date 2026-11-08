@@ -45,7 +45,7 @@ internal class KeyboardAppearanceResolver(
             isComposing = isComposingProvider(),
             isFullWidthPunctuation = fullWidthPunctuationProvider(),
             imeOptions = taigikeyboard.currentInputEditorInfo?.imeOptions ?: 0,
-            confirmKeyLabel = KeyboardAppearance.confirmKeyLabel(prefs.inputMode, prefs.isHanjiFirst),
+            confirmKeyLabel = KeyboardAppearance.confirmKeyLabel(prefs.inputMode, prefs.isHanjiFirst, prefs.lect),
             colorSettings = theme.colors,
             typeface = resolveTypeface(),
             keyFontSizeScale = theme.keyFontSizeScale,

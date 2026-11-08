@@ -12,6 +12,7 @@ final class FullWidthPunctuationTests: XCTestCase {
 
     func testEveryMappedPair_followsTheMOETable() {
         let expected: [String: String] = [
+            "/": "／",
             ",": "，", ".": "。", "?": "？", "!": "！",
             ";": "；", ":": "：",
             "(": "（", ")": "）",

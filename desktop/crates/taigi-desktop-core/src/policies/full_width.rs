@@ -13,7 +13,8 @@
 /// letters, and the straight double quote (one glyph serves both sides). Plus
 /// `~` (⇧ on the backtick key): the rest of the shifted number row is here, so
 /// its first key is too (user report 2026-09-28).
-const MAP: [(char, char); 25] = [
+const MAP: [(char, char); 26] = [
+    ('/', '／'),
     (',', '，'),
     ('.', '。'),
     ('?', '？'),
@@ -77,10 +78,11 @@ mod tests {
                 Some(full.to_string().as_str())
             );
         }
+        assert_eq!(full_width_mapped("/"), Some("／".into()));
         assert_eq!(full_width_mapped(","), Some("，".into()));
         assert_eq!(full_width_mapped("'"), Some("、".into()));
         assert_eq!(full_width_mapped("~"), Some("～".into()));
-        assert_eq!(MAP.len(), 25);
+        assert_eq!(MAP.len(), 26);
     }
 
     #[test]

@@ -1331,6 +1331,28 @@ for (const d of outDirs) {
   console.log(`  ✓ 成功產出 ${p} (${count} 筆, ${(binBuf.length / 1024 / 1024).toFixed(2)} MB)`);
 }
 
+// Track upstream HakSpring data version for data drift detection
+if (isShipLect) {
+  let hsDataVersion = '';
+  const versionFile = path.join(HAKSPRING_DATA, 'data_version.json');
+  if (fs.existsSync(versionFile)) {
+    try {
+      const vObj = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+      hsDataVersion = vObj.version || '';
+    } catch (_) {}
+  }
+  const meta = {
+    hakspring_data_version: hsDataVersion,
+    built_at: new Date().toISOString(),
+    record_count: count
+  };
+  for (const d of outDirs) {
+    const vp = path.join(d, 'data_version.json');
+    fs.writeFileSync(vp, JSON.stringify(meta, null, 2) + '\n', 'utf8');
+  }
+  console.log(`  ✓ 產出詞庫資料版本資訊至 data_version.json (HakSpring: ${hsDataVersion || 'unknown'})`);
+}
+
 // -------------------------------------------------------------
 // [3/4] 建置 dictionary.fst 前綴自動機
 // -------------------------------------------------------------

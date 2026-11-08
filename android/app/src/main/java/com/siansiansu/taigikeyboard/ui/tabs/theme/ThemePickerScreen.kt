@@ -1,5 +1,9 @@
 package com.siansiansu.taigikeyboard.ui.tabs.theme
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,28 +12,41 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.siansiansu.taigikeyboard.R
+import com.siansiansu.taigikeyboard.i18n.LocalStringResolver
 import com.siansiansu.taigikeyboard.i18n.generated.L10n
+import com.siansiansu.taigikeyboard.i18n.generated.StringKey
 import com.siansiansu.taigikeyboard.i18n.stringRes
 import com.siansiansu.taigikeyboard.ime.core.CompositionRoot
 import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
 import com.siansiansu.taigikeyboard.ime.theme.BuiltInTheme
 import com.siansiansu.taigikeyboard.ime.theme.BuiltInThemes
 import com.siansiansu.taigikeyboard.ime.theme.ThemeAppearance
+import com.siansiansu.taigikeyboard.ime.theme.ThemeExportImport
 import com.siansiansu.taigikeyboard.ime.theme.ThemeId
 import com.siansiansu.taigikeyboard.ime.theme.ThemeImageVariant
 import com.siansiansu.taigikeyboard.ime.theme.UserTheme
@@ -37,6 +54,7 @@ import com.siansiansu.taigikeyboard.ime.theme.UserThemeSeed
 import com.siansiansu.taigikeyboard.ime.theme.UserThemeStore
 import com.siansiansu.taigikeyboard.ime.theme.themeBackground
 import com.siansiansu.taigikeyboard.settings.ThemeEditorActivity
+import com.siansiansu.taigikeyboard.ui.components.FileUpload
 import com.siansiansu.taigikeyboard.ui.components.GalleryCard
 import com.siansiansu.taigikeyboard.ui.components.GalleryCardAction
 import com.siansiansu.taigikeyboard.ui.components.GalleryCardMenu
@@ -66,6 +84,7 @@ internal fun selectionAfterDelete(
 @Composable
 fun ThemePickerScreen(prefs: PrefHelper) {
     val context = LocalContext.current
+    val stringResolver = LocalStringResolver.current
     val selectedThemeId by prefs
         .observeSelectedThemeId()
         .collectAsStateWithLifecycle(initialValue = prefs.selectedThemeId)
@@ -88,6 +107,98 @@ fun ThemePickerScreen(prefs: PrefHelper) {
         if (next != prefs.selectedThemeId) prefs.selectedThemeId = next
     }
 
+    var pendingExportTheme by remember { mutableStateOf<UserTheme?>(null) }
+    var showCapDialog by remember { mutableStateOf(false) }
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    val exportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri: Uri? ->
+            val theme = pendingExportTheme ?: return@rememberLauncherForActivityResult
+            uri?.let { destUri ->
+                try {
+                    context.contentResolver.openOutputStream(destUri)?.use { output ->
+                        output.write(ThemeExportImport.exportTheme(theme).toByteArray(Charsets.UTF_8))
+                    }
+                    Toast.makeText(context, stringResolver.resolve(StringKey.DICTIONARY_EXPORT_SUCCESS), Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {
+                    Toast.makeText(context, stringResolver.resolve(StringKey.COMMON_EXPORT_FAILED), Toast.LENGTH_SHORT).show()
+                }
+            }
+            pendingExportTheme = null
+        }
+
+    val exportAllLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri: Uri? ->
+            uri?.let { destUri ->
+                try {
+                    context.contentResolver.openOutputStream(destUri)?.use { output ->
+                        output.write(ThemeExportImport.exportAllThemes(userThemes).toByteArray(Charsets.UTF_8))
+                    }
+                    Toast.makeText(context, stringResolver.resolve(StringKey.DICTIONARY_EXPORT_SUCCESS), Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {
+                    Toast.makeText(context, stringResolver.resolve(StringKey.COMMON_EXPORT_FAILED), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+    val importLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+        ) { uri: Uri? ->
+            uri ?: return@rememberLauncherForActivityResult
+            try {
+                val jsonString =
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        input.bufferedReader(Charsets.UTF_8).readText()
+                    } ?: return@rememberLauncherForActivityResult
+
+                val result = ThemeExportImport.importThemes(jsonString, userThemes)
+                if (result.isSuccess) {
+                    val importedList = result.getOrThrow()
+                    var addedCount = 0
+                    for (imported in importedList) {
+                        val current = userThemeStore.load()
+                        if (current.size >= UserThemeStore.MAX_USER_THEMES) {
+                            showCapDialog = true
+                            break
+                        }
+                        if (userThemeStore.add(imported)) {
+                            addedCount++
+                        }
+                    }
+                    if (addedCount > 0) {
+                        Toast.makeText(context, stringResolver.resolve(StringKey.COMMON_IMPORT_SUCCESS), Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(context, stringResolver.resolve(StringKey.COMMON_INVALID_FORMAT), Toast.LENGTH_SHORT).show()
+                }
+            } catch (_: Exception) {
+                Toast.makeText(context, stringResolver.resolve(StringKey.COMMON_IMPORT_FAILED), Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    val onExportTheme: (UserTheme) -> Unit = { theme ->
+        pendingExportTheme = theme
+        exportLauncher.launch(ThemeExportImport.suggestFileName(theme.name))
+    }
+
+    if (showCapDialog) {
+        AlertDialog(
+            onDismissRequest = { showCapDialog = false },
+            title = { Text(L10n.themeCapReachedTitle) },
+            text = { Text(L10n.themeCapReachedMessage) },
+            confirmButton = {
+                TextButton(onClick = { showCapDialog = false }) {
+                    Text(L10n.commonOk)
+                }
+            },
+        )
+    }
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -100,6 +211,36 @@ fun ThemePickerScreen(prefs: PrefHelper) {
                         text = L10n.navTabTheme,
                         style = MaterialTheme.typography.headlineLarge,
                     )
+                },
+                actions = {
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = L10n.themeCardMenu,
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(L10n.themeImportTheme) },
+                                onClick = {
+                                    menuExpanded = false
+                                    importLauncher.launch(arrayOf("application/json", "text/*"))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(L10n.themeExportAllThemes) },
+                                enabled = userThemes.isNotEmpty(),
+                                onClick = {
+                                    menuExpanded = false
+                                    exportAllLauncher.launch(ThemeExportImport.suggestBackupFileName())
+                                },
+                            )
+                        }
+                    }
                 },
                 expandedHeight = AppStyle.largeTopAppBarExpandedHeight,
                 colors =
@@ -130,6 +271,7 @@ fun ThemePickerScreen(prefs: PrefHelper) {
                 onEdit = { theme ->
                     context.startActivity(ThemeEditorActivity.createIntent(context, theme.id))
                 },
+                onExport = onExportTheme,
                 onDelete = deleteTheme,
             )
 
@@ -152,6 +294,7 @@ private fun CustomThemeShelf(
     onCreateNew: () -> Unit,
     onApply: (String) -> Unit,
     onEdit: (UserTheme) -> Unit,
+    onExport: (UserTheme) -> Unit,
     onDelete: (UserTheme) -> Unit,
 ) {
     GalleryShelf(L10n.themeCustomThemesSection) {
@@ -172,6 +315,7 @@ private fun CustomThemeShelf(
                             listOf(
                                 GalleryCardAction(L10n.themeCardMenuApply) { onApply(theme.id) },
                                 GalleryCardAction(L10n.commonEdit) { onEdit(theme) },
+                                GalleryCardAction(L10n.commonExportAction) { onExport(theme) },
                                 GalleryCardAction(L10n.commonDelete, isDestructive = true) { onDelete(theme) },
                             ),
                     )

@@ -19,7 +19,7 @@ import com.siansiansu.taigikeyboard.R
 // Four slots customized to align with iOS:
 //   headlineLarge = 34sp (page title),  titleMedium = 18sp (section header),
 //   bodyLarge     = 17sp (body text),   labelLarge  = 17sp (caption, aligned with body)
-val LocalAppFontType = compositionLocalOf { "openHuninn" }
+val LocalAppFontType = compositionLocalOf { "marukoGothic" }
 
 fun getAppFontFamily(fontType: String): FontFamily =
     when (fontType) {
@@ -29,7 +29,7 @@ fun getAppFontFamily(fontType: String): FontFamily =
         "genYoGothic" -> FontFamily(Font(R.font.genyogothic2tw_r))
         "marukoGothic" -> FontFamily(Font(R.font.marukogothic_regular))
         "system" -> FontFamily.Default
-        else -> FontFamily(Font(R.font.jf_openhuninn_2_1))
+        else -> FontFamily(Font(R.font.marukogothic_regular))
     }
 
 private val DefaultTypography = Typography()

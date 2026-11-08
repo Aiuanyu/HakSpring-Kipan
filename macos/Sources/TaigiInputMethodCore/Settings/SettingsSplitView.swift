@@ -123,6 +123,48 @@ enum SettingsPaneLayout {
 struct SettingsSidebarView: View {
     @Environment(DisplayLanguageStore.self) private var language
 
+    /// Dynamic font following user selection, matching candidate window font.
+    @AppStorage(SettingsStore.Keys.fontType.name)
+    private var fontTypeRawValue = SettingsStore.Keys.fontType.defaultValue.rawValue
+
+    @AppStorage(SettingsStore.Keys.customFontFile.name)
+    private var customFontFile = SettingsStore.Keys.customFontFile.defaultValue
+
+    @AppStorage(SettingsStore.Keys.installedFontFamily.name)
+    private var installedFontFamily = SettingsStore.Keys.installedFontFamily.defaultValue
+
+    @AppStorage(SettingsStore.Keys.installedFontFace.name)
+    private var installedFontFace = SettingsStore.Keys.installedFontFace.defaultValue
+
+    private var currentUIFont: Font {
+        let stored = StoredFontSelection(
+            fontType: fontTypeRawValue,
+            customFontFile: customFontFile,
+            installedFontFamily: installedFontFamily,
+            installedFontFace: installedFontFace
+        )
+        let selection: CandidateFontSelection
+        switch stored {
+        case let .builtIn(choice):
+            selection = .builtIn(choice)
+        case let .customFile(fileName):
+            if let font = CustomFontLibrary.shared.activatedFont(fileName: fileName) {
+                selection = .custom(font)
+            } else {
+                selection = .default
+            }
+        case let .installedFamily(family, face):
+            if RegisteredFace.isRegistered(.family(family)) {
+                let style = face.isEmpty || RegisteredFace.isRegistered(.face(family: family, style: face)) ? face : ""
+                selection = .installed(family: family, face: style)
+            } else {
+                selection = .default
+            }
+        }
+        let nsFont = selection.font(ofSize: NSFont.systemFontSize)
+        return Font(nsFont)
+    }
+
     /// `@AppStorage` reads a `String`-backed enum directly: an unknown
     /// persisted raw value falls back to this default on its own — an edge
     /// the framework owns, not this view.
@@ -160,6 +202,7 @@ struct SettingsSidebarView: View {
         // The sidebar list style the split view item's material expects; a
         // `List` outside a `NavigationSplitView` does not infer it.
         .listStyle(.sidebar)
+        .font(currentUIFont)
     }
 }
 
@@ -170,31 +213,76 @@ struct SettingsDetailView: View {
     /// What the dictionary pages read and write through.
     let userData: any UserDataClient
 
+    /// Dynamic font following user selection, matching candidate window font.
+    @AppStorage(SettingsStore.Keys.fontType.name)
+    private var fontTypeRawValue = SettingsStore.Keys.fontType.defaultValue.rawValue
+
+    @AppStorage(SettingsStore.Keys.customFontFile.name)
+    private var customFontFile = SettingsStore.Keys.customFontFile.defaultValue
+
+    @AppStorage(SettingsStore.Keys.installedFontFamily.name)
+    private var installedFontFamily = SettingsStore.Keys.installedFontFamily.defaultValue
+
+    @AppStorage(SettingsStore.Keys.installedFontFace.name)
+    private var installedFontFace = SettingsStore.Keys.installedFontFace.defaultValue
+
+    private var currentUIFont: Font {
+        let stored = StoredFontSelection(
+            fontType: fontTypeRawValue,
+            customFontFile: customFontFile,
+            installedFontFamily: installedFontFamily,
+            installedFontFace: installedFontFace
+        )
+        let selection: CandidateFontSelection
+        switch stored {
+        case let .builtIn(choice):
+            selection = .builtIn(choice)
+        case let .customFile(fileName):
+            if let font = CustomFontLibrary.shared.activatedFont(fileName: fileName) {
+                selection = .custom(font)
+            } else {
+                selection = .default
+            }
+        case let .installedFamily(family, face):
+            if RegisteredFace.isRegistered(.family(family)) {
+                let style = face.isEmpty || RegisteredFace.isRegistered(.face(family: family, style: face)) ? face : ""
+                selection = .installed(family: family, face: style)
+            } else {
+                selection = .default
+            }
+        }
+        let nsFont = selection.font(ofSize: NSFont.systemFontSize)
+        return Font(nsFont)
+    }
+
     @AppStorage(SettingsStore.Keys.selectedSettingsPane.name)
     private var selectedPane = SettingsStore.Keys.selectedSettingsPane.defaultValue
 
     /// Uniform pane→page mapping: every page brings its own `Form`, so this
     /// adds no layout of its own.
     var body: some View {
-        switch selectedPane {
-        case .general:
-            GeneralSettingsView()
-        case .annotation:
-            AnnotationSettingsView()
-        case .appearance:
-            AppearanceSettingsView()
-        case .shortcuts:
-            ShortcutSettingsView()
-        case .customDictionary:
-            CustomDictionaryPage(client: userData)
-        case .learningRecords:
-            LearningRecordsPage(client: userData)
-        case .dictionarySources:
-            DictionaryTogglesView()
-        case .fontManagement:
-            FontManagementPage()
-        case .about:
-            AboutPage()
+        Group {
+            switch selectedPane {
+            case .general:
+                GeneralSettingsView()
+            case .annotation:
+                AnnotationSettingsView()
+            case .appearance:
+                AppearanceSettingsView()
+            case .shortcuts:
+                ShortcutSettingsView()
+            case .customDictionary:
+                CustomDictionaryPage(client: userData)
+            case .learningRecords:
+                LearningRecordsPage(client: userData)
+            case .dictionarySources:
+                DictionaryTogglesView()
+            case .fontManagement:
+                FontManagementPage()
+            case .about:
+                AboutPage()
+            }
         }
+        .font(currentUIFont)
     }
 }

@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Constraints
 import com.siansiansu.taigikeyboard.R
+import com.siansiansu.taigikeyboard.engine.ActiveLect
 import com.siansiansu.taigikeyboard.ime.popup.PopupHost
 import com.siansiansu.taigikeyboard.ime.text.key.KeyCode
 import com.siansiansu.taigikeyboard.ime.text.key.KeyData
@@ -380,15 +381,26 @@ data class KeyboardAppearance(
     val keyHeightScale: Float,
 ) {
     companion object {
-        /** Confirm-key label per input mode (used by KeyView). Keycap content, not app chrome — not i18n. */
+        /** Confirm-key label per input mode and lect (used by KeyView). Keycap content, not app chrome — not i18n. */
         fun confirmKeyLabel(
             inputMode: String,
             isHanjiFirst: Boolean,
+            lect: Int = ActiveLect.current,
         ): String =
             when {
-                inputMode == "tps" || isHanjiFirst -> "選"
-                inputMode == "poj" -> "soán"
-                else -> "suán"
+                inputMode == "tps" || isHanjiFirst -> "擇"
+                inputMode == "poj" ->
+                    when (lect) {
+                        ActiveLect.HOILIUG, ActiveLect.TAIBU -> "tho̍k"
+                        ActiveLect.ZHIOON -> "thoo"
+                        else -> "thok"
+                    }
+                else ->
+                    when (lect) {
+                        ActiveLect.HOILIUG, ActiveLect.TAIBU -> "tòg"
+                        ActiveLect.ZHIOON -> "too"
+                        else -> "tog"
+                    }
             }
     }
 }

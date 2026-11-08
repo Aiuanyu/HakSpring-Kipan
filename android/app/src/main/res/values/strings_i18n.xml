@@ -33,6 +33,10 @@
     <string name="i18n_common_fontGenYoMin">源樣明體</string>
     <string name="i18n_common_fontGenYoGothic">源樣烏體</string>
     <string name="i18n_common_fontMarukoGothic">丸仔烏體（Maruko Gothic）</string>
+    <string name="i18n_common_exportAction">匯出</string>
+    <string name="i18n_common_importAction">匯入</string>
+    <string name="i18n_common_importSuccess">匯入完成</string>
+    <string name="i18n_common_invalidFormat">格式錯誤</string>
     <string name="i18n_desktop_telexGuideHyphen">連字符</string>
     <string name="i18n_desktop_dictionarySourcesLink">辭典管理</string>
     <string name="i18n_dictionary_customDictionary">自訂詞庫</string>
@@ -186,6 +190,11 @@
     <string name="i18n_layout_tpsLayout">方音符號企盤</string>
     <string name="i18n_layout_moe1Layout">教育部排列 1</string>
     <string name="i18n_layout_moe2Layout">教育部排列 2</string>
+    <string name="i18n_layout_exportLayout">匯出排列</string>
+    <string name="i18n_layout_importLayout">匯入排列</string>
+    <string name="i18n_layout_exportAllLayouts">匯出全部排列</string>
+    <string name="i18n_layout_layoutCapReachedTitle">已達排列數量上限</string>
+    <string name="i18n_layout_layoutCapReachedMessage">自訂排列上限係 5 個，請先刪除一個正做得過新增。</string>
     <string name="i18n_nav_tabHome">頭頁</string>
     <string name="i18n_nav_tabTheme">主題</string>
     <string name="i18n_nav_tabLayout">佈局</string>
@@ -297,4 +306,7 @@
     <string name="i18n_theme_colorRed">紅色</string>
     <string name="i18n_theme_colorGreen">綠色</string>
     <string name="i18n_theme_colorBlue">藍色</string>
+    <string name="i18n_theme_exportTheme">匯出主題</string>
+    <string name="i18n_theme_importTheme">匯入主題</string>
+    <string name="i18n_theme_exportAllThemes">匯出全部主題</string>
 </resources>

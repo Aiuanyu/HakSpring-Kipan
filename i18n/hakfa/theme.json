@@ -168,6 +168,15 @@
     },
     "colorBlue": {
       "hakha": "藍色"
+    },
+    "exportTheme": {
+      "hakha": "匯出主題"
+    },
+    "importTheme": {
+      "hakha": "匯入主題"
+    },
+    "exportAllThemes": {
+      "hakha": "匯出全部主題"
     }
   }
 }

@@ -33,6 +33,10 @@
     <string name="i18n_common_fontGenYoMin">GenYoMin</string>
     <string name="i18n_common_fontGenYoGothic">GenYoGothic</string>
     <string name="i18n_common_fontMarukoGothic">Maruko Gothic</string>
+    <string name="i18n_common_exportAction">Export</string>
+    <string name="i18n_common_importAction">Import</string>
+    <string name="i18n_common_importSuccess">Import completed</string>
+    <string name="i18n_common_invalidFormat">Invalid format</string>
     <string name="i18n_desktop_telexGuideHyphen">Hyphen</string>
     <string name="i18n_desktop_dictionarySourcesLink">Manage Dictionaries</string>
     <string name="i18n_dictionary_customDictionary">Custom Dictionary</string>
@@ -186,6 +190,11 @@
     <string name="i18n_layout_tpsLayout">Phonetic Symbols</string>
     <string name="i18n_layout_moe1Layout">MOE Layout 1</string>
     <string name="i18n_layout_moe2Layout">MOE Layout 2</string>
+    <string name="i18n_layout_exportLayout">Export Layout</string>
+    <string name="i18n_layout_importLayout">Import Layout</string>
+    <string name="i18n_layout_exportAllLayouts">Export All Layouts</string>
+    <string name="i18n_layout_layoutCapReachedTitle">Layout Limit Reached</string>
+    <string name="i18n_layout_layoutCapReachedMessage">You can save up to 5 custom layouts. Delete one before adding another.</string>
     <string name="i18n_nav_tabHome">Home</string>
     <string name="i18n_nav_tabTheme">Theme</string>
     <string name="i18n_nav_tabLayout">Layout</string>
@@ -297,4 +306,7 @@
     <string name="i18n_theme_colorRed">Red</string>
     <string name="i18n_theme_colorGreen">Green</string>
     <string name="i18n_theme_colorBlue">Blue</string>
+    <string name="i18n_theme_exportTheme">Export Theme</string>
+    <string name="i18n_theme_importTheme">Import Theme</string>
+    <string name="i18n_theme_exportAllThemes">Export All Themes</string>
 </resources>

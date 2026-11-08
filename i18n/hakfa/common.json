@@ -33,6 +33,10 @@
     "fontIansui": { "hakha": "芫荽" },
     "fontGenYoMin": { "hakha": "源樣明體" },
     "fontGenYoGothic": { "hakha": "源樣烏體" },
-    "fontMarukoGothic": { "hakha": "丸仔烏體（Maruko Gothic）" }
+    "fontMarukoGothic": { "hakha": "丸仔烏體（Maruko Gothic）" },
+    "exportAction": { "hakha": "匯出" },
+    "importAction": { "hakha": "匯入" },
+    "importSuccess": { "hakha": "匯入完成" },
+    "invalidFormat": { "hakha": "格式錯誤" }
   }
 }

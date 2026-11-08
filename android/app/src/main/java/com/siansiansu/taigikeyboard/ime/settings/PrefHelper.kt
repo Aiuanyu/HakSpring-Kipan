@@ -84,7 +84,7 @@ class PrefHelper(
         private const val MAX_COLLECTOR_RETRIES = 3L
         private const val COLLECTOR_RETRY_DELAY_MS = 1_000L
 
-        const val DEFAULT_FONT_TYPE = "openHuninn"
+        const val DEFAULT_FONT_TYPE = "marukoGothic"
 
         // Theme defaults (v3.6.2) — "default" = the factory appearance; empty user-theme list
         const val DEFAULT_SELECTED_THEME_ID = ThemeId.DEFAULT

@@ -11,6 +11,11 @@
     "createNewLayout": { "hakha": "新排列…" },
     "editorTitleNew": { "hakha": "新排列" },
     "nameHeader": { "hakha": "排列名稱" },
-    "commonLayoutsSection": { "hakha": "通用" }
+    "commonLayoutsSection": { "hakha": "通用" },
+    "exportLayout": { "hakha": "匯出排列" },
+    "importLayout": { "hakha": "匯入排列" },
+    "exportAllLayouts": { "hakha": "匯出全部排列" },
+    "layoutCapReachedTitle": { "hakha": "已達排列數量上限" },
+    "layoutCapReachedMessage": { "hakha": "自訂排列上限係 5 個，請先刪除一個正做得過新增。" }
   }
 }

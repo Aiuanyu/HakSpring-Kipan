@@ -710,6 +710,82 @@
         "en": "Maruko Gothic",
         "ja": "まるこゴシック"
       }
+    },
+    "exportAction": {
+      "comment": "Generic Export action label (button / menu item).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯出",
+        "tailo": "Huē-tshut",
+        "poj": "Hōe-chhut",
+        "en": "Export",
+        "ja": "エクスポート"
+      }
+    },
+    "importAction": {
+      "comment": "Generic Import action label (button / menu item).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯入",
+        "tailo": "Huē-ji̍p",
+        "poj": "Hōe-ji̍p",
+        "en": "Import",
+        "ja": "インポート"
+      }
+    },
+    "importSuccess": {
+      "comment": "Generic Toast/dialog message confirming import succeeded.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯入完成",
+        "tailo": "Huē-ji̍p uân-sîng",
+        "poj": "Hōe-ji̍p oân-sêng",
+        "en": "Import completed",
+        "ja": "インポート完了"
+      }
+    },
+    "invalidFormat": {
+      "comment": "Error message when imported file or JSON structure is invalid.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "格式錯誤",
+        "tailo": "Kik-sik tshò-gōo",
+        "poj": "Kek-sek chhò-gō͘",
+        "en": "Invalid format",
+        "ja": "形式が無効です"
+      }
     }
   }
 }

@@ -56,7 +56,7 @@ object TypefaceLoader {
 
             FontType.MARUKO_GOTHIC.value -> getMarukoGothicTypeface(context)
 
-            // Default to OpenHuninn for unrecognized values from preferences
-            else -> getOpenHuninnTypeface(context)
+            // Default to MarukoGothic for unrecognized values from preferences
+            else -> getMarukoGothicTypeface(context)
         }
 }

@@ -280,6 +280,21 @@
       "comment": "Color picker RGB slider label: blue channel. Android-only.",
       "scope": { "platforms": ["android"], "surfaces": ["host"] },
       "values": { "hanji": "藍色", "tailo": "Nâ-sik", "poj": "Nâ-sek", "en": "Blue", "ja": "青" }
+    },
+    "exportTheme": {
+      "comment": "Action label / button to export a custom theme.",
+      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
+      "values": { "hanji": "匯出主題", "tailo": "Huē-tshut tsú-tê", "poj": "Hōe-chhut chú-tê", "en": "Export Theme", "ja": "テーマをエクスポート" }
+    },
+    "importTheme": {
+      "comment": "Action label / button to import a custom theme.",
+      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
+      "values": { "hanji": "匯入主題", "tailo": "Huē-ji̍p tsú-tê", "poj": "Hōe-ji̍p chú-tê", "en": "Import Theme", "ja": "テーマをインポート" }
+    },
+    "exportAllThemes": {
+      "comment": "Action label / menu item to export all custom themes.",
+      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
+      "values": { "hanji": "匯出全部主題", "tailo": "Huē-tshut tsuân-pōo tsú-tê", "poj": "Hōe-chhut choân-pō͘ chú-tê", "en": "Export All Themes", "ja": "すべてのテーマをエクスポート" }
     }
   }
 }

@@ -55,6 +55,31 @@
       "comment": "Layout name: MOE Taiwanese romanization key arrangement, variant 2.",
       "scope": { "platforms": ["android", "ios"], "surfaces": ["host", "extension"] },
       "values": { "hanji": "教育部佈局 2", "tailo": "Kàu-io̍k-pōo pòo-kio̍k 2", "poj": "Kàu-io̍k-pō͘ pò͘-kio̍k 2", "en": "MOE Layout 2", "ja": "教育部配列 2" }
+    },
+    "exportLayout": {
+      "comment": "Action label / button to export a custom layout.",
+      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
+      "values": { "hanji": "匯出佈局", "tailo": "Huē-tshut pòo-kio̍k", "poj": "Hōe-chhut pò͘-kio̍k", "en": "Export Layout", "ja": "レイアウトをエクスポート" }
+    },
+    "importLayout": {
+      "comment": "Action label / button to import a custom layout.",
+      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
+      "values": { "hanji": "匯入佈局", "tailo": "Huē-ji̍p pòo-kio̍k", "poj": "Hōe-ji̍p pò͘-kio̍k", "en": "Import Layout", "ja": "レイアウトをインポート" }
+    },
+    "exportAllLayouts": {
+      "comment": "Action label / menu item to export all custom layouts.",
+      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
+      "values": { "hanji": "匯出全部佈局", "tailo": "Huē-tshut tsuân-pōo pòo-kio̍k", "poj": "Hōe-chhut choân-pō͘ pò͘-kio̍k", "en": "Export All Layouts", "ja": "すべてのレイアウトをエクスポート" }
+    },
+    "layoutCapReachedTitle": {
+      "comment": "Title of the custom-layout cap-reached alert.",
+      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
+      "values": { "hanji": "已達佈局數量上限", "tailo": "Í ta̍t pòo-kio̍k sòo-liōng siōng-hān", "poj": "Í ta̍t pò͘-kio̍k sò͘-liōng siōng-hān", "en": "Layout Limit Reached", "ja": "レイアウトの上限に達しました" }
+    },
+    "layoutCapReachedMessage": {
+      "comment": "Body of the custom-layout cap-reached alert (cap is CustomLayout.MAX_CUSTOM_LAYOUTS = 5).",
+      "scope": { "platforms": ["android", "ios"], "surfaces": ["host"] },
+      "values": { "hanji": "自訂佈局上限是 5 个，請先刪除一个才會使閣新增。", "tailo": "Tsū-tīng pòo-kio̍k siōng hān sī 5 ê, tshiánn sian san-tî tsi̍t-ê tsiah ē-sái koh sin-tsing.", "poj": "Chū-tēng pò͘-kio̍k siōng hān sī 5 ê, chhiáⁿ sian san-tî chi̍t-ê chiah ē-sái koh sin-cheng.", "en": "You can save up to 5 custom layouts. Delete one before adding another.", "ja": "カスタムレイアウトは 5 個まで保存できます。追加する前に 1 個削除してください。" }
     }
   }
 }

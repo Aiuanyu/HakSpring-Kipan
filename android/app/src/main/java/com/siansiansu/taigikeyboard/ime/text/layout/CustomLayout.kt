@@ -214,7 +214,7 @@ data class CustomLayout(
             second: Int,
         ): List<T> = toMutableList().also { Collections.swap(it, first, second) }
 
-        private fun fromJson(
+        fun fromJson(
             json: JSONObject,
             tables: CustomLayoutTables,
         ): CustomLayout? {
