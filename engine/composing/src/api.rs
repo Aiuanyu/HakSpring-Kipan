@@ -757,11 +757,17 @@ impl Engine {
     /// starts the composition and follows the committed context (§56);
     /// anything else before it — glyphs — cuts the context.
     pub fn pending_snapshot(&self, config: &AppConfig) -> PendingSnapshot {
+        self.pending_snapshot_at_pos(config, false)
+    }
+
+    /// Hakfa fork: snapshot of the pending buffer honoring `before_caret`. When the caret
+    /// is mid-tail and `before_caret` is true, `listed_raw` is bounded by the caret position.
+    pub fn pending_snapshot_at_pos(&self, config: &AppConfig, before_caret: bool) -> PendingSnapshot {
         let Phase::Continuous {
             raw,
+            caret,
             nailed,
             conversion,
-            ..
         } = &self.state.phase
         else {
             return PendingSnapshot {
@@ -769,7 +775,13 @@ impl Engine {
                 context: ListContext::Committed,
             };
         };
-        let list_start = self.word_list_start(config).unwrap_or(0);
+        let word_list_start = self.word_list_start(config);
+        let list_start = word_list_start.unwrap_or(0);
+        let list_end = if before_caret && word_list_start.is_none() && *caret < raw.len() {
+            (*caret).max(list_start)
+        } else {
+            raw.len()
+        };
         let segment_before = if list_start > 0 {
             conversion
                 .as_ref()
@@ -787,7 +799,7 @@ impl Engine {
                 }),
         };
         PendingSnapshot {
-            listed_raw: raw[list_start..].to_string(),
+            listed_raw: raw[list_start..list_end].to_string(),
             context,
         }
     }

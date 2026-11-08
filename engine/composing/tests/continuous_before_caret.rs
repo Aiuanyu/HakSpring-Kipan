@@ -141,3 +141,28 @@ fn a_caret_at_the_front_lists_nothing() {
     install_fixture();
     assert!(listed(Some(0), true).is_empty());
 }
+
+#[test]
+fn pending_snapshot_slices_at_caret_under_before_caret() {
+    let config = config_tl();
+    let mut engine = continuous_engine(&config, "taigibun");
+    requests::apply(
+        Intent::MoveCaret {
+            direction: Some(CaretDirection::Start),
+        },
+        &mut engine,
+        &config,
+    );
+    for _ in 0..5 {
+        requests::apply(
+            Intent::MoveCaret {
+                direction: Some(CaretDirection::Right),
+            },
+            &mut engine,
+            &config,
+        );
+    }
+    // caret at byte 5 ("taigi"): before_caret gives the prefix; flag off keeps the whole tail.
+    assert_eq!(engine.pending_snapshot_at_pos(&config, true).listed_raw, "taigi");
+    assert_eq!(engine.pending_snapshot_at_pos(&config, false).listed_raw, "taigibun");
+}

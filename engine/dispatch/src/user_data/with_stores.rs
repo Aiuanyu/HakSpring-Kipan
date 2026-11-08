@@ -164,7 +164,7 @@ pub(super) fn handle_composing(
     let Some(engine) = composing.engine_at(generation) else {
         return Ok(composing::Engine::idle_snapshot(config));
     };
-    let snapshot = engine.pending_snapshot(config);
+    let snapshot = engine.pending_snapshot_at_pos(config, sent.before_caret);
     let mut rows = buffer_rows(
         stores,
         &snapshot.listed_raw,
