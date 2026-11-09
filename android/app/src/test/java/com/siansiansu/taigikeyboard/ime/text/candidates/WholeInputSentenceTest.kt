@@ -47,11 +47,20 @@ class WholeInputSentenceTest {
     }
 
     @Test
-    fun aCompletionOfAHalfTypedSyllableOrAnAbbreviationIsNotASentence() {
+    fun aCompletionOfAHalfTypedSyllableOrSingleLetterAbbreviationIsNotASentence() {
         val prefix = listOf(cell(1, "大", "tai", 1, 1))
-        val abbreviation = listOf(cell(1, "青竹絲", "qiáng-zùg-xí", 3, 2, syllables = 3))
+        val shortAbbrev = listOf(cell(1, "大", "tai", 1, 2, syllables = 1))
         assertNull(wholeInputSentencePick(prefix, pendingBytes = 1))
-        assertNull(wholeInputSentencePick(abbreviation, pendingBytes = 3))
+        assertNull(wholeInputSentencePick(shortAbbrev, pendingBytes = 1))
+    }
+
+    @Test
+    fun fullLengthMultiSyllableAbbreviationIsAccepted() {
+        val abbreviation = listOf(cell(1, "青竹絲", "qiáng-zùg-xí", 3, 2, syllables = 3))
+        val pick = wholeInputSentencePick(abbreviation, pendingBytes = 3)
+        assertNotNull(pick)
+        assertEquals("青竹絲", pick!!.canonicalText)
+        assertEquals(3, pick.consumedBytes)
     }
 
     @Test

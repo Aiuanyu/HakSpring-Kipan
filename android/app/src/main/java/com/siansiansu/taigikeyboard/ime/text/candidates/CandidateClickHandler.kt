@@ -383,9 +383,10 @@ internal fun shouldAppendAutoSpace(
 
 /**
  * Hakfa fork: the sentence the engine composed for ALL of the pending input — the first Continuous cell
- * with Hanji, whole readings ([TaigiWord.MetadataKeys.COVERAGE_KIND] 0: not a completion of a half-typed
- * syllable, not an abbreviation) that ends where the pending input ends ([pendingBytes], UTF-8). Typing
- * punctuation commits this pick instead of the romanization as typed. `null` when there is none.
+ * with Hanji, whole readings ([TaigiWord.MetadataKeys.COVERAGE_KIND] 0) or full-length multi-syllable
+ * abbreviations (coverage kind 2, syllables >= 2, pendingBytes >= 2) that ends where the pending input
+ * ends ([pendingBytes], UTF-8). Typing punctuation commits this pick instead of the romanization as typed.
+ * `null` when there is none.
  * Mirrors desktop-core `CandidateSource::whole_input_sentence`.
  */
 internal fun wholeInputSentencePick(
@@ -396,11 +397,13 @@ internal fun wholeInputSentencePick(
     val word =
         words.firstOrNull { candidate ->
             val info = candidate.additionalInfo
+            val coverageKind = info[TaigiWord.MetadataKeys.COVERAGE_KIND]
+            val consumed = info[TaigiWord.MetadataKeys.CONSUMED_BYTES]?.toIntOrNull()
+            val syllableCount = info[TaigiWord.MetadataKeys.SYLLABLE_COUNT]?.toIntOrNull() ?: 0
             info[TaigiWord.MetadataKeys.IS_CONTINUOUS] == "true" &&
                 !candidate.hanji.isNullOrEmpty() &&
-                info[TaigiWord.MetadataKeys.COVERAGE_KIND] == "0" &&
-                info[TaigiWord.MetadataKeys.CONSUMED_BYTES]?.toIntOrNull() == pendingBytes &&
-                (info[TaigiWord.MetadataKeys.SYLLABLE_COUNT]?.toIntOrNull() ?: 0) > 0
+                consumed == pendingBytes &&
+                (coverageKind == "0" || (coverageKind == "2" && syllableCount >= 2 && pendingBytes >= 2))
         } ?: return null
     return continuousPick(word)
 }
