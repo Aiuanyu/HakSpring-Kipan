@@ -22,6 +22,9 @@
     "shortcutCycleCandidateDisplayMode": {
       "hakha": "切換候選詞顯示"
     },
+    "shortcutCycleAnnotationTemplate": {
+      "hakha": "切換雙書寫標註樣板"
+    },
     "shortcutShowTelexGuide": {
       "hakha": "打開 Telex 說明"
     },

@@ -220,6 +220,13 @@ enum BracketTemplate: String, CaseIterable, Sendable {
         case .ruby: "<ruby>\(x)<rt>\(y)</rt></ruby>"
         }
     }
+
+    /// Steps the template through its picker order: square → round → curly → ruby → square.
+    var next: BracketTemplate {
+        let all = Self.allCases
+        let index = all.firstIndex(of: self) ?? all.startIndex
+        return all[(index + 1) % all.count]
+    }
 }
 
 /// What a fresh install composes under: the default table `SettingsStore.Keys`

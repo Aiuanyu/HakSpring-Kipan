@@ -82,6 +82,13 @@ extension KeyboardShortcuts.Name {
         initial: .init(.b, modifiers: [.control, .command]),
     )
 
+    /// Hakfa fork: Cycles Dual-Script Annotation template (square → round → curly → ruby).
+    /// G for Glyph / 樣板 (⌃⌘G or ⌘⌃G).
+    static let cycleAnnotationTemplate = Self(
+        "cycleAnnotationTemplate",
+        initial: .init(.g, modifiers: [.control, .command]),
+    )
+
     /// The way round the Candidate Display picker from the keyboard (USER 2026-09-02):
     /// the backtick above is inert outside Hanji–Romanization Pairing, so a user in Hanji with Romanization or Romanization Only
     /// had no key that led back. H for Hàn-Lô, the thing being switched — a
@@ -174,6 +181,8 @@ enum ShortcutAction: CaseIterable, Sendable {
     case toggleTranslateSwapped
     /// Toggles Annotate in Brackets (output both scripts).
     case toggleOutputBothScripts
+    /// Hakfa fork: cycles the Dual-Script Annotation template (square → round → curly → ruby).
+    case cycleAnnotationTemplate
     /// Steps the Candidate Display picker one place: Hanji–Romanization Pairing → Hanji with Romanization → Romanization Only → Hanji–Romanization Pairing.
     case cycleCandidateDisplayMode
     /// Hakfa fork: opens the quick lookup spotlight panel.
@@ -198,7 +207,7 @@ enum ShortcutAction: CaseIterable, Sendable {
     /// and the settings window. Each block keeps `allCases`' order. Mirrors
     /// desktop-core `ShortcutAction::GROUPS` / `GROUP_TITLES`.
     static let groups: [(title: StringKey, actions: [ShortcutAction])] = [
-        (.settingsOutputScriptRoman, [.cycleLect, .toggleRomanization, .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode]),
+        (.settingsOutputScriptRoman, [.cycleLect, .toggleRomanization, .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleAnnotationTemplate, .cycleCandidateDisplayMode]),
         (.settingsTpsMode, [.toggleTps, .showTpsKeyboard]),
         (.commonOther, [.quickLookup, .convertKipanTwoLines, .showSymbolPicker, .showTelexGuide, .openLastSettingsPane]),
     ]
@@ -211,6 +220,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .cycleLect: .cycleLect
         case .toggleTranslateSwapped: .toggleTranslateSwapped
         case .toggleOutputBothScripts: .toggleOutputBothScripts
+        case .cycleAnnotationTemplate: .cycleAnnotationTemplate
         case .showSymbolPicker: .showSymbolPicker
         case .quickLookup: .quickLookup
         case .convertKipanTwoLines: .convertKipanTwoLines
@@ -239,7 +249,7 @@ enum ShortcutAction: CaseIterable, Sendable {
     /// not another.
     func isInert(under mode: InputMode) -> Bool {
         switch self {
-        case .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleCandidateDisplayMode, .showTelexGuide: mode == .tps
+        case .toggleTranslateSwapped, .toggleOutputBothScripts, .cycleAnnotationTemplate, .cycleCandidateDisplayMode, .showTelexGuide: mode == .tps
         case .showTpsKeyboard: mode != .tps
         case .toggleRomanization, .toggleTps, .cycleLect, .showSymbolPicker, .quickLookup, .convertKipanTwoLines, .openLastSettingsPane: false
         }
@@ -270,6 +280,7 @@ enum ShortcutAction: CaseIterable, Sendable {
         case .cycleLect: language.string(.desktopShortcutCycleLect)
         case .toggleTranslateSwapped: language.string(.commonToggleTranslateSwapped)
         case .toggleOutputBothScripts: language.string(.commonToggleOutputBothScripts)
+        case .cycleAnnotationTemplate: language.string(.desktopShortcutCycleAnnotationTemplate)
         case .showSymbolPicker: language.string(.desktopShortcutShowSymbolPicker)
         case .quickLookup: language.string(.desktopShortcutQuickLookup)
         case .convertKipanTwoLines: language.string(.desktopShortcutConvertKipanTwoLines)
@@ -346,7 +357,8 @@ enum ShortcutHotkeys {
             // the named panes are reached from the menu bar now.
             openSettings(on: nil, in: SettingsStore())
         case .toggleRomanization, .toggleTps, .toggleTranslateSwapped, .toggleOutputBothScripts,
-             .cycleCandidateDisplayMode, .cycleLect, .showTelexGuide, .showTpsKeyboard, .convertKipanTwoLines:
+             .cycleCandidateDisplayMode, .cycleLect, .showTelexGuide, .showTpsKeyboard, .convertKipanTwoLines,
+             .cycleAnnotationTemplate:
             ComposingSessionCoordinator.shared.performShortcutAction(action)
         case .quickLookup:
             QuickLookupPanel.shared.toggle()

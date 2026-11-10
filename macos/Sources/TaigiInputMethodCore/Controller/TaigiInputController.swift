@@ -823,6 +823,21 @@ public final class TaigiInputController: IMKInputController {
                     flash(.settingsOutputBothScriptsOff)
                 }
             }
+        case .cycleAnnotationTemplate:
+            guard settings.candidateDisplayMode.showsHanji else { return }
+            let isHanjiFirst = settings.storedIsHanjiFirst
+            let current = isHanjiFirst ? settings.annotationTemplateHanjiFirst : settings.annotationTemplateRomanFirst
+            let next = current.next
+            if isHanjiFirst {
+                settings.annotationTemplateHanjiFirst = next
+            } else {
+                settings.annotationTemplateRomanFirst = next
+            }
+            if !settings.storedIsOutputBothScripts {
+                settings.storedIsOutputBothScripts = true
+            }
+            representCandidates(refetch: false)
+            flash(literal: annotationHudText())
         case .cycleCandidateDisplayMode:
             // Inert only under TPS (gated above). Only the setting is
             // written here — the open bar is re-fetched by the observation

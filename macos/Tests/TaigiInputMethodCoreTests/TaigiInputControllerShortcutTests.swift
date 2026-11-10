@@ -259,4 +259,35 @@ final class TaigiInputControllerShortcutTests: XCTestCase {
         controller.performShortcutAction(.toggleTranslateSwapped)
         XCTAssertEqual(flashes.last, "漢字／諸夏字 [Lomàsīi]")
     }
+
+    /// Hakfa fork: cycleAnnotationTemplate steps through square → round → curly → ruby → square and flashes the HUD.
+    func testCycleAnnotationTemplate_cyclesAndFlashes() {
+        controller.displayLanguageOverride = TestFixtures.makeDisplayLanguageStore(
+            .hakha, userDefaults: userDefaults,
+        )
+        // Starts at default .square: Hanji first
+        controller.settings.annotationTemplateHanjiFirst = .square
+        controller.settings.storedIsOutputBothScripts = false
+
+        // Cycle 1: square → round; activates outputBothScripts
+        controller.performShortcutAction(.cycleAnnotationTemplate)
+        XCTAssertEqual(controller.settings.annotationTemplateHanjiFirst, .round)
+        XCTAssertTrue(controller.settings.storedIsOutputBothScripts)
+        XCTAssertEqual(flashes.last, "漢字／諸夏字 (Lǒmásii)")
+
+        // Cycle 2: round → curly
+        controller.performShortcutAction(.cycleAnnotationTemplate)
+        XCTAssertEqual(controller.settings.annotationTemplateHanjiFirst, .curly)
+        XCTAssertEqual(flashes.last, "漢字／諸夏字 {Lǒmásii}")
+
+        // Cycle 3: curly → ruby
+        controller.performShortcutAction(.cycleAnnotationTemplate)
+        XCTAssertEqual(controller.settings.annotationTemplateHanjiFirst, .ruby)
+        XCTAssertEqual(flashes.last, "<ruby>漢字／諸夏字<rt>Lǒmásii</rt></ruby>")
+
+        // Cycle 4: ruby → square
+        controller.performShortcutAction(.cycleAnnotationTemplate)
+        XCTAssertEqual(controller.settings.annotationTemplateHanjiFirst, .square)
+        XCTAssertEqual(flashes.last, "漢字／諸夏字 [Lǒmásii]")
+    }
 }
