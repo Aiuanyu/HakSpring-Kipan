@@ -140312,15 +140312,57 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "古","gù","gu3","gu","",5100,1,64,平
 "哥","gǒ","go6","go","",5100,1,64,平
 "喺","--he","he1","he","",5000,1,64,四
+"饋","kui","kui1","kui","",5000,1,64,四
+"企盤","kí pǎn","kipan6","kipan","",5000,1,64,四
+"客源翠","hàg ngiěn cui","hagngiencui6","hagngiencui","",5000,1,64,四
+"備份","pi fun","pifun1","pifun","",5000,1,64,四
+"儲存","cǔ cǔn","cucun6","cucun","",5000,1,64,四
+"字型","sii hǐn","siihin6","siihin","",5000,1,64,四
+"介面","gie mien","giemien1","giemien","",5000,1,64,四
 "猴","hěu","heu6","heu","",5000,1,64,四
+"饋","kui","kui1","kui","",5000,1,64,南
+"企盤","kí pǎn","kipan6","kipan","",5000,1,64,南
+"客源翠","hàg ngiǎn cui","hagngiancui6","hagngiancui","",5000,1,64,南
+"備份","pi fun","pifun1","pifun","",5000,1,64,南
+"儲存","cǔ cǔn","cucun6","cucun","",5000,1,64,南
+"字型","sii hǐn","siihin6","siihin","",5000,1,64,南
+"介面","giai mien","giaimien1","giaimien","",5000,1,64,南
 "喺","hē","he7","he","",5000,1,64,海
+"饋","kūi","kui7","kui","",5000,1,64,海
+"企盤","kì pan","kipan3","kipan","",5000,1,64,海
+"客源翠","hag ngien cǔi","hagngiencui6","hagngiencui","",5000,1,64,海
+"備份","pī fūn","pifun7","pifun","",5000,1,64,海
+"儲存","chu cun","chucun1","chucun","",5000,1,64,海
+"字型","sīi hin","siihin7","siihin","",5000,1,64,海
+"介面","gǎi miěn","gaimien6","gaimien","",5000,1,64,海
 "共","kiūng","kiung7","kiung","",5000,1,64,海
 "哶","mē","me7","me","",5000,1,64,大
+"饋","kùi","kui3","kui","",5000,1,64,大
+"企盤","kī pǎn","kipan6","kipan","",5000,1,64,大
+"客源翠","kâg ngiěn cùi","kagngiencui3","kagngiencui","",5000,1,64,大
+"備份","pì fùn","pifun3","pifun","",5000,1,64,大
+"儲存","chǔ sǔn","chusun6","chusun","",5000,1,64,大
+"字型","sìi hǐn","siihin6","siihin","",5000,1,64,大
+"介面","gài mièn","gaimien3","gaimien","",5000,1,64,大
 "喺","--he","he1","he","",5000,1,64,平
+"饋","kúi","kui2","kui","",5000,1,64,平
+"企盤","kǐ pan","kipan6","kipan","",5000,1,64,平
+"客源翠","kàg ngien cùi","kagngiencui3","kagngiencui","",5000,1,64,平
+"備份","pí fún","pifun2","pifun","",5000,1,64,平
+"儲存","chu cun","chucun1","chucun","",5000,1,64,平
+"字型","síi hin","siihin2","siihin","",5000,1,64,平
+"介面","gài mièn","gaimien3","gaimien","",5000,1,64,平
 "運","vín","vin2","vin","",5000,1,64,平
 "共","kiúng","kiung2","kiung","",5000,1,64,平
 "怪","guài","guai3","guai","",5000,1,64,平
 "反","fàn","fan3","fan","",5000,1,64,平
+"饋","kui","kui1","kui","",5000,1,64,安
+"企盤","kǐ pàn","kipan3","kipan","",5000,1,64,安
+"客源翠","ká ngièn cûi","kangiencui5","kangiencui","",5000,1,64,安
+"備份","pi fun","pifun1","pifun","",5000,1,64,安
+"儲存","chì cùn","chicun3","chicun","",5000,1,64,安
+"字型","cu hìn","cuhin3","cuhin","",5000,1,64,安
+"介面","gôi miên","goimien5","goimien","",5000,1,64,安
 "運","bbin","bbin1","bbin","",5000,1,64,安
 "反","fàn","fan3","fan","",4900,1,64,四
 "古","gù","gu3","gu","",4900,1,64,四
@@ -147726,7 +147768,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "颶","gui","gui1","gui","",900,1,64,四
 "飩","tǔn","tun6","tun","",900,1,64,四
 "餛","vǔn","vun6","vun","",900,1,64,四
-"饋","kuǎi","kuai6","kuai","",900,1,64,四
 "饌","con","con1","con","",900,1,64,四
 "饗","hiòng","hiong3","hiong","",900,1,64,四
 "驪","lǐ","li6","li","",900,1,64,四
@@ -151183,7 +151224,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "靡","mì","mi3","mi","",900,1,64,南
 "顴","kiǎn","kian6","kian","",900,1,64,南
 "餽","kui","kui1","kui","",900,1,64,南
-"饋","kuǎi","kuai6","kuai","",900,1,64,南
 "鵯","bí","bi2","bi","",900,1,64,南
 "鼴","iàn","ian3","ian","",900,1,64,南
 "鼾","hon","hon1","hon","",900,1,64,南
@@ -154886,7 +154926,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "霆","tin","tin1","tin","",900,1,64,海
 "顳","ngiàb","ngiab3","ngiab","",900,1,64,海
 "餽","kūi","kui7","kui","",900,1,64,海
-"饋","kuai","kuai1","kuai","",900,1,64,海
 "鬨","hǔng","hung6","hung","",900,1,64,海
 "魎","lióng","liong2","liong","",900,1,64,海
 "魑","chì","chi3","chi","",900,1,64,海
@@ -158479,7 +158518,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "霆","tǐn","tin6","tin","",900,1,64,大
 "顳","ngiàb","ngiab3","ngiab","",900,1,64,大
 "餽","kùi","kui3","kui","",900,1,64,大
-"饋","kuǎi","kuai6","kuai","",900,1,64,大
 "鬨","kùng","kung3","kung","",900,1,64,大
 "魎","liông","liong5","liong","",900,1,64,大
 "魑","chī","chi7","chi","",900,1,64,大
@@ -162103,7 +162141,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "霆","tin","tin1","tin","",900,1,64,平
 "顳","ngiab","ngiab4","ngiab","",900,1,64,平
 "餽","kúi","kui2","kui","",900,1,64,平
-"饋","kuai","kuai1","kuai","",900,1,64,平
 "鬨","kùng","kung3","kung","",900,1,64,平
 "魎","liòng","liong3","liong","",900,1,64,平
 "魑","chǐ","chi6","chi","",900,1,64,平
@@ -165611,7 +165648,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "迄","kèed","keed3","keed","",900,1,64,安
 "酮","tùng","tung3","tung","",900,1,64,安
 "闡","chên","chen5","chen","",900,1,64,安
-"饋","kuài","kuai3","kuai","",900,1,64,安
 "魍","mông","mong5","mong","",900,1,64,安
 "鳩","giǔ","giu6","giu","",900,1,64,安
 "鼬","rhiu","rhiu1","rhiu","",900,1,64,安

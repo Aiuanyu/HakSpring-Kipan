@@ -282,5 +282,185 @@
     "input": "iugangxine",
     "expected_hanji": "有更新吔",
     "expected_roman": "iú gáng xín è"
+  },
+  {
+    "id": "p_01_gimbungidt",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：日常生活、天氣",
+    "input": "gimbungidtiensiiiho",
+    "expected_hanji": "今晡日天時異好",
+    "expected_roman": "Gímbú'ngìd tiénsǐi i hò"
+  },
+  {
+    "id": "p_02_nhazuoihin",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：口語時間詞「下晝」、問句「哪位」",
+    "input": "nhazuoihinaivi",
+    "expected_hanji": "妳下晝愛去哪位",
+    "expected_roman": "Ň házu oi hi naivi"
+  },
+  {
+    "id": "p_03_ngasugiemo",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：現代科技詞「手機仔」、句尾虛詞「吔」",
+    "input": "ngasugiemotiene",
+    "expected_hanji": "吾手機仔無電吔",
+    "expected_roman": "Ngá sùgí'è mǒ tien è"
+  },
+  {
+    "id": "p_04_giaggiagzo",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：疊字副詞「遽遽」、晚餐「暗晡夜」",
+    "input": "giaggiagzonhisiidia",
+    "expected_hanji": "遽遽轉去食夜",
+    "expected_roman": "Giàggiàg zònhi siid'ia"
+  },
+  {
+    "id": "p_05_kipandasii",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：軟體生活句、程度副詞「當」",
+    "input": "kipandasiidongsunsu",
+    "expected_hanji": "企盤打字當順手",
+    "expected_roman": "Kípǎn dàsii dóng sunsù"
+  },
+  {
+    "id": "p_06_cobungidam",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：時間詞「昨晡日」、天氣動詞「落大雨」",
+    "input": "cobungidambulogtaii",
+    "expected_hanji": "昨晡日暗晡落大雨",
+    "expected_roman": "Cóbú'ngìd ambú logtai'ì"
+  },
+  {
+    "id": "p_07_iakiensiiq",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：示性詞「這隻」、形容詞「單純」",
+    "input": "iakiensiiqinmoandansun",
+    "expected_hanji": "這件事情無恁單純",
+    "expected_roman": "Ià kien siiqǐn mǒ àn dánsǔn"
+  },
+  {
+    "id": "p_08_ngaideukiu",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：複數人稱「𠊎等」、連動句「想辦法」",
+    "input": "ngaideukiunghaloixiongpanfab",
+    "expected_hanji": "𠊎兜共下來想辦法",
+    "expected_roman": "Ngǎidéu kiungha lǒi xiòng panfàb"
+  },
+  {
+    "id": "p_09_tiennodong",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：現代科技詞「電腦檔案」、「備份」",
+    "input": "tiennodongonoigidedpifun",
+    "expected_hanji": "電腦檔案愛記得備份",
+    "expected_roman": "Tiennò dòng'on oi gidèd pifun"
+  },
+  {
+    "id": "p_10_cogotiedbi",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：現代交通詞「高鐵」、比較句「過遽」",
+    "input": "cogotiedbicocaehangogiag",
+    "expected_hanji": "坐高鐵比坐車仔還過遽",
+    "expected_roman": "Có gótièd bì có cáè hǎn'go giàg"
+  },
+  {
+    "id": "p_11_ngiiukondo",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：常用名詞「新聞」、疑問句尾「無」",
+    "input": "ngiiukondogetiauxinvunmo",
+    "expected_hanji": "你有看著該條新聞無",
+    "expected_roman": "Ngǐ iú kondò ge tiǎu xínvǔn mǒ"
+  },
+  {
+    "id": "p_12_gaseuxidqi",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：社會議題「假消息」、告誡語「千祈莫」",
+    "input": "gaseuxidqienvanmogloncon",
+    "expected_hanji": "假消息千萬莫亂傳",
+    "expected_roman": "Gà séuxìd qiénvan mog lon cǒn"
+  },
+  {
+    "id": "p_13_mhotungngi",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：否定助詞「毋好」、動詞「相打爭論」",
+    "input": "mhotungnginxiongdaxiongau",
+    "expected_hanji": "毋好同人相打相詏",
+    "expected_roman": "M̌hò tǔng ngǐn xióngdà xióng'au"
+  },
+  {
+    "id": "p_14_vugkangins",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：問候語「屋下人」、健康「健康無」",
+    "input": "vugkanginsiintiiukongkienmo",
+    "expected_hanji": "屋下人身體有康健無",
+    "expected_roman": "Vùgká'ngǐn síintì iú kóngkien mǒ"
+  },
+  {
+    "id": "p_15_lauiabidzi",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：處置句「摎...」、科技動詞「儲存」",
+    "input": "lauiabidziiliaucucunhiloi",
+    "expected_hanji": "摎這筆資料儲存起來",
+    "expected_roman": "Láu ià bìd zíiliau cǔcǔn hìlǒi"
+  },
+  {
+    "id": "p_16_mionglusug",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：現代名詞「網路速度」、副詞「恁慢」",
+    "input": "mionglusugtuanman",
+    "expected_hanji": "網路速度恁慢",
+    "expected_roman": "Miònglu sùgtu àn man"
+  },
+  {
+    "id": "p_17_ngiongvoia",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：口語疑問詞「仰會」、程度詞「恁多」",
+    "input": "ngiongvoiandomunti",
+    "expected_hanji": "仰會恁多問題",
+    "expected_roman": "Ngiòng voi àndó muntǐ"
+  },
+  {
+    "id": "p_18_ngaiiahadi",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：時間詞「這下」、專有名詞「客源翠」",
+    "input": "ngaiiahadihagngiencuikonsu",
+    "expected_hanji": "𠊎這下在客源翠看書",
+    "expected_roman": "Ngǎi iàha di Hàgngiěncui kon sú"
+  },
+  {
+    "id": "p_19_vonsiihing",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：功能詞「換字型」、「介面當靚」",
+    "input": "vonsiihingoheugiemiendongjiang",
+    "expected_hanji": "換字型過後介面當靚",
+    "expected_roman": "Von siihǐn goheu giemien dóng jiáng"
+  },
+  {
+    "id": "p_20_tanggongti",
+    "category": "daily_colloquial",
+    "dialect": "四縣",
+    "description": "平哥審定日常口語：傳聞句「聽講」、時間詞「聽日」",
+    "input": "tanggongtiengongngidvoilogsong",
+    "expected_hanji": "聽講天光日會落霜",
+    "expected_roman": "Tánggòng tién'góngngìd voi logsóng"
   }
 ]

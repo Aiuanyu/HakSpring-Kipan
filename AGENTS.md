@@ -132,7 +132,7 @@ emoji/             # Emoji data generator (own instructions file)
 | Before… | Read |
 |---|---|
 | your first change | § HakSpring Kipan collaboration above, then `docs/contributing/known-pitfalls.md` |
-| any Hakfa phonetics, dictionary or dialect work | `docs/hakfa/`; with the vault, also the hub's decisions table and `dialects.md` |
+| any Hakfa phonetics, dictionary or dialect work | `docs/hakfa/`; with the vault, also the hub's decisions table and `dialects.md`; **must read vault `Hak/客語大補丸/00-總覽.md` (`05`, `06`, `07`, `10`) & query ground truth via `python3 /Users/gjrobert/NAS/projects/HakSpring/scripts/hakfa_lookup.py` (never guess or infer romanization)** |
 | changing files on a platform | that platform's guide in `docs/contributing/` (index: `docs/contributing/README.md`) |
 | adding / renaming / deleting an `i18n/*.json` key from platform code | `docs/contributing/i18n.md` |
 | changing any UI string in Kipan | `docs/hakfa/i18n-overlay.md` — Kipan strings live in `i18n/hakfa/`; never edit `i18n/*.json` |
