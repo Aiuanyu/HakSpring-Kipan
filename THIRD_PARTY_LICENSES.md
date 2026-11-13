@@ -17,6 +17,7 @@ copyright lines below were read out of each font's own `name` table.
 
 | Font | File | Copyright / upstream |
 | --- | --- | --- |
+| 丸仔烏體 Maruko Gothic | `marukogothic_regular.ttf` | Copyright 2020-2023 The Maruko Gothic Project Authors (<https://github.com/syimyuz/maruko-gothic>); composite alphanumeric from Carlito © 2013-2014 Google Inc. (<https://github.com/googlefonts/carlito>). |
 | 芫荽 Iansui | `iansui_regular.ttf` | Copyright 2025 The Iansui Project Authors (<https://github.com/ButTaiwan/iansui>). Designed by But Ko / Fontworks Inc.; derived from Klee One. |
 | jf open 粉圓 2.1 | `jf_openhuninn_2_1.ttf` | justfont (<https://justfont.com/huninn>). Latin/kana components: Kosugi Maru © 2010 MOTOYA CO.,LTD.; Varela Round © 2011-2016 The Varela Round Project Authors, with Reserved Font Names "Varela" and "Varela Round". |
 | 源樣烏體 GenYoGothic2 TW | `genyogothic2tw_r.otf` | ButTaiwan (<https://github.com/ButTaiwan/genyo-font>); derived from Adobe Source Han Sans. |

@@ -272,6 +272,28 @@
     },
     "kautianAltReading": {
       "hakha": "又讀"
+    },
+    "hakspringDescription": {
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hakha": "整理上面的教客典、認證詞彙的綜合型學習網站系統",
+        "taiha": "整理頂面的教客典、認證詞彙的綜合型學習網站系統",
+        "en": "A comprehensive learning website system compiling the MOE Hakfa dictionary and proficiency certification vocabulary above.",
+        "ja": "上記の教育客語辞典、客語認証語彙を整理した総合学習ウェブサイトシステム",
+        "tailo": "Tsíng-lí tíng-bīn ê kàu-kheh-tián, jīm-tsìng sû-luī ê tsong-ha̍p-hîng ha̍k-si̍p bāng-tsām hē-thóng",
+        "poj": "Chéng-lí téng-bīn ê kàu-kheh-tián, jīn-chèng sû-luī ê chong-ha̍p-hêng ha̍k-si̍p bāng-chām hē-thóng"
+      }
     }
   }
 }

@@ -6,13 +6,8 @@ private enum License {
     static let silOpenFont = "SIL Open Font License"
     static let silOpenFont11 = "SIL Open Font License 1.1"
     static let ccByNd3Tw = "CC BY-ND 3.0 TW"
-    static let ccBy4 = "CC BY 4.0"
-    // NTCRI publishes no licence for the glossary text; its only statement covers the images.
-    static let ccByNcNdImages = "CC BY-NC-ND (images only)"
-    static let cc0 = "CC0"
-    static let ccByNcSa3Tw = "CC BY-NC-SA 3.0 TW"
-    static let ccBySa4 = "CC BY-SA 4.0"
     static let ogdlTaiwan10 = "OGDL-Taiwan-1.0"
+    static let apache2 = "Apache License 2.0"
 }
 
 /// Copyright notices for fonts, dictionaries, and open-source projects.
@@ -20,13 +15,13 @@ struct CopyrightView: View {
     @Environment(DisplayLanguageStore.self) private var lang
     var body: some View {
         Form {
-            // Open Huninn (粉圓體)
+            // Maruko Gothic (丸仔烏體)
             CopyrightSection(
-                title: lang.string(.commonFontOpenHuninn),
-                description: lang.string(.homeOpenFontCopyright),
-                license: License.silOpenFont,
+                title: lang.string(.commonFontMarukoGothic),
+                description: "© The Maruko Gothic Authors (syimyuz) / Carlito © Google Inc.",
+                license: License.silOpenFont11,
                 licenseURL: "https://openfontlicense.org/",
-                websiteURL: "https://justfont.com/huninn/",
+                websiteURL: "https://github.com/syimyuz/maruko-gothic",
             )
 
             // Iansui (芫荽體)
@@ -36,6 +31,15 @@ struct CopyrightView: View {
                 license: License.silOpenFont11,
                 licenseURL: "https://openfontlicense.org/",
                 websiteURL: "https://github.com/ButTaiwan/iansui",
+            )
+
+            // Open Huninn (粉圓體)
+            CopyrightSection(
+                title: lang.string(.commonFontOpenHuninn),
+                description: lang.string(.homeOpenFontCopyright),
+                license: License.silOpenFont,
+                licenseURL: "https://openfontlicense.org/",
+                websiteURL: "https://justfont.com/huninn/",
             )
 
             // GenYoMin (源樣明體)
@@ -56,99 +60,32 @@ struct CopyrightView: View {
                 websiteURL: "https://github.com/ButTaiwan/genyog-font",
             )
 
-            // MOE Taiwanese Dictionary (教育部臺灣台語常用詞辭典)
+            // MOE Hakfa Dictionary (教育部臺灣客語辭典)
             CopyrightSection(
                 title: lang.string(.commonMoeDict),
                 description: lang.string(.homeMoeCopyright),
                 license: License.ccByNd3Tw,
                 licenseURL: "https://creativecommons.org/licenses/by-nd/3.0/tw/",
-                websiteURL: "https://sutian.moe.edu.tw/",
+                websiteURL: "https://hakkadict.moe.edu.tw/",
             )
 
-            // New Words Dictionary (新詞新語)
+            // Hakfa Proficiency Certification Vocabulary (客語能力認證詞彙)
             CopyrightSection(
                 title: lang.string(.commonNewwordDict),
                 description: lang.string(.homeNewwordCopyright),
-                license: License.ccBy4,
-                licenseURL: "https://creativecommons.org/licenses/by/4.0/deed.zh-hant",
-                websiteURL: "https://www.taigitv.org.tw/taigi-words",
-            )
-
-            // Craft Dictionary (工藝詞庫)
-            CopyrightSection(
-                title: lang.string(.commonKunggeDict),
-                description: lang.string(.homeKunggeCopyright),
-                license: License.ccByNcNdImages,
-                licenseURL: "https://kanggesu.ntcri.gov.tw/NTCRI_TaigiWebSite/ImageLicense",
-                websiteURL: "https://kanggesu.ntcri.gov.tw/NTCRI_TaigiWebSite",
-            )
-
-            // iTaigi
-            CopyrightSection(
-                title: lang.string(.commonITaigiDict),
-                description: lang.string(.homeITaigiCopyright),
-                license: License.cc0,
-                licenseURL: "https://creativecommons.org/public-domain/cc0/",
-                websiteURL: "https://itaigi.tw/",
-            )
-
-            // Taiwan-Japan Dictionary (台日大辭典)
-            CopyrightSection(
-                title: lang.string(.commonTaiwanJapanDict),
-                description: lang.string(.homeTaiwanJapanCopyright),
-                license: License.ccByNcSa3Tw,
-                licenseURL: "https://creativecommons.org/licenses/by-nc-sa/3.0/tw/",
-                websiteURL: "http://taigi.fhl.net/dict/",
-            )
-
-            // Tai-Hua Dictionary (台華線頂辭典)
-            CopyrightSection(
-                title: lang.string(.commonTaiHuaDict),
-                description: lang.string(.homeTaiHuaCopyright),
-                license: License.ccBySa4,
-                licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/deed.zh_TW",
-                websiteURL: nil,
-            )
-
-            // Taiwan Plant Dictionary (台灣植物名彙)
-            CopyrightSection(
-                title: lang.string(.commonTaiwanPlantDict),
-                description: lang.string(.homeTaiwanPlantCopyright),
-                license: License.ccBySa4,
-                licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/deed.zh_TW",
-                websiteURL: "https://tai2.ntu.edu.tw/ebooks/ListPlFormosSasaki/0/106",
-            )
-
-            // Subject Terminology Dictionary (學科術語) — same rights-holder (教育部) as the MOE dictionary.
-            CopyrightSection(
-                title: lang.string(.commonSttiDict),
-                description: lang.string(.homeMoeCopyright),
                 license: License.ogdlTaiwan10,
                 licenseURL: "https://spdx.org/licenses/OGDL-Taiwan-1.0.html",
-                websiteURL: "https://stti.moe.edu.tw/",
+                websiteURL: "https://elearning.hakka.gov.tw/hakka/download-files",
             )
 
-            // Accent/dialect supplementary data (腔口補充)
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(lang.string(.commonAccentDict))
-                        .font(AppStyle.headlineFont)
-
-                    Text(lang.string(.homeAccentDictCredit))
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            // Developer supplement dictionary (詞庫增補檔案)
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(lang.string(.dictionaryDevSupplementDict))
-                        .font(AppStyle.headlineFont)
-
-                    Text(lang.string(.homeDevSupplementCredit))
-                        .foregroundColor(.secondary)
-                }
-            }
+            // Upstream Software (TaigiKeyboard)
+            CopyrightSection(
+                title: "TaigiKeyboard",
+                description: "© 2025-2026 蘇民弦（Soo Bîn-hiân）",
+                license: License.apache2,
+                licenseURL: "https://www.apache.org/licenses/LICENSE-2.0",
+                websiteURL: "https://github.com/taigikeyboard/taigikeyboard",
+            )
         }
         .navigationTitle(lang.string(.homeCopyrightNotice))
         .navigationBarTitleDisplayMode(.large)

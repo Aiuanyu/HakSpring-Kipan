@@ -121,6 +121,16 @@ fun DictionarySourcesScreen(
                         label = L10n.commonNewwordDict,
                         checked = true,
                         description = L10n.dictionaryNewwordDescription,
+                        url = "https://elearning.hakka.gov.tw/hakka/download-files",
+                        enabled = false,
+                        onCheckedChange = {},
+                    )
+                    SettingsDivider()
+                    // 客源翠：整理教客典、認證詞彙的綜合型學習網站系統
+                    DictionaryRowWithDescription(
+                        label = L10n.commonHakspringDict,
+                        checked = true,
+                        description = L10n.dictionaryHakspringDescription,
                         url = "https://hakspring.pages.dev/",
                         enabled = false,
                         onCheckedChange = {},

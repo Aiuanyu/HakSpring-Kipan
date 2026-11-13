@@ -37,6 +37,28 @@
     "exportAction": { "hakha": "匯出" },
     "importAction": { "hakha": "匯入" },
     "importSuccess": { "hakha": "匯入完成" },
-    "invalidFormat": { "hakha": "格式錯誤" }
+    "invalidFormat": { "hakha": "格式錯誤" },
+    "hakspringDict": {
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hakha": "客源翠",
+        "taiha": "客源翠",
+        "en": "HakSpring",
+        "ja": "客源翠",
+        "tailo": "Kheh-guân-tshuì",
+        "poj": "Kheh-goân-chhùi"
+      }
+    }
   }
 }

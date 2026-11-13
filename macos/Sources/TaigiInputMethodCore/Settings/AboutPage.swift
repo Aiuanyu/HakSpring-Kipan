@@ -27,9 +27,7 @@ struct AboutPage: View {
             }
 
             // Every action a row, the sponsor link first (USER 2026-09-20: no
-            // lone button on the page). The attribution as the card's
-            // footer: fine print on the ground, where a form puts a note that
-            // is neither a setting nor a link.
+            // lone button on the page).
             Section {
                 ExternalLinkButton(titleKey: .desktopSponsorLink, url: Self.sponsorURL, style: .row(.heart))
                 ExternalLinkButton(titleKey: .homeWebsiteLink, url: Self.websiteURL, style: .row(.globe))
@@ -39,6 +37,68 @@ struct AboutPage: View {
                 ExternalLinkButton(titleKey: .homeInstagramLink, url: Self.instagramURL, style: .row(.instagram))
                 ExternalLinkButton(titleKey: .homeThreadsLink, url: Self.threadsURL, style: .row(.threads))
                 ExternalLinkButton(titleKey: .homeEmailLink, url: Self.emailURL, style: .row(.envelope))
+            }
+
+            // 致謝與授權條款 (Acknowledgements & Licenses)
+            Section {
+                LicenseRow(
+                    title: "TaigiKeyboard",
+                    subtitle: "© 2025-2026 蘇民弦（Soo Bîn-hiân）",
+                    license: "Apache-2.0",
+                    licenseURL: "https://www.apache.org/licenses/LICENSE-2.0",
+                    websiteURL: "https://github.com/taigikeyboard/taigikeyboard"
+                )
+                LicenseRow(
+                    title: language.string(.commonMoeDict),
+                    subtitle: "© 中華民國教育部",
+                    license: "CC BY-ND 3.0 TW",
+                    licenseURL: "https://creativecommons.org/licenses/by-nd/3.0/tw/",
+                    websiteURL: "https://hakkadict.moe.edu.tw/"
+                )
+                LicenseRow(
+                    title: language.string(.commonNewwordDict),
+                    subtitle: "© 客家委員會",
+                    license: "OGDL-Taiwan-1.0",
+                    licenseURL: "https://spdx.org/licenses/OGDL-Taiwan-1.0.html",
+                    websiteURL: "https://elearning.hakka.gov.tw/hakka/download-files"
+                )
+                LicenseRow(
+                    title: language.string(.commonFontMarukoGothic),
+                    subtitle: "© The Maruko Gothic Authors (syimyuz) / Carlito © Google Inc.",
+                    license: "SIL OFL 1.1",
+                    licenseURL: "https://openfontlicense.org/",
+                    websiteURL: "https://github.com/syimyuz/maruko-gothic"
+                )
+                LicenseRow(
+                    title: language.string(.commonFontIansui),
+                    subtitle: "© ButTaiwan (But Ko / Fontworks Inc.)",
+                    license: "SIL OFL 1.1",
+                    licenseURL: "https://openfontlicense.org/",
+                    websiteURL: "https://github.com/ButTaiwan/iansui"
+                )
+                LicenseRow(
+                    title: language.string(.commonFontOpenHuninn),
+                    subtitle: "© justfont",
+                    license: "SIL OFL 1.1",
+                    licenseURL: "https://openfontlicense.org/",
+                    websiteURL: "https://justfont.com/huninn/"
+                )
+                LicenseRow(
+                    title: language.string(.commonFontGenYoMin),
+                    subtitle: "© ButTaiwan (Source Han Serif)",
+                    license: "SIL OFL 1.1",
+                    licenseURL: "https://openfontlicense.org/",
+                    websiteURL: "https://github.com/ButTaiwan/genyo-font"
+                )
+                LicenseRow(
+                    title: language.string(.commonFontGenYoGothic),
+                    subtitle: "© ButTaiwan (Source Han Sans)",
+                    license: "SIL OFL 1.1",
+                    licenseURL: "https://openfontlicense.org/",
+                    websiteURL: "https://github.com/ButTaiwan/genyog-font"
+                )
+            } header: {
+                Text("致謝與授權條款")
             } footer: {
                 Text(language.string(.homeCopyrightLine))
                     .frame(maxWidth: .infinity)
@@ -66,5 +126,48 @@ struct AboutPage: View {
 
         /// Between the last card and the attribution under it.
         static let footerGap: CGFloat = 8
+    }
+}
+
+private struct LicenseRow: View {
+    let title: String
+    let subtitle: String
+    let license: String
+    let licenseURL: String?
+    let websiteURL: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(title)
+                    .font(.body.weight(.medium))
+                Spacer()
+                Text(license)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+            }
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 16) {
+                if let licenseURL, let url = URL(string: licenseURL) {
+                    Link(destination: url) {
+                        Label("授權條款", systemImage: "doc.text")
+                            .font(.caption)
+                    }
+                }
+                if let websiteURL, let url = URL(string: websiteURL) {
+                    Link(destination: url) {
+                        Label("官方網站", systemImage: "globe")
+                            .font(.caption)
+                    }
+                }
+            }
+            .padding(.top, 2)
+        }
+        .padding(.vertical, 4)
     }
 }

@@ -253,6 +253,23 @@
         }
       }
     },
+    "i18n_common_hakspringDict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HakSpring"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "客源翠"
+          }
+        }
+      }
+    },
     "i18n_common_iTaigiDict": {
       "comment": "Display name of the iTaigi crowd-sourced dictionary data source.",
       "extractionState": "manual",
@@ -1023,6 +1040,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "一覧には先頭の 100 件だけを表示します。ほかは「入力して検索」で検索してください。"
+          }
+        }
+      }
+    },
+    "i18n_dictionary_hakspringDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A comprehensive learning website system compiling the MOE Hakfa dictionary and proficiency certification vocabulary above."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上記の教育客語辞典、客語認証語彙を整理した総合学習ウェブサイトシステム"
           }
         }
       }

@@ -13,6 +13,18 @@ publisher, origin URL, capture date, and pipeline notes per source.
 
 ## Status
 
+### Hakfa (Kipan) Sources
+
+In HakSpring-Kipan, the compiled Hakfa dictionary artifacts shipped in application packages (`assets/dictionaries/`) are built from HakSpring dictionary sources (`dictionary/sources/official/hakspring/`), not from the Taigi sources below.
+
+| Source | Publisher | Licence | Verified |
+| --- | --- | --- | --- |
+| `kautian` 教育部臺灣客語辭典 | 中華民國教育部 | **CC BY-ND 3.0 TW** | ✅ 2026-11-11, publisher's own 版權聲明 |
+| `cert` 客語能力認證詞彙 | 客家委員會（哈客網路學院） | **政府資料開放授權條款 1.0 (OGDL-Taiwan-1.0)** | ✅ 2026-11-11, data.gov.tw / publisher |
+| `supp` 客源翠詞庫與演算法 | 客源翠 HakSpring (Aiuanyu) | **GPLv3 / Open Data** | ✅ 2026-11-11, HakSpring repository |
+
+### Upstream TaigiKeyboard Sources
+
 Row counts are from `dictionary/output/dictionary.csv` (168,351 rows total).
 "Exclusive" counts rows that no other source also supplies.
 

@@ -78,6 +78,8 @@ object L10n {
         @Composable get() = stringRes(StringKey.COMMON_IMPORT_SUCCESS)
     val commonInvalidFormat: String
         @Composable get() = stringRes(StringKey.COMMON_INVALID_FORMAT)
+    val commonHakspringDict: String
+        @Composable get() = stringRes(StringKey.COMMON_HAKSPRING_DICT)
     val desktopTelexGuideHyphen: String
         @Composable get() = stringRes(StringKey.DESKTOP_TELEX_GUIDE_HYPHEN)
     val desktopDictionarySourcesLink: String
@@ -256,6 +258,8 @@ object L10n {
         @Composable get() = stringRes(StringKey.DICTIONARY_LEARNING_RECORDS_ADD_TO_CUSTOM_DICTIONARY)
     val dictionaryLearningRecordsAddedToCustomDictionary: String
         @Composable get() = stringRes(StringKey.DICTIONARY_LEARNING_RECORDS_ADDED_TO_CUSTOM_DICTIONARY)
+    val dictionaryHakspringDescription: String
+        @Composable get() = stringRes(StringKey.DICTIONARY_HAKSPRING_DESCRIPTION)
     val homeAppHeaderTitle: String
         @Composable get() = stringRes(StringKey.HOME_APP_HEADER_TITLE)
     val homeSetupKeyboard: String

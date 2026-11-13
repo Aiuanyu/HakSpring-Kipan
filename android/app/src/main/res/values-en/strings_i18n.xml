@@ -37,6 +37,7 @@
     <string name="i18n_common_importAction">Import</string>
     <string name="i18n_common_importSuccess">Import completed</string>
     <string name="i18n_common_invalidFormat">Invalid format</string>
+    <string name="i18n_common_hakspringDict">HakSpring</string>
     <string name="i18n_desktop_telexGuideHyphen">Hyphen</string>
     <string name="i18n_desktop_dictionarySourcesLink">Manage Dictionaries</string>
     <string name="i18n_dictionary_customDictionary">Custom Dictionary</string>
@@ -128,6 +129,7 @@
     <string name="i18n_dictionary_learningRecordsWriteFailed">Could Not Change the Learning Record</string>
     <string name="i18n_dictionary_learningRecordsAddToCustomDictionary">Add to Custom Dictionary</string>
     <string name="i18n_dictionary_learningRecordsAddedToCustomDictionary">Added to Custom Dictionary</string>
+    <string name="i18n_dictionary_hakspringDescription">A comprehensive learning website system compiling the MOE Hakfa dictionary and proficiency certification vocabulary above.</string>
     <string name="i18n_home_appHeaderTitle">HakSpring-Kipan</string>
     <string name="i18n_home_setupKeyboard">Enable the keyboard to start using it</string>
     <string name="i18n_home_typingGuide">Typing Guide</string>

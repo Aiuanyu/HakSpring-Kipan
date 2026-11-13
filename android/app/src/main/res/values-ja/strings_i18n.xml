@@ -37,6 +37,7 @@
     <string name="i18n_common_importAction">インポート</string>
     <string name="i18n_common_importSuccess">インポート完了</string>
     <string name="i18n_common_invalidFormat">形式が無効です</string>
+    <string name="i18n_common_hakspringDict">客源翠</string>
     <string name="i18n_desktop_telexGuideHyphen">ハイフン</string>
     <string name="i18n_desktop_dictionarySourcesLink">辞書の管理</string>
     <string name="i18n_dictionary_customDictionary">カスタム辞書</string>
@@ -128,6 +129,7 @@
     <string name="i18n_dictionary_learningRecordsWriteFailed">学習記録を変更できませんでした</string>
     <string name="i18n_dictionary_learningRecordsAddToCustomDictionary">カスタム辞書に追加</string>
     <string name="i18n_dictionary_learningRecordsAddedToCustomDictionary">カスタム辞書に追加しました</string>
+    <string name="i18n_dictionary_hakspringDescription">上記の教育客語辞典、客語認証語彙を整理した総合学習ウェブサイトシステム</string>
     <string name="i18n_home_appHeaderTitle">客源翠企盤</string>
     <string name="i18n_home_setupKeyboard">キーボードを有効にして使い始めましょう</string>
     <string name="i18n_home_typingGuide">入力ガイド</string>

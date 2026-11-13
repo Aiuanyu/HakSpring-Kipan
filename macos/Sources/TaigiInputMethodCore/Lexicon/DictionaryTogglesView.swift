@@ -93,6 +93,15 @@ struct DictionaryTogglesView: View {
                 .padding(.leading, Metrics.subcollectionIndent)
                 .disabled(true)
 
+                // 客源翠：整理教客典、認證詞彙的綜合型學習網站系統
+                VStack(alignment: .leading, spacing: 2) {
+                    Toggle(language.string(.commonHakspringDict), isOn: .constant(true))
+                        .disabled(true)
+                    Text(language.string(.dictionaryHakspringDescription))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 // hakfa: bit 6 (kungge) is the HakSpring character supplement, locked on;
                 // desktop-core `SettingsDocument::dictionary_sources` forces it on for the engine too.
                 Toggle(language.string(.commonKunggeDict), isOn: .constant(true))
@@ -100,7 +109,7 @@ struct DictionaryTogglesView: View {
             } header: {
                 Text(language.string(.dictionaryMoeSectionTitle))
             } footer: {
-                Text("客語能力認證詞彙跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸、大埔、饒平、詔安同款。\n美濃音：另外收南四縣認證標个美濃讀音，候選標「美」。\n卓蘭音、桃園音：另外收饒平認證標个卓蘭、桃園讀音，候選標「卓」「桃」「卓桃」。")
+                Text("客語能力認證詞彙（哈客網路學院）跟著教育部辭典：辭典開了四縣或南四縣，認證的四縣就開；海陸、大埔、饒平、詔安同款。\n美濃音：另外收南四縣認證標个美濃讀音，候選標「美」。\n卓蘭音、桃園音：另外收饒平認證標个卓蘭、桃園讀音，候選標「卓」「桃」「卓桃」。")
             }
 
             // Hakfa fork: an output option, switched on its own (USER 2026-10-25) — the Meinong

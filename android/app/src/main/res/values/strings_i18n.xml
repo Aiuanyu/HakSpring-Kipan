@@ -37,6 +37,7 @@
     <string name="i18n_common_importAction">匯入</string>
     <string name="i18n_common_importSuccess">匯入完成</string>
     <string name="i18n_common_invalidFormat">格式錯誤</string>
+    <string name="i18n_common_hakspringDict">客源翠</string>
     <string name="i18n_desktop_telexGuideHyphen">連字符</string>
     <string name="i18n_desktop_dictionarySourcesLink">辭典管理</string>
     <string name="i18n_dictionary_customDictionary">自訂詞庫</string>
@@ -128,6 +129,7 @@
     <string name="i18n_dictionary_learningRecordsWriteFailed">學習紀錄改失敗</string>
     <string name="i18n_dictionary_learningRecordsAddToCustomDictionary">加入自訂詞庫</string>
     <string name="i18n_dictionary_learningRecordsAddedToCustomDictionary">已經加入自訂詞庫</string>
+    <string name="i18n_dictionary_hakspringDescription">整理上面的教客典、認證詞彙的綜合型學習網站系統</string>
     <string name="i18n_home_appHeaderTitle">客源翠企盤</string>
     <string name="i18n_home_setupKeyboard">企盤愛打開正做得使用</string>
     <string name="i18n_home_typingGuide">打字說明</string>
@@ -164,7 +166,7 @@
     <string name="i18n_home_taiwanPlantCopyright">© 佐佐木舜一</string>
     <string name="i18n_home_taiHuaCopyright">© 鄭良偉</string>
     <string name="i18n_home_taiwanJapanCopyright">© 小川尚義</string>
-    <string name="i18n_home_kunggeCopyright">© 國立臺灣工藝研究發展中心</string>
+    <string name="i18n_home_kunggeCopyright">© 客源翠 HakSpring</string>
     <string name="i18n_home_accentDictCredit">實齋整理、提供</string>
     <string name="i18n_home_devSupplementCredit">建中整理、提供</string>
     <string name="i18n_keyboard_expandCandidates">展開抑係收合候選詞列</string>
