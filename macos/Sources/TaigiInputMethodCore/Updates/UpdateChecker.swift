@@ -259,6 +259,10 @@ final class UpdateChecker {
     /// The stored pending update, dropped unless it is still newer than what is
     /// installed. Reading and validating together, so no caller can act on a
     /// remembered version that this build has already caught up with.
+    private static func cleanVersion(_ text: String) -> String {
+        text.components(separatedBy: "+").first ?? text
+    }
+
     private static func validPendingUpdate(
         _ data: Data?,
         installedVersion: String,
@@ -266,7 +270,7 @@ final class UpdateChecker {
         guard let data,
               let manifest = try? UpdateManifest.decode(data),
               let remote = DottedVersion(manifest.version),
-              let installed = DottedVersion(installedVersion),
+              let installed = DottedVersion(cleanVersion(installedVersion)),
               remote > installed
         else { return nil }
         return manifest
@@ -319,7 +323,7 @@ final class UpdateChecker {
     private func classify(_ manifest: UpdateManifest) -> Outcome {
         // A bundle version this cannot parse is a build error, but the reader
         // is release code: staying silent beats alerting about every version.
-        guard let installed = DottedVersion(installedVersionText),
+        guard let installed = DottedVersion(Self.cleanVersion(installedVersionText)),
               let remote = DottedVersion(manifest.version)
         else { return .upToDate }
         return remote > installed ? .updateAvailable(manifest) : .upToDate

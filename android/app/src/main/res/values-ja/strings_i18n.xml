@@ -38,6 +38,12 @@
     <string name="i18n_common_importSuccess">インポート完了</string>
     <string name="i18n_common_invalidFormat">形式が無効です</string>
     <string name="i18n_common_hakspringDict">客源翠</string>
+    <string name="i18n_common_appVersion">アプリバージョン</string>
+    <string name="i18n_common_lexiconVersion">辞書バージョン</string>
+    <string name="i18n_common_activeLect">現在の方言</string>
+    <string name="i18n_common_diagnosticCopyNotice">診断情報をコピー</string>
+    <string name="i18n_common_diagnosticCopiedNotice">コピーしました</string>
+    <string name="i18n_common_checkUpdateAction">アップデートを確認</string>
     <string name="i18n_desktop_telexGuideHyphen">ハイフン</string>
     <string name="i18n_desktop_dictionarySourcesLink">辞書の管理</string>
     <string name="i18n_dictionary_customDictionary">カスタム辞書</string>

@@ -59,6 +59,138 @@
         "tailo": "Kheh-guân-tshuì",
         "poj": "Kheh-goân-chhùi"
       }
+    },
+    "appVersion": {
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hakha": "軟體版本",
+        "taiha": "軟體版本",
+        "en": "App Version",
+        "ja": "アプリバージョン",
+        "tailo": "Nńg-thé pán-pún",
+        "poj": "Nńg-thé pán-pún"
+      }
+    },
+    "lexiconVersion": {
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hakha": "詞庫版本",
+        "taiha": "詞庫版本",
+        "en": "Lexicon Version",
+        "ja": "辞書バージョン",
+        "tailo": "Sû-khòo pán-pún",
+        "poj": "Sû-khò͘ pán-pún"
+      }
+    },
+    "activeLect": {
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hakha": "目前腔頭",
+        "taiha": "目前腔調",
+        "en": "Current Lect",
+        "ja": "現在の方言",
+        "tailo": "Ba̍k-tsiân khiuⁿ-tiāu",
+        "poj": "Ba̍k-chiân khiuⁿ-tiāu"
+      }
+    },
+    "diagnosticCopyNotice": {
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hakha": "複製診斷資訊",
+        "taiha": "複製診斷資訊",
+        "en": "Copy Diagnostic Info",
+        "ja": "診断情報をコピー",
+        "tailo": "Khóo-pi chín-tuàn tsu-sìn",
+        "poj": "Khó͘-pi chín-toàn chu-sìn"
+      }
+    },
+    "diagnosticCopiedNotice": {
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hakha": "既經複製",
+        "taiha": "已經複製",
+        "en": "Copied",
+        "ja": "コピーしました",
+        "tailo": "Í-king khóo-pi",
+        "poj": "Í-keng khó͘-pi"
+      }
+    },
+    "checkUpdateAction": {
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows",
+          "linux"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hakha": "檢查更新",
+        "taiha": "檢查更新",
+        "en": "Check for Updates",
+        "ja": "アップデートを確認",
+        "tailo": "Kiám-tsa kíng-sin",
+        "poj": "Kiám-cha kèng-sin"
+      }
     }
   }
 }

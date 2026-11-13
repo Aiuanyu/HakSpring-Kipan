@@ -30,6 +30,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.siansiansu.taigikeyboard.R
+import com.siansiansu.taigikeyboard.engine.ActiveLect
+import com.siansiansu.taigikeyboard.engine.HakfaLects
+import com.siansiansu.taigikeyboard.engine.LexiconVersion
+import com.siansiansu.taigikeyboard.ime.settings.PrefHelper
 import com.siansiansu.taigikeyboard.content.ContentType
 import com.siansiansu.taigikeyboard.content.FeatureContent
 import com.siansiansu.taigikeyboard.content.FeatureContentLoader
@@ -198,6 +202,82 @@ fun HomeScreen(
                         style = MaterialTheme.typography.labelLarge,
                     )
                 }
+
+                SettingsDivider(Modifier.padding(horizontal = 16.dp))
+
+                val lexiconInfo = remember { LexiconVersion.get(context) }
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_document),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = L10n.commonLexiconVersion,
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        text = lexiconInfo.displaySummary(),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+
+                SettingsDivider(Modifier.padding(horizontal = 16.dp))
+
+                val currentLectName = remember {
+                    val code = try {
+                        PrefHelper(context).lect
+                    } catch (_: Exception) {
+                        ActiveLect.current
+                    }
+                    HakfaLects.nameOf(code)
+                }
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.keyboard_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = L10n.commonActiveLect,
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        text = currentLectName,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+
+                SettingsDivider(Modifier.padding(horizontal = 16.dp))
+
+                NavigationRow(
+                    icon = painterResource(R.drawable.ic_open_in_new),
+                    label = L10n.commonCheckUpdateAction,
+                    labelColor = linkBlue,
+                    onClick = { onUrlClick("https://hakspring.pages.dev/kipan/") },
+                )
             }
 
             Spacer(Modifier.height(AppStyle.sectionSpacing))

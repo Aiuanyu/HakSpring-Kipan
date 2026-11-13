@@ -19,6 +19,40 @@
         }
       }
     },
+    "i18n_common_activeLect": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Lect"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在の方言"
+          }
+        }
+      }
+    },
+    "i18n_common_appVersion": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Version"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリバージョン"
+          }
+        }
+      }
+    },
     "i18n_common_cancel": {
       "comment": "Dialog dismiss button — cancels the action and closes the dialog.",
       "extractionState": "manual",
@@ -33,6 +67,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "キャンセル"
+          }
+        }
+      }
+    },
+    "i18n_common_checkUpdateAction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アップデートを確認"
           }
         }
       }
@@ -69,6 +120,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "削除"
+          }
+        }
+      }
+    },
+    "i18n_common_diagnosticCopiedNotice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コピーしました"
+          }
+        }
+      }
+    },
+    "i18n_common_diagnosticCopyNotice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Diagnostic Info"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診断情報をコピー"
           }
         }
       }
@@ -374,6 +459,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "工芸センター 台湾語工芸用語辞書"
+          }
+        }
+      }
+    },
+    "i18n_common_lexiconVersion": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lexicon Version"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辞書バージョン"
           }
         }
       }

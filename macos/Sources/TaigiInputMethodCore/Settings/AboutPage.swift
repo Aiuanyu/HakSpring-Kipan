@@ -11,9 +11,68 @@ import SwiftUI
 /// name and no version — the update row on General already says which build this is.
 struct AboutPage: View {
     @Environment(DisplayLanguageStore.self) private var language
+    @State private var didCopyDiagnostic = false
+
+    private var currentLectName: String {
+        SettingsStore().effectiveLect.displayName
+    }
+
+    private var diagnosticPayload: String {
+        let appVer = AppVersion.installed
+        let lexVer = LexiconVersion.current.displaySummary
+        let lect = currentLectName
+        let osVer = ProcessInfo.processInfo.operatingSystemVersionString
+        return """
+        客源翠企盤 HakSpring-Kipan
+        App: v\(appVer)
+        詞庫版本: \(lexVer)
+        目前腔頭: \(lect)
+        OS: macOS \(osVer)
+        """.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     var body: some View {
         Form {
+            // 版本與系統狀態 (Version & Status)
+            Section {
+                LabeledContent(language.string(.commonAppVersion)) {
+                    Text(AppVersion.installed)
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent(language.string(.commonLexiconVersion)) {
+                    Text(LexiconVersion.current.displaySummary)
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent(language.string(.commonActiveLect)) {
+                    Text(currentLectName)
+                        .foregroundStyle(.secondary)
+                }
+                HStack {
+                    Button {
+                        let pasteboard = NSPasteboard.general
+                        pasteboard.clearContents()
+                        pasteboard.setString(diagnosticPayload, forType: .string)
+                        didCopyDiagnostic = true
+                    } label: {
+                        Label(
+                            didCopyDiagnostic
+                                ? language.string(.commonDiagnosticCopiedNotice)
+                                : language.string(.commonDiagnosticCopyNotice),
+                            systemImage: didCopyDiagnostic ? "checkmark" : "doc.on.doc"
+                        )
+                    }
+
+                    Spacer()
+
+                    if let url = URL(string: "https://hakspring.pages.dev/kipan/") {
+                        Link(destination: url) {
+                            Label(language.string(.commonCheckUpdateAction), systemImage: "arrow.triangle.2.circlepath")
+                        }
+                    }
+                }
+                .padding(.top, 2)
+            }
+
             // No heading (USER 2026-09-20: "no 'TaigiKeyboard' heading needed"): the window
             // title already names the page. Leading-aligned like the rows
             // under it (USER 2026-09-20: "left-align the copy").

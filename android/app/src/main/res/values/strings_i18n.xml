@@ -38,6 +38,12 @@
     <string name="i18n_common_importSuccess">匯入完成</string>
     <string name="i18n_common_invalidFormat">格式錯誤</string>
     <string name="i18n_common_hakspringDict">客源翠</string>
+    <string name="i18n_common_appVersion">軟體版本</string>
+    <string name="i18n_common_lexiconVersion">詞庫版本</string>
+    <string name="i18n_common_activeLect">目前腔頭</string>
+    <string name="i18n_common_diagnosticCopyNotice">複製診斷資訊</string>
+    <string name="i18n_common_diagnosticCopiedNotice">既經複製</string>
+    <string name="i18n_common_checkUpdateAction">檢查更新</string>
     <string name="i18n_desktop_telexGuideHyphen">連字符</string>
     <string name="i18n_desktop_dictionarySourcesLink">辭典管理</string>
     <string name="i18n_dictionary_customDictionary">自訂詞庫</string>
@@ -144,8 +150,8 @@
     <string name="i18n_home_setupGuideStep2TurnOn">打開客源翠企盤</string>
     <string name="i18n_home_rateUs">替𠊎兜評分</string>
     <string name="i18n_home_aboutKeyboard">關於企盤</string>
-    <string name="i18n_home_aboutIntroProject">客源翠企盤是一个自由、開源个客話打字家私，永遠免費、無廣告，乜毋會推出付費功能。毋管係一般使用者、先生、學校抑係客話教育團體，全部做得自由使用。希望分大家用客話、教客話个時節，毋使有額外个負擔。說明：本企盤介面講著个『諸夏字』，同人講个「漢字」同義。</string>
-    <string name="i18n_home_aboutIntroMaintainer">這隻計畫目前由𠊎一個人利用上班以外个時間開發摎維護。希望做得一直做落去，分每隻想愛用母語打字个人，都做得輕鬆用母語打字。</string>
+    <string name="i18n_home_aboutIntroProject">客源翠企盤係一隻自由、開源个客話打字工具，永遠免費、無廣告，乜毋會推出付費功能。毋管係一般使用者、先生、學校，還係客話教育團體，全部做得自由使用。希望分逐家用客話、教客話个時節，毋使有額外个負擔。說明：本企盤介面講著个『諸夏字』，同人講个「漢字」同義。</string>
+    <string name="i18n_home_aboutIntroMaintainer">這隻計畫目前由𠊎一儕人利用上班以外个時間開發摎維護。希望做得一直做下去，分逐儕想愛用母語打字个人，全部做得輕鬆用母語打字。</string>
     <string name="i18n_home_websiteLink">taigikeyboard.tw</string>
     <string name="i18n_home_githubLink">GitHub</string>
     <string name="i18n_home_discordLink">Discord</string>
@@ -243,7 +249,7 @@
     <string name="i18n_settings_noEmailApp">尋無 Email App</string>
     <string name="i18n_settings_diagnosticSectionTitle">裝置資訊</string>
     <string name="i18n_settings_diagnosticCopy">複製裝置資訊（含當機紀錄）</string>
-    <string name="i18n_settings_diagnosticCopied">已經複製</string>
+    <string name="i18n_settings_diagnosticCopied">既經複製</string>
     <string name="i18n_settings_diagnosticShare">分享裝置資訊</string>
     <string name="i18n_settings_diagnosticEmail">Email 回報問題</string>
     <string name="i18n_settings_openApp">去 APP 調整</string>

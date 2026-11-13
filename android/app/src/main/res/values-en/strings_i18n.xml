@@ -38,6 +38,12 @@
     <string name="i18n_common_importSuccess">Import completed</string>
     <string name="i18n_common_invalidFormat">Invalid format</string>
     <string name="i18n_common_hakspringDict">HakSpring</string>
+    <string name="i18n_common_appVersion">App Version</string>
+    <string name="i18n_common_lexiconVersion">Lexicon Version</string>
+    <string name="i18n_common_activeLect">Current Lect</string>
+    <string name="i18n_common_diagnosticCopyNotice">Copy Diagnostic Info</string>
+    <string name="i18n_common_diagnosticCopiedNotice">Copied</string>
+    <string name="i18n_common_checkUpdateAction">Check for Updates</string>
     <string name="i18n_desktop_telexGuideHyphen">Hyphen</string>
     <string name="i18n_desktop_dictionarySourcesLink">Manage Dictionaries</string>
     <string name="i18n_dictionary_customDictionary">Custom Dictionary</string>

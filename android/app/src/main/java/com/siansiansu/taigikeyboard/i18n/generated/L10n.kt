@@ -80,6 +80,18 @@ object L10n {
         @Composable get() = stringRes(StringKey.COMMON_INVALID_FORMAT)
     val commonHakspringDict: String
         @Composable get() = stringRes(StringKey.COMMON_HAKSPRING_DICT)
+    val commonAppVersion: String
+        @Composable get() = stringRes(StringKey.COMMON_APP_VERSION)
+    val commonLexiconVersion: String
+        @Composable get() = stringRes(StringKey.COMMON_LEXICON_VERSION)
+    val commonActiveLect: String
+        @Composable get() = stringRes(StringKey.COMMON_ACTIVE_LECT)
+    val commonDiagnosticCopyNotice: String
+        @Composable get() = stringRes(StringKey.COMMON_DIAGNOSTIC_COPY_NOTICE)
+    val commonDiagnosticCopiedNotice: String
+        @Composable get() = stringRes(StringKey.COMMON_DIAGNOSTIC_COPIED_NOTICE)
+    val commonCheckUpdateAction: String
+        @Composable get() = stringRes(StringKey.COMMON_CHECK_UPDATE_ACTION)
     val desktopTelexGuideHyphen: String
         @Composable get() = stringRes(StringKey.DESKTOP_TELEX_GUIDE_HYPHEN)
     val desktopDictionarySourcesLink: String

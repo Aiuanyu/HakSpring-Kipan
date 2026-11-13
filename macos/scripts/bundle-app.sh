@@ -111,6 +111,13 @@ rm -rf "$APP_DIR"
 mkdir -p "$CONTENTS_DIR/MacOS" "$CONTENTS_DIR/Resources"
 cp "$BUILT_EXECUTABLE" "$CONTENTS_DIR/MacOS/$EXECUTABLE_NAME"
 cp "$SOURCE_PLIST" "$CONTENTS_DIR/Info.plist"
+
+if [[ "$CONFIGURATION" == "debug" ]]; then
+    BUILD_DATE_TIME="$(date +%Y%m%d-%H%M)"
+    FULL_VERSION="${SHORT_VERSION}+dev-${BUILD_DATE_TIME}"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $FULL_VERSION" "$CONTENTS_DIR/Info.plist"
+fi
+
 printf 'APPL????' > "$CONTENTS_DIR/PkgInfo"
 
 echo "==> Copying icons"
@@ -165,7 +172,7 @@ echo "==> Copying dictionary data"
 # The repo-root `assets/dictionaries`, the one copy of the bytes every platform
 # packages — nothing to sync, nothing to drift.
 DICTIONARY_SOURCE_DIR="$REPOSITORY_DIR/assets/dictionaries"
-for artifact in dictionary.fst dictionary.bin association.bin syllables.fst gloss.db; do
+for artifact in dictionary.fst dictionary.bin association.bin syllables.fst gloss.db data_version.json; do
     source_file="$DICTIONARY_SOURCE_DIR/$artifact"
     # Fail here rather than ship a bundle whose input method launches, receives
     # keys, and produces no candidates at all.
