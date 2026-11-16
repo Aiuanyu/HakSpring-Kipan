@@ -26,17 +26,19 @@ fun ActionRow(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
     icon: ImageVector? = null,
     trailingIcon: ImageVector? = null,
 ) {
     val view = LocalView.current
+    val contentAlpha = if (enabled) 1f else 0.38f
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
-                .clickable {
+                .clickable(enabled = enabled) {
                     view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
                     onClick()
                 }.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -47,14 +49,14 @@ fun ActionRow(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha),
             )
             Spacer(Modifier.width(12.dp))
         }
         Text(
             text = label,
             modifier = Modifier.weight(1f),
-            color = textColor,
+            color = textColor.copy(alpha = contentAlpha),
             style = MaterialTheme.typography.bodyLarge,
         )
         if (trailingIcon != null) {
@@ -62,7 +64,7 @@ fun ActionRow(
                 imageVector = trailingIcon,
                 contentDescription = null,
                 modifier = Modifier.size(AppStyle.trailingChevronSize),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
             )
         }
     }

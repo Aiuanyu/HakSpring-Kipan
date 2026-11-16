@@ -437,6 +437,7 @@ private fun DiagnosticSection(viewModel: DiagnosticViewModel) {
     // Toast strings fire from onClick (outside Composition) — capture the live resolver here
     // (same seam as the R2a-2 dictionary screens).
     val stringResolver by rememberUpdatedState(LocalStringResolver.current)
+    val hasCrashes = remember(viewModel) { viewModel.gather().recentCrashes.isNotEmpty() }
     SectionHeader(L10n.settingsDiagnosticSectionTitle)
     SettingsCard {
         ActionRow(
@@ -446,7 +447,7 @@ private fun DiagnosticSection(viewModel: DiagnosticViewModel) {
                 val info = viewModel.gather()
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 clipboard.setPrimaryClip(
-                    ClipData.newPlainText(DIAGNOSTIC_CLIP_LABEL, info.formatted()),
+                    ClipData.newPlainText(DIAGNOSTIC_CLIP_LABEL, info.formattedDeviceInfo()),
                 )
                 Toast.makeText(context, stringResolver.resolve(StringKey.SETTINGS_DIAGNOSTIC_COPIED), Toast.LENGTH_SHORT).show()
             },
@@ -455,6 +456,7 @@ private fun DiagnosticSection(viewModel: DiagnosticViewModel) {
         ActionRow(
             label = L10n.settingsDiagnosticShare,
             icon = Icons.AutoMirrored.Outlined.OpenInNew,
+            enabled = hasCrashes,
             textColor = MaterialTheme.colorScheme.primary,
             onClick = {
                 val info = viewModel.gather()

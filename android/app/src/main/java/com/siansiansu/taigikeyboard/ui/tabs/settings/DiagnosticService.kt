@@ -23,7 +23,7 @@ data class DiagnosticInfo(
     /** Hakfa fork: the last uncaught exceptions and the system's exit records; empty when there are none. */
     val recentCrashes: String = "",
 ) {
-    fun formatted(): String =
+    fun formattedDeviceInfo(): String =
         """
             |客源翠企盤 HakSpring-Kipan
             |App: v$appVersion ($buildNumber)
@@ -31,7 +31,10 @@ data class DiagnosticInfo(
             |目前腔頭: $activeLectName
             |OS: Android $osVersion (API ${Build.VERSION.SDK_INT})
             |Device: $deviceModel
-        """.trimMargin().trim() + if (recentCrashes.isEmpty()) "" else "\n\nRecent crashes:\n$recentCrashes"
+        """.trimMargin().trim()
+
+    fun formatted(): String =
+        formattedDeviceInfo() + if (recentCrashes.isEmpty()) "" else "\n\nRecent crashes:\n$recentCrashes"
 }
 
 // Gathers local diagnostic information on demand.
