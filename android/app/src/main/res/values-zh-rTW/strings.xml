@@ -8,4 +8,8 @@
     <string name="ime_subtype_ngiaupin">臺灣客話饒平腔</string>
     <string name="ime_subtype_zhioon">臺灣客話詔安腔</string>
     <string name="process_text__label">客源翠</string>
+    <string name="kipan_two_lines__label">雙書寫轉雙行</string>
+    <string name="kipan_two_lines__converted">已經轉雙行</string>
+    <string name="kipan_two_lines__converted_clipboard">已經自剪貼簿轉雙行</string>
+    <string name="kipan_two_lines__not_found">無尋著雙書寫標註文字</string>
 </resources>

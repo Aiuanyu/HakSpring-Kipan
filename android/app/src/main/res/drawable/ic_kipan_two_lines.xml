@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Top line (Hanji) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,6h12v2.2H3z" />
+    <!-- Bottom line (Romanization) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,15.8h12V18H3z" />
+    <!-- Middle divider / split indicator -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,11h9v2H3z" />
+    <!-- Down-split arrow on the right -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M18.5,7v7.17l-2.09,-2.09L15,13.5l4.5,4.5l4.5,-4.5l-1.41,-1.41L20.5,14.17V7H18.5z" />
+</vector>

@@ -38,6 +38,7 @@ class ToolbarManager(
     private val onInputModeChanged: (String) -> Unit,
     private val onLayoutSelected: (String) -> Unit,
     private val getKeyboardHeight: () -> Int,
+    private val onConvertKipanTwoLines: () -> Unit = {},
 ) {
     // Skip updateActiveContainerVisibility() during animated transitions
     var isAnimatingContainerSwitch = false
@@ -105,6 +106,14 @@ class ToolbarManager(
         // Symbol panel button
         smartbarView.findViewById<View>(R.id.toolbar_symbol_button)?.setOnClickListener {
             showSymbolSelection()
+        }
+
+        // Hakfa fork: Convert inline dual-script annotation to two parallel lines
+        smartbarView.findViewById<View>(R.id.toolbar_kipan_two_lines_button)?.setOnClickListener {
+            onConvertKipanTwoLines()
+            if (prefs.isToolbarAutoCollapse) {
+                collapseToolbarIfOpen()
+            }
         }
 
         // Keyboard button: tap = last callout pick (dismiss / toggle a one-handed side),

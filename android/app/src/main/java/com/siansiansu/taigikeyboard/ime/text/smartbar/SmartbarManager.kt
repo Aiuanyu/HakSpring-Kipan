@@ -150,6 +150,7 @@ class SmartbarManager(
                 textInputManager.onKeyboardLayoutTypeChanged(newLayoutType)
             },
             getKeyboardHeight = { keyboardHeight },
+            onConvertKipanTwoLines = { convertKipanTwoLinesInPlace() },
         )
 
     private val candidateClickHandler =
@@ -732,5 +733,68 @@ class SmartbarManager(
             themePressedHighlightColor = tints?.second ?: getColorFromAttr(context, R.attr.semiTransparentColor),
             smartbarHeightPx = height,
         )
+    }
+
+    private fun convertKipanTwoLinesInPlace() {
+        val context = taigikeyboard.context
+        val ic = taigikeyboard.currentInputConnection
+        if (ic == null) {
+            showTwoLineToast(context, R.string.kipan_two_lines__not_found)
+            return
+        }
+
+        taigikeyboard.beginInputEvent()
+        ic.beginBatchEdit()
+        try {
+            ic.finishComposingText()
+
+            // 1. Prefer selected text in the active editor
+            val selected = ic.getSelectedText(0)?.toString().orEmpty()
+            if (selected.isNotEmpty()) {
+                val res = HakfaKipanConverter.convertKipanText(selected)
+                if (res.pairs.isNotEmpty() && res.combinedText != selected) {
+                    ic.commitText(res.combinedText, 1)
+                    showTwoLineToast(context, R.string.kipan_two_lines__converted)
+                    return
+                }
+            }
+
+            // 2. Otherwise inspect text before cursor (current paragraph, then full lookbehind)
+            val before = ic.getTextBeforeCursor(4000, 0)?.toString().orEmpty()
+            val target = HakfaKipanConverter.extractConvertibleTarget(before)
+            if (target != null) {
+                val res = HakfaKipanConverter.convertKipanText(target.text)
+                if (res.pairs.isNotEmpty() && res.combinedText != target.text) {
+                    ic.deleteSurroundingText(target.deleteBeforeLength, 0)
+                    ic.commitText(res.combinedText, 1)
+                    showTwoLineToast(context, R.string.kipan_two_lines__converted)
+                    return
+                }
+            }
+        } finally {
+            ic.endBatchEdit()
+        }
+
+        // 3. Fallback: convert clipboard text and commit at cursor
+        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+            as? android.content.ClipboardManager
+        val clipText = clipboard?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
+        if (clipText.isNotEmpty()) {
+            val res = HakfaKipanConverter.convertKipanText(clipText)
+            if (res.pairs.isNotEmpty() && res.combinedText != clipText) {
+                ic.commitText(res.combinedText, 1)
+                showTwoLineToast(context, R.string.kipan_two_lines__converted_clipboard)
+                return
+            }
+        }
+
+        showTwoLineToast(context, R.string.kipan_two_lines__not_found)
+    }
+
+    private fun showTwoLineToast(
+        context: android.content.Context,
+        @androidx.annotation.StringRes resId: Int,
+    ) {
+        android.widget.Toast.makeText(context, resId, android.widget.Toast.LENGTH_SHORT).show()
     }
 }

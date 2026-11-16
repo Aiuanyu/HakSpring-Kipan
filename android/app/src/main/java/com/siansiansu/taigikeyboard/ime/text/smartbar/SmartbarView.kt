@@ -283,6 +283,7 @@ class SmartbarView : LinearLayout {
         private val TOOLBAR_ICON_BUTTON_IDS =
             intArrayOf(
                 R.id.toolbar_symbol_button,
+                R.id.toolbar_kipan_two_lines_button,
                 R.id.toolbar_layout_button,
                 R.id.toolbar_globe_button,
                 R.id.toolbar_dismiss_button,
