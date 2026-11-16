@@ -104,7 +104,7 @@ class ProcessTextLookupActivity : ComponentActivity() {
                     try {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                     } catch (e: Exception) {
-                        Toast.makeText(this, "無法開啟瀏覽器", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "無法度打開瀏覽器", Toast.LENGTH_SHORT).show()
                     }
                 },
                 glossRepo = glossRepo,
@@ -116,7 +116,7 @@ class ProcessTextLookupActivity : ComponentActivity() {
     private fun copyToClipboard(text: String) {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("客源翠", text))
-        Toast.makeText(this, "已複製：$text", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "既經複製：$text", Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -214,7 +214,7 @@ private fun ProcessTextLookupScreen(
                                 color = MaterialTheme.colorScheme.primaryContainer,
                             ) {
                                 Text(
-                                    text = "點擊替換",
+                                    text = "撳落替換",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -239,12 +239,12 @@ private fun ProcessTextLookupScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp),
-                    placeholder = { Text("輸入客語字、詞或華語反查...", fontSize = 14.sp) },
+                    placeholder = { Text("輸入客話字、詞還係 Chinese 反查⋯", fontSize = 14.sp) },
                     singleLine = true,
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "搜尋",
+                            contentDescription = "尋詞",
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     },
@@ -299,7 +299,7 @@ private fun ProcessTextLookupScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "客源翠詞庫中未收錄「$query」",
+                                text = "客源翠詞庫肚還毋曾收錄「$query」",
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -312,7 +312,7 @@ private fun ProcessTextLookupScreen(
                             ) {
                                 Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("前往客源翠網站搜尋", fontSize = 12.sp)
+                                Text("去客源翠網站尋", fontSize = 12.sp)
                             }
                         }
                     }

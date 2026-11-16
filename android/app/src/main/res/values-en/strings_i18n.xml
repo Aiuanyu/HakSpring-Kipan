@@ -152,13 +152,13 @@
     <string name="i18n_home_aboutKeyboard">About the Keyboard</string>
     <string name="i18n_home_aboutIntroProject">TaigiKeyboard is a free, open-source Taiwanese input method — free forever, with no ads and no paid features ever. Everyday users, teachers, schools and Taiwanese-language education groups are all free to use it. The hope is that using and teaching Taiwanese comes with no extra burden.</string>
     <string name="i18n_home_aboutIntroMaintainer">This project is developed and maintained by one person, in the hours outside a day job. I hope to keep it going, so that everyone who wants to type in their mother tongue can do so with ease.</string>
-    <string name="i18n_home_websiteLink">taigikeyboard.tw</string>
+    <string name="i18n_home_websiteLink">hakspring.pages.dev/kipan</string>
     <string name="i18n_home_githubLink">GitHub</string>
-    <string name="i18n_home_discordLink">Discord</string>
+    <string name="i18n_home_discordLink">Reddit</string>
     <string name="i18n_home_facebookLink">Facebook</string>
     <string name="i18n_home_instagramLink">Instagram</string>
     <string name="i18n_home_threadsLink">Threads</string>
-    <string name="i18n_home_emailLink">info@taigikeyboard.tw</string>
+    <string name="i18n_home_emailLink">aiuanyu777@gmail.com</string>
     <string name="i18n_home_copyrightLine">© 2026 Bîn-hiân</string>
     <string name="i18n_home_privacyPolicy">Privacy Policy</string>
     <string name="i18n_home_version">Current Version</string>

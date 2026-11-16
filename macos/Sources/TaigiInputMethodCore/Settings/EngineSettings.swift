@@ -85,7 +85,7 @@ enum Lect: String, CaseIterable, Sendable {
         case .xiien: "四縣 (Xi'ien)"
         case .namxiian: "南四縣 (Nǎm Xi'ian)"
         case .hoiliug: "海陸 (Hóiliug)"
-        case .taibu: "大埔 (Tàibú)"
+        case .taibu: "大埔 (Tàibū)"
         case .ngiaupin: "饒平 (Ngiaupin)"
         case .zhioon: "詔安 (Zhiô'ǒn)"
         }

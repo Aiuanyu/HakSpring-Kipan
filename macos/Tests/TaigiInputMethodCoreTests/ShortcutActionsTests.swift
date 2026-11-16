@@ -72,7 +72,7 @@ final class ShortcutActionsTests: XCTestCase {
                 "四縣 (Xi'ien)",
                 "南四縣 (Nǎm Xi'ian)",
                 "海陸 (Hóiliug)",
-                "大埔 (Tàibú)",
+                "大埔 (Tàibū)",
                 "饒平 (Ngiaupin)",
                 "詔安 (Zhiô'ǒn)",
             ]

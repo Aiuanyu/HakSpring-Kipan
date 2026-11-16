@@ -147,8 +147,9 @@ fun HomeScreen(
                     icon = painterResource(R.drawable.ic_open_in_new),
                     label = L10n.homePrivacyPolicy,
                     labelColor = linkBlue,
-                    onClick = { onUrlClick("https://taigikeyboard.tw/privacypolicy.html") },
+                    onClick = { onUrlClick("https://hakspring.pages.dev/kipan/") },
                 )
+                /* Hakfa fork: hide upstream Google Play Store rating link while not on Play Store.
                 SettingsDivider(Modifier.padding(horizontal = 16.dp))
                 NavigationRow(
                     icon = painterResource(R.drawable.ic_open_in_new),
@@ -160,6 +161,7 @@ fun HomeScreen(
                         )
                     },
                 )
+                */
                 SettingsDivider(Modifier.padding(horizontal = 16.dp))
                 NavigationRow(
                     icon = painterResource(R.drawable.ic_document),

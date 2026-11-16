@@ -88,7 +88,8 @@ struct AboutPage: View {
             // Every action a row, the sponsor link first (USER 2026-09-20: no
             // lone button on the page).
             Section {
-                ExternalLinkButton(titleKey: .desktopSponsorLink, url: Self.sponsorURL, style: .row(.heart))
+                // Hakfa fork: hide upstream ECPay sponsor link during beta.
+                // ExternalLinkButton(titleKey: .desktopSponsorLink, url: Self.sponsorURL, style: .row(.heart))
                 ExternalLinkButton(titleKey: .homeWebsiteLink, url: Self.websiteURL, style: .row(.globe))
                 ExternalLinkButton(titleKey: .homeGithubLink, url: Self.githubURL, style: .row(.github))
                 ExternalLinkButton(titleKey: .homeDiscordLink, url: Self.discordURL, style: .row(.discord))
@@ -157,7 +158,7 @@ struct AboutPage: View {
                     websiteURL: "https://github.com/ButTaiwan/genyog-font"
                 )
             } header: {
-                Text("致謝與授權條款")
+                Text("致謝摎授權條款")
             } footer: {
                 Text(language.string(.homeCopyrightLine))
                     .frame(maxWidth: .infinity)
@@ -167,13 +168,13 @@ struct AboutPage: View {
         .formStyle(.grouped)
     }
 
-    private static let websiteURL = URL(string: "https://taigikeyboard.tw")
-    private static let githubURL = URL(string: "https://github.com/taigikeyboard")
-    private static let discordURL = URL(string: "https://discord.gg/UFn9RdynPu")
-    private static let facebookURL = URL(string: "https://www.facebook.com/profile.php?id=61589036184924")
-    private static let instagramURL = URL(string: "https://www.instagram.com/taigikeyboardtw/")
-    private static let threadsURL = URL(string: "https://www.threads.com/@siansiansu")
-    private static let emailURL = URL(string: "mailto:info@taigikeyboard.tw")
+    private static let websiteURL = URL(string: "https://hakspring.pages.dev/kipan/")
+    private static let githubURL = URL(string: "https://github.com/Aiuanyu/HakSpring-Kipan")
+    private static let discordURL = URL(string: "https://www.reddit.com/r/HakSpring")
+    private static let facebookURL = URL(string: "https://www.facebook.com/Aiuanyu/")
+    private static let instagramURL = URL(string: "https://www.instagram.com/aiuanyu/")
+    private static let threadsURL = URL(string: "https://www.threads.net/@aiuanyu")
+    private static let emailURL = URL(string: "mailto:aiuanyu777@gmail.com")
     private static let sponsorURL = URL(string: "https://p.ecpay.com.tw/AA663DE")
 
     private enum Metrics {

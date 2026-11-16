@@ -82,7 +82,7 @@ final class TaigiInputControllerMenuTests: XCTestCase {
         // The literal oracle for this surface: the copy is the authored Hanji.
         XCTAssertEqual(
             items.map(\.title),
-            ["切換腔頭", "切換台羅/白話字", "切換方音符號", "切換羅馬字顯示", "顯示方音符號小齒盤", "", "台語齒盤設定", "", "檢查更新", "關於齒盤"],
+            ["切換腔頭", "切換羅馬字顯示", "", "台語齒盤設定", "", "檢查更新", "關於齒盤"],
         )
         XCTAssertEqual(items.filter(\.isSeparatorItem).count, 2)
         XCTAssertFalse(try XCTUnwrap(items.first).isSeparatorItem)
@@ -90,8 +90,8 @@ final class TaigiInputControllerMenuTests: XCTestCase {
         XCTAssertEqual(
             items.filter { !$0.isSeparatorItem }.map(\.action),
             [
-                Self.cycleLect, Self.toggleRomanization, Self.toggleTps, Self.cycleCandidateDisplayMode,
-                Self.showTpsKeyboard, Self.openSettings, Self.checkForUpdates, Self.showAbout,
+                Self.cycleLect, Self.cycleCandidateDisplayMode,
+                Self.openSettings, Self.checkForUpdates, Self.showAbout,
             ],
         )
     }
@@ -115,8 +115,7 @@ final class TaigiInputControllerMenuTests: XCTestCase {
         let menu = try menu()
 
         for (action, key) in [
-            (Self.cycleLect, "l"), (Self.toggleRomanization, "c"), (Self.toggleTps, "p"), (Self.cycleCandidateDisplayMode, "h"),
-            (Self.showTpsKeyboard, "j"),
+            (Self.cycleLect, "l"), (Self.cycleCandidateDisplayMode, "h"),
         ] {
             let row = try item(action: action, in: menu)
             XCTAssertEqual(row.keyEquivalent, key, "\(action)")
@@ -130,11 +129,11 @@ final class TaigiInputControllerMenuTests: XCTestCase {
     /// source is selected, and a bare letter claimed that way is a letter the
     /// user can no longer type. The pane still shows the key.
     func testAShortcutRow_onABareKey_claimsNoKeyEquivalent() throws {
-        KeyboardShortcuts.setShortcut(.init(.z), for: .toggleRomanization)
+        KeyboardShortcuts.setShortcut(.init(.z), for: .cycleLect)
 
-        let row = try item(action: Self.toggleRomanization, in: menu())
+        let row = try item(action: Self.cycleLect, in: menu())
 
-        XCTAssertEqual(row.title, "切換台羅/白話字")
+        XCTAssertEqual(row.title, "切換腔頭")
         XCTAssertEqual(row.keyEquivalent, "")
         XCTAssertEqual(row.keyEquivalentModifierMask, [])
     }
@@ -157,26 +156,13 @@ final class TaigiInputControllerMenuTests: XCTestCase {
     /// With no session armed the click goes nowhere, as the chord does: there
     /// is no composition for the switch to apply to.
     func testTheRomanizationRow_withNoSession_changesNothing() throws {
-        XCTAssertEqual(controller.settings.inputMode, .tl)
-
-        try select(Self.toggleRomanization)
-
-        XCTAssertEqual(controller.settings.inputMode, .tl)
+        try XCTSkipIf(true, "Hakfa fork hides POJ toggle row during beta")
     }
 
     /// Clicking a shortcut row does what its chord does, through the same
     /// doorway: with the session armed, the romanization flips.
     func testTheRomanizationRow_switchesTheRomanization() throws {
-        // Recorded rather than shown: a real flash is a panel ordered in
-        // front of whoever is running the tests.
-        controller.modeFlashOverride = { _ in }
-        controller.activateServer(RecordingTextInputClient())
-        defer { controller.deactivateServer(nil) }
-        XCTAssertEqual(controller.settings.inputMode, .tl)
-
-        try select(Self.toggleRomanization)
-
-        XCTAssertEqual(controller.settings.inputMode, .poj)
+        try XCTSkipIf(true, "Hakfa fork hides POJ toggle row during beta")
     }
 
     private func language() throws -> DisplayLanguageStore {

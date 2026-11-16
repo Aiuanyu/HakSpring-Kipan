@@ -114,7 +114,7 @@ final class MainMenuTests: XCTestCase {
     /// called, so a menu bar that opened with File would lose File's items to
     /// that role. The product name is not localized — it names the app in every language.
     func testMainMenu_leadsWithTheApplicationMenu() {
-        XCTAssertEqual(makeMenu().items.first?.title, "TaigiKeyboard")
+        XCTAssertEqual(makeMenu().items.first?.title, "客源翠企盤")
     }
 
     /// The literal oracle: the titles must be the authored copy for the language asked for, not

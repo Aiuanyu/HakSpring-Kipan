@@ -518,6 +518,8 @@ public final class TaigiInputController: IMKInputController {
                     label: ShortcutAction.cycleLect.label(language),
                     selector: #selector(cycleLect(_:)),
                 ),
+                // Hakfa fork: hide unimplemented POJ/TPS menu items during beta.
+                /*
                 shortcutRow(
                     .toggleRomanization,
                     label: ShortcutAction.toggleRomanization.label(language),
@@ -528,16 +530,19 @@ public final class TaigiInputController: IMKInputController {
                     label: ShortcutAction.toggleTps.label(language),
                     selector: #selector(toggleTps(_:)),
                 ),
+                */
                 shortcutRow(
                     .cycleCandidateDisplayMode,
                     label: ShortcutAction.cycleCandidateDisplayMode.label(language),
                     selector: #selector(cycleCandidateDisplayMode(_:)),
                 ),
+                /*
                 shortcutRow(
                     .showTpsKeyboard,
                     label: ShortcutAction.showTpsKeyboard.label(language),
                     selector: #selector(showTpsKeyboard(_:)),
                 ),
+                */
             ]
             // One doorway (USER 2026-08-26). There was a row per settings pane
             // from 2026-08-21 until then: each carried its own ⌃⇧ chord, and

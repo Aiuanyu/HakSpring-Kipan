@@ -121,13 +121,13 @@ internal fun getTextByKey(
 // Billing exemption for an individual's donations (USER 2026-09-26).
 private val aboutLinks =
     listOf(
-        Triple(StringKey.HOME_WEBSITE_LINK, R.drawable.ic_globe, "https://taigikeyboard.tw"),
-        Triple(StringKey.HOME_GITHUB_LINK, R.drawable.ic_github, "https://github.com/taigikeyboard"),
-        Triple(StringKey.HOME_DISCORD_LINK, R.drawable.ic_discord, "https://discord.gg/UFn9RdynPu"),
-        Triple(StringKey.HOME_FACEBOOK_LINK, R.drawable.ic_facebook, "https://www.facebook.com/profile.php?id=61589036184924"),
-        Triple(StringKey.HOME_INSTAGRAM_LINK, R.drawable.ic_instagram, "https://www.instagram.com/taigikeyboardtw/"),
-        Triple(StringKey.HOME_THREADS_LINK, R.drawable.ic_threads, "https://www.threads.com/@siansiansu"),
-        Triple(StringKey.HOME_EMAIL_LINK, R.drawable.ic_email, "mailto:info@taigikeyboard.tw"),
+        Triple(StringKey.HOME_WEBSITE_LINK, R.drawable.ic_globe, "https://hakspring.pages.dev/kipan/"),
+        Triple(StringKey.HOME_GITHUB_LINK, R.drawable.ic_github, "https://github.com/Aiuanyu/HakSpring-Kipan"),
+        Triple(StringKey.HOME_DISCORD_LINK, R.drawable.ic_discord, "https://www.reddit.com/r/HakSpring"),
+        Triple(StringKey.HOME_FACEBOOK_LINK, R.drawable.ic_facebook, "https://www.facebook.com/Aiuanyu/"),
+        Triple(StringKey.HOME_INSTAGRAM_LINK, R.drawable.ic_instagram, "https://www.instagram.com/aiuanyu/"),
+        Triple(StringKey.HOME_THREADS_LINK, R.drawable.ic_threads, "https://www.threads.net/@aiuanyu"),
+        Triple(StringKey.HOME_EMAIL_LINK, R.drawable.ic_email, "mailto:aiuanyu777@gmail.com"),
     )
 
 private fun buildAboutKeyboardItems(resolver: StringResolver): List<DetailItem> =

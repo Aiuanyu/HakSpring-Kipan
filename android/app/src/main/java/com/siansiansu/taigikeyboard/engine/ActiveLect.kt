@@ -37,7 +37,7 @@ object HakfaLects {
             Lect(ActiveLect.XIIEN, "四縣 (Xi'ien)"),
             Lect(ActiveLect.NAMXIIAN, "南四縣 (Nǎm Xi'ian)"),
             Lect(ActiveLect.HOILIUG, "海陸 (Hóiliug)"),
-            Lect(ActiveLect.TAIBU, "大埔 (Tàibú)"),
+            Lect(ActiveLect.TAIBU, "大埔 (Tàibū)"),
             Lect(ActiveLect.NGIAUPIN, "饒平 (Ngiaupin)"),
             Lect(ActiveLect.ZHIOON, "詔安 (Zhiô'ǒn)"),
         )

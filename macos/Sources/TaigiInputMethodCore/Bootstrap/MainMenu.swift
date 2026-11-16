@@ -43,7 +43,7 @@ enum MainMenu {
     }
 
     /// The process name, not a localized string: it names the product in every language.
-    private static let appMenuTitle = "TaigiKeyboard"
+    private static let appMenuTitle = "客源翠企盤"
 
     private static func fileMenu(_ language: DisplayLanguageStore) -> NSMenu {
         let menu = NSMenu(title: language.string(.desktopMenuFile))

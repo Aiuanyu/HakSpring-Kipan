@@ -389,7 +389,7 @@ struct LearningRecordsPage: View {
             } header: {
                 Text("備份（全部腔）")
             } footer: {
-                Text("一隻 .hakfa 檔包六腔个詞頻、關聯、學詞，摎自訂詞庫（記得各詞屬佗一腔）。匯入係合併，毋會蓋掉現有：次數留較大个。學詞係你打過个詞組，分人以前愛細膩。")
+                Text("一隻 .hakfa 檔包六腔个詞頻、關聯、學詞，摎自訂詞庫（記等各詞屬於哪隻腔頭）。匯入係合併，毋會蓋著現有个：留等次數較大个。學詞係你打過个詞組，分別人進前愛細膩。")
             }
 
             Section {
@@ -398,7 +398,7 @@ struct LearningRecordsPage: View {
                 }
             } footer: {
                 // Hakfa fork (D5): learning data is per lect, so the button empties the lect picked above.
-                Text("只刪上面所選腔別（\(model.lect.displayName)）个學習記錄，別腔無影響。")
+                Text("單淨刪頂高所擇腔別（\(model.lect.displayName)）个學習紀錄，無影響別腔。")
             }
         }
         .formStyle(.grouped)

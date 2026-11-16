@@ -152,13 +152,13 @@
     <string name="i18n_home_aboutKeyboard">齒盤について</string>
     <string name="i18n_home_aboutIntroProject">台語齒盤は、自由でオープンソースの台湾語入力ツールです。ずっと無料で、広告もなく、有料機能を出すこともありません。一般の利用者、先生、学校、台湾語教育団体のどなたでも自由に使えます。台湾語を使うとき、教えるときに、余計な負担がないことを願っています。</string>
     <string name="i18n_home_aboutIntroMaintainer">このプロジェクトは現在、私一人が本業以外の時間で開発と保守を行っています。これからも続けていき、母語で入力したいすべての人が、気軽に母語で入力できることを願っています。</string>
-    <string name="i18n_home_websiteLink">taigikeyboard.tw</string>
+    <string name="i18n_home_websiteLink">hakspring.pages.dev/kipan</string>
     <string name="i18n_home_githubLink">GitHub</string>
-    <string name="i18n_home_discordLink">Discord</string>
+    <string name="i18n_home_discordLink">Reddit</string>
     <string name="i18n_home_facebookLink">Facebook</string>
     <string name="i18n_home_instagramLink">Instagram</string>
     <string name="i18n_home_threadsLink">Threads</string>
-    <string name="i18n_home_emailLink">info@taigikeyboard.tw</string>
+    <string name="i18n_home_emailLink">aiuanyu777@gmail.com</string>
     <string name="i18n_home_copyrightLine">© 2026 Bîn-hiân</string>
     <string name="i18n_home_privacyPolicy">プライバシーポリシー</string>
     <string name="i18n_home_version">現在のバージョン</string>

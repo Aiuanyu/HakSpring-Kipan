@@ -152,7 +152,7 @@ private struct QuickLookupView: View {
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.secondary)
 
-                TextField("輸入客語漢字、讀音或華語反查（如：飯包、便當、卵、蛋）...", text: $query)
+                TextField("輸入客話漢字、讀音還係 Chinese 反查（如：飯包、便當、卵、蛋）⋯", text: $query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 16))
                     .onSubmit {
@@ -225,12 +225,12 @@ private struct QuickLookupView: View {
                         Image(systemName: "character.book.closed")
                             .font(.system(size: 36))
                             .foregroundColor(.secondary.opacity(0.6))
-                        Text("輸入漢字或華語詞彙反查客語詞目")
+                        Text("輸入漢字還係 Chinese 詞彙反查客話詞目")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
 
                         HStack(spacing: 8) {
-                            Text("推薦搜尋：")
+                            Text("推薦尋詞：")
                                 .font(.system(size: 12))
                                 .foregroundColor(.secondary)
                             ForEach(["便當", "飯包", "害喜", "春", "卵"], id: \.self) { sample in
@@ -245,7 +245,7 @@ private struct QuickLookupView: View {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 32))
                             .foregroundColor(.secondary.opacity(0.5))
-                        Text("無符合「\(query)」的客語詞目或同義詞")
+                        Text("無符合「\(query)」个客話詞目抑係同義詞")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }
@@ -375,7 +375,7 @@ private struct ResultRowView: View {
                 .foregroundColor(.accentColor)
             }
             .buttonStyle(.plain)
-            .help("在客源翠開啟聽音檔與查看例句")
+            .help("在客源翠打開聽音檔摎看例句")
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
