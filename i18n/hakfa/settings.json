@@ -1,64 +1,182 @@
 {
   "namespace": "settings",
   "keys": {
-    "reset": { "hakha": "恢復" },
-    "inputMode": { "hakha": "輸入模式" },
-    "keyboardLayout": { "hakha": "企盤排列" },
-    "displayLanguage": { "hakha": "介面語言" },
-    "displayLanguageAutomatic": { "hakha": "自動" },
-    "pojMode": { "hakha": "白話字" },
-    "tlMode": { "hakha": "HagPinPlus" },
-    "englishMode": { "hakha": "英文" },
-    "taigiMode": { "hakha": "客話" },
-    "tpsMode": { "hakha": "方音符號" },
-    "typingSectionTitle": { "hakha": "打字設定" },
-    "candidateDisplayMode": { "hakha": "候選詞顯示" },
-    "candidateDisplayModeSideBySide": { "hakha": "漢羅對應" },
-    "candidateDisplayModeCombined": { "hakha": "漢羅合用" },
-    "candidateDisplayModeRomanOnly": { "hakha": "羅馬字" },
-    "outputBothScripts": { "hakha": "雙書寫標註" },
-    "outputBothScriptsOn": { "hakha": "漢字／諸夏字 (Lǒmásii)" },
-    "outputBothScriptsOff": { "hakha": "淨一種文字" },
-    "inputScript": { "hakha": "輸入文字" },
-    "outputScript": { "hakha": "輸出文字" },
-    "outputScriptHanji": { "hakha": "漢字／諸夏字" },
-    "outputScriptRoman": { "hakha": "羅馬字" },
-    "syllableSeparator": { "hakha": "音節分隔" },
-    "syllableSeparatorSpace": { "hakha": "空白" },
-    "syllableSeparatorNone": { "hakha": "無" },
-    "syllableSeparatorInfo": { "hakha": "兩隻音節中央用連字符（í-ien）、閬縫（í ien），抑係無間等（í'ien）。無間等个時節，怕會讀毋著各位所自動加撇號 '。" },
-    "candidateWindow": { "hakha": "顯示選字窗" },
-    "literalRomanCandidate": { "hakha": "當在打个字放第一個" },
-    "literalRomanCandidateInfo": { "hakha": "候選詞列第一格顯示你打个羅馬字，點按抑係按 Enter 送出。關閉之後單淨做得用 Enter 送出。" },
-    "autoCapitalization": { "hakha": "自動大本字" },
-    "toneInputScheme": { "hakha": "數字調號方案" },
-    "toneSchemeStandard": { "hakha": "符號編號（1 2 3 4 5 6 7）" },
-    "toneSchemeScale": { "hakha": "五度調值（24 33 53...）" },
-    "toneSchemeTelex": { "hakha": "Telex" },
-    "autoSpace": { "hakha": "自動閬一格" },
-    "keyboardSectionTitle": { "hakha": "企盤設定" },
-    "toolbarAutoCollapse": { "hakha": "選字後自動收合工具列" },
-    "toolbarAutoCollapseInfo": { "hakha": "分企盤頂背空間較大。" },
-    "globeKey": { "hakha": "企盤切換按鈕" },
-    "globeKeyInfo": { "hakha": "在企盤頂背加 1 粒地球按鈕，按著做得切換去其他企盤。" },
-    "feedbackSectionTitle": { "hakha": "打字反應" },
-    "soundFeedback": { "hakha": "按鍵聲" },
-    "vibrationFeedback": { "hakha": "震動反應" },
-    "doubleTapOO": { "hakha": "連續打 oo → o͘" },
-    "doubleTapNN": { "hakha": "連續打 nn → ⁿ" },
-    "nasalMarkerUppercase": { "hakha": "白話字大本鼻音" },
-    "nasalMarkerUppercaseCapital": { "hakha": "ᴺ（SIÂᴺ）" },
-    "nasalMarkerUppercaseSmall": { "hakha": "ⁿ（SIÂⁿ）" },
-    "tpsOrMapsToER": { "hakha": "or 對應 ㄜ" },
-    "tpsOrMapsToERInfo": { "hakha": "開啟時 or 顯示做 ㄜ，關閉時顯示做 ㄛ。毋會影響尋詞結果。" },
-    "resetSettings": { "hakha": "恢復設定" },
-    "resetFailed": { "hakha": "恢復設定失敗，請重試" },
-    "noEmailApp": { "hakha": "尋無 Email App" },
-    "diagnosticSectionTitle": { "hakha": "裝置資訊" },
-    "diagnosticCopy": { "hakha": "複製裝置資訊" },
-    "diagnosticCopied": { "hakha": "既經複製" },
-    "diagnosticShare": { "hakha": "分享診斷資訊（含當機紀錄）" },
-    "diagnosticEmail": { "hakha": "Email 回報問題" },
-    "openApp": { "hakha": "去 APP 調整" }
+    "reset": {
+      "hakha": "恢復"
+    },
+    "inputMode": {
+      "hakha": "輸入模式"
+    },
+    "keyboardLayout": {
+      "hakha": "企盤排列"
+    },
+    "displayLanguage": {
+      "hakha": "介面語言"
+    },
+    "displayLanguageAutomatic": {
+      "hakha": "自動"
+    },
+    "pojMode": {
+      "hakha": "白話字"
+    },
+    "tlMode": {
+      "hakha": "HagPinPlus"
+    },
+    "englishMode": {
+      "hakha": "英文"
+    },
+    "taigiMode": {
+      "hakha": "客話"
+    },
+    "tpsMode": {
+      "hakha": "方音符號"
+    },
+    "typingSectionTitle": {
+      "hakha": "打字設定"
+    },
+    "candidateDisplayMode": {
+      "hakha": "候選詞顯示"
+    },
+    "candidateDisplayModeSideBySide": {
+      "hakha": "漢羅對應"
+    },
+    "candidateDisplayModeCombined": {
+      "hakha": "漢羅合用"
+    },
+    "candidateDisplayModeRomanOnly": {
+      "hakha": "羅馬字"
+    },
+    "outputBothScripts": {
+      "hakha": "雙書寫標註"
+    },
+    "outputBothScriptsOn": {
+      "hakha": "漢字／諸夏字 (Lǒmásii)"
+    },
+    "outputBothScriptsOff": {
+      "hakha": "淨一種文字"
+    },
+    "inputScript": {
+      "hakha": "輸入文字"
+    },
+    "outputScript": {
+      "hakha": "輸出文字"
+    },
+    "outputScriptHanji": {
+      "hakha": "漢字／諸夏字"
+    },
+    "outputScriptRoman": {
+      "hakha": "羅馬字"
+    },
+    "syllableSeparator": {
+      "hakha": "音節分隔"
+    },
+    "syllableSeparatorSpace": {
+      "hakha": "空白"
+    },
+    "syllableSeparatorNone": {
+      "hakha": "無"
+    },
+    "syllableSeparatorInfo": {
+      "hakha": "兩隻音節中央用連字符（í-ien）、閬縫（í ien），還係無間等（í'ien）。無間等个時節，怕會讀毋著各位所自動加撇號 '。"
+    },
+    "candidateWindow": {
+      "hakha": "顯示擇字窗"
+    },
+    "literalRomanCandidate": {
+      "hakha": "當在打个字放第一個"
+    },
+    "literalRomanCandidateInfo": {
+      "hakha": "候選詞列第一格顯示你打个羅馬字，點撳還係撳 Enter 送出。關閉之後單淨做得用 Enter 送出。"
+    },
+    "autoCapitalization": {
+      "hakha": "自動大本字"
+    },
+    "toneInputScheme": {
+      "hakha": "數字調號方案"
+    },
+    "toneSchemeStandard": {
+      "hakha": "符號編號（1 2 3 4 5 6 7）"
+    },
+    "toneSchemeScale": {
+      "hakha": "五度調值（24 33 53...）"
+    },
+    "toneSchemeTelex": {
+      "hakha": "Telex"
+    },
+    "autoSpace": {
+      "hakha": "自動閬一格"
+    },
+    "keyboardSectionTitle": {
+      "hakha": "企盤設定"
+    },
+    "toolbarAutoCollapse": {
+      "hakha": "擇字後自動收合工具列"
+    },
+    "toolbarAutoCollapseInfo": {
+      "hakha": "分企盤頂背空間較大。"
+    },
+    "globeKey": {
+      "hakha": "企盤切換撳鈕"
+    },
+    "globeKeyInfo": {
+      "hakha": "在企盤頂高加 1 粒地球撳鈕，撳著做得切換去其他企盤。"
+    },
+    "feedbackSectionTitle": {
+      "hakha": "打字反應"
+    },
+    "soundFeedback": {
+      "hakha": "撳鍵聲"
+    },
+    "vibrationFeedback": {
+      "hakha": "震動反應"
+    },
+    "doubleTapOO": {
+      "hakha": "連續打 oo → o͘"
+    },
+    "doubleTapNN": {
+      "hakha": "連續打 nn → ⁿ"
+    },
+    "nasalMarkerUppercase": {
+      "hakha": "白話字大本鼻音"
+    },
+    "nasalMarkerUppercaseCapital": {
+      "hakha": "ᴺ（SIÂᴺ）"
+    },
+    "nasalMarkerUppercaseSmall": {
+      "hakha": "ⁿ（SIÂⁿ）"
+    },
+    "tpsOrMapsToER": {
+      "hakha": "or 對應 ㄜ"
+    },
+    "tpsOrMapsToERInfo": {
+      "hakha": "開啟時 or 顯示做 ㄜ，關閉時顯示做 ㄛ。毋會影響尋詞結果。"
+    },
+    "resetSettings": {
+      "hakha": "恢復設定"
+    },
+    "resetFailed": {
+      "hakha": "恢復設定失敗，請重試"
+    },
+    "noEmailApp": {
+      "hakha": "尋無 Email App"
+    },
+    "diagnosticSectionTitle": {
+      "hakha": "裝置資訊"
+    },
+    "diagnosticCopy": {
+      "hakha": "複製裝置資訊"
+    },
+    "diagnosticCopied": {
+      "hakha": "既經複製"
+    },
+    "diagnosticShare": {
+      "hakha": "分享診斷資訊（含當機紀錄）"
+    },
+    "diagnosticEmail": {
+      "hakha": "Email 回報問題"
+    },
+    "openApp": {
+      "hakha": "去 APP 調整"
+    }
   }
 }

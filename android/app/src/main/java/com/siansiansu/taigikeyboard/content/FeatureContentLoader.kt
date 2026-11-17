@@ -23,6 +23,8 @@ object FeatureContentLoader {
     fun loadFeatures(context: Context): List<FeatureContent> {
         cachedFeatures?.let { return it }
         return loadAndParseAsset(context, FEATURES_ASSET, JSON_KEY_FEATURES)
+            // Hakfa fork: hide upstream's Taigi converter entry until a Hakfa converter page exists.
+            .filterNot { it.id == "taigiConverter" }
             .also { cachedFeatures = it }
     }
 
