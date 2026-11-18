@@ -1,21 +1,53 @@
 {
   "namespace": "layout",
   "keys": {
-    "romanizationKeyboard": { "hakha": "羅馬字企盤" },
-    "standardLayout": { "hakha": "Lohankha" },
-    "phahTaigiLayout": { "hakha": "PhahTaigi" },
-    "tpsLayout": { "hakha": "方音符號企盤" },
-    "moe1Layout": { "hakha": "教育部排列 1" },
-    "moe2Layout": { "hakha": "教育部排列 2" },
-    "customLayoutsSection": { "hakha": "自訂排列" },
-    "createNewLayout": { "hakha": "新排列…" },
-    "editorTitleNew": { "hakha": "新排列" },
-    "nameHeader": { "hakha": "排列名稱" },
-    "commonLayoutsSection": { "hakha": "通用" },
-    "exportLayout": { "hakha": "匯出排列" },
-    "importLayout": { "hakha": "匯入排列" },
-    "exportAllLayouts": { "hakha": "匯出全部排列" },
-    "layoutCapReachedTitle": { "hakha": "已達排列數量上限" },
-    "layoutCapReachedMessage": { "hakha": "自訂排列上限係 5 個，請先刪除一個正做得過新增。" }
+    "romanizationKeyboard": {
+      "hakha": "羅馬字企盤"
+    },
+    "standardLayout": {
+      "hakha": "Lohankha"
+    },
+    "phahTaigiLayout": {
+      "hakha": "PhahTaigi"
+    },
+    "tpsLayout": {
+      "hakha": "方音符號企盤"
+    },
+    "moe1Layout": {
+      "hakha": "教育部排列 1"
+    },
+    "moe2Layout": {
+      "hakha": "教育部排列 2"
+    },
+    "customLayoutsSection": {
+      "hakha": "自訂排列"
+    },
+    "createNewLayout": {
+      "hakha": "新排列…"
+    },
+    "editorTitleNew": {
+      "hakha": "新排列"
+    },
+    "nameHeader": {
+      "hakha": "排列名稱"
+    },
+    "commonLayoutsSection": {
+      "hakha": "通用"
+    },
+    "exportLayout": {
+      "hakha": "匯出排列"
+    },
+    "importLayout": {
+      "hakha": "匯入排列"
+    },
+    "exportAllLayouts": {
+      "hakha": "匯出全部排列"
+    },
+    "layoutCapReachedTitle": {
+      "hakha": "既經到排列數量上限"
+    },
+    "layoutCapReachedMessage": {
+      "hakha": "自訂排列上限係 5 隻，請先刪除一隻正做得過新增。"
+    }
   }
 }

@@ -2,25 +2,25 @@
   "namespace": "keyboard",
   "keys": {
     "expandCandidates": {
-      "hakha": "展開抑係收合候選詞列"
+      "hakha": "展開候選詞列還係收起來"
     },
     "morePopupHint": {
-      "hakha": "長按有較多字"
+      "hakha": "長撳有還過多字"
     },
     "toggleToolbar": {
-      "hakha": "展開抑係收合工具列"
+      "hakha": "展開工具列還係收起來"
     },
     "symbolPanel": {
       "hakha": "符號面板"
     },
     "switchLayout": {
-      "hakha": "切換佈局"
+      "hakha": "切換排列"
     },
     "switchInputMethod": {
       "hakha": "切換輸入法"
     },
     "switchInputMethodHint": {
-      "hakha": "長撳擇企盤"
+      "hakha": "長撳擇輸入法"
     },
     "dismissKeyboard": {
       "hakha": "收合企盤"
@@ -38,7 +38,7 @@
       "hakha": "一般"
     },
     "oneHandedSwapSide": {
-      "hakha": "換邊"
+      "hakha": "換片"
     }
   }
 }

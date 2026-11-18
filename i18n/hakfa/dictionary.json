@@ -8,7 +8,7 @@
       "hakha": "啟用自訂詞庫"
     },
     "customDictEnabledInfo": {
-      "hakha": "打開之後，自訂詞會出現在候選詞肚底。"
+      "hakha": "打開過後，自訂詞會出現在候選詞裡肚。"
     },
     "variantDictionary": {
       "hakha": "異用字"
@@ -32,19 +32,19 @@
       "hakha": "打"
     },
     "romanPlaceholder": {
-      "hakha": "例如：an-zo"
+      "hakha": "見本：àn-zò "
     },
     "hanziLabel": {
       "hakha": "尋"
     },
     "hanziPlaceholder": {
-      "hakha": "例如：恁早"
+      "hakha": "見本：恁早"
     },
     "deleteAll": {
       "hakha": "刪除全部自訂詞"
     },
     "customDictPrivacyWarning": {
-      "hakha": "自訂詞庫毋好放身分證字號、密碼、信用卡號碼抑係其他敏感資料。"
+      "hakha": "自訂詞庫毋好放身分證字號、密碼、信用卡號碼還係其他敏感資料。"
     },
     "importCSV": {
       "hakha": "匯入自訂詞"
@@ -62,10 +62,10 @@
       "hakha": "檔案格式毋著，請使用 CSV 格式"
     },
     "fileTooLarge": {
-      "hakha": "檔案傷大（上限 5 MB）"
+      "hakha": "檔案昶大（上限 5 MB）"
     },
     "tooManyEntries": {
-      "hakha": "詞傷多（上限 30,000 項）"
+      "hakha": "詞昶多（上限 30,000 項）"
     },
     "importExportTitle": {
       "hakha": "匯入摎匯出"
@@ -131,16 +131,16 @@
       "hakha": "教育部辭典"
     },
     "filterHint": {
-      "hakha": "清單單淨顯示頭 100 項，其他請用「尋字」。"
+      "hakha": "清單單淨顯示前 100 項，其他請用「尋字」。"
     },
     "backupRestore": {
       "hakha": "備份復原"
     },
     "exportBackup": {
-      "hakha": "全量匯出"
+      "hakha": "全部匯出"
     },
     "importBackup": {
-      "hakha": "全量匯入"
+      "hakha": "全部匯入"
     },
     "importBackupResult": {
       "hakha": "匯入 {customDict} 項自訂詞、{frequency} 項詞頻、{association} 項詞關聯"
@@ -208,7 +208,7 @@
       "hakha": "臺日"
     },
     "kunggeTag": {
-      "hakha": "工藝辭典"
+      "hakha": "補字典"
     },
     "sttiTag": {
       "hakha": "學科術語"
@@ -220,7 +220,7 @@
       "hakha": "刪除學習紀錄"
     },
     "clearLearningRecordsFailed": {
-      "hakha": "學習紀錄刪失敗"
+      "hakha": "刪學習紀錄失敗"
     },
     "learningRecords": {
       "hakha": "學習紀錄"
@@ -235,13 +235,13 @@
       "hakha": "數量"
     },
     "learningRecordsLastUsed": {
-      "hakha": "最後使用"
+      "hakha": "最尾使用"
     },
     "learningRecordsOrder": {
       "hakha": "排序"
     },
     "learningRecordsOrderMostUsed": {
-      "hakha": "上捷用"
+      "hakha": "最常用"
     },
     "learningRecordsOrderMostRecent": {
       "hakha": "最近用"
@@ -256,19 +256,19 @@
       "hakha": "數量超過 40，排序就全部共樣。"
     },
     "learningRecordGone": {
-      "hakha": "這項紀錄已經無忒"
+      "hakha": "這項紀錄既經無忒"
     },
     "learningRecordsReadFailed": {
-      "hakha": "學習紀錄讀失敗"
+      "hakha": "讀學習紀錄失敗"
     },
     "learningRecordsWriteFailed": {
-      "hakha": "學習紀錄改失敗"
+      "hakha": "改學習紀錄失敗"
     },
     "learningRecordsAddToCustomDictionary": {
       "hakha": "加入自訂詞庫"
     },
     "learningRecordsAddedToCustomDictionary": {
-      "hakha": "已經加入自訂詞庫"
+      "hakha": "既經加入自訂詞庫"
     },
     "kautianAltReading": {
       "hakha": "又讀"

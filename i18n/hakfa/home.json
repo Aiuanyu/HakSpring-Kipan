@@ -1,47 +1,151 @@
 {
   "namespace": "home",
   "keys": {
-    "appHeaderTitle": { "hakha": "客源翠企盤", "taiha": "客源翠企盤", "tailo": "HakSpring-Kipan", "poj": "HakSpring-Kipan", "en": "HakSpring-Kipan", "ja": "客源翠企盤" },
-    "setupKeyboard": { "hakha": "企盤愛打開正做得使用" },
-    "typingGuide": { "hakha": "打字說明" },
-    "newFeatures": { "hakha": "功能設定" },
-    "setupGuide": { "hakha": "啟用方法" },
-    "setupGuideDescription": { "hakha": "第三方企盤愛手動啟用，請照下背个步驟設定。" },
-    "setupInfoMessage": { "hakha": "「允准完整取用」分企盤做得摎 App 共用設定摎使用資料。客源翠企盤毋會摎你打个內容送去網路。" },
-    "setupBrandWarning": { "hakha": "無共樣牌子个手機仔，設定方式可能略略仔無共樣。" },
-    "setupGuideCompletedMessage": { "hakha": "完成之後，重開你目前使用个 App。接等下來，在做得打字各位所按等地球圖示，切換到客源翠企盤。" },
-    "setupGuideGoToSettings": { "hakha": "去設定頁" },
-    "setupGuideStep1Settings": { "hakha": "點選「企盤」" },
-    "setupGuideStep2AddKeyboard": { "hakha": "點選「增加企盤」、「允准完整取用」" },
-    "rateUs": { "hakha": "替𠊎兜評分" },
-    "aboutKeyboard": { "hakha": "關於企盤" },
-    "aboutIntroProject": { "hakha": "客源翠企盤係一隻自由、開源个客話打字工具，永遠免費、無廣告，乜毋會推出付費功能。毋管係一般使用者、先生、學校，還係客話教育團體，全部做得自由使用。希望分逐家用客話、教客話个時節，毋使有額外个負擔。說明：本企盤介面講著个『諸夏字』，同人講个「漢字」同義。" },
-    "aboutIntroMaintainer": { "hakha": "這隻計畫目前由𠊎一儕人利用上班以外个時間開發摎維護。希望做得一直做下去，分逐儕想愛用母語打字个人，全部做得輕鬆用母語打字。" },
-    "websiteLink": { "hakha": "hakspring.pages.dev/kipan", "taiha": "hakspring.pages.dev/kipan", "tailo": "hakspring.pages.dev/kipan", "poj": "hakspring.pages.dev/kipan", "en": "hakspring.pages.dev/kipan", "ja": "hakspring.pages.dev/kipan" },
-    "githubLink": { "hakha": "GitHub" },
-    "discordLink": { "hakha": "Reddit", "taiha": "Reddit", "tailo": "Reddit", "poj": "Reddit", "en": "Reddit", "ja": "Reddit" },
-    "facebookLink": { "hakha": "Facebook" },
-    "instagramLink": { "hakha": "Instagram" },
-    "threadsLink": { "hakha": "Threads" },
-    "emailLink": { "hakha": "aiuanyu777@gmail.com", "taiha": "aiuanyu777@gmail.com", "tailo": "aiuanyu777@gmail.com", "poj": "aiuanyu777@gmail.com", "en": "aiuanyu777@gmail.com", "ja": "aiuanyu777@gmail.com" },
-    "copyrightLine": { "hakha": "© 2026 Bîn-hiân，Aiuanyu" },
-    "privacyPolicy": { "hakha": "隱私權政策" },
-    "version": { "hakha": "目前版本" },
-    "copyrightNotice": { "hakha": "致謝" },
-    "viewLicense": { "hakha": "授權條款" },
-    "moeCopyright": { "hakha": "© 教育部" },
-    "iTaigiCopyright": { "hakha": "© iTaigi愛客話" },
-    "newwordCopyright": { "hakha": "© 客家委員會" },
-    "openFontCopyright": { "hakha": "© justfont" },
-    "butTaiwanCopyright": { "hakha": "© ButTaiwan" },
-    "taiwanPlantCopyright": { "hakha": "© 佐佐木舜一" },
-    "taiHuaCopyright": { "hakha": "© 鄭良偉" },
-    "taiwanJapanCopyright": { "hakha": "© 小川尚義" },
-    "kunggeCopyright": { "hakha": "© 客源翠 HakSpring" },
-    "accentDictCredit": { "hakha": "實齋整理、提供" },
-    "devSupplementCredit": { "hakha": "建中整理、提供" },
-    "setupPrivacyNote": { "hakha": "客源翠企盤毋會摎你打个字送去網路。" },
-    "setupGuideCompletedSwitch": { "hakha": "打字个時節，摎企盤切換做客源翠企盤。" },
-    "setupGuideStep2TurnOn": { "hakha": "打開客源翠企盤" }
+    "appHeaderTitle": {
+      "hakha": "客源翠企盤",
+      "taiha": "客源翠企盤",
+      "tailo": "HakSpring-Kipan",
+      "poj": "HakSpring-Kipan",
+      "en": "HakSpring-Kipan",
+      "ja": "客源翠企盤"
+    },
+    "setupKeyboard": {
+      "hakha": "企盤愛打開正做得使用"
+    },
+    "typingGuide": {
+      "hakha": "打字說明"
+    },
+    "newFeatures": {
+      "hakha": "功能設定"
+    },
+    "setupGuide": {
+      "hakha": "啟用方法"
+    },
+    "setupGuideDescription": {
+      "hakha": "第三方企盤愛手動啟用，請照下背个步驟設定。"
+    },
+    "setupInfoMessage": {
+      "hakha": "「許可完整取用」分企盤做得摎 app 共用設定摎使用資料。客源翠企盤毋會摎你打个內容送去網路。"
+    },
+    "setupBrandWarning": {
+      "hakha": "無共樣牌仔个手機仔，設定方式可能略略仔無共樣。"
+    },
+    "setupGuideCompletedMessage": {
+      "hakha": "完成過後，重開你目前使用个 app。續下來，在做得打字个位所撳等地球圖示，切換到客源翠企盤。"
+    },
+    "setupGuideGoToSettings": {
+      "hakha": "去設定頁"
+    },
+    "setupGuideStep1Settings": {
+      "hakha": "點擇「鍵盤」"
+    },
+    "setupGuideStep2AddKeyboard": {
+      "hakha": "點擇「增加鍵盤」、「許可完整取用」"
+    },
+    "rateUs": {
+      "hakha": "替𠊎兜評分"
+    },
+    "aboutKeyboard": {
+      "hakha": "關於企盤"
+    },
+    "aboutIntroProject": {
+      "hakha": "客源翠企盤係一隻自由、開原个客話打字工具，永遠免費、無廣告，乜毋會推出付費功能。毋管係一般使用者、先生、學校，還係客話教育團體，全部做得自由使用。希望分逐家用客話、教客話个時節，毋使有額外个負擔。說明：本企盤介面講著个『諸夏字』，同人講个「漢字」同義。"
+    },
+    "aboutIntroMaintainer": {
+      "hakha": "這隻計畫目前係「愛灣語」江瑋平利用蘇民弦「台語齒盤」開放成果，利用上班以外个時間開發摎維護。希望做得繼續做下去，分逐儕想愛用族語打字个人，全部做得輕鬆用族語打字。"
+    },
+    "websiteLink": {
+      "hakha": "hakspring.pages.dev/kipan",
+      "taiha": "hakspring.pages.dev/kipan",
+      "tailo": "hakspring.pages.dev/kipan",
+      "poj": "hakspring.pages.dev/kipan",
+      "en": "hakspring.pages.dev/kipan",
+      "ja": "hakspring.pages.dev/kipan"
+    },
+    "githubLink": {
+      "hakha": "GitHub"
+    },
+    "discordLink": {
+      "hakha": "Reddit",
+      "taiha": "Reddit",
+      "tailo": "Reddit",
+      "poj": "Reddit",
+      "en": "Reddit",
+      "ja": "Reddit"
+    },
+    "facebookLink": {
+      "hakha": "Facebook"
+    },
+    "instagramLink": {
+      "hakha": "Instagram"
+    },
+    "threadsLink": {
+      "hakha": "Threads"
+    },
+    "emailLink": {
+      "hakha": "aiuanyu777@gmail.com",
+      "taiha": "aiuanyu777@gmail.com",
+      "tailo": "aiuanyu777@gmail.com",
+      "poj": "aiuanyu777@gmail.com",
+      "en": "aiuanyu777@gmail.com",
+      "ja": "aiuanyu777@gmail.com"
+    },
+    "copyrightLine": {
+      "hakha": "© 2026 Bîn-hiân，Aiuanyu"
+    },
+    "privacyPolicy": {
+      "hakha": "隱私權政策"
+    },
+    "version": {
+      "hakha": "目前版本"
+    },
+    "copyrightNotice": {
+      "hakha": "致謝"
+    },
+    "viewLicense": {
+      "hakha": "授權條款"
+    },
+    "moeCopyright": {
+      "hakha": "© 教育部"
+    },
+    "iTaigiCopyright": {
+      "hakha": "© iTaigi愛客話"
+    },
+    "newwordCopyright": {
+      "hakha": "© 客家委員會"
+    },
+    "openFontCopyright": {
+      "hakha": "© justfont"
+    },
+    "butTaiwanCopyright": {
+      "hakha": "© ButTaiwan"
+    },
+    "taiwanPlantCopyright": {
+      "hakha": "© 佐佐木舜一"
+    },
+    "taiHuaCopyright": {
+      "hakha": "© 鄭良偉"
+    },
+    "taiwanJapanCopyright": {
+      "hakha": "© 小川尚義"
+    },
+    "kunggeCopyright": {
+      "hakha": "© 客源翠 HakSpring"
+    },
+    "accentDictCredit": {
+      "hakha": "實齋整理、提供"
+    },
+    "devSupplementCredit": {
+      "hakha": "建中整理、提供"
+    },
+    "setupPrivacyNote": {
+      "hakha": "客源翠企盤毋會摎你打个字送去網路。"
+    },
+    "setupGuideCompletedSwitch": {
+      "hakha": "打字个時節，摎企盤切換做客源翠企盤。"
+    },
+    "setupGuideStep2TurnOn": {
+      "hakha": "打開客源翠企盤"
+    }
   }
 }
