@@ -198,16 +198,21 @@ struct GeneralSettingsView: View {
                 // The daily check still runs, so a release that is pulled stops
                 // being offered on its own, and the input-source menu's Check for Updates
                 // row is still there to force one.
+                /* Hakfa fork: during beta, Check for Updates opens the HakSpring Kipan beta page instead of upstream appcast.
                 if let pending = UpdateChecker.shared.pendingUpdate {
                     pendingUpdateRow(for: pending)
                 } else {
-                    LabeledContent(language.resolver.desktopUpdateCurrentVersionLabel(version: AppVersion.installed)) {
-                        Button(language.string(.desktopUpdateCheckNow)) {
-                            UpdateChecker.shared.checkManually()
+                */
+                LabeledContent(language.resolver.desktopUpdateCurrentVersionLabel(version: AppVersion.installed)) {
+                    Button(language.string(.desktopUpdateCheckNow)) {
+                        if let url = URL(string: "https://hakspring.pages.dev/kipan/") {
+                            NSWorkspace.shared.open(url)
                         }
                     }
                 }
+                // }
 
+                /* Hakfa fork: background update notifications are disabled during beta.
                 if areNoticesBlocked {
                     LabeledContent(language.string(.desktopUpdateNotificationsOffNote)) {
                         Button(language.string(.desktopUpdateOpenNotificationSettings)) {
@@ -215,6 +220,7 @@ struct GeneralSettingsView: View {
                         }
                     }
                 }
+                */
             }
 
             // Its own section, at the end, drawn the way the Appearance and Shortcuts

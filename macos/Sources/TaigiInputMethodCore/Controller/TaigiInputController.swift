@@ -626,10 +626,15 @@ public final class TaigiInputController: IMKInputController {
     @objc
     private func checkForUpdates(_: Any!) {
         Self.logger.debug("check for updates")
-        openSettings(on: .general)
+        // Hakfa fork: keep test override path for TaigiInputControllerMenuTests, but in production
+        // open the HakSpring Kipan beta page instead of polling upstream's appcast.
         onMainActor(nil) { controller, _ in
-            let checker = controller.updateCheckerOverride ?? UpdateChecker.shared
-            checker.checkManually()
+            if let checker = controller.updateCheckerOverride {
+                controller.openSettings(on: .general)
+                checker.checkManually()
+            } else if let url = URL(string: "https://hakspring.pages.dev/kipan/") {
+                NSWorkspace.shared.open(url)
+            }
         }
     }
 

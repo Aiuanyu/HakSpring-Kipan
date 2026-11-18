@@ -122,6 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // below: by the time that timer fires the user may have opened the
         // settings window and started a download, and a late "clean up what the
         // last run left" would delete this run's.
+        /* Hakfa fork: disable upstream appcast background update checks; users check updates at https://hakspring.pages.dev/kipan/.
         UpdatePackageDownload.removeStagedPackages()
         Task {
             try? await Task.sleep(for: .seconds(30))
@@ -132,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         updateCheckTimer.tolerance = UpdateChecker.checkInterval / 10
         RunLoop.main.add(updateCheckTimer, forMode: .common)
+        */
     }
 
     /// Rebuilds the AppKit UI that reads its text once and keeps a copy.

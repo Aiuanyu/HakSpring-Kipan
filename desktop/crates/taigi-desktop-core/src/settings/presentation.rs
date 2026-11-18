@@ -11,9 +11,9 @@ use crate::strings::{DisplayLanguage, StringKey, StringResolver};
 pub const SPONSOR_URL: &str = "https://p.ecpay.com.tw/AA663DE";
 /// `AboutPage.websiteURL` — also the Linux General pane's download link
 /// (roadmap L10).
-pub const WEBSITE_URL: &str = "https://taigikeyboard.tw";
+pub const WEBSITE_URL: &str = "https://hakspring.pages.dev/kipan/";
 /// `AboutPage.githubURL`.
-pub const GITHUB_URL: &str = "https://github.com/taigikeyboard";
+pub const GITHUB_URL: &str = "https://github.com/Aiuanyu/HakSpring-Kipan";
 /// `AboutPage.discordURL`.
 pub const DISCORD_URL: &str = "https://discord.gg/UFn9RdynPu";
 /// `AboutPage.facebookURL`.
@@ -23,7 +23,7 @@ pub const INSTAGRAM_URL: &str = "https://www.instagram.com/taigikeyboardtw/";
 /// `AboutPage.threadsURL`.
 pub const THREADS_URL: &str = "https://www.threads.com/@siansiansu";
 /// `AboutPage.emailURL`.
-pub const EMAIL_URL: &str = "mailto:info@taigikeyboard.tw";
+pub const EMAIL_URL: &str = "mailto:aiuanyu777@gmail.com";
 
 /// The resolver for the document's display language, `system` resolved
 /// against the machine's `system_locale`.
