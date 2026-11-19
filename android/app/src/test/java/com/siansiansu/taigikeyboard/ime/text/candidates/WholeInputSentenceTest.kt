@@ -64,6 +64,15 @@ class WholeInputSentenceTest {
     }
 
     @Test
+    fun multiSyllablePartialPrefixIsAccepted() {
+        val partialPrefix = listOf(cell(1, "字型", "sii-hǐn", 4, 1, syllables = 2))
+        val pick = wholeInputSentencePick(partialPrefix, pendingBytes = 4)
+        assertNotNull(pick)
+        assertEquals("字型", pick!!.canonicalText)
+        assertEquals(4, pick.consumedBytes)
+    }
+
+    @Test
     fun aCandidateThatStopsShortOfThePendingInputIsNotASentence() {
         val words = listOf(cell(1, "𠊎", "ngǎi", 4, 0))
         assertNull(wholeInputSentencePick(words, pendingBytes = 11))

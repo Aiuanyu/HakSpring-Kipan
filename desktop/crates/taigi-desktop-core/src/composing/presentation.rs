@@ -152,9 +152,9 @@ impl CandidateSource {
     /// Hakfa fork: the sentence the engine composed for ALL of the still-pending input — the first
     /// cell, in display order, whose candidate carries Hanji and ends where the pending input ends
     /// (`pending_len` bytes; the literal-romanization cell has no Hanji and is skipped) and matches
-    /// the typed letters as whole readings or full-length multi-syllable abbreviations. `None` when
-    /// the engine composed no such sentence. Typing punctuation commits this one instead of the
-    /// romanization as typed.
+    /// the typed letters as whole readings or full-length multi-syllable partial-prefix /
+    /// abbreviation completions. `None` when the engine composed no such sentence. Typing punctuation
+    /// commits this one instead of the romanization as typed.
     pub fn whole_input_sentence(
         &self,
         pending_len: usize,
@@ -164,12 +164,16 @@ impl CandidateSource {
         }
         self.presented.iter().find_map(|presented| {
             let candidate = self.candidates.get(presented.candidate_index)?;
-            // Whole readings (coverage_kind 0) or full-length multi-syllable abbreviations
-            // (coverage_kind 2, syllable_count >= 2, pending_len >= 2) covering the entire input.
-            // Half-typed syllables (coverage_kind 1) and single-letter abbreviations are excluded.
+            // Whole readings (coverage_kind 0), multi-byte partial-prefix completions
+            // (coverage_kind 1, pending_len >= 2 — e.g. `siih` -> 字型 [sii hǐn], where the
+            // partial-prefix path reports syllable_count = 1), or full-length multi-syllable
+            // abbreviations (coverage_kind 2, syllable_count >= 2, pending_len >= 2) covering
+            // the entire input. Single-letter incomplete prefixes and single-letter abbreviations
+            // are excluded.
             let whole = candidate.hanji.is_some()
                 && candidate.consumed_span_end as usize == pending_len
                 && (candidate.coverage_kind == 0
+                    || (candidate.coverage_kind == 1 && pending_len >= 2)
                     || (candidate.coverage_kind == 2
                         && candidate.syllable_count >= 2
                         && pending_len >= 2));
@@ -511,9 +515,13 @@ mod tests {
         short_abbrev.coverage_kind = 2;
         short_abbrev.syllable_count = 1;
 
-        let mut partial = candidate("hng-c", Some("客源翠"), 4);
-        partial.coverage_kind = 1;
-        partial.syllable_count = 3;
+        let mut partial_single = candidate("t", Some("大"), 1);
+        partial_single.coverage_kind = 1;
+        partial_single.syllable_count = 1;
+
+        let mut partial_multi = candidate("siih", Some("字型"), 4);
+        partial_multi.coverage_kind = 1;
+        partial_multi.syllable_count = 1;
 
         let mut source = CandidateSource::default();
         source.set(vec![full_abbrev.clone()], &manager);
@@ -522,12 +530,19 @@ mod tests {
             Some("客源翠簡拼")
         );
 
+        // Multi-syllable partial prefix (e.g. `siih` -> 字型 [sii hǐn]) is accepted:
+        source.set(vec![partial_multi], &manager);
+        assert_eq!(
+            source.whole_input_sentence(4).map(|(c, _)| c.display_text.as_str()),
+            Some("字型")
+        );
+
         // Single letter abbreviation is rejected:
         source.set(vec![short_abbrev], &manager);
         assert_eq!(source.whole_input_sentence(1), None);
 
-        // Partial prefix is rejected:
-        source.set(vec![partial], &manager);
-        assert_eq!(source.whole_input_sentence(4), None);
+        // Single-syllable partial prefix is rejected:
+        source.set(vec![partial_single], &manager);
+        assert_eq!(source.whole_input_sentence(1), None);
     }
 }

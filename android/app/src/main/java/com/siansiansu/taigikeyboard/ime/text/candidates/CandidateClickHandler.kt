@@ -383,10 +383,10 @@ internal fun shouldAppendAutoSpace(
 
 /**
  * Hakfa fork: the sentence the engine composed for ALL of the pending input — the first Continuous cell
- * with Hanji, whole readings ([TaigiWord.MetadataKeys.COVERAGE_KIND] 0) or full-length multi-syllable
- * abbreviations (coverage kind 2, syllables >= 2, pendingBytes >= 2) that ends where the pending input
- * ends ([pendingBytes], UTF-8). Typing punctuation commits this pick instead of the romanization as typed.
- * `null` when there is none.
+ * with Hanji, whole readings ([TaigiWord.MetadataKeys.COVERAGE_KIND] 0) or multi-syllable partial-prefix
+ * / abbreviation completions (coverage kind 1 or 2, syllables >= 2, pendingBytes >= 2) that ends where
+ * the pending input ends ([pendingBytes], UTF-8). Typing punctuation commits this pick instead of the
+ * romanization as typed. `null` when there is none.
  * Mirrors desktop-core `CandidateSource::whole_input_sentence`.
  */
 internal fun wholeInputSentencePick(
@@ -403,7 +403,9 @@ internal fun wholeInputSentencePick(
             info[TaigiWord.MetadataKeys.IS_CONTINUOUS] == "true" &&
                 !candidate.hanji.isNullOrEmpty() &&
                 consumed == pendingBytes &&
-                (coverageKind == "0" || (coverageKind == "2" && syllableCount >= 2 && pendingBytes >= 2))
+                (coverageKind == "0" ||
+                    (coverageKind == "1" && pendingBytes >= 2) ||
+                    (coverageKind == "2" && syllableCount >= 2 && pendingBytes >= 2))
         } ?: return null
     return continuousPick(word)
 }

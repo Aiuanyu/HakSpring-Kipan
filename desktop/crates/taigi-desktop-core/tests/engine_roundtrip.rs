@@ -647,3 +647,51 @@ fn hakfa_none_separator_writes_hpp_apostrophe() {
         "醫院 should render í'ien under the default separator: {romans:?}"
     );
 }
+
+#[test]
+fn siih_partial_prefix_qualifies_for_whole_input_sentence_on_punctuation() {
+    let _engine = engine();
+    let settings = EngineSettings::default();
+    let generation = fresh_generation();
+    compose("siih", &settings, generation);
+    let candidates = engine::fetch_at_pos(&settings, generation, 0)
+        .expect("fetch")
+        .candidates
+        .expect("continuous");
+    engine::reset(generation);
+
+    let zi_hin = candidates
+        .iter()
+        .find(|c| c.hanji.as_deref() == Some("字型"))
+        .cloned()
+        .expect("`siih` should surface 字型 [sii hǐn]");
+    assert_eq!(zi_hin.consumed_span_end, 4, "{zi_hin:?}");
+    assert_eq!(zi_hin.coverage_kind, 1, "{zi_hin:?}");
+
+    let manager = taigi_desktop_core::composing::ComposingManager::new(
+        std::sync::Arc::new(taigi_desktop_core::settings::StaticSettingsProvider::new(
+            taigi_desktop_core::settings::SettingsDocument::default(),
+        )),
+        Box::new(taigi_desktop_core::composing::EngineNextWord),
+        Box::new(taigi_desktop_core::composing::SystemClock),
+        generation,
+    );
+    let mut source = taigi_desktop_core::composing::CandidateSource::default();
+    source.set(candidates, &manager);
+    let picked = source
+        .whole_input_sentence("siih".len())
+        .map(|(c, _)| c.display_text.as_str());
+    assert!(
+        picked.is_some(),
+        "typing punctuation after `siih` must commit the leading partial-prefix candidate instead of falling back to raw roman"
+    );
+
+    let mut only_zi_hin = taigi_desktop_core::composing::CandidateSource::default();
+    only_zi_hin.set(vec![zi_hin.clone()], &manager);
+    assert_eq!(
+        only_zi_hin
+            .whole_input_sentence("siih".len())
+            .map(|(c, _)| c.display_text.as_str()),
+        Some("字型")
+    );
+}
