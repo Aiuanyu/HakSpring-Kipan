@@ -538,7 +538,7 @@ internal class TextInputKeyHandler(
             return
         }
 
-        if (isComposingCharacter(char)) {
+        if (isComposingCharacter(char) || (manager.isComposing() && (char == "'" || char == "=" || char == "+"))) {
             if (manager.isComposing()) {
                 if (char == "-") {
                     manager.appendHyphen(ic)

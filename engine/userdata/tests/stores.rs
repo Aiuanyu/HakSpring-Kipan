@@ -872,6 +872,25 @@ fn wiping_learned_phrases_clears_rows_and_keys_and_the_store_learns_again() {
 }
 
 #[test]
+fn forced_separator_phrase_supersedes_prior_separator_variants() {
+    let directory = scratch();
+    let store = learned_store(&directory, LearnedPhraseStore::MAX_ENTRIES);
+    store.learn_phrase("恁早", "àn-zò");
+    store.learn_phrase("恁早", "àn-zò");
+    store.learn_phrase("恁早", "àn+zò");
+    let rows = store.all_rows().unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].canonical_tl, "àn+zò");
+
+    store.learn_phrase("美臺", "Mí-Tǒi");
+    store.learn_phrase("美臺", "Mí=Tǒi");
+    let rows = store.all_rows().unwrap();
+    assert_eq!(rows.len(), 2);
+    assert!(rows.iter().any(|r| r.hanji == "美臺" && r.canonical_tl == "Mí=Tǒi"));
+    assert!(!rows.iter().any(|r| r.hanji == "美臺" && r.canonical_tl == "Mí-Tǒi"));
+}
+
+#[test]
 fn a_custom_dictionary_that_reached_the_parked_learned_shape_keeps_only_its_manual_rows() {
     let directory = scratch();
     {

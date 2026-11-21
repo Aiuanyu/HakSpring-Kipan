@@ -260,7 +260,7 @@ pub fn tone_digits_to_marks(roman: &str) -> String {
     let mut out = String::with_capacity(roman.len());
     let mut token = String::new();
     for ch in roman.chars() {
-        if ch == '-' || ch == ' ' {
+        if ch == '-' || ch == ' ' || ch == '+' || ch == '=' {
             out.push_str(&token_with_tone_mark(&token));
             out.push(ch);
             token.clear();
@@ -492,17 +492,16 @@ pub fn tl_display_to_poj_display(text: &str) -> String {
 /// the syllables the typed body covers. `None` when nothing changed or
 /// the reading does not align with the typed body (an abbreviation body,
 /// a TPS / English buffer).
-pub fn render_typed_separators(
+/// Shared helper for rewriting syllable separators in `roman` at typed
+/// boundaries aligned via `typed_syllable_walk`.
+fn rewrite_typed_boundaries<'a>(
     mode: InputMode,
     typed: &str,
-    runs: &[(usize, usize)],
     reading: &str,
     roman: &str,
+    mut replacement_at: impl FnMut(usize, &str) -> Option<String>,
 ) -> Option<String> {
     let walk = crate::typed_syllable_walk(mode, typed, reading)?;
-    // Token byte ranges of `roman` — the `split` + drop-empty rule of
-    // `tl_syllable_tokens`, so the count matches the walk's syllables.
-    // Every separator is one ASCII byte.
     let mut tokens: Vec<std::ops::Range<usize>> = Vec::with_capacity(walk.ends.len());
     let mut offset = 0;
     for piece in roman.split(crate::tps::TL_SYLLABLE_SEPARATORS) {
@@ -511,39 +510,70 @@ pub fn render_typed_separators(
         }
         offset += piece.len() + 1;
     }
-    // The walk stops where the typed text ends, so a partial-prefix row
-    // (`tāi-gi̍k` under `taigi`) aligns only its leading syllables.
     debug_assert!(tokens.len() >= walk.ends.len(), "{roman:?} vs {reading:?}");
     if tokens.len() < walk.ends.len() {
         return None;
     }
-    // The separator after token `k`, and the typed run that replaces it.
     let separator_after =
         |k: usize| tokens[k].end..tokens.get(k + 1).map_or(roman.len(), |t| t.start);
-    let typed_run = |k: usize| {
-        (k + 1 < tokens.len())
-            .then(|| runs.iter().find(|&&(at, _)| Some(&at) == walk.ends.get(k)))
-            .flatten()
-            .map(|&(_, run)| run)
-    };
-    let changes = (0..tokens.len()).any(|k| {
-        typed_run(k).is_some_and(|run| {
-            let stored = &roman[separator_after(k)];
-            stored.len() != run || stored.bytes().any(|b| b != b'-')
-        })
-    });
-    if !changes {
+    let mut replacements: Vec<Option<String>> = Vec::with_capacity(tokens.len());
+    let mut any_change = false;
+    for k in 0..tokens.len() {
+        let rep = if k + 1 < tokens.len() {
+            if let Some(&at) = walk.ends.get(k) {
+                replacement_at(at, &roman[separator_after(k)])
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        any_change |= rep.is_some();
+        replacements.push(rep);
+    }
+    if !any_change {
         return None;
     }
     let mut out = String::with_capacity(roman.len());
-    for k in 0..tokens.len() {
+    for (k, rep) in replacements.into_iter().enumerate() {
         out.push_str(&roman[tokens[k].clone()]);
-        match typed_run(k) {
-            Some(run) => out.extend(std::iter::repeat_n('-', run)),
+        match rep {
+            Some(r) => out.push_str(&r),
             None => out.push_str(&roman[separator_after(k)]),
         }
     }
     Some(out)
+}
+
+pub fn render_typed_separators(
+    mode: InputMode,
+    typed: &str,
+    runs: &[(usize, usize)],
+    reading: &str,
+    roman: &str,
+) -> Option<String> {
+    rewrite_typed_boundaries(mode, typed, reading, roman, |at, stored| {
+        let &(_, run) = runs.iter().find(|&&(pos, _)| pos == at)?;
+        (stored.len() != run || stored.bytes().any(|b| b != b'-'))
+            .then(|| "-".repeat(run))
+    })
+}
+
+/// Apply typed `+` / `=` forced separator markers at aligned syllable
+/// boundaries so downstream `syllable_joiner_display` renders them as
+/// forced space (` `) or forced hyphen (`-`).
+pub fn apply_forced_separators(
+    mode: InputMode,
+    typed: &str,
+    markers: &[(usize, char)],
+    reading: &str,
+    roman: &str,
+) -> Option<String> {
+    rewrite_typed_boundaries(mode, typed, reading, roman, |at, stored| {
+        let &(_, marker) = markers.iter().find(|&&(pos, _)| pos == at)?;
+        (stored.len() != 1 || stored.chars().next() != Some(marker))
+            .then(|| marker.to_string())
+    })
 }
 
 /// Syllable Separator (`AppConfig.syllable_separator`, `behavioral-invariants.md`
@@ -559,6 +589,14 @@ pub fn syllable_joiner_display(roman: &str, joiner: &str) -> String {
     let mut out = String::with_capacity(roman.len());
     let mut chars = roman.chars().peekable();
     while let Some(c) = chars.next() {
+        if c == '+' {
+            out.push(' ');
+            continue;
+        }
+        if c == '=' {
+            out.push('-');
+            continue;
+        }
         if c != '-' {
             out.push(c);
             continue;
@@ -711,7 +749,7 @@ fn rewrite_display(text: &str, target: System, keep_tl_finals: bool) -> String {
     let mut out = String::new();
     let mut current = String::new();
     for ch in text.chars() {
-        if ch == '-' || ch == ' ' {
+        if ch == '-' || ch == ' ' || ch == '+' || ch == '=' {
             out.push_str(&rewrite_token(&current, target, keep_tl_finals));
             out.push(ch);
             current.clear();
@@ -795,6 +833,11 @@ mod tests {
         // Word boundaries and hyphen-free input are left alone.
         assert_eq!(none("tâi gí"), "tâi gí");
         assert_eq!(none("keng-lâm su-īⁿ"), "kenglâm su'īⁿ");
+        // Forced space (`+`) and forced hyphen (`=`) hold across every separator setting.
+        for joiner in ["", " ", "-"] {
+            assert_eq!(syllable_joiner_display("àn+zò", joiner), "àn zò");
+            assert_eq!(syllable_joiner_display("Mí=Tǒi", joiner), "Mí-Tǒi");
+        }
     }
 
     #[test]

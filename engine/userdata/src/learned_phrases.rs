@@ -111,11 +111,37 @@ impl LearnedPhraseStore {
         else {
             return;
         };
+        let forced_notone = if canonical_tl.contains(['+', '=']) {
+            search_keys
+                .iter()
+                .find(|k| k.family == "tl" && k.form == "notone")
+                .map(|k| k.key.clone())
+        } else {
+            None
+        };
         let limit = self.limit;
         let hanji = hanji.to_owned();
         let canonical_tl = canonical_tl.to_owned();
         self.database.write(move |connection| {
             immediate_transaction::<_, rusqlite::Error>(connection, |connection| {
+                if let Some(ref notone) = forced_notone {
+                    let mut stmt = connection.prepare(&format!(
+                        "SELECT DISTINCT p.id FROM {TABLE_NAME} p\n\
+                         JOIN {SEARCH_KEY_TABLE_NAME} k ON k.phrase_id = p.id\n\
+                         WHERE p.hanzi = ?1 AND p.roman <> ?2\n\
+                           AND k.family = 'tl' AND k.form = 'notone' AND k.key = ?3;"
+                    ))?;
+                    let old_ids: Vec<i64> = stmt
+                        .query_map(params![hanji, canonical_tl, notone], |row| row.get(0))?
+                        .collect::<rusqlite::Result<_>>()?;
+                    for old_id in old_ids {
+                        delete_search_keys(connection, old_id)?;
+                        connection.execute(
+                            &format!("DELETE FROM {TABLE_NAME} WHERE id = ?;"),
+                            params![old_id],
+                        )?;
+                    }
+                }
                 let (row_id, learn_count): (i64, i64) = connection.query_row(
                     &format!(
                         "INSERT INTO {TABLE_NAME} (roman, hanzi, learn_count, updated_at)\nVALUES (?, ?, 1, CURRENT_TIMESTAMP)\nON CONFLICT(hanzi, roman) DO UPDATE SET\n    learn_count = MIN(learn_count + 1, {}),\n    updated_at = CURRENT_TIMESTAMP\nRETURNING id, learn_count;",

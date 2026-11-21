@@ -400,11 +400,11 @@ pub(crate) fn tl_syllable_tokens(record_tl: &str) -> impl Iterator<Item = &str> 
         .filter(|t| !t.is_empty())
 }
 
-/// The three separators the build pipeline treats as syllable boundaries
+/// The separators the build pipeline and runtime treat as syllable boundaries
 /// in a record reading — one definition for the tokenizer above and the
 /// khinsiann-flag walk (`crate::syllable::tl_syllable_khinsiann_flags`),
 /// so the two can never disagree on what a boundary is.
-pub(crate) const TL_SYLLABLE_SEPARATORS: [char; 3] = ['-', ' ', '\t'];
+pub(crate) const TL_SYLLABLE_SEPARATORS: [char; 6] = ['-', ' ', '\t', '\'', '+', '='];
 
 /// One numeric-tone TL token → its fused TPS notone surface.
 ///

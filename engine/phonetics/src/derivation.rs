@@ -37,7 +37,7 @@ pub(crate) fn derive_notone(roman: &str) -> String {
         if (0x30..=0x39).contains(&cp) {
             continue;
         }
-        if ch == '-' || ch == ' ' {
+        if ch == '-' || ch == ' ' || ch == '\'' || ch == '+' || ch == '=' {
             continue;
         }
         result.push(ch);
@@ -80,9 +80,10 @@ pub fn derive_abbrev(roman: &str) -> String {
         .collect::<String>()
 }
 
-/// ASCII whitespace + hyphen, the syllable delimiters of the abbreviation face
-/// (ASCII only, matching the Android JVM `Regex("[\\s-]+")` this replaced).
-const SYLLABLE_DELIMITERS: [char; 7] = [' ', '\t', '\n', '\u{0B}', '\u{0C}', '\r', '-'];
+/// ASCII whitespace + hyphen + apostrophe + forced separators (`+`, `=`),
+/// the syllable delimiters of the abbreviation face.
+const SYLLABLE_DELIMITERS: [char; 10] =
+    [' ', '\t', '\n', '\u{0B}', '\u{0C}', '\r', '-', '\'', '+', '='];
 
 /// TL and POJ initials, longest first so a prefix scan takes `tsh` before
 /// `ts` before `t`, `chh` before `ch`, `ng` before `n`
@@ -167,6 +168,13 @@ mod tests {
     #[test]
     fn derive_notone_strips_diacritics_digits_hyphens_spaces() {
         assert_eq!(derive_notone("Gâu-tsá 2"), "gautsa");
+        assert_eq!(derive_notone("Qién'iug"), "qieniug");
+        assert_eq!(derive_notone("qien'iug"), "qieniug");
+        assert_eq!(derive_abbrev("Qién'iug"), "qi");
+        assert_eq!(derive_notone("àn+zò"), "anzo");
+        assert_eq!(derive_notone("Mí=Tǒi"), "mitoi");
+        assert_eq!(derive_abbrev("àn+zò"), "az");
+        assert_eq!(derive_abbrev("Mí=Tǒi"), "mt");
     }
 
     #[test]

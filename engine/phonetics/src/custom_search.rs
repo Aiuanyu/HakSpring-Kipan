@@ -196,7 +196,7 @@ fn dedup_nonempty(keys: Vec<CustomSearchKey>) -> Vec<CustomSearchKey> {
 fn fuse_latin_numeric(numeric: &str) -> String {
     crate::taigi_unicode_base_form(&numeric.to_lowercase())
         .chars()
-        .filter(|c| *c != '-' && *c != ' ')
+        .filter(|c| !matches!(c, '-' | ' ' | '\'' | '+' | '='))
         .collect()
 }
 
@@ -214,7 +214,7 @@ fn fuse_latin_numeric(numeric: &str) -> String {
 fn strip_tps_input(input: &str, keep_tone_marks: bool) -> String {
     let mut out = String::with_capacity(input.len());
     for ch in input.chars() {
-        if ch == '-' || ch.is_whitespace() {
+        if ch == '-' || ch == '+' || ch == '=' || ch.is_whitespace() {
             continue;
         }
         let normalized = normalize_tps_lookup_scalar(ch);

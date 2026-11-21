@@ -302,16 +302,31 @@ impl ComposingKeyIntent {
                 Self::CommitThenInsert(punctuation.to_string()),
             );
         }
-        // Hakfa: Ctrl+數字鍵作為調號輸入（ToneDigit）。純數字鍵留給候選字擇字。
+        // Hakfa: Ctrl+數字鍵作為調號輸入（ToneDigit），Ctrl+'／Ctrl+=／Ctrl++／Alt+= 作為強制切音節／hyphen／空格標記。
+        // 純數字鍵留給候選字擇字。
         // 方案 3（符號編號）：2 3 5 6 7 -> 對應調符；1 與 4 -> 限定無標調（補 `1`／`4` 去查）
         // 方案 1（五度調值）：1..=9 均可作為調值數字
-        if is_composing && modifiers == KeyModifiers::CONTROL {
+        if is_composing && modifiers == KeyModifiers::ALT && bindings.input_mode != InputMode::Tps {
+            if let Some('=') = key
+                .characters_ignoring_modifiers
+                .as_deref()
+                .and_then(|s| s.chars().next())
+            {
+                return Self::Input("+".to_string());
+            }
+        }
+        if is_composing && modifiers.control && !modifiers.alt && !modifiers.win {
             if let Some(c) = key
                 .characters_ignoring_modifiers
                 .as_deref()
                 .and_then(|s| s.chars().next())
             {
-                if c.is_ascii_digit() {
+                if bindings.input_mode != InputMode::Tps
+                    && (c == '+' || (!modifiers.shift && matches!(c, '\'' | '=')))
+                {
+                    return Self::Input(c.to_string());
+                }
+                if !modifiers.shift && c.is_ascii_digit() {
                     match bindings.tone_scheme {
                         ToneInputScheme::Standard => {
                             if matches!(c, '1'..='7') {
@@ -1000,6 +1015,59 @@ mod tests {
                 );
             }
         }
+        // 客話企盤中，⌃' 在組成中（非 TPS）作為強制切音節標記 Input("'")；未組成時交給 host。
+        let control_apostrophe =
+            KeyEventSnapshot::chord(Some("'"), "'", KeyModifiers::CONTROL);
+        let tl_bindings = ComposingKeyBindings::resolve(&Default::default(), ToneInputScheme::Standard);
+        assert_eq!(
+            ComposingKeyIntent::intent(&control_apostrophe, true, true, &tl_bindings, mac),
+            ComposingKeyIntent::Input("'".into())
+        );
+        assert_eq!(
+            ComposingKeyIntent::intent(&control_apostrophe, true, false, &tl_bindings, mac),
+            ComposingKeyIntent::Input("'".into())
+        );
+        assert_eq!(
+            ComposingKeyIntent::intent(&control_apostrophe, false, false, &tl_bindings, mac),
+            ComposingKeyIntent::PassThrough
+        );
+        // 客話企盤中，⌃= 與 ⌃+（含 ⌃⇧=）在組成中（非 TPS）分別送出 "=" 與 "+"；未組成時交給 host。
+        let control_eq = KeyEventSnapshot::chord(Some("="), "=", KeyModifiers::CONTROL);
+        let control_plus = KeyEventSnapshot::chord(
+            Some("+"),
+            "+",
+            KeyModifiers {
+                control: true,
+                shift: true,
+                ..KeyModifiers::NONE
+            },
+        );
+        assert_eq!(
+            ComposingKeyIntent::intent(&control_eq, true, false, &tl_bindings, mac),
+            ComposingKeyIntent::Input("=".into())
+        );
+        assert_eq!(
+            ComposingKeyIntent::intent(&control_plus, true, false, &tl_bindings, mac),
+            ComposingKeyIntent::Input("+".into())
+        );
+        assert_eq!(
+            ComposingKeyIntent::intent(&control_eq, false, false, &tl_bindings, mac),
+            ComposingKeyIntent::PassThrough
+        );
+        assert_eq!(
+            ComposingKeyIntent::intent(&control_plus, false, false, &tl_bindings, mac),
+            ComposingKeyIntent::PassThrough
+        );
+        // ⌥=（Alt+=）在組成中（非 TPS）亦送出 "+" 作為強制空格；未組成時交給 host。
+        let alt_eq = KeyEventSnapshot::chord(Some("≠"), "=", KeyModifiers::ALT);
+        assert_eq!(
+            ComposingKeyIntent::intent(&alt_eq, true, false, &tl_bindings, mac),
+            ComposingKeyIntent::Input("+".into())
+        );
+        assert_eq!(
+            ComposingKeyIntent::intent(&alt_eq, false, false, &tl_bindings, mac),
+            ComposingKeyIntent::PassThrough
+        );
         // trace: `slot_for_event` misses under any host chord — ⌘ (win), ⌃, ⌥ on a
         // slot key miss the slot: `3` under Telex, `q` under Standard.
         let telex = telex_bindings();

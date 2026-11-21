@@ -293,6 +293,20 @@ fn push_boundary(
     default: &str,
     syllable_joiner: Option<&str>,
 ) {
+    if let Some(forced) = next
+        .raw_text
+        .chars()
+        .next()
+        .filter(|c| matches!(c, '+' | '='))
+    {
+        match (text, forced) {
+            (SegmentText::AssociationTl, _) => s.push(forced),
+            (SegmentText::Display, '+') => s.push(' '),
+            (SegmentText::Display, '=') => s.push('-'),
+            _ => {}
+        }
+        return;
+    }
     let run = typed_separator_run(&next.raw_text);
     // hakfa: Syllable Separator None = HagPinPlus 連寫，兩隻音節中間會讀毋著
     // 就加撇號（phonetics::hpp）。淨管單一隻 `-` 抑是無打 `-` 个邊界。

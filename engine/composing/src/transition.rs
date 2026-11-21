@@ -1464,7 +1464,11 @@ fn next_word_word_selected(
 /// the joined TL, not the segments' echoed `syllable_count` — that is
 /// platform input, and the TL is what the phrase stores.
 fn learned_phrase(nailed: &[NailedSegment]) -> Option<LearnedEntry> {
-    if nailed.len() < 2 {
+    if nailed.is_empty() {
+        return None;
+    }
+    let has_forced_sep = nailed.iter().any(|seg| seg.raw_text.contains(['+', '=']));
+    if nailed.len() < 2 && !has_forced_sep {
         return None;
     }
     let mut hanji = String::new();
@@ -1479,9 +1483,27 @@ fn learned_phrase(nailed: &[NailedSegment]) -> Option<LearnedEntry> {
         }
         hanji.push_str(h);
     }
-    let canonical_tl = canonical_separators(&crate::api::learned_reading(nailed));
+    let raw_joined = if nailed.len() == 1 {
+        let seg = &nailed[0];
+        let (shadow, markers) =
+            crate::shadow::forced_separators_for_raw(&seg.raw_text, phonetics::InputMode::Tl);
+        phonetics::api::apply_forced_separators(
+            phonetics::InputMode::Tl,
+            &shadow,
+            &markers,
+            &seg.association_tl,
+            &seg.association_tl,
+        )
+        .unwrap_or_else(|| seg.association_tl.clone())
+    } else {
+        crate::api::learned_reading(nailed)
+    };
+    let canonical_tl = canonical_separators(&raw_joined);
     let syllable_count = phonetics::api::tl_syllables(&canonical_tl).count();
     if syllable_count == 0 || syllable_count > MAX_LEARNED_PHRASE_SYLLABLES {
+        return None;
+    }
+    if nailed.len() == 1 && syllable_count < 2 {
         return None;
     }
     Some(LearnedEntry {

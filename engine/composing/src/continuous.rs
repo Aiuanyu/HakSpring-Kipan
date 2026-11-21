@@ -1597,11 +1597,33 @@ pub(crate) fn assemble_candidates(
         // dedupe (which keys on what the cell shows) and before the §34
         // literal prepend in dispatch (the literal keeps typed hyphens).
         // `None` under Hyphen and on the TPS layout.
-        if let Some(joiner) = syllable_joiner {
+        if let Some(continuous_keys) = continuous_keys
+            .as_ref()
+            .filter(|k| !k.forced_separators.is_empty())
+            .filter(|_| matches!(mode, phonetics::InputMode::Tl | phonetics::InputMode::Poj))
+        {
             for cand in &mut candidates {
-                if cand.roman.contains('-') {
-                    cand.roman = phonetics::api::syllable_joiner_display(&cand.roman, joiner);
+                if !cand.roman.contains(['-', ' ', '+', '=']) {
+                    continue;
                 }
+                if let Some(roman) = phonetics::api::apply_forced_separators(
+                    mode,
+                    &continuous_keys.shadow,
+                    &continuous_keys.forced_separators,
+                    &cand.canonical_tl,
+                    &cand.roman,
+                ) {
+                    cand.roman = roman;
+                }
+            }
+        }
+        let mut forced_separators_rendered = false;
+        let effective_joiner = syllable_joiner.unwrap_or("-");
+        for cand in &mut candidates {
+            let has_forced = cand.roman.contains(['+', '=']);
+            if has_forced || (syllable_joiner.is_some() && cand.roman.contains('-')) {
+                cand.roman = phonetics::api::syllable_joiner_display(&cand.roman, effective_joiner);
+                forced_separators_rendered |= has_forced;
             }
         }
         // ⁿ becomes ᴺ in capitals (§53) — same seam, same field: the one nasal-marker case
@@ -1622,6 +1644,7 @@ pub(crate) fn assemble_candidates(
         if mode == phonetics::InputMode::Poj
             || syllable_joiner.is_some()
             || typed_separators_rendered
+            || forced_separators_rendered
         {
             dedupe_rendered_continuous(&mut candidates);
         }

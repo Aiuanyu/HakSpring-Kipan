@@ -244,7 +244,9 @@ fn has_separator(tl: &str) -> bool {
 
 // Separator-stripped, tone-preserving reading form — same normalization as composing::roman_reading_eq.
 fn separatorless_form(tl: &str) -> String {
-    tl.chars().filter(|&c| c != '-' && c != ' ').collect()
+    tl.chars()
+        .filter(|&c| !matches!(c, '-' | ' ' | '+' | '='))
+        .collect()
 }
 
 fn shape_prediction(m: MergedRow, config: &AppConfig) -> Option<EnginePrediction> {
@@ -258,6 +260,8 @@ fn shape_prediction(m: MergedRow, config: &AppConfig) -> Option<EnginePrediction
     // Syllable Separator — presentation only; `tl` below stays the association key.
     if let Some(joiner) = config.rendered_syllable_joiner() {
         roman = phonetics::api::syllable_joiner_display(&roman, joiner);
+    } else if roman.contains(['+', '=']) {
+        roman = phonetics::api::syllable_joiner_display(&roman, "-");
     }
     // The stored swap, unfolded: a TPS prediction reads it as it always has.
     if !config.is_hanji_first && roman.is_empty() {

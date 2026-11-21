@@ -201,6 +201,9 @@ pub(crate) struct ShadowLattice {
     /// The typed `-` runs among them, `(shadow offset, run length)` (§52 kind,
     /// §55 rendering).
     pub hyphen_runs: Vec<(usize, usize)>,
+    /// Typed `+` (forced space) and `=` (forced hyphen) markers in shadow
+    /// coordinates, `(shadow offset, marker)`.
+    pub forced_separators: Vec<(usize, char)>,
     /// The typed-`-` stretches that are one syllable
     /// ([`crate::syllabifier::one_syllable_segments`]), read by [`span_key`]
     /// so a reading may not split one (§52).
@@ -259,11 +262,33 @@ struct SeparatorLayers {
     /// two or more is the khinsiann `--` the §52 pin tells from a plain
     /// `-`, and the run is what §55 renders at the boundary.
     hyphen_runs: Vec<(usize, usize)>,
+    forced_separators: Vec<(usize, char)>,
 }
 
 fn separator_layers(canonical: &str, mode: InputMode) -> SeparatorLayers {
     let (hyphenless, hyphenless_to_canonical, hyphen_barriers) =
         strip_char_shadow_with_barriers(canonical, '-');
+    // Hakfa / TL / POJ: `'`, `+`, `=` are syllable-split markers (e.g.
+    // `n'gam`, `an+zo`, `mi=toi`). Unlike `-`, they do not record a
+    // `hyphen_runs` entry; `+` and `=` also carry their forced display
+    // separator (` ` / `-`).
+    let mut splitless = hyphenless;
+    let mut splitless_to_hyphenless: Vec<usize> = (0..=splitless.len()).collect();
+    let mut raw_split_barriers: Vec<(usize, char)> = Vec::new();
+    if matches!(mode, InputMode::Tl | InputMode::Poj) {
+        for marker in ['\'', '+', '='] {
+            let (next_str, next_map, next_barriers) =
+                strip_char_shadow_with_barriers(&splitless, marker);
+            for (b, _) in next_barriers {
+                raw_split_barriers.push((splitless_to_hyphenless[b], marker));
+            }
+            splitless_to_hyphenless = next_map
+                .into_iter()
+                .map(|i| splitless_to_hyphenless[i])
+                .collect();
+            splitless = next_str;
+        }
+    }
     // TPS-only — the ASCII space is the keyboard's tone-1 / syllable
     // separator (appended on `space` while composing so the next
     // dual-form consonant stays an initial), NOT a literal space. Strip
@@ -272,9 +297,13 @@ fn separator_layers(canonical: &str, mode: InputMode) -> SeparatorLayers {
     // dead-ending at the space; the offset map keeps the separator byte
     // in the full-span commit. No-op for TL/POJ/English (space is a real
     // word boundary). See `build_separator_shadow`.
-    let (shadow, shadow_to_hyphenless, space_barriers) =
-        build_separator_shadow_with_barriers(&hyphenless, mode);
-    // Merge the two barrier layers into final-shadow coordinates. Hyphen
+    let (shadow, shadow_to_splitless, space_barriers) =
+        build_separator_shadow_with_barriers(&splitless, mode);
+    let shadow_to_hyphenless: Vec<usize> = shadow_to_splitless
+        .iter()
+        .map(|&splitless_idx| splitless_to_hyphenless[splitless_idx])
+        .collect();
+    // Merge the barrier layers into final-shadow coordinates. Hyphen
     // barriers are hyphenless offsets; project them through the separator
     // strip (count the shadow bytes whose hyphenless source is below the
     // barrier — equivalently, find the shadow offset whose map value first
@@ -301,6 +330,21 @@ fn separator_layers(canonical: &str, mode: InputMode) -> SeparatorLayers {
             hyphen_runs.push((projected, run));
         }
     }
+    let mut forced_separators: Vec<(usize, char)> = Vec::new();
+    for (hyphenless_barrier, marker) in raw_split_barriers {
+        let projected = shadow_to_hyphenless
+            .iter()
+            .rposition(|&hyphenless_idx| hyphenless_idx <= hyphenless_barrier)
+            .unwrap_or(0);
+        if !barriers.contains(&projected) {
+            barriers.push(projected);
+        }
+        if matches!(marker, '+' | '=')
+            && !forced_separators.iter().any(|&(at, _)| at == projected)
+        {
+            forced_separators.push((projected, marker));
+        }
+    }
     barriers.sort_unstable();
     SeparatorLayers {
         hyphenless_to_canonical,
@@ -309,7 +353,21 @@ fn separator_layers(canonical: &str, mode: InputMode) -> SeparatorLayers {
         barriers,
         space_barriers,
         hyphen_runs,
+        forced_separators,
     }
+}
+
+/// Extract `(shadow, forced_separators)` for `raw` without needing a
+/// `SyllableInventory`, used when learning a single-segment phrase with
+/// typed `+` / `=` markers.
+pub(crate) fn forced_separators_for_raw(
+    raw: &str,
+    mode: InputMode,
+) -> (String, Vec<(usize, char)>) {
+    let lower = lookup_form(raw);
+    let (canonical, _) = canonicalize_poj_shadow(&lower, mode);
+    let layers = separator_layers(&canonical, mode);
+    (layers.shadow, layers.forced_separators)
 }
 
 /// [`lattice_from_canonical`] plus the merged barrier set: every shadow
@@ -331,6 +389,7 @@ fn lattice_from_canonical_with_barriers(
         barriers,
         space_barriers,
         hyphen_runs,
+        forced_separators,
     } = separator_layers(canonical, mode);
     // Compose the three offset maps: shadow → hyphenless → canonical → raw.
     let shadow_to_raw_end: Vec<usize> = shadow_to_hyphenless
@@ -382,6 +441,7 @@ fn lattice_from_canonical_with_barriers(
         barriers,
         space_barriers,
         hyphen_runs,
+        forced_separators,
         one_syllable_segments,
     }
 }
@@ -427,6 +487,8 @@ pub(crate) struct ContinuousKeys {
     pub barriers: Vec<usize>,
     /// The typed `-` runs among them, `(shadow offset, run length)`.
     pub hyphen_runs: Vec<(usize, usize)>,
+    /// Typed `+` / `=` forced separator markers, `(shadow offset, marker)`.
+    pub forced_separators: Vec<(usize, char)>,
     /// [`ShadowLattice::one_syllable_segments`].
     pub one_syllable_segments: Vec<(usize, usize)>,
 }
@@ -457,6 +519,7 @@ pub(crate) fn build_continuous_keys(
         lattice,
         barriers,
         hyphen_runs,
+        forced_separators,
         one_syllable_segments,
         ..
     } = shadow_lattice;
@@ -469,6 +532,7 @@ pub(crate) fn build_continuous_keys(
         lattice,
         barriers,
         hyphen_runs,
+        forced_separators,
         one_syllable_segments,
     }
 }
@@ -1313,7 +1377,9 @@ fn fused_shadow_with_barriers(
 pub(crate) fn custom_toneless_key(roman: &str, mode: InputMode) -> Option<String> {
     let reading = match mode {
         InputMode::Tps => roman.to_owned(),
-        InputMode::Tl | InputMode::Poj | InputMode::English => roman.replace(' ', "-"),
+        InputMode::Tl | InputMode::Poj | InputMode::English => {
+            roman.replace([' ', '+', '='], "-")
+        }
     };
     let toneless = strip_tones_for_mode(&fused_shadow(&reading, mode), mode);
     if toneless.is_empty() {
@@ -3369,5 +3435,31 @@ mod tests {
         for raw in ["ㄙㄒˊ", "ㄙ ㄒ", "ㄙ", "ㄙs"] {
             assert_eq!(abbrev_query_key(raw, InputMode::Tps), None, "{raw:?}");
         }
+    }
+
+    #[test]
+    fn apostrophe_splits_syllables_without_recording_hyphen_runs() {
+        // `n'gam` with syllables {n, ng, am, gam, ngam}: without `'`, `ngam`
+        // can segment as `ng|am` or `ngam`; with `'`, the barrier at byte 1
+        // blocks both `ng` (0..2) and `ngam` (0..4), leaving only `n` (0..1)
+        // and `gam` (1..4).
+        let path = test_support::write_fst_set(
+            "inventory_apostrophe.fst",
+            ["tl:n", "tl:ng", "tl:am", "tl:gam", "tl:ngam"]
+                .into_iter()
+                .map(|s| s.as_bytes().to_vec())
+                .collect(),
+        );
+        let inv = SyllableInventory::open(&path).expect("open inventory");
+        let sl = build_shadow_lattice_with_barriers("n'gam", &inv, InputMode::Tl);
+        assert_eq!(sl.shadow, "ngam");
+        assert_eq!(sl.barriers, vec![1]);
+        assert!(
+            sl.hyphen_runs.is_empty(),
+            "apostrophe must not record a hyphen run: {:?}",
+            sl.hyphen_runs
+        );
+        assert_eq!(sl.shadow_to_raw_end, vec![0, 1, 3, 4, 5]);
+        assert_eq!(sl.lattice.edges(), &[(0, 1), (0, 4), (1, 4)]);
     }
 }
