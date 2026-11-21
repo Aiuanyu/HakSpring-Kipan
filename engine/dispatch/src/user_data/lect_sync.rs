@@ -15,6 +15,7 @@
 //! The dictionary lookup is a parameter, so the algorithm runs against a stub in the tests and
 //! against `lexicon::api::search_by_hanji` in the engine.
 
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -208,6 +209,19 @@ pub(crate) fn sync(
     let mut pending_phrases: HashMap<u32, Vec<(String, String)>> = HashMap::new();
     let mut pending_words: HashMap<u32, Vec<(String, String)>> = HashMap::new();
 
+    // Cache distinct dictionary readings per (hanji, target_lect) for this sync pass so
+    // outcome() / sure_reading() and shared sub-pieces across words do not re-query the lexicon.
+    let readings_cache: RefCell<HashMap<(String, u32), Vec<String>>> = RefCell::new(HashMap::new());
+    let cached_readings = |hanji: &str, lect: u32| -> Vec<String> {
+        let key = (hanji.to_owned(), lect);
+        if let Some(hit) = readings_cache.borrow().get(&key) {
+            return hit.clone();
+        }
+        let found = distinct(readings(hanji, lect));
+        readings_cache.borrow_mut().insert(key, found.clone());
+        found
+    };
+
     let mut report = SyncReport::default();
     for (source, from) in &learned {
         for (target, _) in learned.iter().filter(|(lect, _)| lect != source) {
@@ -215,7 +229,7 @@ pub(crate) fn sync(
                 continue;
             };
             for (hanji, source_tl) in &from.phrases {
-                match outcome(readings, hanji, *target, source_tl) {
+                match outcome(&cached_readings, hanji, *target, source_tl) {
                     Outcome::Skip(reason) => report.skip(hanji, *target, reason),
                     Outcome::Copy { tl, .. } if have_phrases.contains(&(hanji.clone(), tl.clone())) => {
                         report.already_present += 1;
@@ -235,7 +249,7 @@ pub(crate) fn sync(
                 continue;
             };
             for (word, source_tl) in &from.words {
-                match outcome(readings, word, *target, source_tl) {
+                match outcome(&cached_readings, word, *target, source_tl) {
                     Outcome::Skip(reason) => report.skip(word, *target, reason),
                     Outcome::Copy { tl, .. } if have_words.contains(&(word.clone(), tl.clone())) => {
                         report.already_present += 1;

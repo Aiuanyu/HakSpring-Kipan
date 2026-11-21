@@ -36,6 +36,7 @@ import com.siansiansu.taigikeyboard.i18n.LocalStringResolver
 import com.siansiansu.taigikeyboard.i18n.generated.L10n
 import com.siansiansu.taigikeyboard.i18n.generated.StringKey
 import com.siansiansu.taigikeyboard.ui.components.ActionRow
+import com.siansiansu.taigikeyboard.ui.components.LoadingRow
 import com.siansiansu.taigikeyboard.ui.components.ResultDialog
 import com.siansiansu.taigikeyboard.ui.components.SettingsCard
 import com.siansiansu.taigikeyboard.ui.components.SettingsDivider
@@ -61,6 +62,8 @@ fun LearningRecordsMenuScreen(
     val stringResolver by rememberUpdatedState(LocalStringResolver.current)
     // While the clear runs, a list opened now could read the rows it is emptying: the kind rows wait too.
     var isClearing by remember { mutableStateOf(false) }
+    var isSyncing by remember { mutableStateOf(false) }
+    val isBusy = isClearing || isSyncing
     // Only a failure is said; a clear that landed says nothing (USER 2026-10-16).
     var clearFailure by remember { mutableStateOf<String?>(null) }
 
@@ -69,7 +72,7 @@ fun LearningRecordsMenuScreen(
     var syncFailure by remember { mutableStateOf<String?>(null) }
 
     fun previewSync() {
-        isClearing = true
+        isSyncing = true
         scope.launch {
             try {
                 syncPreview = onSyncPreview()
@@ -78,14 +81,14 @@ fun LearningRecordsMenuScreen(
             } catch (e: Exception) {
                 syncFailure = resultMessage("各腔互學無成功", e.message)
             } finally {
-                isClearing = false
+                isSyncing = false
             }
         }
     }
 
     fun confirmSync() {
         syncPreview = null
-        isClearing = true
+        isSyncing = true
         scope.launch {
             try {
                 onSyncConfirm()
@@ -94,7 +97,7 @@ fun LearningRecordsMenuScreen(
             } catch (e: Exception) {
                 syncFailure = resultMessage("各腔互學無成功", e.message)
             } finally {
-                isClearing = false
+                isSyncing = false
             }
         }
     }
@@ -149,30 +152,38 @@ fun LearningRecordsMenuScreen(
             SettingsCard {
                 ActionRow(
                     label = kindLabel(LearningRecordKind.LEARNING_RECORD_KIND_FREQUENCY),
-                    onClick = { if (!isClearing) onKind(LearningRecordKind.LEARNING_RECORD_KIND_FREQUENCY) },
+                    onClick = { onKind(LearningRecordKind.LEARNING_RECORD_KIND_FREQUENCY) },
+                    enabled = !isBusy,
                     trailingIcon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 )
                 SettingsDivider()
                 ActionRow(
                     label = kindLabel(LearningRecordKind.LEARNING_RECORD_KIND_LEARNED_PHRASE),
-                    onClick = { if (!isClearing) onKind(LearningRecordKind.LEARNING_RECORD_KIND_LEARNED_PHRASE) },
+                    onClick = { onKind(LearningRecordKind.LEARNING_RECORD_KIND_LEARNED_PHRASE) },
+                    enabled = !isBusy,
                     trailingIcon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 )
             }
             Spacer(Modifier.height(16.dp))
             // Hakfa fork: 各腔互學, one row; the preview dialog asks before copying.
             SettingsCard {
-                ActionRow(
-                    label = "各腔互學",
-                    onClick = { if (!isClearing) previewSync() },
-                )
+                if (isSyncing) {
+                    LoadingRow()
+                } else {
+                    ActionRow(
+                        label = "各腔互學",
+                        onClick = { previewSync() },
+                        enabled = !isBusy,
+                    )
+                }
             }
             Spacer(Modifier.height(16.dp))
             // Runs on the tap, no confirmation (USER 2026-10-16).
             SettingsCard {
                 ActionRow(
                     label = L10n.dictionaryClearLearningRecords,
-                    onClick = { if (!isClearing) clearAll() },
+                    onClick = { clearAll() },
+                    enabled = !isBusy,
                     textColor = MaterialTheme.colorScheme.error,
                 )
             }
