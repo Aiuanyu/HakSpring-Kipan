@@ -58,7 +58,7 @@ Writing in the vault — **always ask the maintainer first whether to write a no
 - **Commit Message 審核與提交流程**：
     1. 先分析專案 Git 目前 staged 的 diff，歸納此次更新內容。
     2. 依對話記憶提及不同 AI 模型，分別列出每個 AI 模型的分工及貢獻。
-    3. 先寫在專案根目錄的臨時 `commit_msg.txt` 中，供維護者審閱、直接編輯。
+    3. 先寫在專案根目錄的臨時 `commit_msg.txt` 中，供維護者審閱、直接編輯；**嚴禁在對話中再輸出一次完整內容，以節省 token**（僅提供檔案連結即可）。
     4. Commit message **毋使寫來 Obsidian 筆記裡肚**（避免筆記內容過度冗長繁雜、重複堆疊已存在於 git log 或專案檔案的內容）。
     5. 維護者審核完成告知定稿後，再根據 `commit_msg.txt` 執行 commit。
         - 絕對要小心避免那種會卡住終端機狀態的指令。
