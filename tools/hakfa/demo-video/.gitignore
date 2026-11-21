@@ -1,0 +1,7 @@
+out/
+trace/target/
+trace/Cargo.lock
+*.mp4
+*.gif
+*.png
+*.json

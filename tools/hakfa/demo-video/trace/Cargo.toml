@@ -1,0 +1,12 @@
+[package]
+name = "kipan_demo_trace"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+dispatch = { path = "../../../../engine/dispatch" }
+protos = { path = "../../../../engine/protos" }
+lexicon = { path = "../../../../engine/lexicon" }
+userdata = { path = "../../../../engine/userdata" }
+prost = "0.14"
