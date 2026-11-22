@@ -76,7 +76,7 @@ steps.append(Step(
     cands: [],
     committed: traceItems.last?.cands.first?.han ?? "",
     duration: 2.5,
-    badge: "Android ＆ Mac 封測中｜hakspring.pages.dev/kipan/"
+    badge: "Android ＆ Mac 免費下載試用｜hakspring.pages.dev/kipan/"
 ))
 
 let _ = try? FileManager.default.removeItem(at: outDir)
@@ -540,7 +540,7 @@ for (idx, step) in steps.enumerated() {
         .font: kipanFont(size: 16, bold: true),
         .foregroundColor: color(0xD95A0F)
     ])
-    let f3 = NSAttributedString(string: " 封測中 ｜ ", attributes: [
+    let f3 = NSAttributedString(string: " ｜ ", attributes: [
         .font: kipanFont(size: 16),
         .foregroundColor: color(0x465A4B)
     ])
