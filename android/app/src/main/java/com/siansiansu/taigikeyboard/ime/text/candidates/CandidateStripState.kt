@@ -89,7 +89,14 @@ val CandidateCellText.showsSubtitle: Boolean
  * swap decides the lead otherwise. `displayRoman` is already TPS-converted
  * by the caller when relevant.
  */
-private fun String.annotated(template: BracketTemplate?): String = if (template != null && isNotEmpty()) template.preview(this) else this
+private val REGIONAL_VARIANT_SUFFIXES = listOf(" 卓桃", " 美", " 南", " 北", " 卓", " 桃")
+
+private fun String.annotated(template: BracketTemplate?): String {
+    if (template == null || isEmpty()) return this
+    val suffix = REGIONAL_VARIANT_SUFFIXES.firstOrNull { endsWith(it) } ?: return template.preview(this)
+    val base = removeSuffix(suffix)
+    return "${template.preview(base)}$suffix"
+}
 
 fun candidateCellText(
     hanji: String?,

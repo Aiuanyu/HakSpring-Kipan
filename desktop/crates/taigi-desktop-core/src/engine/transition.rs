@@ -149,15 +149,24 @@ impl ContinuousCandidate {
         }
     }
 
+    /// The sub-dialect reading mark for display (`美`, `卓`, `桃`, `卓桃`), or `None` for an
+    /// ordinary reading.
+    pub fn variant_mark(&self) -> Option<&'static str> {
+        match self.variant {
+            1 => Some("美"),
+            2 => Some("卓"),
+            3 => Some("桃"),
+            4 => Some("卓桃"),
+            _ => None,
+        }
+    }
+
     /// The romanization as the candidate window draws it: sub-dialect readings carry 「美」「卓」「桃」「卓桃」.
     /// Display only — a commit goes through the engine's `display_text`.
     pub fn roman_for_display(&self) -> String {
-        match self.variant {
-            1 => format!("{} 美", self.roman),
-            2 => format!("{} 卓", self.roman),
-            3 => format!("{} 桃", self.roman),
-            4 => format!("{} 卓桃", self.roman),
-            _ => self.roman.clone(),
+        match self.variant_mark() {
+            Some(mark) => format!("{} {mark}", self.roman),
+            None => self.roman.clone(),
         }
     }
 

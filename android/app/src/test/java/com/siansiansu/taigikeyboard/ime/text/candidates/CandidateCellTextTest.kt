@@ -52,6 +52,29 @@ class CandidateCellTextTest {
     }
 
     @Test
+    fun annotateInBrackets_placesRegionalMarkOutsideBrackets() {
+        val square = BracketAnnotation(hanjiFirst = BracketTemplate.SQUARE)
+        val round = BracketAnnotation(hanjiFirst = BracketTemplate.ROUND)
+        val curly = BracketAnnotation(hanjiFirst = BracketTemplate.CURLY)
+        val ruby = BracketAnnotation(hanjiFirst = BracketTemplate.RUBY)
+
+        assertEquals(CandidateCellText("卵", "[nòn] 美"), cell(hanji = "卵", displayRoman = "nòn 美", isHanjiFirst = true, annotation = square))
+        assertEquals(CandidateCellText("卵", "(nòn) 美"), cell(hanji = "卵", displayRoman = "nòn 美", isHanjiFirst = true, annotation = round))
+        assertEquals(CandidateCellText("卵", "{nòn} 美"), cell(hanji = "卵", displayRoman = "nòn 美", isHanjiFirst = true, annotation = curly))
+        assertEquals(CandidateCellText("卵", "ᴿᵀ nòn 美"), cell(hanji = "卵", displayRoman = "nòn 美", isHanjiFirst = true, annotation = ruby))
+
+        for (mark in listOf("美", "南", "北", "卓", "桃", "卓桃")) {
+            assertEquals(
+                CandidateCellText("字", "[sii] $mark"),
+                cell(hanji = "字", displayRoman = "sii $mark", isHanjiFirst = true, annotation = square),
+            )
+        }
+
+        // Roman-first keeps the mark on the leading romanization, outside the Hanji brackets.
+        assertEquals(CandidateCellText("nòn 美", "[卵]"), cell(hanji = "卵", displayRoman = "nòn 美", isHanjiFirst = false, annotation = square))
+    }
+
+    @Test
     fun annotateInBrackets_leavesOneLineCellsAlone() {
         assertEquals(CandidateCellText("tâi-gí", null), cell(hanji = null, annotation = BracketAnnotation()))
         assertEquals(

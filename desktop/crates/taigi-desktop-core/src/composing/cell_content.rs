@@ -87,7 +87,16 @@ impl CandidateCellContent {
                 };
                 if settings.is_hanji_first {
                     let template = settings.annotation_template_hanji_first;
-                    Self::new(hanji, Some(bracket(candidate.roman_for_display(), template)))
+                    let annotation = if settings.is_output_both_scripts {
+                        let bracketed = template.preview(&candidate.roman);
+                        match candidate.variant_mark() {
+                            Some(mark) => format!("{bracketed} {mark}"),
+                            None => bracketed,
+                        }
+                    } else {
+                        candidate.roman_for_display()
+                    };
+                    Self::new(hanji, Some(annotation))
                 } else {
                     let template = settings.annotation_template_roman_first;
                     Self::new(
@@ -197,6 +206,48 @@ mod tests {
         assert_eq!(
             CandidateCellContent::cell(&plain, &settings(true)),
             CandidateCellContent::new("卵", Some("lòn".to_owned()))
+        );
+    }
+
+    #[test]
+    fn annotate_in_brackets_places_the_regional_mark_outside_the_brackets() {
+        let mut brackets = settings(true);
+        brackets.is_output_both_scripts = true;
+
+        for (variant, mark) in [(1, "美"), (2, "卓"), (3, "桃"), (4, "卓桃")] {
+            let mut c = candidate("nòn", Some("卵"), 0);
+            c.variant = variant;
+
+            brackets.annotation_template_hanji_first = BracketTemplate::Square;
+            assert_eq!(
+                CandidateCellContent::cell(&c, &brackets),
+                CandidateCellContent::new("卵", Some(format!("[nòn] {mark}")))
+            );
+            brackets.annotation_template_hanji_first = BracketTemplate::Round;
+            assert_eq!(
+                CandidateCellContent::cell(&c, &brackets),
+                CandidateCellContent::new("卵", Some(format!("(nòn) {mark}")))
+            );
+            brackets.annotation_template_hanji_first = BracketTemplate::Curly;
+            assert_eq!(
+                CandidateCellContent::cell(&c, &brackets),
+                CandidateCellContent::new("卵", Some(format!("{{nòn}} {mark}")))
+            );
+            brackets.annotation_template_hanji_first = BracketTemplate::Ruby;
+            assert_eq!(
+                CandidateCellContent::cell(&c, &brackets),
+                CandidateCellContent::new("卵", Some(format!("ᴿᵀ nòn {mark}")))
+            );
+        }
+
+        // Roman-first keeps the mark on the leading romanization, outside the Hanji brackets.
+        let mut roman_first = settings(false);
+        roman_first.is_output_both_scripts = true;
+        let mut c = candidate("nòn", Some("卵"), 0);
+        c.variant = 1;
+        assert_eq!(
+            CandidateCellContent::cell(&c, &roman_first),
+            CandidateCellContent::new("nòn 美", Some("[卵]".to_owned()))
         );
     }
 
