@@ -52,7 +52,9 @@ function walkerCost(word, frequency) {
     else if (frequency >= 30000) prior = 0.05;
     else if (frequency < 10000) prior = 0.001; // 補字典
 
-    const count = (hakfaUnigrams[word] || 0) + prior;
+    // 補字典稀有讀音（如「關 gón」）不應繼承該漢字主讀音（如「關 guán」）的語料詞頻
+    const unigramCount = frequency < 10000 ? 0 : (hakfaUnigrams[word] || 0);
+    const count = unigramCount + prior;
     const prob = count / (totalTokens + 0.5 * vocabSize);
     const cost = Math.round(-Math.log(prob) * MILLI_NATS_PER_NAT);
     return Math.max(0, Math.min(0xfffe, cost));

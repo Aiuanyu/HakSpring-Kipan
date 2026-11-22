@@ -140320,6 +140320,7 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "字型","sii hǐn","siihin6","siihin","",5000,1,64,四
 "介面","gie mien","giemien1","giemien","",5000,1,64,四
 "猴","hěu","heu6","heu","",5000,1,64,四
+"喺","--he","he1","he","",5000,1,64,南
 "饋","kui","kui1","kui","",5000,1,64,南
 "企盤","kí pǎn","kipan6","kipan","",5000,1,64,南
 "客源翠","hàg ngiǎn cui","hagngiancui6","hagngiancui","",5000,1,64,南
@@ -151895,7 +151896,6 @@ word,tl,tl_num,tl_notone,tl_abbrev,frequency,syllable_count,bitmask,lect
 "喭","ngian","ngian1","ngian","",900,1,64,南
 "喱","lí","li2","li","",900,1,64,南
 "喵","méu","meu2","meu","",900,1,64,南
-"喺","hì","hi3","hi","",900,1,64,南
 "嗔","cíin","ciin2","ciin","",900,1,64,南
 "嗡","iúng","iung2","iung","",900,1,64,南
 "嗤","cíi","cii2","cii","",900,1,64,南
