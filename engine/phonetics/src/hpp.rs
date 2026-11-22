@@ -79,8 +79,10 @@ pub fn hpp_boundary(prev: &str, next: &str) -> &'static str {
         'u' if matches!(n0, 'a' | 'e' | 'i') => true,
         _ => false,
     };
-    // 7. 母音＋ng 開頭
-    let needs = needs || (is_vowel(p) && n0 == 'n' && n1 == Some('g'));
+    // 7. 母音＋ng 開頭；9. e＋rh（如詔安 bbue'rhung 會用）
+    let needs = needs
+        || (is_vowel(p) && n0 == 'n' && n1 == Some('g'))
+        || (p == 'e' && n0 == 'r' && n1 == Some('h'));
     if needs {
         HPP_APOSTROPHE
     } else {
@@ -110,6 +112,8 @@ mod tests {
         // 3. e＋e／u
         assert_eq!(join("se", "ù"), "se'ù");
         assert_eq!(join("mê", "e"), "mê'e");
+        // 9. e＋rh（詔安 bbue'rhung 會用）
+        assert_eq!(join("bbue", "rhung"), "bbue'rhung");
         // 4. i＋母音
         assert_eq!(join("Dèd", "ǐ"), "Dèd'ǐ");
         assert_eq!(join("ki", "a"), "ki'a");

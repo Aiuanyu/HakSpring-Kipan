@@ -16,6 +16,7 @@ Same as HakSpring Romaine (`js/romanizer.js` `applyApostropheRules`). Between a 
 | 6 | `u` | `a e i` |
 | 7 | a vowel | `ng` |
 | 8 | `n` | `g` |
+| 9 | `e` | `rh` |
 
 Letters are compared on their base letter (tone marks stripped, NFD combining marks skipped, lowercased). A non-Latin neighbour (Hanji, punctuation, space, `·`) gets nothing.
 
