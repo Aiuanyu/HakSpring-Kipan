@@ -1476,7 +1476,7 @@ fn hakfa_six_lects_curated_words_and_raoping_sub_toggles() {
     let _lock = engine_lock();
     let mut rig = rig();
 
-    // 1. 愛灣語加詞（curated）：四縣 `喺 --he`（打 he）、海陸 `喺 hē`（打 he）、大埔 `哶 mē`（打 me）、饒平 `喺 --he`（打 he）
+    // 1. 愛灣語加詞（curated）：四縣／南四縣 `喺 --he`（打 he）、海陸 `喺 hē`（打 he）、大埔 `哶 mē`（打 me）、饒平 `喺 --he`（打 he）
     rig.settings.edit(|doc| doc.set_choice(&keys::LECT, Lect::Xiien));
     rig.manager.cancel_composition(&mut rig.recorder);
     rig.type_text("he");
@@ -1489,6 +1489,19 @@ fn hakfa_six_lects_curated_words_and_raoping_sub_toggles() {
     assert!(
         !xiien_he.iter().any(|c| c.hanji.as_deref() == Some("喺") && c.canonical_tl == "hì"),
         "四縣擬音 喺 (hì) must not appear"
+    );
+
+    rig.settings.edit(|doc| doc.set_choice(&keys::LECT, Lect::Namxiian));
+    rig.manager.cancel_composition(&mut rig.recorder);
+    rig.type_text("he");
+    let namxiian_he = rig.candidates();
+    assert!(
+        namxiian_he.iter().any(|c| c.hanji.as_deref() == Some("喺") && c.canonical_tl == "--he"),
+        "南四縣 curated 喺 (--he) must be reachable by typing he"
+    );
+    assert!(
+        !namxiian_he.iter().any(|c| c.hanji.as_deref() == Some("喺") && c.canonical_tl == "hì"),
+        "南四縣擬音 喺 (hì) must not appear"
     );
 
     rig.settings.edit(|doc| doc.set_choice(&keys::LECT, Lect::Hoiliug));
