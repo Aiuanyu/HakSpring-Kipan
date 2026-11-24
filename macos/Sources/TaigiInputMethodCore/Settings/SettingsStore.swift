@@ -278,6 +278,15 @@ final class SettingsStore: @unchecked Sendable {
             name: "hasOfferedUpdateNotifications",
             defaultValue: false,
         )
+        /// Hakfa fork: strictly opt-in anonymous telemetry (lect + version only, never keystrokes).
+        static let anonymousTelemetryEnabled = SettingsKey(
+            name: "anonymousTelemetryEnabled",
+            defaultValue: false,
+        )
+        static let lastAnonymousTelemetryDate = SettingsKey(
+            name: "lastAnonymousTelemetryDate",
+            defaultValue: "",
+        )
 
         /// The symbol picker's last picks, most recent first (`RecentSymbols`).
         /// Bookkeeping the picker writes on every pick, like the update keys

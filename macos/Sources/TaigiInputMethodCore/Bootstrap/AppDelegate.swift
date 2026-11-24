@@ -122,18 +122,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // below: by the time that timer fires the user may have opened the
         // settings window and started a download, and a late "clean up what the
         // last run left" would delete this run's.
-        /* Hakfa fork: disable upstream appcast background update checks; users check updates at https://hakspring.pages.dev/kipan/.
+        // Hakfa fork: host update check on hakspring.pages.dev/api/kipan-manifest
+        // and send opt-in anonymous telemetry (when explicitly enabled by user).
         UpdatePackageDownload.removeStagedPackages()
         Task {
             try? await Task.sleep(for: .seconds(30))
             UpdateChecker.shared.checkAutomatically()
+            await AnonymousTelemetry.reportIfOptedIn()
         }
         let updateCheckTimer = Timer(timeInterval: UpdateChecker.checkInterval, repeats: true) { _ in
-            Task { @MainActor in UpdateChecker.shared.checkAutomatically() }
+            Task { @MainActor in
+                UpdateChecker.shared.checkAutomatically()
+                await AnonymousTelemetry.reportIfOptedIn()
+            }
         }
         updateCheckTimer.tolerance = UpdateChecker.checkInterval / 10
         RunLoop.main.add(updateCheckTimer, forMode: .common)
-        */
     }
 
     /// Rebuilds the AppKit UI that reads its text once and keeps a copy.

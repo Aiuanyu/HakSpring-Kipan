@@ -66,23 +66,24 @@ struct UpdateManifest: Equatable {
         )
     }
 
-    /// Where the manifest is published. On the project's own domain, not on
-    /// whichever service happens to host it: this constant is compiled into
-    /// every shipped build and old installs keep requesting it forever, so the
-    /// hosting must be able to move without stranding them. It has to be
-    /// anonymously reachable — the app source repository is private, and a
-    /// manifest served from there answers every real user with a 404.
+    /// Hakfa fork: hosted on Cloudflare Pages (/api/kipan-manifest) to serve update metadata
+    /// and record anonymized update-check counts without storing IP addresses.
     static let publishedURL =
-        URL(string: "https://taigikeyboard.tw/appcast/macos.json")!
+        URL(string: "https://hakspring.pages.dev/api/kipan-manifest?platform=macos")!
 
     /// One bounded GET of the published manifest, off the main actor — the read
     /// and the decode belong on the cooperative pool, not interleaved with key
     /// handling.
     static func fetchPublished() async throws -> UpdateManifest {
         let maximumBytes = 64 * 1024
+        var components = URLComponents(url: publishedURL, resolvingAgainstBaseURL: false)
+        var items = components?.queryItems ?? []
+        items.append(URLQueryItem(name: "v", value: AppVersion.installed))
+        components?.queryItems = items
+        let requestURL = components?.url ?? publishedURL
         let session = UpdateHTTP.session(requestTimeout: 5, resourceTimeout: 15)
         defer { session.finishTasksAndInvalidate() }
-        let (bytes, response) = try await session.bytes(from: publishedURL)
+        let (bytes, response) = try await session.bytes(from: requestURL)
         guard UpdateHTTP.isAcceptable(response),
               // The declared length rejects an oversized body before a byte of
               // it is read; the loop below is the backstop for a server that

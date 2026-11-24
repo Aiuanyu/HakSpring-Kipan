@@ -39,6 +39,9 @@ struct GeneralSettingsView: View {
     @AppStorage(SettingsStore.Keys.toneInputScheme.name)
     private var toneInputScheme = SettingsStore.Keys.toneInputScheme.defaultValue
 
+    @AppStorage(SettingsStore.Keys.anonymousTelemetryEnabled.name)
+    private var anonymousTelemetryEnabled = SettingsStore.Keys.anonymousTelemetryEnabled.defaultValue
+
     /// The STORED swap — the same key the `` ` `` shortcut flips, so the
     /// picker and the chord are one setting seen from two places. Read raw
     /// on purpose: the picker shows what is stored, and `candidateDisplayMode`
@@ -198,19 +201,37 @@ struct GeneralSettingsView: View {
                 // The daily check still runs, so a release that is pulled stops
                 // being offered on its own, and the input-source menu's Check for Updates
                 // row is still there to force one.
-                /* Hakfa fork: during beta, Check for Updates opens the HakSpring Kipan beta page instead of upstream appcast.
+                /* Hakfa fork: restore UpdateChecker host + keep quick link to beta page. */
                 if let pending = UpdateChecker.shared.pendingUpdate {
                     pendingUpdateRow(for: pending)
                 } else {
-                */
-                LabeledContent(language.resolver.desktopUpdateCurrentVersionLabel(version: AppVersion.installed)) {
-                    Button(language.string(.desktopUpdateCheckNow)) {
-                        if let url = URL(string: "https://hakspring.pages.dev/kipan/") {
-                            NSWorkspace.shared.open(url)
+                    LabeledContent(language.resolver.desktopUpdateCurrentVersionLabel(version: AppVersion.installed)) {
+                        HStack(spacing: 8) {
+                            Button(language.string(.desktopUpdateCheckNow)) {
+                                UpdateChecker.shared.checkManually()
+                            }
+                            if let url = URL(string: "https://hakspring.pages.dev/kipan/") {
+                                Button("封測網頁") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }
                         }
                     }
                 }
-                // }
+
+                Toggle(isOn: $anonymousTelemetryEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("匿名回報使用統計（協助改善詞庫）")
+                        Text("僅回報版本號與常用腔調，絕不傳送打字內容或個人資料。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .onChange(of: anonymousTelemetryEnabled) { _, enabled in
+                    if enabled {
+                        Task { await AnonymousTelemetry.reportIfOptedIn(force: true) }
+                    }
+                }
 
                 /* Hakfa fork: background update notifications are disabled during beta.
                 if areNoticesBlocked {
