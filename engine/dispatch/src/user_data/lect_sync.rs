@@ -19,7 +19,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use userdata::{UserDataHandle, UserDataStores};
+use userdata::{AssociationKey, AssociationPair, UserDataHandle, UserDataStores};
 
 /// How many skipped words the answer lists, for the preview to show why.
 const SKIP_EXAMPLES: usize = 12;
@@ -35,7 +35,9 @@ pub(crate) enum SkipReason {
 pub(crate) struct SyncReport {
     pub added_phrases: u32,
     pub added_words: u32,
-    /// How many of the additions (words and phrases) were composed from several dictionary words.
+    pub added_associations: u32,
+    /// How many of the additions (words, phrases, and associations) were composed from several
+    /// dictionary words.
     pub composed: u32,
     pub already_present: u32,
     pub skipped_missing: u32,
@@ -162,23 +164,27 @@ pub(crate) fn sync(
     for (_, set) in &stores {
         set.frequency.open_blocking();
         set.learned_phrases.open_blocking();
+        set.association.open_blocking();
     }
     // Everything is read before anything is written. The sources are what each lect's user learned:
     // rows the sync itself copied (the stores' sync ledger) are not offered on, so a copy is never
     // taken for the user's own pick and one press reaches the end state. A pair the user deleted in
-    // the target lect is not copied back.
+    // the target lect is not copied back (except wiped associations, which clear without blocking).
     struct Learned {
         phrases: Vec<(String, String)>,
         words: Vec<(String, String)>,
+        associations: Vec<AssociationKey>,
     }
     let mut target_have_phrases: HashMap<u32, HashSet<(String, String)>> = HashMap::new();
     let mut target_have_words: HashMap<u32, HashSet<(String, String)>> = HashMap::new();
+    let mut target_have_associations: HashMap<u32, HashSet<AssociationKey>> = HashMap::new();
 
     let learned: Vec<(u32, Learned)> = stores
         .iter()
         .map(|(lect, set)| {
             let copied_phrases = set.learned_phrases.copied_pairs().unwrap_or_default();
             let copied_words = set.frequency.copied_pairs().unwrap_or_default();
+            let copied_associations = set.association.copied_pairs().unwrap_or_default();
             let all_phrases: Vec<(String, String)> = set
                 .learned_phrases
                 .all_rows()
@@ -193,21 +199,43 @@ pub(crate) fn sync(
                 .into_iter()
                 .map(|row| (row.word, row.tl))
                 .collect();
+            let all_associations: Vec<AssociationKey> = set
+                .association
+                .all_rows()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|row| {
+                    (
+                        row.pair.previous,
+                        row.pair.previous_tl,
+                        row.pair.next,
+                        row.pair.next_tl,
+                    )
+                })
+                .collect();
             // "Have" counts what the user deleted too: the user already decided about that pair.
             let mut have_phrases: HashSet<(String, String)> = all_phrases.iter().cloned().collect();
             have_phrases.extend(set.learned_phrases.blocked_pairs().unwrap_or_default());
             let mut have_words: HashSet<(String, String)> = all_words.iter().cloned().collect();
             have_words.extend(set.frequency.blocked_pairs().unwrap_or_default());
+            let have_associations: HashSet<AssociationKey> =
+                all_associations.iter().cloned().collect();
             target_have_phrases.insert(*lect, have_phrases);
             target_have_words.insert(*lect, have_words);
+            target_have_associations.insert(*lect, have_associations);
             let phrases = all_phrases.into_iter().filter(|pair| !copied_phrases.contains(pair)).collect();
             let words = all_words.into_iter().filter(|pair| !copied_words.contains(pair)).collect();
-            (*lect, Learned { phrases, words })
+            let associations = all_associations
+                .into_iter()
+                .filter(|key| !copied_associations.contains(key))
+                .collect();
+            (*lect, Learned { phrases, words, associations })
         })
         .collect();
 
     let mut pending_phrases: HashMap<u32, Vec<(String, String)>> = HashMap::new();
     let mut pending_words: HashMap<u32, Vec<(String, String)>> = HashMap::new();
+    let mut pending_associations: HashMap<u32, Vec<AssociationPair>> = HashMap::new();
 
     // Cache distinct dictionary readings per (hanji, target_lect) for this sync pass so
     // outcome() / sure_reading() and shared sub-pieces across words do not re-query the lexicon.
@@ -264,6 +292,50 @@ pub(crate) fn sync(
                     }
                 }
             }
+
+            let Some(have_associations) = target_have_associations.get_mut(target) else {
+                continue;
+            };
+            for (prev_word, prev_tl, next_word, next_tl) in &from.associations {
+                let prev_outcome = match outcome(&cached_readings, prev_word, *target, prev_tl) {
+                    Outcome::Skip(reason) => {
+                        report.skip(prev_word, *target, reason);
+                        continue;
+                    }
+                    Outcome::Copy { tl, composed } => (tl, composed),
+                };
+                let next_outcome = match outcome(&cached_readings, next_word, *target, next_tl) {
+                    Outcome::Skip(reason) => {
+                        report.skip(next_word, *target, reason);
+                        continue;
+                    }
+                    Outcome::Copy { tl, composed } => (tl, composed),
+                };
+                let key = (
+                    prev_word.clone(),
+                    prev_outcome.0.clone(),
+                    next_word.clone(),
+                    next_outcome.0.clone(),
+                );
+                if have_associations.contains(&key) {
+                    report.already_present += 1;
+                } else {
+                    report.added_associations += 1;
+                    report.composed += u32::from(prev_outcome.1 || next_outcome.1);
+                    have_associations.insert(key);
+                    if !dry_run {
+                        pending_associations
+                            .entry(*target)
+                            .or_default()
+                            .push(AssociationPair {
+                                previous: prev_word.clone(),
+                                previous_tl: prev_outcome.0,
+                                next: next_word.clone(),
+                                next_tl: next_outcome.0,
+                            });
+                    }
+                }
+            }
         }
     }
 
@@ -277,6 +349,11 @@ pub(crate) fn sync(
             if let Some(words) = pending_words.remove(target) {
                 if !words.is_empty() {
                     let _ = target_stores.frequency.record_copies(&words);
+                }
+            }
+            if let Some(associations) = pending_associations.remove(target) {
+                if !associations.is_empty() {
+                    let _ = target_stores.association.record_copies(&associations);
                 }
             }
         }
@@ -578,5 +655,75 @@ mod tests {
 
         hailu.frequency.record("海", "hói"); // the user's own pick of the copied pair
         assert!(hailu.frequency.copied_pairs().unwrap().is_empty(), "now theirs");
+    }
+
+    #[test]
+    fn associations_sync_when_both_sides_have_sure_readings_and_relearn_after_wipe() {
+        let directory = tempfile::tempdir().unwrap();
+        let handle = opened_handle(directory.path());
+        let dict = HashMap::from([
+            (("海", 1), vec!["hòi"]),
+            (("海", 2), vec!["hói"]),
+            (("海", 3), vec!["hói"]),
+            (("行", 1), vec!["hàng"]),
+            (("行", 2), vec!["hàng"]),
+            (("行", 3), vec!["hàng"]),
+            (("四縣", 1), vec!["xi-ien"]),
+        ]);
+        let readings = readings_from(dict);
+        let sixian = handle.stores_for_lect(1).unwrap();
+        sixian.association.record(&[
+            AssociationPair {
+                previous: "海".into(),
+                previous_tl: "hòi".into(),
+                next: "行".into(),
+                next_tl: "hàng".into(),
+            },
+            AssociationPair {
+                previous: "四縣".into(),
+                previous_tl: "xi-ien".into(),
+                next: "海".into(),
+                next_tl: "hòi".into(),
+            },
+        ]);
+
+        // Only 海→行 has sure readings in 海陸; 四縣→海 is skipped because 四縣 is missing in 海陸.
+        let report = sync(&handle, &[1, 2], false, &readings).unwrap();
+        assert_eq!(report.added_associations, 1);
+        assert_eq!(report.skipped_missing, 1);
+
+        let hailu = handle.stores_for_lect(2).unwrap();
+        let rows = hailu.association.all_rows().unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].pair.previous, "海");
+        assert_eq!(rows[0].pair.previous_tl, "hói");
+        assert_eq!(rows[0].pair.next, "行");
+        assert_eq!(rows[0].pair.next_tl, "hàng");
+        assert_eq!(rows[0].count, 1);
+
+        // Copied association in 海陸 does not echo into 大埔 when syncing 2 → 3.
+        let echo = sync(&handle, &[2, 3], false, &readings).unwrap();
+        assert_eq!(echo.added_associations, 0);
+        let dapu = handle.stores_for_lect(3).unwrap();
+        assert!(dapu.association.all_rows().unwrap().is_empty());
+
+        // Wiping 海陸 does not block the pair: re-syncing from 四縣 brings it back.
+        hailu.association.delete_all().unwrap();
+        assert!(hailu.association.all_rows().unwrap().is_empty());
+        let resync = sync(&handle, &[1, 2], false, &readings).unwrap();
+        assert_eq!(resync.added_associations, 1);
+        assert_eq!(hailu.association.all_rows().unwrap().len(), 1);
+
+        // Picking the association in 海陸 claims it as the user's own, so 2 → 3 now offers it.
+        hailu.association.record(&[AssociationPair {
+            previous: "海".into(),
+            previous_tl: "hói".into(),
+            next: "行".into(),
+            next_tl: "hàng".into(),
+        }]);
+        assert!(hailu.association.copied_pairs().unwrap().is_empty());
+        let onward = sync(&handle, &[2, 3], false, &readings).unwrap();
+        assert_eq!(onward.added_associations, 1);
+        assert_eq!(dapu.association.all_rows().unwrap().len(), 1);
     }
 }

@@ -430,8 +430,8 @@ struct LearningRecordsPage: View {
 
     /// What the preview says before anything is copied.
     nonisolated static func syncSummary(_ preview: Taigi_Engine_LectsSynced) -> String {
-        let added = preview.addedWords + preview.addedPhrases
-        var lines = ["會增加 \(added) 筆（詞 \(preview.addedWords)、詞組 \(preview.addedPhrases)）。"]
+        let added = preview.addedWords + preview.addedPhrases + preview.addedAssociations
+        var lines = ["會增加 \(added) 筆（詞 \(preview.addedWords)、詞組 \(preview.addedPhrases)、關聯詞 \(preview.addedAssociations)）。"]
         if preview.composed > 0 { lines.append("其中 \(preview.composed) 筆係用目的腔詞典个詞組合出來个。") }
         if preview.alreadyPresent > 0 { lines.append("本來就有：\(preview.alreadyPresent) 筆。") }
         if preview.skippedMissing > 0 { lines.append("目的腔無共隻漢字，跳過：\(preview.skippedMissing) 筆。") }
@@ -639,7 +639,7 @@ struct LearningRecordCountSheet: View {
 
 extension Taigi_Engine_LectsSynced: Identifiable {
     public var id: String {
-        "\(addedWords)-\(addedPhrases)-\(alreadyPresent)-\(skippedMissing)-\(skippedAmbiguous)-\(composed)"
+        "\(addedWords)-\(addedPhrases)-\(addedAssociations)-\(alreadyPresent)-\(skippedMissing)-\(skippedAmbiguous)-\(composed)"
     }
 }
 
@@ -663,11 +663,11 @@ struct LectsSyncPreviewSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                let added = preview.addedWords + preview.addedPhrases
+                let added = preview.addedWords + preview.addedPhrases + preview.addedAssociations
                 HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill")
                         .foregroundStyle(Color.accentColor)
-                    Text("會增加 \(added) 筆（詞 \(preview.addedWords)、詞組 \(preview.addedPhrases)）")
+                    Text("會增加 \(added) 筆（詞 \(preview.addedWords)、詞組 \(preview.addedPhrases)、關聯詞 \(preview.addedAssociations)）")
                         .fontWeight(.medium)
                 }
 

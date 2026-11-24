@@ -10,11 +10,15 @@ use rusqlite::{params, Connection};
 use std::path::PathBuf;
 
 const TABLE_NAME: &str = "user_association";
+const COPY_TABLE: &str = "lect_sync_copy";
 /// Ported from iOS `NextWordSchema.schemaVersion` and
 /// Android `NextWordService.DATABASE_VERSION`.
 const SCHEMA_VERSION: i64 = 6;
 const ROW_COLUMNS: &str = "prev_word, prev_tl, next_word, next_tl, count";
 const LIST_ORDER: &str = "count DESC, last_used DESC, prev_word ASC, next_word ASC";
+
+/// Key identifying one bigram in the association store and its lect-sync ledger.
+pub type AssociationKey = (String, String, String, String);
 
 /// One learned bigram. `previous_tl` / `next_tl` are canonical TL — the
 /// identity axis of Core Principle #7.
@@ -115,6 +119,7 @@ impl UserAssociationStore {
                         ),
                         params![pair.previous, pair.previous_tl, pair.next, pair.next_tl],
                     )?;
+                    claim_copy(connection, pair)?;
                 }
                 if let Some(capacity) = &capacity {
                     capacity.enforce(connection)?;
@@ -122,6 +127,60 @@ impl UserAssociationStore {
                 Ok(())
             })
         });
+    }
+
+    /// Hakfa fork (各腔互學): writes the bigrams the lect sync copied, in one transaction. A pair
+    /// that is already a row is left alone (a copy never raises what the lect learned itself); a
+    /// new row counts once and is noted in `lect_sync_copy`, so the sync never offers it on.
+    pub fn record_copies(&self, pairs: &[AssociationPair]) -> Result<(), UserDataDatabaseError> {
+        let recordable: Vec<AssociationPair> = pairs
+            .iter()
+            .filter(|pair| !pair.previous.is_empty() && !pair.next.is_empty())
+            .cloned()
+            .collect();
+        if recordable.is_empty() {
+            return Ok(());
+        }
+        let capacity = self.capacity.detached();
+        self.database.perform(move |connection| {
+            immediate_transaction::<_, UserDataDatabaseError>(connection, |connection| {
+                let mut statement = connection.prepare_cached(&format!(
+                    "INSERT INTO {TABLE_NAME}\n    (prev_word, prev_tl, next_word, next_tl, count, last_used)\nVALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)\nON CONFLICT(prev_word, prev_tl, next_word, next_tl) DO NOTHING;"
+                ))?;
+                let mut inserted = Vec::new();
+                for pair in &recordable {
+                    if statement.execute(params![
+                        pair.previous,
+                        pair.previous_tl,
+                        pair.next,
+                        pair.next_tl
+                    ])? > 0
+                    {
+                        inserted.push(pair);
+                    }
+                }
+                drop(statement);
+                for pair in inserted {
+                    mark_copied(connection, pair)?;
+                }
+                capacity.enforce(connection)?;
+                Ok(())
+            })
+        })
+    }
+
+    /// The bigrams the lect sync copied here (not the user's own evidence).
+    pub fn copied_pairs(&self) -> Option<std::collections::HashSet<AssociationKey>> {
+        self.database.wait_for_queued_writes();
+        self.database.read(|connection| {
+            let mut statement = connection.prepare(&format!(
+                "SELECT prev_word, prev_tl, next_word, next_tl FROM {COPY_TABLE};"
+            ))?;
+            let rows = statement.query_map([], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+            })?;
+            rows.collect()
+        })
     }
 
     /// Merges a backup's bigrams: a pair already stored keeps the larger
@@ -147,6 +206,7 @@ impl UserAssociationStore {
                         pair.next_tl,
                         count
                     ])?;
+                    claim_copy(connection, pair)?;
                     merged += 1;
                 }
                 capacity.enforce(connection)?;
@@ -212,10 +272,15 @@ impl UserAssociationStore {
         })
     }
 
-    /// Forgets every bigram.
+    /// Forgets every bigram. Clears the copy ledger too without blocking: wiped associations can
+    /// be re-learned from other lects on the next sync.
     pub fn delete_all(&self) -> Result<(), UserDataDatabaseError> {
         self.database.perform(|connection| {
-            connection.execute(&format!("DELETE FROM {TABLE_NAME};"), [])?;
+            immediate_transaction::<_, UserDataDatabaseError>(connection, |connection| {
+                connection.execute(&format!("DELETE FROM {TABLE_NAME};"), [])?;
+                connection.execute(&format!("DELETE FROM {COPY_TABLE};"), [])?;
+                Ok(())
+            })?;
             connection.execute("VACUUM;", []).ok();
             Ok(())
         })
@@ -249,10 +314,37 @@ fn apply_schema(connection: &Connection) -> rusqlite::Result<()> {
 /// the name pre-convergence desktop builds gave the read index.
 fn create_current(connection: &Connection) -> rusqlite::Result<()> {
     connection.execute_batch(&table_ddl(TABLE_NAME))?;
+    connection.execute_batch(&copy_ledger_ddl())?;
     connection.execute_batch(&format!(
         "DROP INDEX IF EXISTS idx_user_prev;\nCREATE INDEX IF NOT EXISTS idx_user_prev_word_tl\n    ON {TABLE_NAME}(prev_word, prev_tl);"
     ))?;
     connection.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+    Ok(())
+}
+
+fn copy_ledger_ddl() -> String {
+    format!(
+        "CREATE TABLE IF NOT EXISTS {COPY_TABLE} (\n    prev_word TEXT NOT NULL,\n    prev_tl TEXT NOT NULL,\n    next_word TEXT NOT NULL,\n    next_tl TEXT NOT NULL,\n    PRIMARY KEY (prev_word, prev_tl, next_word, next_tl)\n);"
+    )
+}
+
+fn claim_copy(connection: &Connection, pair: &AssociationPair) -> rusqlite::Result<()> {
+    connection.execute(
+        &format!(
+            "DELETE FROM {COPY_TABLE} WHERE prev_word = ? AND prev_tl = ? AND next_word = ? AND next_tl = ?;"
+        ),
+        params![pair.previous, pair.previous_tl, pair.next, pair.next_tl],
+    )?;
+    Ok(())
+}
+
+fn mark_copied(connection: &Connection, pair: &AssociationPair) -> rusqlite::Result<()> {
+    connection.execute(
+        &format!(
+            "INSERT OR IGNORE INTO {COPY_TABLE} (prev_word, prev_tl, next_word, next_tl) VALUES (?, ?, ?, ?);"
+        ),
+        params![pair.previous, pair.previous_tl, pair.next, pair.next_tl],
+    )?;
     Ok(())
 }
 

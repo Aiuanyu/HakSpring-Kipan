@@ -351,8 +351,8 @@ public  final class LectsSynced extends
   private int composed_;
   /**
    * <pre>
-   * Of the additions (words and phrases), how many were composed from several dictionary words
-   * because the target lect's dictionary lacks the whole word.
+   * Of the additions (words, phrases, and associations), how many were composed from several
+   * dictionary words because the target lect's dictionary lacks the whole word.
    * </pre>
    *
    * <code>uint32 composed = 8;</code>
@@ -364,8 +364,8 @@ public  final class LectsSynced extends
   }
   /**
    * <pre>
-   * Of the additions (words and phrases), how many were composed from several dictionary words
-   * because the target lect's dictionary lacks the whole word.
+   * Of the additions (words, phrases, and associations), how many were composed from several
+   * dictionary words because the target lect's dictionary lacks the whole word.
    * </pre>
    *
    * <code>uint32 composed = 8;</code>
@@ -377,8 +377,8 @@ public  final class LectsSynced extends
   }
   /**
    * <pre>
-   * Of the additions (words and phrases), how many were composed from several dictionary words
-   * because the target lect's dictionary lacks the whole word.
+   * Of the additions (words, phrases, and associations), how many were composed from several
+   * dictionary words because the target lect's dictionary lacks the whole word.
    * </pre>
    *
    * <code>uint32 composed = 8;</code>
@@ -386,6 +386,44 @@ public  final class LectsSynced extends
   private void clearComposed() {
 
     composed_ = 0;
+  }
+
+  public static final int ADDED_ASSOCIATIONS_FIELD_NUMBER = 9;
+  private int addedAssociations_;
+  /**
+   * <pre>
+   * next-word associations written (or that would be)
+   * </pre>
+   *
+   * <code>uint32 added_associations = 9;</code>
+   * @return The addedAssociations.
+   */
+  @java.lang.Override
+  public int getAddedAssociations() {
+    return addedAssociations_;
+  }
+  /**
+   * <pre>
+   * next-word associations written (or that would be)
+   * </pre>
+   *
+   * <code>uint32 added_associations = 9;</code>
+   * @param value The addedAssociations to set.
+   */
+  private void setAddedAssociations(int value) {
+
+    addedAssociations_ = value;
+  }
+  /**
+   * <pre>
+   * next-word associations written (or that would be)
+   * </pre>
+   *
+   * <code>uint32 added_associations = 9;</code>
+   */
+  private void clearAddedAssociations() {
+
+    addedAssociations_ = 0;
   }
 
   public static com.siansiansu.taigikeyboard.engine.proto.LectsSynced parseFrom(
@@ -841,8 +879,8 @@ public  final class LectsSynced extends
 
     /**
      * <pre>
-     * Of the additions (words and phrases), how many were composed from several dictionary words
-     * because the target lect's dictionary lacks the whole word.
+     * Of the additions (words, phrases, and associations), how many were composed from several
+     * dictionary words because the target lect's dictionary lacks the whole word.
      * </pre>
      *
      * <code>uint32 composed = 8;</code>
@@ -854,8 +892,8 @@ public  final class LectsSynced extends
     }
     /**
      * <pre>
-     * Of the additions (words and phrases), how many were composed from several dictionary words
-     * because the target lect's dictionary lacks the whole word.
+     * Of the additions (words, phrases, and associations), how many were composed from several
+     * dictionary words because the target lect's dictionary lacks the whole word.
      * </pre>
      *
      * <code>uint32 composed = 8;</code>
@@ -869,8 +907,8 @@ public  final class LectsSynced extends
     }
     /**
      * <pre>
-     * Of the additions (words and phrases), how many were composed from several dictionary words
-     * because the target lect's dictionary lacks the whole word.
+     * Of the additions (words, phrases, and associations), how many were composed from several
+     * dictionary words because the target lect's dictionary lacks the whole word.
      * </pre>
      *
      * <code>uint32 composed = 8;</code>
@@ -879,6 +917,46 @@ public  final class LectsSynced extends
     public Builder clearComposed() {
       copyOnWrite();
       instance.clearComposed();
+      return this;
+    }
+
+    /**
+     * <pre>
+     * next-word associations written (or that would be)
+     * </pre>
+     *
+     * <code>uint32 added_associations = 9;</code>
+     * @return The addedAssociations.
+     */
+    @java.lang.Override
+    public int getAddedAssociations() {
+      return instance.getAddedAssociations();
+    }
+    /**
+     * <pre>
+     * next-word associations written (or that would be)
+     * </pre>
+     *
+     * <code>uint32 added_associations = 9;</code>
+     * @param value The addedAssociations to set.
+     * @return This builder for chaining.
+     */
+    public Builder setAddedAssociations(int value) {
+      copyOnWrite();
+      instance.setAddedAssociations(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * next-word associations written (or that would be)
+     * </pre>
+     *
+     * <code>uint32 added_associations = 9;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearAddedAssociations() {
+      copyOnWrite();
+      instance.clearAddedAssociations();
       return this;
     }
 
@@ -907,10 +985,11 @@ public  final class LectsSynced extends
             "skippedExamples_",
             com.siansiansu.taigikeyboard.engine.proto.SyncSkip.class,
             "composed_",
+            "addedAssociations_",
           };
           java.lang.String info =
-              "\u0000\b\u0000\u0000\u0001\b\b\u0000\u0001\u0000\u0001\u0007\u0002\u000b\u0003\u000b" +
-              "\u0004\u000b\u0005\u000b\u0006\u000b\u0007\u001b\b\u000b";
+              "\u0000\t\u0000\u0000\u0001\t\t\u0000\u0001\u0000\u0001\u0007\u0002\u000b\u0003\u000b" +
+              "\u0004\u000b\u0005\u000b\u0006\u000b\u0007\u001b\b\u000b\t\u000b";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

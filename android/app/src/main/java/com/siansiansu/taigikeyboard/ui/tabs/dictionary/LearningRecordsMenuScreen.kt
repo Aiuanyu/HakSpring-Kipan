@@ -223,8 +223,8 @@ fun LearningRecordsMenuScreen(
 
 /** What the preview says before anything is copied (the macOS Learning Records page says the same). */
 internal fun lectsSyncSummary(preview: LectsSynced): String {
-    val added = preview.addedWords + preview.addedPhrases
-    val lines = mutableListOf("會增加 $added 筆（詞 ${preview.addedWords}、詞組 ${preview.addedPhrases}）。")
+    val added = preview.addedWords + preview.addedPhrases + preview.addedAssociations
+    val lines = mutableListOf("會增加 $added 筆（詞 ${preview.addedWords}、詞組 ${preview.addedPhrases}、關聯詞 ${preview.addedAssociations}）。")
     if (preview.composed > 0) lines += "其中 ${preview.composed} 筆係用目的腔詞典个詞組合出來个。"
     if (preview.alreadyPresent > 0) lines += "本來就有：${preview.alreadyPresent} 筆。"
     if (preview.skippedMissing > 0) lines += "目的腔無共隻漢字，跳過：${preview.skippedMissing} 筆。"

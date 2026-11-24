@@ -86,12 +86,22 @@ public interface LectsSyncedOrBuilder extends
 
   /**
    * <pre>
-   * Of the additions (words and phrases), how many were composed from several dictionary words
-   * because the target lect's dictionary lacks the whole word.
+   * Of the additions (words, phrases, and associations), how many were composed from several
+   * dictionary words because the target lect's dictionary lacks the whole word.
    * </pre>
    *
    * <code>uint32 composed = 8;</code>
    * @return The composed.
    */
   int getComposed();
+
+  /**
+   * <pre>
+   * next-word associations written (or that would be)
+   * </pre>
+   *
+   * <code>uint32 added_associations = 9;</code>
+   * @return The addedAssociations.
+   */
+  int getAddedAssociations();
 }

@@ -34,7 +34,9 @@ mod stores;
 mod sync_ledger;
 mod timestamp;
 
-pub use association::{AssociationPair, AssociationRow, FollowingRow, UserAssociationStore};
+pub use association::{
+    AssociationKey, AssociationPair, AssociationRow, FollowingRow, UserAssociationStore,
+};
 pub use backup::{
     export_backup, export_bundle, import_backup, import_bundle, is_bundle, BackupError, BackupImported,
     BACKUP_VERSION, BUNDLE_VERSION,

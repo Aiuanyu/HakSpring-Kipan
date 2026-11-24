@@ -113,6 +113,7 @@ fn respond_sync_lects(id: u32, sync: &protos::engine::SyncLects) -> Response {
                 skipped_missing: report.skipped_missing,
                 skipped_ambiguous: report.skipped_ambiguous,
                 composed: report.composed,
+                added_associations: report.added_associations,
                 skipped_examples,
             })),
         })),
