@@ -63,8 +63,8 @@ class HakfaKipanConverterTest {
     @Test
     fun extendedPunctuationBidirectionalConversion() {
         assertEquals(
-            "-~~...../\\+=<>&%#@*_|`$^",
-            HakfaKipanConverter.convertPunctToRomance("—～〜·‧・‥／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾"),
+            "-~~.........../\\+=<>&%#@*_|`$^",
+            HakfaKipanConverter.convertPunctToRomance("—～〜·‧・‥⋯⋯⋯／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾"),
         )
         assertEquals(
             "\"客話\"'四縣'[註][補]\"引\".!?;::",

@@ -41,7 +41,7 @@ object HakfaKipanConverter {
     private val HAN_REGEX = Regex("""\p{Script=Han}""")
     private val LATIN_REGEX = Regex("""[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]""")
     private val PUNCT_REGEX = Regex(
-        """[，。、；：？！…‥—–―～〜·‧・／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾＇＂－「」『』“”‘’《》〈〉（）〔〕【】［］｛｝〖〗〘〙〚〛〝〞﹁﹂﹃﹄﹒﹑﹐﹗﹖﹔﹕︰﹙﹚﹛﹜．｡､,\.\?!;:"'\(\)\[\]\{\}~\/\\+&%#@*_|$^]""",
+        """[，。、；：？！…⋯‥—–―～〜·‧・／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾＇＂－「」『』“”‘’《》〈〉（）〔〕【】［］｛｝〖〗〘〙〚〛〝〞﹁﹂﹃﹄﹒﹑﹐﹗﹖﹔﹕︰﹙﹚﹛﹜．｡､,\.\?!;:"'\(\)\[\]\{\}~\/\\+&%#@*_|$^]""",
     )
     private val ROM_PUNCT_SPACE_REGEX = Regex("""[,.!?;:]""")
     private val BRACKET_REGEX = Regex(
@@ -80,6 +80,8 @@ object HakfaKipanConverter {
     private val PUNCT_TO_ROMANCE = listOf(
         "……" to "...",
         "…" to "...",
+        "⋯⋯" to "...",
+        "⋯" to "...",
         "‥" to "..",
         "——" to "--",
         "—" to "-",

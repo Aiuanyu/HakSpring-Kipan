@@ -1,5 +1,7 @@
 # In-Place Two-Line Converter (Dual-Script Annotation to Parallel Lines)
 
+> Public user documentation & full-width/half-width punctuation table: [HakSpring Dual-Scripter Guide](https://hakspring.pages.dev/page.html?p=dual-scripter) ([`pages/dual-scripter.md`](https://github.com/Aiuanyu/HakSpring/blob/main/pages/dual-scripter.md)).
+
 HakSpring Kipan can convert inline dual-script annotations directly in the active text editor into two clean parallel lines (Hanji on one line, romanization on the other).
 
 ## Supported Inline Formats

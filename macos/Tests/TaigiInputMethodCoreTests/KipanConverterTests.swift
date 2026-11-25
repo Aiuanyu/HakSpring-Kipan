@@ -62,8 +62,8 @@ final class KipanConverterTests: XCTestCase {
 
     func testExtendedPunctuationBidirectionalConversion() {
         XCTAssertEqual(
-            KipanConverter.convertPunctToRomance("—～〜·‧・‥／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾"),
-            "-~~...../\\+=<>&%#@*_|`$^"
+            KipanConverter.convertPunctToRomance("—～〜·‧・‥⋯⋯⋯／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾"),
+            "-~~.........../\\+=<>&%#@*_|`$^"
         )
         XCTAssertEqual(
             KipanConverter.convertPunctToRomance("《客話》〈四縣〉〔註〕〖補〗〝引〞．﹗﹖﹔﹕︰"),
