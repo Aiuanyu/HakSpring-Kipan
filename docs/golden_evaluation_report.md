@@ -1,15 +1,15 @@
 # 客話企盤 (HakSpring-Kipan) 黃金語料標準答案回歸測試報告
 
 - **測試時間**：2026-10-23
-- **執行環境**：**【完整沙盒模式 (SQLite Active)】：已連線 SQLite，真實載入自訂詞與學習紀錄**
+- **執行環境**：**【純辭典模式 (Pure Lexicon)】：未掛載 SQLite 沙盒，可加上 `--features user-data` 啟用完整驗證**
 
 ## 一、 核心評測量化指標總覽 (Executive Summary)
 
 | 評測指標分流 | 題數規模 | 整句全對率 (Sentence Acc) | 標音全對率 (Roman Acc) | 字錯誤率 (CER) | 指標核心意義 |
 |---|:---:|:---:|:---:|:---:|---|
-| **純詞庫連打基準線** | 45 題 | **57.78%** (26/45) | **60.00%** (27/45) | **12.46%** (35/281) | 衡量通用詞庫、連打切分與排序的核心能力（排除個人環境干擾） |
-| **個人自訂／學詞驗證集** | 5 題 | **60.00%** (3/5) | **40.00%** (2/5) | **12.50%** (5/40) | 驗證個人自訂詞組（瀏、瑋、江瑋平、劉源翠、歐陽秋月）是否被引擎成功採納 |
-| **總體語料全集** | 50 題 | **58.00%** (29/50) | **58.00%** (29/50) | **12.46%** (40/321) | 30 句客觀回歸基準線總指標 |
+| **純詞庫連打基準線** | 45 題 | **57.78%** (26/45) | **62.22%** (28/45) | **12.46%** (35/281) | 衡量通用詞庫、連打切分與排序的核心能力（排除個人環境干擾） |
+| **個人自訂／學詞驗證集** | 5 題 | **0.00%** (0/5) | **0.00%** (0/5) | **35.00%** (14/40) | 驗證個人自訂詞組（瀏、瑋、江瑋平、劉源翠、歐陽秋月）是否被引擎成功採納 |
+| **總體語料全集** | 50 題 | **52.00%** (26/50) | **56.00%** (28/50) | **15.26%** (49/321) | 30 句客觀回歸基準線總指標 |
 
 ## 二、 逐句標準對照評測表 (Expected vs. Actual)
 
@@ -20,7 +20,7 @@
 | 1 | problem_case | 連打个出該問題（常用連詞个 vs 該） | `zuizuieuge` | 最主要个 | 注意主要个 | ❌ 有錯 | 50.0% | `zui zù-ieu ge` (吻合) | `斷詞切分 (Segmentation)`: 輸出多出贅字 '注'<br>`排序偏後 (Ranking)`: 預期字 '最' 已收錄於詞庫，且在非首選候選列中出現 |
 | 2 | problem_case | 連詞摎 láu 被動詞落踩過之排序問題 | `ngailaugi` | 𠊎摎佢 | 𠊎摎佢 | ✅ 全對 | 0.0% | `ngǎi láu gǐ` (吻合) | — |
 | 3 | historical_bug | R5-1 跨界連打壓制修復驗證句 | `iaheduioigefibo` | 這係對愛个回報 | 抑係在愛个會煲 | ❌ 有錯 | 57.1% | 預期: `Ià he dui oi ge fǐ-bo`<br>實際: `iahe dui oi ge fi bó` | `排序偏後 (Ranking)`: 預期字 '這' 已收錄於詞庫，且在非首選候選列中出現<br>`排序偏後 (Ranking)`: 預期字 '對' 已收錄於詞庫，首選輸出 '在' 權重較高或搶先結巴<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「回報」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「回報」未收錄於詞庫，導致單字組詞潰散（需補字典） |
-| 4 | problem_case | 補字典學詞連打 | `busiidien` | 補字典 | 補字典 | ✅ 全對 | 0.0% | 預期: `bù-sii-dièn`<br>實際: `busiidien` | — |
+| 4 | problem_case | 補字典學詞連打 | `busiidien` | 補字典 | 補食菸 | ❌ 有錯 | 66.7% | 預期: `bù-sii-dièn`<br>實際: `bù siid'ién` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「補字典」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「補字典」未收錄於詞庫，導致單字組詞潰散（需補字典） |
 | 5 | problem_case | 調羹仔名詞連打 | `tiaugange` | 調羹仔 | 調羹仔 | ✅ 全對 | 0.0% | `tiǎu-gáng-è` (吻合) | — |
 | 6 | classical_text | 世界人權宣言第一條前段（正字个，非個人） | `soiugenginsangloiciiiu` | 所有个人生來自由 | 所有个人生來自由 | ✅ 全對 | 0.0% | `sò-iú ge ngǐn sáng-lǒi cii-iǔ` (吻合) | — |
 | 7 | classical_text | 世界人權宣言第一條後段（連詞摎，非落） | `tezunngiamlaukianlisongidludpinden` | 在尊嚴摎權利上一律平等 | 在準拈摎權利上一㪐平等 | ❌ 有錯 | 27.3% | 預期: `té zún-ngiǎm láu kiǎn-li song ìd-lud pǐn-dèn`<br>實際: `té zùn ngiám láu kiǎnli song ìd lùd pǐndèn` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「尊嚴」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「尊嚴」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「一律」未收錄於詞庫，導致單字組詞潰散（需補字典） |
@@ -33,7 +33,7 @@
 | 14 | daily_life | 客家待客句：請來食茶 | `qiangloisiidca` | 請來食茶 | 請來食茶 | ✅ 全對 | 0.0% | `qiàng lǒi siid-cǎ` (吻合) | — |
 | 15 | daily_life | 日常生活問候：你愛去哪 | `ngioihinai` | 你愛去哪 | 你愛去哪 | ✅ 全對 | 0.0% | 預期: `ň oi hi nài`<br>實際: `ngǐ oihinai` | — |
 | 16 | daily_life | 日常生活問候：恁多謝 | `anziise` | 恁仔細 | 恁仔細 | ✅ 全對 | 0.0% | `àn zìi-se` (吻合) | — |
-| 17 | daily_life | 日常生活問候：恁早 | `anzo` | 恁早 | 恁做 | ❌ 有錯 | 50.0% | 預期: `àn-zò`<br>實際: `àn zo` | `排序偏後 (Ranking)`: 預期字 '早' 已收錄於詞庫，且在非首選候選列中出現 |
+| 17 | daily_life | 日常生活問候：恁早 | `anzo` | 恁早 | 恁早 | ✅ 全對 | 0.0% | `àn-zò` (吻合) | — |
 | 18 | daily_life | 日常生活句：打拚 | `dabiang` | 打拚 | 打拚 | ✅ 全對 | 0.0% | `dà-biang` (吻合) | — |
 | 19 | daily_life | 日常生活句：去街仔 | `higiaie` | 去街仔 | 去界仔 | ❌ 有錯 | 33.3% | 預期: `hi giái-è`<br>實際: `hi giai è` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「街仔」未收錄於詞庫，導致單字組詞潰散（需補字典） |
 | 20 | daily_life | 核心族語句：大家共下講客話 | `taigakiunghagonghagfa` | 大家共下講客話 | 大家共下講客話 | ✅ 全對 | 0.0% | `tai-gá kiung-ha gòng hàg-fa` (吻合) | — |
@@ -60,24 +60,24 @@
 | 41 | daily_colloquial | 平哥審定日常口語：現代名詞「網路速度」、副詞「恁慢」 | `mionglusugtuanman` | 網路速度恁慢 | 網路速度恁慢 | ✅ 全對 | 0.0% | `Miònglu sùgtu àn man` (吻合) | — |
 | 42 | daily_colloquial | 平哥審定日常口語：口語疑問詞「仰會」、程度詞「恁多」 | `ngiongvoiandomunti` | 仰會恁多問題 | 仰會恁到問題 | ❌ 有錯 | 16.7% | 預期: `Ngiòng voi àndó muntǐ`<br>實際: `ngiòngvoi àn do muntǐ` | `排序偏後 (Ranking)`: 預期字 '多' 已收錄於詞庫，首選輸出 '到' 權重較高或搶先結巴 |
 | 43 | daily_colloquial | 平哥審定日常口語：時間詞「這下」、專有名詞「客源翠」 | `ngaiiahadihagngiencuikonsu` | 𠊎這下在客源翠看書 | 𠊎這下在客源翠看守 | ❌ 有錯 | 11.1% | 預期: `Ngǎi iàha di Hàgngiěncui kon sú`<br>實際: `ngǎi iàha di hàg ngiěn cui konsù` | `排序偏後 (Ranking)`: 預期字 '書' 已收錄於詞庫，首選輸出 '守' 權重較高或搶先結巴 |
-| 44 | daily_colloquial | 平哥審定日常口語：功能詞「換字型」、「介面當靚」 | `vonsiihingoheugiemiendongjiang` | 換字型過後介面當靚 | 換事興過後雞面當靚 | ❌ 有錯 | 33.3% | 預期: `Von siihǐn goheu giemien dóng jiáng`<br>實際: `von sii hín goheu gié mien dóngjiáng` | `排序偏後 (Ranking)`: 預期字 '字' 已收錄於詞庫，首選輸出 '事' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '型' 已收錄於詞庫，首選輸出 '興' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '介' 已收錄於詞庫，首選輸出 '雞' 權重較高或搶先結巴 |
+| 44 | daily_colloquial | 平哥審定日常口語：功能詞「換字型」、「介面當靚」 | `vonsiihingoheugiemiendongjiang` | 換字型過後介面當靚 | 換事興過後介面當靚 | ❌ 有錯 | 22.2% | 預期: `Von siihǐn goheu giemien dóng jiáng`<br>實際: `von sii hín goheu gie mien dóngjiáng` | `排序偏後 (Ranking)`: 預期字 '字' 已收錄於詞庫，首選輸出 '事' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '型' 已收錄於詞庫，首選輸出 '興' 權重較高或搶先結巴 |
 | 45 | daily_colloquial | 平哥審定日常口語：傳聞句「聽講」、時間詞「聽日」 | `tanggongtiengongngidvoilogsong` | 聽講天光日會落霜 | 聽講天光日會落霜 | ✅ 全對 | 0.0% | `Tánggòng tién'góngngìd voi logsóng` (吻合) | — |
 
 ### 2. 個人化自訂詞與學習詞驗證集（5 題）
 
 | # | 類別 | 語料說明 | 輸入碼 | 標準答案 (Expected) | 實際輸出 (Actual) | 結果 | CER | 標音比對 | 自訂詞生效診斷與錯字分類 |
 |---|---|---|---|---|---|:---:|---:|---|---|
-| 1 | custom_word | 子區間自訂詞瀏 liǔ 參與連打合成瀏覽器 | `liulamhi` | 瀏覽器 | 瀏㜮去 | ❌ 有錯 | 66.7% | 預期: `liǔ-lam-hi`<br>實際: `liu lám hi` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「瀏覽器」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「瀏覽器」未收錄於詞庫，導致單字組詞潰散（需補字典） |
-| 2 | personal_name | 江瑋平姓名介紹句（含自訂單字瑋 Ví 與學習詞江瑋平） | `ngagemiangeonzogongvipin` | 吾个名仔安做江瑋平 | 吾个名仔安做江瑋平 | ✅ 全對 | 0.0% | `Ngá ge miǎng-è ón-zo Góng Vípǐn` (吻合) | — |
-| 3 | personal_name | 劉源翠姓名介紹句 | `ngagemiangeonzoliungiencui` | 吾个名仔安做劉源翠 | 吾个名仔安做劉源翠 | ✅ 全對 | 0.0% | `Ngá ge miǎng-è ón-zo Liǔ Ngiěncui` (吻合) | — |
-| 4 | personal_name | 歐陽秋月姓名介紹句（測試四字複姓學詞連打） | `ngabungionggemiangeonzoeuiongqiungied` | 吾餔娘个名仔安做歐陽秋月 | 吾餔娘个名仔安做歐陽秋月 | ✅ 全對 | 0.0% | 預期: `Ngá bú-ngiǒng ge miǎng-è ón-zo Éu-iǒng Qiú-ngied`<br>實際: `ngábú'ngiǒng ge miǎng'è ónzo euiongqiungied` | — |
+| 1 | custom_word | 子區間自訂詞瀏 liǔ 參與連打合成瀏覽器 | `liulamhi` | 瀏覽器 | 留㜮去 | ❌ 有錯 | 100.0% | 預期: `liǔ-lam-hi`<br>實際: `liǔ lám hi` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「瀏覽器」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「瀏覽器」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「瀏覽器」未收錄於詞庫，導致單字組詞潰散（需補字典） |
+| 2 | personal_name | 江瑋平姓名介紹句（含自訂單字瑋 Ví 與學習詞江瑋平） | `ngagemiangeonzogongvipin` | 吾个名仔安做江瑋平 | 吾个名仔安做崗位平 | ❌ 有錯 | 22.2% | 預期: `Ngá ge miǎng-è ón-zo Góng Vípǐn`<br>實際: `ngá ge miǎng'è ónzo góngvi pǐn` | `排序偏後 (Ranking)`: 預期字 '江' 已收錄於詞庫，首選輸出 '崗' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '瑋' 已收錄於詞庫，首選輸出 '位' 權重較高或搶先結巴 |
+| 3 | personal_name | 劉源翠姓名介紹句 | `ngagemiangeonzoliungiencui` | 吾个名仔安做劉源翠 | 吾个名仔安做留年吹 | ❌ 有錯 | 33.3% | 預期: `Ngá ge miǎng-è ón-zo Liǔ Ngiěncui`<br>實際: `ngá ge miǎng'è ónzo liǔ ngiěn cúi` | `排序偏後 (Ranking)`: 預期字 '劉' 已收錄於詞庫，首選輸出 '留' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '源' 已收錄於詞庫，首選輸出 '年' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '翠' 已收錄於詞庫，首選輸出 '吹' 權重較高或搶先結巴 |
+| 4 | personal_name | 歐陽秋月姓名介紹句（測試四字複姓學詞連打） | `ngabungionggemiangeonzoeuiongqiungied` | 吾餔娘个名仔安做歐陽秋月 | 吾餔娘个名仔安做漚樣就月 | ❌ 有錯 | 25.0% | 預期: `Ngá bú-ngiǒng ge miǎng-è ón-zo Éu-iǒng Qiú-ngied`<br>實際: `ngábú'ngiǒng ge miǎng'è ónzo eu iong qiu ngied` | `缺詞（詞組 OOV-Phrase）`: 預期詞組「歐陽」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「歐陽」未收錄於詞庫，導致單字組詞潰散（需補字典）<br>`缺詞（詞組 OOV-Phrase）`: 預期詞組「秋月」未收錄於詞庫，導致單字組詞潰散（需補字典） |
 | 5 | custom_word | 補字典沈 Sìim 參與連打 | `ngigesiizongsiimbagiong` | 你个市長沈伯洋 | 你个市長審百樣 | ❌ 有錯 | 42.9% | 預期: `Ngǐ ge sii-zòng Sìim Bàg'iǒng`<br>實際: `ngǐ ge siizòng sìim bàg'iong` | `排序偏後 (Ranking)`: 預期字 '沈' 已收錄於詞庫，首選輸出 '審' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '伯' 已收錄於詞庫，首選輸出 '百' 權重較高或搶先結巴<br>`排序偏後 (Ranking)`: 預期字 '洋' 已收錄於詞庫，首選輸出 '樣' 權重較高或搶先結巴 |
 
 ## 三、 錯字根本原因分類統計 (Root Cause Analysis)
 
 | 錯誤類型 | 出現頻次 | 改善方向與對應 Queue |
 |---|:---:|---|
-| 缺詞（詞組 OOV-Phrase） | 10 個詞組 | 客源翠補字典增補多音節詞組（缺失詞組共 10 個：一律、吞忍、回報、嫉妒、存在、尊嚴、更新、瀏覽器、街仔、驕傲） |
-| 同分決勝 (TieBreaking) | 1 次 | 同分 tie-breaking 規則重構（Queue 4），「个」與「該」權重同分時偏好正字「个」 |
-| 排序偏後 (Ranking) | 22 次 | 連打排序與權重調校（Queue 4），加權高頻連詞或接續詞（如「摎」、「請」） |
 | 斷詞切分 (Segmentation) | 1 次 | Lattice 斷詞邊界判定與貪婪切分策略調校（如 `higiaie` 誤切贅字） |
+| 排序偏後 (Ranking) | 25 次 | 連打排序與權重調校（Queue 4），加權高頻連詞或接續詞（如「摎」、「請」） |
+| 缺詞（詞組 OOV-Phrase） | 13 個詞組 | 客源翠補字典增補多音節詞組（缺失詞組共 13 個：一律、吞忍、回報、嫉妒、存在、尊嚴、更新、歐陽、瀏覽器、秋月、街仔、補字典、驕傲） |
+| 同分決勝 (TieBreaking) | 1 次 | 同分 tie-breaking 規則重構（Queue 4），「个」與「該」權重同分時偏好正字「个」 |

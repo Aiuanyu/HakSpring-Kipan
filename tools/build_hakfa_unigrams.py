@@ -22,7 +22,10 @@ from collections import Counter
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-HAKSPRING_ROOT = Path(os.environ.get("HAKSPRING_ROOT", REPO_ROOT.parent / "HakSpring-main"))
+_default_hs = REPO_ROOT.parent / "HakSpring"
+if not _default_hs.exists():
+    _default_hs = REPO_ROOT.parent / "HakSpring-main"
+HAKSPRING_ROOT = Path(os.environ.get("HAKSPRING_ROOT", _default_hs))
 HAKSPRING_DATA = HAKSPRING_ROOT / "data"
 
 DICT_CSV = REPO_ROOT / "dictionary" / "sources" / "official" / "hakspring" / "data" / "hakspring.csv"
@@ -55,7 +58,7 @@ def extract_gip_sentences(gip_csv_path):
         print(f"⚠️ 找不到教典檔案：{gip_csv_path}")
         return sentences
 
-    with open(gip_csv_path, "r", encoding="utf-8") as f:
+    with open(gip_csv_path, "r", encoding="utf-8-sig") as f:
         reader = csv.reader(f)
         next(reader, None)
         for row in reader:
@@ -87,28 +90,32 @@ def extract_gip_sentences(gip_csv_path):
     return sentences
 
 
-def extract_cert_sentences(cert_dir_path):
-    """從認證題庫提取純客語例句"""
+def extract_cert_sentences_file(cert_file):
+    """從單一認證題庫 CSV 提取純客語例句"""
     sentences = []
-    for cert_file in sorted(cert_dir_path.glob("113四*.csv")):
-        with open(cert_file, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            next(reader, None)
-            for row in reader:
-                # 認證例句欄位在第 5 欄 (index 4)
-                if len(row) > 4 and row[4].strip():
-                    raw = row[4].strip()
-                    # 去除內部括號同音字註記，例：洩（射）-> 洩
-                    clean = re.sub(r"（[^）]*）", "", raw)
-                    clean = re.sub(r"\([^)]*\)", "", clean)
-                    # 處理換行 <br> 分隔之多句
-                    subs = clean.split("<br>")
-                    for s in subs:
-                        s = s.strip()
-                        # 濾除認證中高級與高級中大量出現之開頭標籤「例如：」
-                        s = re.sub(r"^(?:例如|例句|例|如)\s*[:：]", "", s).strip()
-                        if s:
-                            sentences.append(s)
+    with open(cert_file, "r", encoding="utf-8-sig") as f:
+        reader = csv.reader(f)
+        next(reader, None)
+        for row in reader:
+            if len(row) > 4 and row[4].strip():
+                raw = row[4].strip()
+                clean = re.sub(r"（[^）]*）", "", raw)
+                clean = re.sub(r"\([^)]*\)", "", clean)
+                for s in re.split(r"<br>|\n", clean):
+                    s = re.sub(r"^(?:例如|例句|例|如)\s*[:：]", "", s).strip()
+                    if s:
+                        sentences.append(s)
+    return sentences
+
+
+def extract_cert_sentences(cert_dir_path):
+    """從認證題庫提取純客語例句（涵蓋五腔 115 年度全部級別）"""
+    sentences = []
+    cert_files = sorted(cert_dir_path.glob("115*.csv"))
+    if not cert_files:
+        cert_files = sorted(cert_dir_path.glob("113*.csv"))
+    for cert_file in cert_files:
+        sentences.extend(extract_cert_sentences_file(cert_file))
 
     print(f"📚 認證提取純客語例句：{len(sentences)} 句")
     return sentences
@@ -158,16 +165,45 @@ def main():
     # 1. 載入詞庫
     word_set, records = load_lexicon(DICT_CSV)
 
-    # 2. 蒐集語料
-    sentences = []
-    sentences.extend(extract_gip_sentences(HAKSPRING_DATA / "gip" / "20250630-四.csv"))
-    sentences.extend(extract_cert_sentences(HAKSPRING_DATA / "cert"))
+    # 2. 蒐集語料：以四縣為基準分母規模，其餘五腔補強專有詞（單腔平均次數，避免分母膨脹 6 倍稀釋 prior）
+    base_sentences = []
+    si_gip = HAKSPRING_DATA / "gip" / "20261020-四.csv"
+    if not si_gip.exists():
+        si_gip = HAKSPRING_DATA / "gip" / "20250630-四.csv"
+    base_sentences.extend(extract_gip_sentences(si_gip))
+    for cf in sorted((HAKSPRING_DATA / "cert").glob("115四*.csv")) or sorted((HAKSPRING_DATA / "cert").glob("113四*.csv")):
+        base_sentences.extend(extract_cert_sentences_file(cf))
 
-    print(f"\n📊 語料庫彙整完成：共 {len(sentences)} 句客話標準文本")
+    print(f"\n📊 四縣基準語料：共 {len(base_sentences)} 句")
+    print("⏳ 開始執行四縣基準分詞...")
+    counts, total_tokens, total_chars = tokenize_corpus(base_sentences, word_set)
 
-    # 3. 分詞與詞頻統計
-    print("⏳ 開始執行正向最大匹配分詞與詞頻統計...")
-    counts, total_tokens, total_chars = tokenize_corpus(sentences, word_set)
+    # 統計其餘五腔詞頻（只補入四縣基準中出現較少的他腔詞，取單腔規模）
+    other_lects = ["南", "海", "大", "平", "安"]
+    other_word_lect_counts = {}
+    for lect in other_lects:
+        lsents = []
+        lgip = HAKSPRING_DATA / "gip" / f"20261020-{lect}.csv"
+        if lgip.exists():
+            lsents.extend(extract_gip_sentences(lgip))
+        for cf in sorted((HAKSPRING_DATA / "cert").glob(f"115{lect}*.csv")):
+            lsents.extend(extract_cert_sentences_file(cf))
+        if not lsents:
+            continue
+        lc, _, _ = tokenize_corpus(lsents, word_set)
+        for w, c in lc.items():
+            other_word_lect_counts.setdefault(w, []).append(c)
+
+    supplemented = 0
+    for w, clist in other_word_lect_counts.items():
+        # 取該詞在他腔出現次數的平均值（單腔尺度），僅當高於四縣基準時補齊
+        avg_c = round(sum(clist) / len(clist))
+        if avg_c > counts.get(w, 0):
+            diff = avg_c - counts.get(w, 0)
+            counts[w] = avg_c
+            total_tokens += diff
+            supplemented += 1
+    print(f"✨ 已以單腔尺度補入他腔詞頻：{supplemented} 個詞目")
 
     print(f"\n✅ 分詞計數完成！")
     print(f"  - 語料總字數：{total_chars:,} 字")
@@ -197,7 +233,7 @@ def main():
     payload = {
         "metadata": {
             "description": "客源翠教典與認證純客語例句 Unigram 詞頻分佈",
-            "total_sentences": len(sentences),
+            "total_sentences": len(base_sentences),
             "total_chars": total_chars,
             "total_tokens": total_tokens,
             "vocabulary_size": len(word_set),

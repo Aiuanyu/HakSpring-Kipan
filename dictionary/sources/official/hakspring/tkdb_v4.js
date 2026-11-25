@@ -45,8 +45,9 @@ const HEADER_SIZE = 16;
 function walkerCost(word, frequency) {
   if (hakfaUnigrams) {
     let prior = 0.02;
-    if (frequency >= 50000) prior = 1.0;
-    else if (frequency >= 45000) prior = 0.6;
+    const isMultiChar = [...word].length >= 2;
+    if (frequency >= 50000) prior = isMultiChar ? 10.0 : 1.0;
+    else if (frequency >= 45000) prior = isMultiChar ? 4.0 : 0.6;
     else if (frequency >= 40000) prior = 0.3;
     else if (frequency >= 35000) prior = 0.15;
     else if (frequency >= 30000) prior = 0.05;

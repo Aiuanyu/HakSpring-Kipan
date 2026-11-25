@@ -47,7 +47,7 @@ echo "[1/3] Tracing real engine candidates..."
 cp -f "$REPO_ROOT/engine/Cargo.lock" "$SCRIPT_DIR/trace/Cargo.lock"
 CARGO_TARGET_DIR="$REPO_ROOT/engine/target" \
   cargo run --offline --manifest-path "$SCRIPT_DIR/trace/Cargo.toml" -- \
-  --input "$INPUT" --lect "$LECT" --out "$TRACE_JSON" "${LEARN_ARGS[@]}"
+  --input "$INPUT" --lect "$LECT" --out "$TRACE_JSON" ${LEARN_ARGS[@]+"${LEARN_ARGS[@]}"}
 
 encode_platform() {
   local plat="$1"
@@ -76,4 +76,12 @@ fi
 
 if [[ "$PLATFORM" == "android" || "$PLATFORM" == "both" ]]; then
   encode_platform "android" "$SCRIPT_DIR/render_android.swift" 540
+fi
+
+OBS_TEMP="/Users/gjrobert/NAS/Obsidian/Main/!暫存"
+if [[ -d "$OBS_TEMP" ]]; then
+  OBS_OUT="$OBS_TEMP/demo-video/$NAME"
+  mkdir -p "$OBS_OUT"
+  cp -f "$OUT_DIR"/*.mp4 "$OUT_DIR"/*.gif "$OBS_OUT"/ 2>/dev/null || true
+  echo "Synced .mp4 / .gif to $OBS_OUT"
 fi

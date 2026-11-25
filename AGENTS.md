@@ -143,6 +143,7 @@ emoji/             # Emoji data generator (own instructions file)
 ## Build & Test
 
 - **Android APK output location**: after building an Android APK (`HakSpring-Kipan-*.apk`), besides the build directory, copy it to `/Users/gjrobert/NAS/Obsidian/Main/!暫存/` so the user can install it on a phone. (Same rule as the vault `AGENTS.md`; `*.apk` is gitignored there.)
+- **Demo video output location**: after running `tools/hakfa/demo-video/recipes/<name>/run.sh`, copy the generated `.mp4` and `.gif` outputs from `tools/hakfa/demo-video/out/<name>/` to `/Users/gjrobert/NAS/Obsidian/Main/!暫存/demo-video/<name>/` so the maintainer can preview them directly in Obsidian (`generate.sh` also copies there automatically when the directory exists).
 
 Full setup: [`docs/BUILDING.md`](docs/BUILDING.md). **Bootstrap**: clone with `--recurse-submodules`, then `make build` once per machine — generates the xcframeworks and `jniLibs/*.so` the app builds link (not committed) and regenerates the committed platform protos.
 
