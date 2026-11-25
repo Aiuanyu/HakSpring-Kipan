@@ -78,9 +78,9 @@ if [[ "$PLATFORM" == "android" || "$PLATFORM" == "both" ]]; then
   encode_platform "android" "$SCRIPT_DIR/render_android.swift" 540
 fi
 
-OBS_TEMP="/Users/gjrobert/NAS/Obsidian/Main/!暫存"
-if [[ -d "$OBS_TEMP" ]]; then
-  OBS_OUT="$OBS_TEMP/demo-video/$NAME"
+OBS_KIPAN="/Users/gjrobert/NAS/Obsidian/Main/Hak/Kipan"
+if [[ -d "$OBS_KIPAN" ]]; then
+  OBS_OUT="$OBS_KIPAN/out/$NAME"
   mkdir -p "$OBS_OUT"
   cp -f "$OUT_DIR"/*.mp4 "$OUT_DIR"/*.gif "$OBS_OUT"/ 2>/dev/null || true
   echo "Synced .mp4 / .gif to $OBS_OUT"
