@@ -61,6 +61,27 @@ class HakfaKipanConverterTest {
     }
 
     @Test
+    fun extendedPunctuationBidirectionalConversion() {
+        assertEquals(
+            "-~~...../\\+=<>&%#@*_|`$^",
+            HakfaKipanConverter.convertPunctToRomance("—～〜·‧・‥／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾"),
+        )
+        assertEquals(
+            "\"客話\"'四縣'[註][補]\"引\".!?;::",
+            HakfaKipanConverter.convertPunctToRomance("《客話》〈四縣〉〔註〕〖補〗〝引〞．﹗﹖﹔﹕︰"),
+        )
+        assertEquals(
+            "～／＼＋＝＆％＃＠＊＿｜＄＾",
+            HakfaKipanConverter.convertPunctToHan("~/\\+=&%#@*_|$^"),
+        )
+
+        val input = "《客話 (Hakfa)》 ～ 〈四縣 (Sixian)〉 — 試驗 (Cii-ngiàm)／對照 (Dui-zàu)·註 (Zi)"
+        val res = HakfaKipanConverter.convertKipanText(input)
+        assertEquals("《客話》～〈四縣〉—試驗／對照·註", res.topText)
+        assertEquals("\"Hakfa\"~'Sixian'-Cii-ngiàm/Dui-zàu. Zi", res.bottomText)
+    }
+
+    @Test
     fun reverseCase_romanFirst_automaticallyRomTop() {
         val input = "Ngǎi (𠊎) mǒ (無) gì oi (幾愛) Hàg-Ví-Fi (客委會)！"
         val res = HakfaKipanConverter.convertKipanText(input)

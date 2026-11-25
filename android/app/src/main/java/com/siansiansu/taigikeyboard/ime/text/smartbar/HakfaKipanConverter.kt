@@ -41,7 +41,7 @@ object HakfaKipanConverter {
     private val HAN_REGEX = Regex("""\p{Script=Han}""")
     private val LATIN_REGEX = Regex("""[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]""")
     private val PUNCT_REGEX = Regex(
-        """[，。、；：？！…—～「」『』“”‘’《》〈〉（）〔〕【】［］｛｝,\.\?!;:"'\(\)\[\]\{\}]""",
+        """[，。、；：？！…‥—–―～〜·‧・／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾＇＂－「」『』“”‘’《》〈〉（）〔〕【】［］｛｝〖〗〘〙〚〛〝〞﹁﹂﹃﹄﹒﹑﹐﹗﹖﹔﹕︰﹙﹚﹛﹜．｡､,\.\?!;:"'\(\)\[\]\{\}~\/\\+&%#@*_|$^]""",
     )
     private val ROM_PUNCT_SPACE_REGEX = Regex("""[,.!?;:]""")
     private val BRACKET_REGEX = Regex(
@@ -66,47 +66,111 @@ object HakfaKipanConverter {
         RegexOption.IGNORE_CASE,
     )
 
-    private val OPEN_PUNCT = setOf('「', '『', '“', '‘', '《', '〈', '（', '〔', '【', '［', '｛', '(', '[', '{')
-    private val CLOSE_PUNCT = setOf('」', '』', '”', '’', '》', '〉', '）', '〕', '】', '］', '｝', ')', ']', '}')
+    private val OPEN_PUNCT = setOf(
+        '「', '『', '“', '‘', '《', '〈', '（', '〔', '【', '［', '｛',
+        '〖', '〘', '〚', '〝', '﹁', '﹃', '﹙', '﹛',
+        '(', '[', '{',
+    )
+    private val CLOSE_PUNCT = setOf(
+        '」', '』', '”', '’', '》', '〉', '）', '〕', '】', '］', '｝',
+        '〗', '〙', '〛', '〞', '﹂', '﹄', '﹚', '﹜',
+        ')', ']', '}',
+    )
 
     private val PUNCT_TO_ROMANCE = listOf(
         "……" to "...",
         "…" to "...",
+        "‥" to "..",
         "——" to "--",
+        "—" to "-",
+        "–" to "-",
+        "―" to "-",
+        "－" to "-",
+        "～" to "~",
+        "〜" to "~",
+        "·" to ".",
+        "‧" to ".",
+        "・" to ".",
         "、" to ",",
+        "﹑" to ",",
+        "､" to ",",
         "，" to ",",
+        "﹐" to ",",
         "。" to ".",
+        "．" to ".",
+        "﹒" to ".",
+        "｡" to ".",
         "！" to "!",
+        "﹗" to "!",
         "？" to "?",
+        "﹖" to "?",
         "；" to ";",
+        "﹔" to ";",
         "：" to ":",
+        "﹕" to ":",
+        "︰" to ":",
         "（" to "(",
+        "﹙" to "(",
         "）" to ")",
+        "﹚" to ")",
         "【" to "[",
         "〔" to "[",
         "［" to "[",
+        "〖" to "[",
+        "〘" to "[",
+        "〚" to "[",
         "】" to "]",
         "〕" to "]",
         "］" to "]",
+        "〗" to "]",
+        "〙" to "]",
+        "〛" to "]",
         "｛" to "{",
+        "﹛" to "{",
         "｝" to "}",
+        "﹜" to "}",
         "「" to "\"",
         "“" to "\"",
         "《" to "\"",
+        "〝" to "\"",
+        "＂" to "\"",
+        "﹁" to "\"",
         "」" to "\"",
         "”" to "\"",
         "》" to "\"",
+        "〞" to "\"",
+        "﹂" to "\"",
         "『" to "'",
         "‘" to "'",
         "〈" to "'",
+        "＇" to "'",
+        "﹃" to "'",
         "』" to "'",
         "’" to "'",
         "〉" to "'",
+        "﹄" to "'",
+        "／" to "/",
+        "＼" to "\\",
+        "＋" to "+",
+        "＝" to "=",
+        "＜" to "<",
+        "＞" to ">",
+        "＆" to "&",
+        "％" to "%",
+        "＃" to "#",
+        "＠" to "@",
+        "＊" to "*",
+        "＿" to "_",
+        "｜" to "|",
+        "｀" to "`",
+        "＄" to "$",
+        "＾" to "^",
     )
 
     private val PUNCT_TO_HAN = listOf(
         "..." to "……",
         "--" to "——",
+        "~" to "～",
         "," to "，",
         "." to "。",
         "!" to "！",
@@ -119,6 +183,19 @@ object HakfaKipanConverter {
         "]" to "］",
         "{" to "｛",
         "}" to "｝",
+        "/" to "／",
+        "\\" to "＼",
+        "+" to "＋",
+        "=" to "＝",
+        "&" to "＆",
+        "%" to "％",
+        "#" to "＃",
+        "@" to "＠",
+        "*" to "＊",
+        "_" to "＿",
+        "|" to "｜",
+        "$" to "＄",
+        "^" to "＾",
     )
 
     fun hasHan(str: String): Boolean = HAN_REGEX.containsMatchIn(str)
@@ -253,7 +330,7 @@ object HakfaKipanConverter {
             val inside = tok.inside
 
             if (prevPunct.isNotEmpty()) {
-                val p = prevPunct.trim()
+                val p = prevPunct.replace(Regex("\\s+"), "")
                 if (p.isNotEmpty()) {
                     hanLine.append(convertPunctToHan(p))
                     val romP = convertPunctToRomance(p)

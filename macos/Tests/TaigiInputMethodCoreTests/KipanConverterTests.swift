@@ -60,6 +60,26 @@ final class KipanConverterTests: XCTestCase {
         XCTAssertEqual(res1.bottomText, "Cii-ngiàm: hò! [Ngin-ziin]...")
     }
 
+    func testExtendedPunctuationBidirectionalConversion() {
+        XCTAssertEqual(
+            KipanConverter.convertPunctToRomance("—～〜·‧・‥／＼＋＝＜＞＆％＃＠＊＿｜｀＄＾"),
+            "-~~...../\\+=<>&%#@*_|`$^"
+        )
+        XCTAssertEqual(
+            KipanConverter.convertPunctToRomance("《客話》〈四縣〉〔註〕〖補〗〝引〞．﹗﹖﹔﹕︰"),
+            "\"客話\"'四縣'[註][補]\"引\".!?;::"
+        )
+        XCTAssertEqual(
+            KipanConverter.convertPunctToHan("~/\\+=&%#@*_|$^"),
+            "～／＼＋＝＆％＃＠＊＿｜＄＾"
+        )
+
+        let input = "《客話 (Hakfa)》 ～ 〈四縣 (Sixian)〉 — 試驗 (Cii-ngiàm)／對照 (Dui-zàu)·註 (Zi)"
+        let res = KipanConverter.convertKipanText(input)
+        XCTAssertEqual(res.topText, "《客話》～〈四縣〉—試驗／對照·註")
+        XCTAssertEqual(res.bottomText, "\"Hakfa\"~'Sixian'-Cii-ngiàm/Dui-zàu. Zi")
+    }
+
     func testReverseCase_romanFirst_automaticallyRomTop() {
         let input = "Ngǎi (𠊎) mǒ (無) gì oi (幾愛) Hàg-Ví-Fi (客委會)！"
 
