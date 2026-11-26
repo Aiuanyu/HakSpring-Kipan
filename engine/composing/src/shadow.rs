@@ -357,17 +357,17 @@ fn separator_layers(canonical: &str, mode: InputMode) -> SeparatorLayers {
     }
 }
 
-/// Extract `(shadow, forced_separators)` for `raw` without needing a
-/// `SyllableInventory`, used when learning a single-segment phrase with
-/// typed `+` / `=` markers.
-pub(crate) fn forced_separators_for_raw(
+/// Extract `(shadow, hyphen_runs, forced_separators)` for `raw` without
+/// needing a `SyllableInventory`, used when learning a single-segment phrase
+/// with typed `-` / `+` / `=` markers.
+pub(crate) fn separators_for_raw(
     raw: &str,
     mode: InputMode,
-) -> (String, Vec<(usize, char)>) {
+) -> (String, Vec<(usize, usize)>, Vec<(usize, char)>) {
     let lower = lookup_form(raw);
     let (canonical, _) = canonicalize_poj_shadow(&lower, mode);
     let layers = separator_layers(&canonical, mode);
-    (layers.shadow, layers.forced_separators)
+    (layers.shadow, layers.hyphen_runs, layers.forced_separators)
 }
 
 /// [`lattice_from_canonical`] plus the merged barrier set: every shadow

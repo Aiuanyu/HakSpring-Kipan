@@ -976,11 +976,17 @@ fn nail_segment(
         // `nailed` = every segment before the one just pushed.
         let terminal = next_word_terminal(canonical, next_word_roman, nailed);
         // Learned phrases (§50): the whole composition, if it was a
-        // sequence of hanji picks, becomes one learned pair.
+        // sequence of hanji picks, becomes one learned pair. Any `-`/`+`/`=`
+        // phrase in the final pick is also learned on its own.
         let learned = learned_phrase(&new_nailed);
+        let extra_learned = separator_phrases_from_last_pick(&new_nailed)
+            .into_iter()
+            .filter(|entry| Some(entry) != learned.as_ref())
+            .collect();
         let applied = Applied {
             response: finalize(state, combined, terminal),
             learned,
+            extra_learned,
             usage: None,
         };
         return (applied, CommitOutcome::Finalized);
@@ -990,6 +996,9 @@ fn nail_segment(
     // re-render the combined marked region (nailed prefix + new pending).
     // Accepting a candidate is a flush of what was typed, so the caret goes
     // to the end of the tail that is left.
+    let mut sep_learned = separator_phrases_from_last_pick(&new_nailed).into_iter();
+    let learned = sep_learned.next();
+    let extra_learned = sep_learned.collect();
     let caret = new_pending.len();
     set_continuous(state, new_pending, caret, new_nailed, config, frequency);
     let response = nailed_response(
@@ -999,7 +1008,13 @@ fn nail_segment(
         next_word_roman,
         refresh_candidates(),
     );
-    (response.into(), CommitOutcome::Nailed)
+    let applied = Applied {
+        response,
+        learned,
+        extra_learned,
+        usage: None,
+    };
+    (applied, CommitOutcome::Nailed)
 }
 
 /// Whether a pick ending at `consumed_bytes` of the pending `raw`, of a list
@@ -1122,6 +1137,9 @@ fn nail_pick_keeping_composition(
         syllable_count,
     );
     new_nailed.push(segment);
+    let mut sep_learned = separator_phrases_from_last_pick(&new_nailed).into_iter();
+    let learned = sep_learned.next();
+    let extra_learned = sep_learned.collect();
     let rest = raw[consumed_bytes..].to_string();
     let caret = rest.len();
     set_continuous_walked_afresh(state, rest, caret, new_nailed, config, frequency);
@@ -1132,7 +1150,13 @@ fn nail_pick_keeping_composition(
         next_word_roman,
         clear_candidates(),
     );
-    (response.into(), CommitOutcome::Nailed)
+    let applied = Applied {
+        response,
+        learned,
+        extra_learned,
+        usage: None,
+    };
+    (applied, CommitOutcome::Nailed)
 }
 
 /// `Intent::CommitAsShown` — write the composition as the preedit shows it
@@ -1158,6 +1182,7 @@ fn commit_as_shown(state: &mut EngineState, config: &AppConfig) -> Applied {
     Applied {
         response: finalize(state, text, terminal),
         learned,
+        extra_learned: Vec::new(),
         usage: None,
     }
 }
@@ -1276,6 +1301,7 @@ fn commit_prediction(
     Applied {
         response,
         learned: None,
+        extra_learned: Vec::new(),
         usage,
     }
 }
@@ -1450,9 +1476,74 @@ fn next_word_word_selected(
     }
 }
 
+pub(crate) fn has_internal_separator(raw_text: &str) -> bool {
+    raw_text
+        .trim_start_matches(['-', '+', '='])
+        .contains(['-', '+', '='])
+}
+
+pub(crate) fn segment_learned_tl(seg: &NailedSegment) -> String {
+    let (shadow, hyphen_runs, markers) =
+        crate::shadow::separators_for_raw(&seg.raw_text, phonetics::InputMode::Tl);
+    let with_hyphens = if hyphen_runs.is_empty() {
+        None
+    } else {
+        phonetics::api::render_typed_separators(
+            phonetics::InputMode::Tl,
+            &shadow,
+            &hyphen_runs,
+            &seg.association_tl,
+            &seg.association_tl,
+        )
+    };
+    let base = with_hyphens.as_deref().unwrap_or(&seg.association_tl);
+    let with_forced = if markers.is_empty() {
+        None
+    } else {
+        phonetics::api::apply_forced_separators(
+            phonetics::InputMode::Tl,
+            &shadow,
+            &markers,
+            &seg.association_tl,
+            base,
+        )
+    };
+    with_forced.unwrap_or_else(|| base.to_owned())
+}
+
+/// Phrases using `-`, `+`, or `=` taught immediately when the last segment is
+/// picked (including mid-commit in continuous typing), so users do not have to
+/// re-type the phrase in isolation to teach it.
+fn separator_phrases_from_last_pick(nailed: &[NailedSegment]) -> Vec<LearnedEntry> {
+    let Some(last) = nailed.last() else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    if has_internal_separator(&last.raw_text) {
+        if let Some(entry) = learned_phrase(std::slice::from_ref(last)) {
+            out.push(entry);
+        }
+    }
+    if last.raw_text.starts_with(['-', '+', '=']) {
+        let mut start = nailed.len() - 1;
+        while start > 0 && nailed[start].raw_text.starts_with(['-', '+', '=']) {
+            start -= 1;
+        }
+        if start < nailed.len() - 1 {
+            if let Some(entry) = learned_phrase(&nailed[start..]) {
+                if !out.contains(&entry) {
+                    out.push(entry);
+                }
+            }
+        }
+    }
+    out
+}
+
 /// Learned phrases (§50) — the `(Hanji, canonical-TL)` pair a final
 /// continuous commit learns from its nailed segments, or `None` when the
-/// composition is not one: fewer than two segments, any segment the user
+/// composition is not one: fewer than two segments (unless a single segment
+/// carries an internal `-`/`+`/`=`), any segment the user
 /// did not pick (B4), any segment without a hanji pick or without a
 /// canonical TL, or more than
 /// [`MAX_LEARNED_PHRASE_SYLLABLES`] in total. The TL pieces join under
@@ -1467,8 +1558,8 @@ fn learned_phrase(nailed: &[NailedSegment]) -> Option<LearnedEntry> {
     if nailed.is_empty() {
         return None;
     }
-    let has_forced_sep = nailed.iter().any(|seg| seg.raw_text.contains(['+', '=']));
-    if nailed.len() < 2 && !has_forced_sep {
+    let has_explicit_sep = nailed.len() == 1 && has_internal_separator(&nailed[0].raw_text);
+    if nailed.len() < 2 && !has_explicit_sep {
         return None;
     }
     let mut hanji = String::new();
@@ -1484,17 +1575,7 @@ fn learned_phrase(nailed: &[NailedSegment]) -> Option<LearnedEntry> {
         hanji.push_str(h);
     }
     let raw_joined = if nailed.len() == 1 {
-        let seg = &nailed[0];
-        let (shadow, markers) =
-            crate::shadow::forced_separators_for_raw(&seg.raw_text, phonetics::InputMode::Tl);
-        phonetics::api::apply_forced_separators(
-            phonetics::InputMode::Tl,
-            &shadow,
-            &markers,
-            &seg.association_tl,
-            &seg.association_tl,
-        )
-        .unwrap_or_else(|| seg.association_tl.clone())
+        segment_learned_tl(&nailed[0])
     } else {
         crate::api::learned_reading(nailed)
     };

@@ -145,7 +145,7 @@ pub(super) fn handle_composing(
     let Some(composing_request::Method::FetchAtPos(sent)) = request.method.as_ref() else {
         let frequency = StoredFrequency { stores };
         let applied = composing.handle_ranked(request, config, generation, Some(&frequency))?;
-        if let Some(learned) = applied.learned {
+        for learned in applied.learned.into_iter().chain(applied.extra_learned) {
             stores
                 .learned_phrases
                 .learn_phrase(&learned.hanji, &learned.canonical_tl);

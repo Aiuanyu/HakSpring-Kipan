@@ -274,7 +274,7 @@ fn nailed_prefix_with_oracle(
             if k > 0 {
                 push_boundary(&mut s, &nailed[j + k], text, joiner, syllable_joiner);
             }
-            s.push_str(text.of(&nailed[j + k]));
+            s.push_str(&text.of(&nailed[j + k]));
         }
         j += run_len;
     }
@@ -314,13 +314,13 @@ fn push_boundary(
     if run.is_empty() {
         s.push_str(default);
         if hpp && default.is_empty() {
-            s.push_str(phonetics::hpp::hpp_boundary(s, text.of(next)));
+            s.push_str(phonetics::hpp::hpp_boundary(s, &text.of(next)));
         }
         return;
     }
     let rendered = text.of(next);
     if hpp && !rendered.starts_with('-') && !rendered.starts_with('·') {
-        s.push_str(phonetics::hpp::hpp_boundary(s, rendered));
+        s.push_str(phonetics::hpp::hpp_boundary(s, &rendered));
         return;
     }
     if rendered.starts_with('-') {
@@ -443,10 +443,16 @@ pub(crate) enum SegmentText {
 }
 
 impl SegmentText {
-    fn of(self, seg: &NailedSegment) -> &str {
+    fn of(self, seg: &NailedSegment) -> std::borrow::Cow<'_, str> {
         match self {
-            Self::Display => &seg.display_text,
-            Self::AssociationTl => &seg.association_tl,
+            Self::Display => std::borrow::Cow::Borrowed(&seg.display_text),
+            Self::AssociationTl => {
+                if crate::transition::has_internal_separator(&seg.raw_text) {
+                    std::borrow::Cow::Owned(crate::transition::segment_learned_tl(seg))
+                } else {
+                    std::borrow::Cow::Borrowed(&seg.association_tl)
+                }
+            }
         }
     }
 }
@@ -582,6 +588,9 @@ pub struct UserRows {
 pub struct Applied {
     pub response: ComposingResponse,
     pub learned: Option<lexicon::LearnedEntry>,
+    /// Additional phrases taught by the same commit (e.g. a `-`/`+`/`=`
+    /// phrase picked at the end of a multi-segment composition).
+    pub extra_learned: Vec<lexicon::LearnedEntry>,
     /// Set by a `CommitContinuous` that nailed or finalized (R5).
     pub usage: Option<Usage>,
 }
@@ -591,6 +600,7 @@ impl From<ComposingResponse> for Applied {
         Self {
             response,
             learned: None,
+            extra_learned: Vec::new(),
             usage: None,
         }
     }

@@ -973,3 +973,56 @@ fn subspan_learned_phrase_participates_in_walker_and_left_anchored_span_without_
         "mid/tail learned phrase must not leak as a left-anchored candidate; got {tail_cands:?}"
     );
 }
+
+#[test]
+fn single_segment_with_separator_learns_immediately_mid_commit_and_at_final() {
+    let _lock = engine_install_lock();
+    install(&fixture_rows(), FIXTURE_SYLLABLES);
+
+    // 1. Mid-commit pick with `-`, `+`, `=` learns immediately without waiting for final commit.
+    for (raw, consumed, expected_tl) in [
+        ("khi-lailai", 7, "khí-lâi"),
+        ("khi+lailai", 7, "khí+lâi"),
+        ("khi=lailai", 7, "khí=lâi"),
+    ] {
+        let mut e = engine_in_continuous(raw);
+        let mid = e.apply_learning(pick((Some("起來"), "khí-lâi", consumed, 2)), &config_tl());
+        assert_eq!(mid.learned, phrase("起來", expected_tl), "raw {raw:?}");
+        assert!(mid.extra_learned.is_empty(), "raw {raw:?}");
+        assert!(matches!(e.snapshot_state().phase, Phase::Continuous { .. }));
+    }
+
+    // 2. Final commit after a preceding segment learns both the whole composition and the `=` phrase.
+    let mut e = engine_in_continuous("laikhi=lai");
+    let first = e.apply_learning(pick((Some("來"), "lâi", 3, 1)), &config_tl());
+    assert!(first.learned.is_none());
+    let fin = e.apply_learning(pick((Some("起來"), "khí-lâi", 7, 2)), &config_tl());
+    assert_eq!(fin.learned, phrase("來起來", "lâi khí=lâi"));
+    assert_eq!(
+        fin.extra_learned,
+        vec![learned("起來", "khí=lâi")]
+    );
+
+    // 3. Single-segment `-` typed alone also learns (unlike bare `khilai`).
+    assert_eq!(
+        learn_installed("khi-lai", &[(Some("起來"), "khí-lâi", 7, 2)]),
+        phrase("起來", "khí-lâi")
+    );
+}
+
+#[test]
+fn multi_segment_joined_by_separator_learns_immediately_mid_commit() {
+    let _lock = engine_install_lock();
+    install(&fixture_rows(), FIXTURE_SYLLABLES);
+
+    let mut e = engine_in_continuous("laiki-khilailai");
+    let p1 = e.apply_learning(pick((Some("來"), "lâi", 3, 1)), &config_tl());
+    assert!(p1.learned.is_none());
+    let p2 = e.apply_learning(pick((Some("記"), "kì", 2, 1)), &config_tl());
+    assert!(p2.learned.is_none());
+    // Picking `-khilai` mid-commit while `lai` is still pending teaches `記起來` immediately.
+    let p3 = e.apply_learning(pick((Some("起來"), "khí-lâi", 7, 2)), &config_tl());
+    assert_eq!(p3.learned, phrase("記起來", "kì-khí-lâi"));
+    assert!(p3.extra_learned.is_empty());
+    assert!(matches!(e.snapshot_state().phase, Phase::Continuous { .. }));
+}
