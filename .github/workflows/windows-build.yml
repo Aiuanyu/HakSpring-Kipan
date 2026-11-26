@@ -21,6 +21,12 @@ on:
   # build tree and an App Control policy that blocks freshly built binaries,
   # and fighting both over ssh is what this replaces.
   workflow_dispatch:
+    inputs:
+      attach_release_tag:
+        description: 'Optional existing GitHub draft/pre-release tag (e.g. Hak-0.0.7) to attach the installer to; leave empty for artifact-only build'
+        required: false
+        default: ''
+        type: string
   # Release-only. A desktop release is staged as a draft and published by hand;
   # publishing is what creates the `desktop-<version>` tag, and this fires on
   # that publish rather than on the tag push — a release published from a draft
@@ -73,9 +79,9 @@ jobs:
     # no Windows installer in it. `workflow_dispatch` carries no release, so it
     # is admitted on the repository check alone.
     if: >-
-      github.repository == 'taigikeyboard/taigikeyboard' &&
+      github.repository == 'Aiuanyu/HakSpring-Kipan' &&
       (github.event_name != 'release' ||
-       startsWith(github.event.release.tag_name, 'desktop-'))
+       startsWith(github.event.release.tag_name, 'Hak-'))
     timeout-minutes: 60
     steps:
       # core.autocrlf must be off BEFORE the checkout. Everything here is
@@ -224,46 +230,36 @@ jobs:
           include-hidden-files: true
           retention-days: 14
 
-      # Only a dispatched run stages a release. A run triggered by `release:
-      # published` is the provenance rebuild — the release it would attach to
-      # is already public, and its installer is the one people are downloading.
-      - name: Attach the installer to the draft release
-        if: github.event_name == 'workflow_dispatch'
+      # Only a dispatched run with `attach_release_tag` attaches the installer
+      # to an existing draft or pre-release. Leaving the input empty keeps the
+      # run as a pure artifact build for dogfooding.
+      - name: Attach the installer to the release
+        if: github.event_name == 'workflow_dispatch' && inputs.attach_release_tag != ''
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          ATTACH_TAG: ${{ inputs.attach_release_tag }}
         run: |
           set -euo pipefail
-          version="$(awk '
-              /^\[workspace\.package\]/ { inside = 1; next }
-              inside && /^\[/ { exit }
-              inside && /^version *=/ { gsub(/[" ]/, "", $3); print $3; exit }
-          ' windows/Cargo.toml)"
-          tag="desktop-$version"
+          tag="$ATTACH_TAG"
 
-          # The draft is stage-desktop.sh's (the macOS half, or the script
-          # itself for a patch); this run joins it. A published release means
-          # the staging order was broken — an asset added to it would be public
-          # with no test — and no release at all means nothing staged yet.
-          state="$(gh release view "$tag" --json isDraft --jq '.isDraft|tostring' 2>&1)" || {
-              echo "no release $tag: $state" >&2
-              echo "stage-desktop.sh creates the draft before dispatching this run." >&2
+          # Allow attaching to a draft or pre-release (HakSpring-Kipan beta
+          # channel uses GitHub pre-releases); refuse already-public full releases.
+          meta="$(gh release view "$tag" --json isDraft,isPrerelease --jq '(.isDraft or .isPrerelease)|tostring' 2>&1)" || {
+              echo "no release $tag: $meta" >&2
               exit 1
           }
-          [ "$state" = true ] || {
-              echo "$tag is already published — an asset added now would be public with no test" >&2
+          [ "$meta" = true ] || {
+              echo "$tag is already a full public release — refusing to attach untested installer" >&2
               exit 1
           }
 
           cd windows/.build/distribution
-          installer="TaigiKeyboard-$version.exe"
-          [ -f "$installer" ] || { echo "no $installer in $(pwd)" >&2; exit 1; }
-          # The digest beside the installer, in the same shape the macOS half
-          # stages: an unsigned channel gives a user nothing else to check a
-          # manual download against.
+          installer="$(ls -1 ./*.exe | head -n 1 | sed 's|^\./||')"
+          [ -n "$installer" ] && [ -f "$installer" ] || { echo "no .exe installer in $(pwd)" >&2; exit 1; }
           sha256sum "$installer" | cut -d' ' -f1 > "$installer.sha256.tmp"
           printf '%s  %s\n' "$(cat "$installer.sha256.tmp")" "$installer" > "$installer.sha256"
           rm -f "$installer.sha256.tmp"
 
-          gh release upload "$tag" "$installer" "$installer.sha256" --repo "$GITHUB_REPOSITORY"
+          gh release upload "$tag" "$installer" "$installer.sha256" --clobber --repo "$GITHUB_REPOSITORY"
           echo "attached $installer to $tag (built from $GITHUB_SHA)"
