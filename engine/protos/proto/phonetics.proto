@@ -48,6 +48,10 @@ message PhoneticsRequest {
     // --- Platform text helpers (40s) ---
     IsAttachingPunctuation is_attaching_punctuation = 40;
     ExternalLookupDigitForm external_lookup_digit_form = 41;
+    ConvertKipanTwoLines convert_kipan_two_lines = 42;
+    ConvertPunctToRomance convert_punct_to_romance = 43;
+    ConvertPunctToHan convert_punct_to_han = 44;
+    ExtractConvertibleTarget extract_convertible_target = 45;
   }
 }
 
@@ -115,6 +119,18 @@ message IsAttachingPunctuation { string text = 1; }
 // `tai7-tsi3`). Answers `StringResult`; the URL itself is the platform's.
 message ExternalLookupDigitForm { string reading = 1; }
 
+message ConvertKipanTwoLines {
+  string text = 1;
+  bool auto_space_romance = 2;
+  string force_order = 3;
+}
+
+message ConvertPunctToRomance { string text = 1; }
+
+message ConvertPunctToHan { string text = 1; }
+
+message ExtractConvertibleTarget { string text_before_cursor = 1; }
+
 // =========================================================================
 // Response envelope
 // =========================================================================
@@ -135,6 +151,8 @@ message PhoneticsResponse {
     BoolResult bool_result = 13;
     ToneVariationsResult tone_variations_result = 14;
     TpsAdjustResult tps_adjust_result = 15;
+    KipanTwoLinesResult kipan_two_lines_result = 17;
+    ConvertibleTargetResult convertible_target_result = 18;
   }
 }
 
@@ -169,5 +187,26 @@ message ToneVariationList { repeated string variations = 1; }
 message TpsAdjustResult {
   string adjusted = 1;
   OptionalStringResult replace_last = 2;
+}
+
+message KipanPair {
+  string han = 1;
+  string rom = 2;
+}
+
+message KipanTwoLinesResult {
+  string top_text = 1;
+  string bottom_text = 2;
+  string combined_text = 3;
+  repeated string top_lines = 4;
+  repeated string bottom_lines = 5;
+  repeated KipanPair pairs = 6;
+  string detected_order = 7;
+}
+
+message ConvertibleTargetResult {
+  bool found = 1;
+  uint32 delete_before_utf16_len = 2;
+  string text = 3;
 }
 

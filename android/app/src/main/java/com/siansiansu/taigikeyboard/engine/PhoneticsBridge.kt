@@ -5,9 +5,15 @@
 package com.siansiansu.taigikeyboard.engine
 
 import com.siansiansu.taigikeyboard.engine.proto.BoolResult
+import com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines
+import com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan
+import com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance
+import com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult
 import com.siansiansu.taigikeyboard.engine.proto.ExternalLookupDigitForm
+import com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget
 import com.siansiansu.taigikeyboard.engine.proto.IsAttachingPunctuation
 import com.siansiansu.taigikeyboard.engine.proto.IsTpsToneMark
+import com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult
 import com.siansiansu.taigikeyboard.engine.proto.PhoneticsRequest
 import com.siansiansu.taigikeyboard.engine.proto.PhoneticsResponse
 import com.siansiansu.taigikeyboard.engine.proto.StringResult
@@ -86,6 +92,50 @@ fun RustEngineBridge.isAttachingPunctuation(text: String): Boolean {
 fun RustEngineBridge.externalLookupDigitForm(reading: String): String {
     val payload = ExternalLookupDigitForm.newBuilder().setReading(reading).build()
     return stringDispatch({ it.externalLookupDigitForm = payload }, reading, "externalLookupDigitForm")
+}
+
+fun RustEngineBridge.convertPunctToRomance(text: String): String {
+    val payload = ConvertPunctToRomance.newBuilder().setText(text).build()
+    return stringDispatch({ it.convertPunctToRomance = payload }, text, "convertPunctToRomance")
+}
+
+fun RustEngineBridge.convertPunctToHan(text: String): String {
+    val payload = ConvertPunctToHan.newBuilder().setText(text).build()
+    return stringDispatch({ it.convertPunctToHan = payload }, text, "convertPunctToHan")
+}
+
+fun RustEngineBridge.convertKipanTwoLines(
+    text: String,
+    autoSpaceRomance: Boolean = false,
+    forceOrder: String = "auto",
+): KipanTwoLinesResult? {
+    val payload = ConvertKipanTwoLines
+        .newBuilder()
+        .setText(text)
+        .setAutoSpaceRomance(autoSpaceRomance)
+        .setForceOrder(forceOrder)
+        .build()
+    val resp = phoneticsDispatch({ it.convertKipanTwoLines = payload }, "convertKipanTwoLines")
+        ?: return null
+    if (!resp.hasKipanTwoLinesResult()) {
+        RustEngineBridge.recordFailure("convertKipanTwoLines", "missing KipanTwoLinesResult")
+        return null
+    }
+    return resp.kipanTwoLinesResult
+}
+
+fun RustEngineBridge.extractConvertibleTarget(textBeforeCursor: String): ConvertibleTargetResult? {
+    val payload = ExtractConvertibleTarget
+        .newBuilder()
+        .setTextBeforeCursor(textBeforeCursor)
+        .build()
+    val resp = phoneticsDispatch({ it.extractConvertibleTarget = payload }, "extractConvertibleTarget")
+        ?: return null
+    if (!resp.hasConvertibleTargetResult()) {
+        RustEngineBridge.recordFailure("extractConvertibleTarget", "missing ConvertibleTargetResult")
+        return null
+    }
+    return resp.convertibleTargetResult
 }
 
 // endregion

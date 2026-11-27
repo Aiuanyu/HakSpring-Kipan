@@ -19,8 +19,8 @@ use crate::tps_adjust;
 use protos::engine::phonetics_request::Method;
 use protos::engine::phonetics_response::Result as PhonResult;
 use protos::engine::{
-    BoolResult, OptionalStringResult, PhoneticsRequest, PhoneticsResponse, StringResult,
-    TpsAdjustResult,
+    BoolResult, ConvertibleTargetResult, KipanPair, KipanTwoLinesResult, OptionalStringResult,
+    PhoneticsRequest, PhoneticsResponse, StringResult, TpsAdjustResult,
 };
 
 /// Dispatch a decoded `PhoneticsRequest`. Every remaining op is a pure
@@ -76,6 +76,54 @@ pub fn handle(req: &PhoneticsRequest) -> Result<PhoneticsResponse, PhoneticsErro
         Method::ExternalLookupDigitForm(payload) => PhonResult::StringResult(StringResult {
             output: crate::external_lookup::digit_tone_form(&payload.reading),
         }),
+        Method::ConvertKipanTwoLines(payload) => {
+            let force_order = if payload.force_order.is_empty() {
+                "auto"
+            } else {
+                payload.force_order.as_str()
+            };
+            let res = two_line::convert_kipan_text(
+                &payload.text,
+                payload.auto_space_romance,
+                force_order,
+            );
+            PhonResult::KipanTwoLinesResult(KipanTwoLinesResult {
+                top_text: res.top_text,
+                bottom_text: res.bottom_text,
+                combined_text: res.combined_text,
+                top_lines: res.top_lines,
+                bottom_lines: res.bottom_lines,
+                pairs: res
+                    .pairs
+                    .into_iter()
+                    .map(|p| KipanPair {
+                        han: p.han,
+                        rom: p.rom,
+                    })
+                    .collect(),
+                detected_order: res.detected_order,
+            })
+        }
+        Method::ConvertPunctToRomance(payload) => PhonResult::StringResult(StringResult {
+            output: two_line::convert_punct_to_romance(&payload.text),
+        }),
+        Method::ConvertPunctToHan(payload) => PhonResult::StringResult(StringResult {
+            output: two_line::convert_punct_to_han(&payload.text),
+        }),
+        Method::ExtractConvertibleTarget(payload) => {
+            match two_line::extract_convertible_target(&payload.text_before_cursor) {
+                Some(slice) => PhonResult::ConvertibleTargetResult(ConvertibleTargetResult {
+                    found: true,
+                    delete_before_utf16_len: slice.delete_before_utf16_len as u32,
+                    text: slice.text,
+                }),
+                None => PhonResult::ConvertibleTargetResult(ConvertibleTargetResult {
+                    found: false,
+                    delete_before_utf16_len: 0,
+                    text: String::new(),
+                }),
+            }
+        }
     };
 
     Ok(PhoneticsResponse {

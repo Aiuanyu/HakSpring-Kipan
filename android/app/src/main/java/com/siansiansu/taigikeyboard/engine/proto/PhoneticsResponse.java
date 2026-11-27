@@ -24,6 +24,8 @@ public  final class PhoneticsResponse extends
     BOOL_RESULT(13),
     TONE_VARIATIONS_RESULT(14),
     TPS_ADJUST_RESULT(15),
+    KIPAN_TWO_LINES_RESULT(17),
+    CONVERTIBLE_TARGET_RESULT(18),
     RESULT_NOT_SET(0);
     private final int value;
     private ResultCase(int value) {
@@ -43,6 +45,8 @@ public  final class PhoneticsResponse extends
         case 13: return BOOL_RESULT;
         case 14: return TONE_VARIATIONS_RESULT;
         case 15: return TPS_ADJUST_RESULT;
+        case 17: return KIPAN_TWO_LINES_RESULT;
+        case 18: return CONVERTIBLE_TARGET_RESULT;
         case 0: return RESULT_NOT_SET;
         default: return null;
       }
@@ -259,6 +263,106 @@ public  final class PhoneticsResponse extends
    */
   private void clearTpsAdjustResult() {
     if (resultCase_ == 15) {
+      resultCase_ = 0;
+      result_ = null;
+    }
+  }
+
+  public static final int KIPAN_TWO_LINES_RESULT_FIELD_NUMBER = 17;
+  /**
+   * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+   */
+  @java.lang.Override
+  public boolean hasKipanTwoLinesResult() {
+    return resultCase_ == 17;
+  }
+  /**
+   * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult getKipanTwoLinesResult() {
+    if (resultCase_ == 17) {
+       return (com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult) result_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult.getDefaultInstance();
+  }
+  /**
+   * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+   */
+  private void setKipanTwoLinesResult(com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult value) {
+    java.util.Objects.requireNonNull(value);
+    result_ = value;
+    resultCase_ = 17;
+  }
+  /**
+   * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+   */
+  private void mergeKipanTwoLinesResult(com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult value) {
+    java.util.Objects.requireNonNull(value);
+    if (resultCase_ == 17 &&
+        result_ != com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult.getDefaultInstance()) {
+      result_ = com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult.newBuilder((com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult) result_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      result_ = value;
+    }
+    resultCase_ = 17;
+  }
+  /**
+   * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+   */
+  private void clearKipanTwoLinesResult() {
+    if (resultCase_ == 17) {
+      resultCase_ = 0;
+      result_ = null;
+    }
+  }
+
+  public static final int CONVERTIBLE_TARGET_RESULT_FIELD_NUMBER = 18;
+  /**
+   * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+   */
+  @java.lang.Override
+  public boolean hasConvertibleTargetResult() {
+    return resultCase_ == 18;
+  }
+  /**
+   * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult getConvertibleTargetResult() {
+    if (resultCase_ == 18) {
+       return (com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult) result_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult.getDefaultInstance();
+  }
+  /**
+   * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+   */
+  private void setConvertibleTargetResult(com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult value) {
+    java.util.Objects.requireNonNull(value);
+    result_ = value;
+    resultCase_ = 18;
+  }
+  /**
+   * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+   */
+  private void mergeConvertibleTargetResult(com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult value) {
+    java.util.Objects.requireNonNull(value);
+    if (resultCase_ == 18 &&
+        result_ != com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult.getDefaultInstance()) {
+      result_ = com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult.newBuilder((com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult) result_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      result_ = value;
+    }
+    resultCase_ = 18;
+  }
+  /**
+   * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+   */
+  private void clearConvertibleTargetResult() {
+    if (resultCase_ == 18) {
       resultCase_ = 0;
       result_ = null;
     }
@@ -565,6 +669,102 @@ public  final class PhoneticsResponse extends
       return this;
     }
 
+    /**
+     * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+     */
+    @java.lang.Override
+    public boolean hasKipanTwoLinesResult() {
+      return instance.hasKipanTwoLinesResult();
+    }
+    /**
+     * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult getKipanTwoLinesResult() {
+      return instance.getKipanTwoLinesResult();
+    }
+    /**
+     * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+     */
+    public Builder setKipanTwoLinesResult(com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult value) {
+      copyOnWrite();
+      instance.setKipanTwoLinesResult(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+     */
+    public Builder setKipanTwoLinesResult(
+        com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult.Builder builderForValue) {
+      copyOnWrite();
+      instance.setKipanTwoLinesResult(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+     */
+    public Builder mergeKipanTwoLinesResult(com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult value) {
+      copyOnWrite();
+      instance.mergeKipanTwoLinesResult(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+     */
+    public Builder clearKipanTwoLinesResult() {
+      copyOnWrite();
+      instance.clearKipanTwoLinesResult();
+      return this;
+    }
+
+    /**
+     * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+     */
+    @java.lang.Override
+    public boolean hasConvertibleTargetResult() {
+      return instance.hasConvertibleTargetResult();
+    }
+    /**
+     * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult getConvertibleTargetResult() {
+      return instance.getConvertibleTargetResult();
+    }
+    /**
+     * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+     */
+    public Builder setConvertibleTargetResult(com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult value) {
+      copyOnWrite();
+      instance.setConvertibleTargetResult(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+     */
+    public Builder setConvertibleTargetResult(
+        com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult.Builder builderForValue) {
+      copyOnWrite();
+      instance.setConvertibleTargetResult(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+     */
+    public Builder mergeConvertibleTargetResult(com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult value) {
+      copyOnWrite();
+      instance.mergeConvertibleTargetResult(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+     */
+    public Builder clearConvertibleTargetResult() {
+      copyOnWrite();
+      instance.clearConvertibleTargetResult();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.PhoneticsResponse)
   }
   @java.lang.Override
@@ -587,10 +787,12 @@ public  final class PhoneticsResponse extends
             com.siansiansu.taigikeyboard.engine.proto.BoolResult.class,
             com.siansiansu.taigikeyboard.engine.proto.ToneVariationsResult.class,
             com.siansiansu.taigikeyboard.engine.proto.TpsAdjustResult.class,
+            com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult.class,
+            com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult.class,
           };
           java.lang.String info =
-              "\u0000\u0004\u0001\u0000\n\u000f\u0004\u0000\u0000\u0000\n<\u0000\r<\u0000\u000e" +
-              "<\u0000\u000f<\u0000";
+              "\u0000\u0006\u0001\u0000\n\u0012\u0006\u0000\u0000\u0000\n<\u0000\r<\u0000\u000e" +
+              "<\u0000\u000f<\u0000\u0011<\u0000\u0012<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

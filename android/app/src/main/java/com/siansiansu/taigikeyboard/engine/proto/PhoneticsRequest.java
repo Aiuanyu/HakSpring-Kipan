@@ -27,6 +27,10 @@ public  final class PhoneticsRequest extends
     TPS_INPUT_ADJUST(35),
     IS_ATTACHING_PUNCTUATION(40),
     EXTERNAL_LOOKUP_DIGIT_FORM(41),
+    CONVERT_KIPAN_TWO_LINES(42),
+    CONVERT_PUNCT_TO_ROMANCE(43),
+    CONVERT_PUNCT_TO_HAN(44),
+    EXTRACT_CONVERTIBLE_TARGET(45),
     METHOD_NOT_SET(0);
     private final int value;
     private MethodCase(int value) {
@@ -49,6 +53,10 @@ public  final class PhoneticsRequest extends
         case 35: return TPS_INPUT_ADJUST;
         case 40: return IS_ATTACHING_PUNCTUATION;
         case 41: return EXTERNAL_LOOKUP_DIGIT_FORM;
+        case 42: return CONVERT_KIPAN_TWO_LINES;
+        case 43: return CONVERT_PUNCT_TO_ROMANCE;
+        case 44: return CONVERT_PUNCT_TO_HAN;
+        case 45: return EXTRACT_CONVERTIBLE_TARGET;
         case 0: return METHOD_NOT_SET;
         default: return null;
       }
@@ -475,6 +483,206 @@ public  final class PhoneticsRequest extends
    */
   private void clearExternalLookupDigitForm() {
     if (methodCase_ == 41) {
+      methodCase_ = 0;
+      method_ = null;
+    }
+  }
+
+  public static final int CONVERT_KIPAN_TWO_LINES_FIELD_NUMBER = 42;
+  /**
+   * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+   */
+  @java.lang.Override
+  public boolean hasConvertKipanTwoLines() {
+    return methodCase_ == 42;
+  }
+  /**
+   * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines getConvertKipanTwoLines() {
+    if (methodCase_ == 42) {
+       return (com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines) method_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines.getDefaultInstance();
+  }
+  /**
+   * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+   */
+  private void setConvertKipanTwoLines(com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines value) {
+    java.util.Objects.requireNonNull(value);
+    method_ = value;
+    methodCase_ = 42;
+  }
+  /**
+   * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+   */
+  private void mergeConvertKipanTwoLines(com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines value) {
+    java.util.Objects.requireNonNull(value);
+    if (methodCase_ == 42 &&
+        method_ != com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines.getDefaultInstance()) {
+      method_ = com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines.newBuilder((com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines) method_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      method_ = value;
+    }
+    methodCase_ = 42;
+  }
+  /**
+   * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+   */
+  private void clearConvertKipanTwoLines() {
+    if (methodCase_ == 42) {
+      methodCase_ = 0;
+      method_ = null;
+    }
+  }
+
+  public static final int CONVERT_PUNCT_TO_ROMANCE_FIELD_NUMBER = 43;
+  /**
+   * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+   */
+  @java.lang.Override
+  public boolean hasConvertPunctToRomance() {
+    return methodCase_ == 43;
+  }
+  /**
+   * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance getConvertPunctToRomance() {
+    if (methodCase_ == 43) {
+       return (com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance) method_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance.getDefaultInstance();
+  }
+  /**
+   * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+   */
+  private void setConvertPunctToRomance(com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance value) {
+    java.util.Objects.requireNonNull(value);
+    method_ = value;
+    methodCase_ = 43;
+  }
+  /**
+   * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+   */
+  private void mergeConvertPunctToRomance(com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance value) {
+    java.util.Objects.requireNonNull(value);
+    if (methodCase_ == 43 &&
+        method_ != com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance.getDefaultInstance()) {
+      method_ = com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance.newBuilder((com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance) method_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      method_ = value;
+    }
+    methodCase_ = 43;
+  }
+  /**
+   * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+   */
+  private void clearConvertPunctToRomance() {
+    if (methodCase_ == 43) {
+      methodCase_ = 0;
+      method_ = null;
+    }
+  }
+
+  public static final int CONVERT_PUNCT_TO_HAN_FIELD_NUMBER = 44;
+  /**
+   * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+   */
+  @java.lang.Override
+  public boolean hasConvertPunctToHan() {
+    return methodCase_ == 44;
+  }
+  /**
+   * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan getConvertPunctToHan() {
+    if (methodCase_ == 44) {
+       return (com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan) method_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan.getDefaultInstance();
+  }
+  /**
+   * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+   */
+  private void setConvertPunctToHan(com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan value) {
+    java.util.Objects.requireNonNull(value);
+    method_ = value;
+    methodCase_ = 44;
+  }
+  /**
+   * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+   */
+  private void mergeConvertPunctToHan(com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan value) {
+    java.util.Objects.requireNonNull(value);
+    if (methodCase_ == 44 &&
+        method_ != com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan.getDefaultInstance()) {
+      method_ = com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan.newBuilder((com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan) method_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      method_ = value;
+    }
+    methodCase_ = 44;
+  }
+  /**
+   * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+   */
+  private void clearConvertPunctToHan() {
+    if (methodCase_ == 44) {
+      methodCase_ = 0;
+      method_ = null;
+    }
+  }
+
+  public static final int EXTRACT_CONVERTIBLE_TARGET_FIELD_NUMBER = 45;
+  /**
+   * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+   */
+  @java.lang.Override
+  public boolean hasExtractConvertibleTarget() {
+    return methodCase_ == 45;
+  }
+  /**
+   * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+   */
+  @java.lang.Override
+  public com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget getExtractConvertibleTarget() {
+    if (methodCase_ == 45) {
+       return (com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget) method_;
+    }
+    return com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget.getDefaultInstance();
+  }
+  /**
+   * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+   */
+  private void setExtractConvertibleTarget(com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget value) {
+    java.util.Objects.requireNonNull(value);
+    method_ = value;
+    methodCase_ = 45;
+  }
+  /**
+   * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+   */
+  private void mergeExtractConvertibleTarget(com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget value) {
+    java.util.Objects.requireNonNull(value);
+    if (methodCase_ == 45 &&
+        method_ != com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget.getDefaultInstance()) {
+      method_ = com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget.newBuilder((com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget) method_)
+          .mergeFrom(value).buildPartial();
+    } else {
+      method_ = value;
+    }
+    methodCase_ = 45;
+  }
+  /**
+   * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+   */
+  private void clearExtractConvertibleTarget() {
+    if (methodCase_ == 45) {
       methodCase_ = 0;
       method_ = null;
     }
@@ -997,6 +1205,198 @@ public  final class PhoneticsRequest extends
       return this;
     }
 
+    /**
+     * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+     */
+    @java.lang.Override
+    public boolean hasConvertKipanTwoLines() {
+      return instance.hasConvertKipanTwoLines();
+    }
+    /**
+     * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines getConvertKipanTwoLines() {
+      return instance.getConvertKipanTwoLines();
+    }
+    /**
+     * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+     */
+    public Builder setConvertKipanTwoLines(com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines value) {
+      copyOnWrite();
+      instance.setConvertKipanTwoLines(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+     */
+    public Builder setConvertKipanTwoLines(
+        com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines.Builder builderForValue) {
+      copyOnWrite();
+      instance.setConvertKipanTwoLines(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+     */
+    public Builder mergeConvertKipanTwoLines(com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines value) {
+      copyOnWrite();
+      instance.mergeConvertKipanTwoLines(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+     */
+    public Builder clearConvertKipanTwoLines() {
+      copyOnWrite();
+      instance.clearConvertKipanTwoLines();
+      return this;
+    }
+
+    /**
+     * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+     */
+    @java.lang.Override
+    public boolean hasConvertPunctToRomance() {
+      return instance.hasConvertPunctToRomance();
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance getConvertPunctToRomance() {
+      return instance.getConvertPunctToRomance();
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+     */
+    public Builder setConvertPunctToRomance(com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance value) {
+      copyOnWrite();
+      instance.setConvertPunctToRomance(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+     */
+    public Builder setConvertPunctToRomance(
+        com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance.Builder builderForValue) {
+      copyOnWrite();
+      instance.setConvertPunctToRomance(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+     */
+    public Builder mergeConvertPunctToRomance(com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance value) {
+      copyOnWrite();
+      instance.mergeConvertPunctToRomance(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+     */
+    public Builder clearConvertPunctToRomance() {
+      copyOnWrite();
+      instance.clearConvertPunctToRomance();
+      return this;
+    }
+
+    /**
+     * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+     */
+    @java.lang.Override
+    public boolean hasConvertPunctToHan() {
+      return instance.hasConvertPunctToHan();
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan getConvertPunctToHan() {
+      return instance.getConvertPunctToHan();
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+     */
+    public Builder setConvertPunctToHan(com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan value) {
+      copyOnWrite();
+      instance.setConvertPunctToHan(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+     */
+    public Builder setConvertPunctToHan(
+        com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan.Builder builderForValue) {
+      copyOnWrite();
+      instance.setConvertPunctToHan(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+     */
+    public Builder mergeConvertPunctToHan(com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan value) {
+      copyOnWrite();
+      instance.mergeConvertPunctToHan(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+     */
+    public Builder clearConvertPunctToHan() {
+      copyOnWrite();
+      instance.clearConvertPunctToHan();
+      return this;
+    }
+
+    /**
+     * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+     */
+    @java.lang.Override
+    public boolean hasExtractConvertibleTarget() {
+      return instance.hasExtractConvertibleTarget();
+    }
+    /**
+     * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+     */
+    @java.lang.Override
+    public com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget getExtractConvertibleTarget() {
+      return instance.getExtractConvertibleTarget();
+    }
+    /**
+     * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+     */
+    public Builder setExtractConvertibleTarget(com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget value) {
+      copyOnWrite();
+      instance.setExtractConvertibleTarget(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+     */
+    public Builder setExtractConvertibleTarget(
+        com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget.Builder builderForValue) {
+      copyOnWrite();
+      instance.setExtractConvertibleTarget(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+     */
+    public Builder mergeExtractConvertibleTarget(com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget value) {
+      copyOnWrite();
+      instance.mergeExtractConvertibleTarget(value);
+      return this;
+    }
+    /**
+     * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+     */
+    public Builder clearExtractConvertibleTarget() {
+      copyOnWrite();
+      instance.clearExtractConvertibleTarget();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:taigi.engine.PhoneticsRequest)
   }
   @java.lang.Override
@@ -1022,10 +1422,14 @@ public  final class PhoneticsRequest extends
             com.siansiansu.taigikeyboard.engine.proto.TpsInputAdjust.class,
             com.siansiansu.taigikeyboard.engine.proto.IsAttachingPunctuation.class,
             com.siansiansu.taigikeyboard.engine.proto.ExternalLookupDigitForm.class,
+            com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines.class,
+            com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance.class,
+            com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan.class,
+            com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget.class,
           };
           java.lang.String info =
-              "\u0000\u0007\u0001\u0000\r)\u0007\u0000\u0000\u0000\r<\u0000\u0012<\u0000!<\u0000" +
-              "\"<\u0000#<\u0000(<\u0000)<\u0000";
+              "\u0000\u000b\u0001\u0000\r-\u000b\u0000\u0000\u0000\r<\u0000\u0012<\u0000!<\u0000" +
+              "\"<\u0000#<\u0000(<\u0000)<\u0000*<\u0000+<\u0000,<\u0000-<\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

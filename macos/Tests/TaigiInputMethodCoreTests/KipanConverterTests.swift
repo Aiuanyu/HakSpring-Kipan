@@ -151,4 +151,32 @@ final class KipanConverterTests: XCTestCase {
         XCTAssertEqual(resPlain.topText, plain)
         XCTAssertEqual(resPlain.bottomText, plain)
     }
+
+    func testEnglishWordsPreservedInBothHanOutsideAndRomOutside() {
+        let hanOut = KipanConverter.convertKipanText(
+            "Python 係 (he) 𠊎 (Ngǎi) 用 (iung) Rust，寫 (xià) HakSpring-Kipan。"
+        )
+        XCTAssertEqual(hanOut.detectedOrder, "han-top")
+        XCTAssertEqual(hanOut.topText, "Python 係𠊎用 Rust，寫 HakSpring-Kipan。")
+        XCTAssertEqual(hanOut.bottomText, "Python he Ngǎi iung Rust, xià HakSpring-Kipan.")
+
+        let romOut = KipanConverter.convertKipanText(
+            "Python he (係) Ngǎi (𠊎) iung (用) Rust, xià (寫) iPhone 16 hò (好) v0.0.5!"
+        )
+        XCTAssertEqual(romOut.detectedOrder, "rom-top")
+        XCTAssertEqual(romOut.topText, "Python he Ngǎi iung Rust, xià iPhone 16 hò v0.0.5!")
+        XCTAssertEqual(romOut.bottomText, "Python 係𠊎用 Rust，寫 iPhone 16 好 v0.0.5！")
+    }
+
+    func testPunctuationAlignment_prefixAndMultilineRomTop() {
+        let prefixHan = KipanConverter.convertKipanText("試驗：Ngǎi (𠊎) mǒ (無)。")
+        XCTAssertEqual(prefixHan.detectedOrder, "rom-top")
+        XCTAssertEqual(prefixHan.topText, "試驗: Ngǎi mǒ.")
+        XCTAssertEqual(prefixHan.bottomText, "試驗：𠊎無。")
+
+        let multiRom = KipanConverter.convertKipanText("Ngǎi (𠊎)。\nOK (OK)。")
+        XCTAssertEqual(multiRom.detectedOrder, "rom-top")
+        XCTAssertEqual(multiRom.topText, "Ngǎi.\nOK.")
+        XCTAssertEqual(multiRom.bottomText, "𠊎。\nOK。")
+    }
 }

@@ -514,6 +514,7 @@ dependencies = [
  "regex",
  "test-support",
  "thiserror",
+ "two-line",
  "unicode-normalization",
 ]
 
@@ -1036,6 +1037,24 @@ name = "tinyvec"
 version = "1.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
+
+[[package]]
+name = "two-line"
+version = "0.1.0"
+dependencies = [
+ "once_cell",
+ "regex",
+ "serde",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "two-line-wasm"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "two-line",
+]
 
 [[package]]
 name = "unarray"

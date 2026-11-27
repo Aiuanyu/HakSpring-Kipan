@@ -54,5 +54,27 @@ public interface PhoneticsResponseOrBuilder extends
    */
   com.siansiansu.taigikeyboard.engine.proto.TpsAdjustResult getTpsAdjustResult();
 
+  /**
+   * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+   * @return Whether the kipanTwoLinesResult field is set.
+   */
+  boolean hasKipanTwoLinesResult();
+  /**
+   * <code>.taigi.engine.KipanTwoLinesResult kipan_two_lines_result = 17;</code>
+   * @return The kipanTwoLinesResult.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.KipanTwoLinesResult getKipanTwoLinesResult();
+
+  /**
+   * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+   * @return Whether the convertibleTargetResult field is set.
+   */
+  boolean hasConvertibleTargetResult();
+  /**
+   * <code>.taigi.engine.ConvertibleTargetResult convertible_target_result = 18;</code>
+   * @return The convertibleTargetResult.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.ConvertibleTargetResult getConvertibleTargetResult();
+
   public com.siansiansu.taigikeyboard.engine.proto.PhoneticsResponse.ResultCase getResultCase();
 }

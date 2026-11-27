@@ -1,0 +1,16 @@
+[package]
+name = "two-line"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+once_cell = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+unicode-normalization = { workspace = true }

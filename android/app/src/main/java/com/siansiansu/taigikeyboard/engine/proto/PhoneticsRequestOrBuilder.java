@@ -111,5 +111,49 @@ public interface PhoneticsRequestOrBuilder extends
    */
   com.siansiansu.taigikeyboard.engine.proto.ExternalLookupDigitForm getExternalLookupDigitForm();
 
+  /**
+   * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+   * @return Whether the convertKipanTwoLines field is set.
+   */
+  boolean hasConvertKipanTwoLines();
+  /**
+   * <code>.taigi.engine.ConvertKipanTwoLines convert_kipan_two_lines = 42;</code>
+   * @return The convertKipanTwoLines.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.ConvertKipanTwoLines getConvertKipanTwoLines();
+
+  /**
+   * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+   * @return Whether the convertPunctToRomance field is set.
+   */
+  boolean hasConvertPunctToRomance();
+  /**
+   * <code>.taigi.engine.ConvertPunctToRomance convert_punct_to_romance = 43;</code>
+   * @return The convertPunctToRomance.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToRomance getConvertPunctToRomance();
+
+  /**
+   * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+   * @return Whether the convertPunctToHan field is set.
+   */
+  boolean hasConvertPunctToHan();
+  /**
+   * <code>.taigi.engine.ConvertPunctToHan convert_punct_to_han = 44;</code>
+   * @return The convertPunctToHan.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.ConvertPunctToHan getConvertPunctToHan();
+
+  /**
+   * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+   * @return Whether the extractConvertibleTarget field is set.
+   */
+  boolean hasExtractConvertibleTarget();
+  /**
+   * <code>.taigi.engine.ExtractConvertibleTarget extract_convertible_target = 45;</code>
+   * @return The extractConvertibleTarget.
+   */
+  com.siansiansu.taigikeyboard.engine.proto.ExtractConvertibleTarget getExtractConvertibleTarget();
+
   public com.siansiansu.taigikeyboard.engine.proto.PhoneticsRequest.MethodCase getMethodCase();
 }

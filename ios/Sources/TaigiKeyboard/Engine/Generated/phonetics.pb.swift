@@ -86,6 +86,38 @@ public nonisolated struct Taigi_Engine_PhoneticsRequest: Sendable {
     set {method = .externalLookupDigitForm(newValue)}
   }
 
+  public var convertKipanTwoLines: Taigi_Engine_ConvertKipanTwoLines {
+    get {
+      if case .convertKipanTwoLines(let v)? = method {return v}
+      return Taigi_Engine_ConvertKipanTwoLines()
+    }
+    set {method = .convertKipanTwoLines(newValue)}
+  }
+
+  public var convertPunctToRomance: Taigi_Engine_ConvertPunctToRomance {
+    get {
+      if case .convertPunctToRomance(let v)? = method {return v}
+      return Taigi_Engine_ConvertPunctToRomance()
+    }
+    set {method = .convertPunctToRomance(newValue)}
+  }
+
+  public var convertPunctToHan: Taigi_Engine_ConvertPunctToHan {
+    get {
+      if case .convertPunctToHan(let v)? = method {return v}
+      return Taigi_Engine_ConvertPunctToHan()
+    }
+    set {method = .convertPunctToHan(newValue)}
+  }
+
+  public var extractConvertibleTarget: Taigi_Engine_ExtractConvertibleTarget {
+    get {
+      if case .extractConvertibleTarget(let v)? = method {return v}
+      return Taigi_Engine_ExtractConvertibleTarget()
+    }
+    set {method = .extractConvertibleTarget(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public nonisolated enum OneOf_Method: Equatable, Sendable {
@@ -99,6 +131,10 @@ public nonisolated struct Taigi_Engine_PhoneticsRequest: Sendable {
     /// --- Platform text helpers (40s) ---
     case isAttachingPunctuation(Taigi_Engine_IsAttachingPunctuation)
     case externalLookupDigitForm(Taigi_Engine_ExternalLookupDigitForm)
+    case convertKipanTwoLines(Taigi_Engine_ConvertKipanTwoLines)
+    case convertPunctToRomance(Taigi_Engine_ConvertPunctToRomance)
+    case convertPunctToHan(Taigi_Engine_ConvertPunctToHan)
+    case extractConvertibleTarget(Taigi_Engine_ExtractConvertibleTarget)
 
   }
 
@@ -211,6 +247,58 @@ public nonisolated struct Taigi_Engine_ExternalLookupDigitForm: Sendable {
   public init() {}
 }
 
+public nonisolated struct Taigi_Engine_ConvertKipanTwoLines: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var text: String = String()
+
+  public var autoSpaceRomance: Bool = false
+
+  public var forceOrder: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Taigi_Engine_ConvertPunctToRomance: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var text: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Taigi_Engine_ConvertPunctToHan: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var text: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Taigi_Engine_ExtractConvertibleTarget: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var textBeforeCursor: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 public nonisolated struct Taigi_Engine_PhoneticsResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -250,6 +338,22 @@ public nonisolated struct Taigi_Engine_PhoneticsResponse: Sendable {
     set {result = .tpsAdjustResult(newValue)}
   }
 
+  public var kipanTwoLinesResult: Taigi_Engine_KipanTwoLinesResult {
+    get {
+      if case .kipanTwoLinesResult(let v)? = result {return v}
+      return Taigi_Engine_KipanTwoLinesResult()
+    }
+    set {result = .kipanTwoLinesResult(newValue)}
+  }
+
+  public var convertibleTargetResult: Taigi_Engine_ConvertibleTargetResult {
+    get {
+      if case .convertibleTargetResult(let v)? = result {return v}
+      return Taigi_Engine_ConvertibleTargetResult()
+    }
+    set {result = .convertibleTargetResult(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public nonisolated enum OneOf_Result: Equatable, Sendable {
@@ -257,6 +361,8 @@ public nonisolated struct Taigi_Engine_PhoneticsResponse: Sendable {
     case boolResult(Taigi_Engine_BoolResult)
     case toneVariationsResult(Taigi_Engine_ToneVariationsResult)
     case tpsAdjustResult(Taigi_Engine_TpsAdjustResult)
+    case kipanTwoLinesResult(Taigi_Engine_KipanTwoLinesResult)
+    case convertibleTargetResult(Taigi_Engine_ConvertibleTargetResult)
 
   }
 
@@ -358,13 +464,67 @@ public nonisolated struct Taigi_Engine_TpsAdjustResult: Sendable {
   fileprivate var _replaceLast: Taigi_Engine_OptionalStringResult? = nil
 }
 
+public nonisolated struct Taigi_Engine_KipanPair: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var han: String = String()
+
+  public var rom: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Taigi_Engine_KipanTwoLinesResult: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var topText: String = String()
+
+  public var bottomText: String = String()
+
+  public var combinedText: String = String()
+
+  public var topLines: [String] = []
+
+  public var bottomLines: [String] = []
+
+  public var pairs: [Taigi_Engine_KipanPair] = []
+
+  public var detectedOrder: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Taigi_Engine_ConvertibleTargetResult: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var found: Bool = false
+
+  public var deleteBeforeUtf16Len: UInt32 = 0
+
+  public var text: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate nonisolated let _protobuf_package = "taigi.engine"
 
 nonisolated extension Taigi_Engine_PhoneticsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".PhoneticsRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{d}tl_to_poj\0\u{4}\u{5}get_tone_variations\0\u{4}\u{f}tl_display_to_tps\0\u{3}is_tps_tone_mark\0\u{3}tps_input_adjust\0\u{4}\u{5}is_attaching_punctuation\0\u{3}external_lookup_digit_form\0\u{b}normalize_tone\0\u{b}normalize_to_tl\0\u{b}restore_tone\0\u{b}contains_tps\0\u{b}poj_to_tl\0\u{b}normalize_input\0\u{b}derive_notone\0\u{b}derive_abbrev\0\u{b}derive_custom_search_keys\0\u{b}derive_custom_query_key\0\u{b}strip_tone\0\u{b}nfd_preprocess_for_lookup\0\u{b}tl_numeric_to_tps\0\u{c}\u{a}\u{1}\u{c}\u{c}\u{1}\u{c}\u{e}\u{1}\u{c}\u{f}\u{1}\u{c}\u{10}\u{1}\u{c}\u{14}\u{1}\u{c}\u{15}\u{1}\u{c}\u{16}\u{1}\u{c}\u{17}\u{1}\u{c}\u{1e}\u{1}\u{c}\u{b}\u{1}\u{c}\u{13}\u{1}\u{c} \u{1}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{d}tl_to_poj\0\u{4}\u{5}get_tone_variations\0\u{4}\u{f}tl_display_to_tps\0\u{3}is_tps_tone_mark\0\u{3}tps_input_adjust\0\u{4}\u{5}is_attaching_punctuation\0\u{3}external_lookup_digit_form\0\u{3}convert_kipan_two_lines\0\u{3}convert_punct_to_romance\0\u{3}convert_punct_to_han\0\u{3}extract_convertible_target\0\u{b}normalize_tone\0\u{b}normalize_to_tl\0\u{b}restore_tone\0\u{b}contains_tps\0\u{b}poj_to_tl\0\u{b}normalize_input\0\u{b}derive_notone\0\u{b}derive_abbrev\0\u{b}derive_custom_search_keys\0\u{b}derive_custom_query_key\0\u{b}strip_tone\0\u{b}nfd_preprocess_for_lookup\0\u{b}tl_numeric_to_tps\0\u{c}\u{a}\u{1}\u{c}\u{c}\u{1}\u{c}\u{e}\u{1}\u{c}\u{f}\u{1}\u{c}\u{10}\u{1}\u{c}\u{14}\u{1}\u{c}\u{15}\u{1}\u{c}\u{16}\u{1}\u{c}\u{17}\u{1}\u{c}\u{1e}\u{1}\u{c}\u{b}\u{1}\u{c}\u{13}\u{1}\u{c} \u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -463,6 +623,58 @@ nonisolated extension Taigi_Engine_PhoneticsRequest: SwiftProtobuf.Message, Swif
           self.method = .externalLookupDigitForm(v)
         }
       }()
+      case 42: try {
+        var v: Taigi_Engine_ConvertKipanTwoLines?
+        var hadOneofValue = false
+        if let current = self.method {
+          hadOneofValue = true
+          if case .convertKipanTwoLines(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.method = .convertKipanTwoLines(v)
+        }
+      }()
+      case 43: try {
+        var v: Taigi_Engine_ConvertPunctToRomance?
+        var hadOneofValue = false
+        if let current = self.method {
+          hadOneofValue = true
+          if case .convertPunctToRomance(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.method = .convertPunctToRomance(v)
+        }
+      }()
+      case 44: try {
+        var v: Taigi_Engine_ConvertPunctToHan?
+        var hadOneofValue = false
+        if let current = self.method {
+          hadOneofValue = true
+          if case .convertPunctToHan(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.method = .convertPunctToHan(v)
+        }
+      }()
+      case 45: try {
+        var v: Taigi_Engine_ExtractConvertibleTarget?
+        var hadOneofValue = false
+        if let current = self.method {
+          hadOneofValue = true
+          if case .extractConvertibleTarget(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.method = .extractConvertibleTarget(v)
+        }
+      }()
       default: break
       }
     }
@@ -501,6 +713,22 @@ nonisolated extension Taigi_Engine_PhoneticsRequest: SwiftProtobuf.Message, Swif
     case .externalLookupDigitForm?: try {
       guard case .externalLookupDigitForm(let v)? = self.method else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 41)
+    }()
+    case .convertKipanTwoLines?: try {
+      guard case .convertKipanTwoLines(let v)? = self.method else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 42)
+    }()
+    case .convertPunctToRomance?: try {
+      guard case .convertPunctToRomance(let v)? = self.method else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 43)
+    }()
+    case .convertPunctToHan?: try {
+      guard case .convertPunctToHan(let v)? = self.method else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 44)
+    }()
+    case .extractConvertibleTarget?: try {
+      guard case .extractConvertibleTarget(let v)? = self.method else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 45)
     }()
     case nil: break
     }
@@ -723,9 +951,139 @@ nonisolated extension Taigi_Engine_ExternalLookupDigitForm: SwiftProtobuf.Messag
   }
 }
 
+nonisolated extension Taigi_Engine_ConvertKipanTwoLines: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ConvertKipanTwoLines"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0\u{3}auto_space_romance\0\u{3}force_order\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.text) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.autoSpaceRomance) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.forceOrder) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
+    }
+    if self.autoSpaceRomance != false {
+      try visitor.visitSingularBoolField(value: self.autoSpaceRomance, fieldNumber: 2)
+    }
+    if !self.forceOrder.isEmpty {
+      try visitor.visitSingularStringField(value: self.forceOrder, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_ConvertKipanTwoLines, rhs: Taigi_Engine_ConvertKipanTwoLines) -> Bool {
+    if lhs.text != rhs.text {return false}
+    if lhs.autoSpaceRomance != rhs.autoSpaceRomance {return false}
+    if lhs.forceOrder != rhs.forceOrder {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_ConvertPunctToRomance: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ConvertPunctToRomance"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.text) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_ConvertPunctToRomance, rhs: Taigi_Engine_ConvertPunctToRomance) -> Bool {
+    if lhs.text != rhs.text {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_ConvertPunctToHan: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ConvertPunctToHan"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.text) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_ConvertPunctToHan, rhs: Taigi_Engine_ConvertPunctToHan) -> Bool {
+    if lhs.text != rhs.text {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_ExtractConvertibleTarget: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ExtractConvertibleTarget"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}text_before_cursor\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.textBeforeCursor) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.textBeforeCursor.isEmpty {
+      try visitor.visitSingularStringField(value: self.textBeforeCursor, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_ExtractConvertibleTarget, rhs: Taigi_Engine_ExtractConvertibleTarget) -> Bool {
+    if lhs.textBeforeCursor != rhs.textBeforeCursor {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 nonisolated extension Taigi_Engine_PhoneticsResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".PhoneticsResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{a}string_result\0\u{4}\u{3}bool_result\0\u{3}tone_variations_result\0\u{3}tps_adjust_result\0\u{b}optional_string_result\0\u{b}custom_search_keys_result\0\u{b}strip_tone_result\0\u{c}\u{c}\u{1}\u{c}\u{10}\u{1}\u{c}\u{b}\u{1}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{4}\u{a}string_result\0\u{4}\u{3}bool_result\0\u{3}tone_variations_result\0\u{3}tps_adjust_result\0\u{4}\u{2}kipan_two_lines_result\0\u{3}convertible_target_result\0\u{b}optional_string_result\0\u{b}custom_search_keys_result\0\u{b}strip_tone_result\0\u{c}\u{c}\u{1}\u{c}\u{10}\u{1}\u{c}\u{b}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -785,6 +1143,32 @@ nonisolated extension Taigi_Engine_PhoneticsResponse: SwiftProtobuf.Message, Swi
           self.result = .tpsAdjustResult(v)
         }
       }()
+      case 17: try {
+        var v: Taigi_Engine_KipanTwoLinesResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .kipanTwoLinesResult(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .kipanTwoLinesResult(v)
+        }
+      }()
+      case 18: try {
+        var v: Taigi_Engine_ConvertibleTargetResult?
+        var hadOneofValue = false
+        if let current = self.result {
+          hadOneofValue = true
+          if case .convertibleTargetResult(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.result = .convertibleTargetResult(v)
+        }
+      }()
       default: break
       }
     }
@@ -811,6 +1195,14 @@ nonisolated extension Taigi_Engine_PhoneticsResponse: SwiftProtobuf.Message, Swi
     case .tpsAdjustResult?: try {
       guard case .tpsAdjustResult(let v)? = self.result else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 15)
+    }()
+    case .kipanTwoLinesResult?: try {
+      guard case .kipanTwoLinesResult(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 17)
+    }()
+    case .convertibleTargetResult?: try {
+      guard case .convertibleTargetResult(let v)? = self.result else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
     }()
     case nil: break
     }
@@ -1018,6 +1410,141 @@ nonisolated extension Taigi_Engine_TpsAdjustResult: SwiftProtobuf.Message, Swift
   public static func ==(lhs: Taigi_Engine_TpsAdjustResult, rhs: Taigi_Engine_TpsAdjustResult) -> Bool {
     if lhs.adjusted != rhs.adjusted {return false}
     if lhs._replaceLast != rhs._replaceLast {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_KipanPair: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".KipanPair"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}han\0\u{1}rom\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.han) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.rom) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.han.isEmpty {
+      try visitor.visitSingularStringField(value: self.han, fieldNumber: 1)
+    }
+    if !self.rom.isEmpty {
+      try visitor.visitSingularStringField(value: self.rom, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_KipanPair, rhs: Taigi_Engine_KipanPair) -> Bool {
+    if lhs.han != rhs.han {return false}
+    if lhs.rom != rhs.rom {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_KipanTwoLinesResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".KipanTwoLinesResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}top_text\0\u{3}bottom_text\0\u{3}combined_text\0\u{3}top_lines\0\u{3}bottom_lines\0\u{1}pairs\0\u{3}detected_order\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.topText) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.bottomText) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.combinedText) }()
+      case 4: try { try decoder.decodeRepeatedStringField(value: &self.topLines) }()
+      case 5: try { try decoder.decodeRepeatedStringField(value: &self.bottomLines) }()
+      case 6: try { try decoder.decodeRepeatedMessageField(value: &self.pairs) }()
+      case 7: try { try decoder.decodeSingularStringField(value: &self.detectedOrder) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.topText.isEmpty {
+      try visitor.visitSingularStringField(value: self.topText, fieldNumber: 1)
+    }
+    if !self.bottomText.isEmpty {
+      try visitor.visitSingularStringField(value: self.bottomText, fieldNumber: 2)
+    }
+    if !self.combinedText.isEmpty {
+      try visitor.visitSingularStringField(value: self.combinedText, fieldNumber: 3)
+    }
+    if !self.topLines.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.topLines, fieldNumber: 4)
+    }
+    if !self.bottomLines.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.bottomLines, fieldNumber: 5)
+    }
+    if !self.pairs.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.pairs, fieldNumber: 6)
+    }
+    if !self.detectedOrder.isEmpty {
+      try visitor.visitSingularStringField(value: self.detectedOrder, fieldNumber: 7)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_KipanTwoLinesResult, rhs: Taigi_Engine_KipanTwoLinesResult) -> Bool {
+    if lhs.topText != rhs.topText {return false}
+    if lhs.bottomText != rhs.bottomText {return false}
+    if lhs.combinedText != rhs.combinedText {return false}
+    if lhs.topLines != rhs.topLines {return false}
+    if lhs.bottomLines != rhs.bottomLines {return false}
+    if lhs.pairs != rhs.pairs {return false}
+    if lhs.detectedOrder != rhs.detectedOrder {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Taigi_Engine_ConvertibleTargetResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ConvertibleTargetResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}found\0\u{3}delete_before_utf16_len\0\u{1}text\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.found) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.deleteBeforeUtf16Len) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.text) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.found != false {
+      try visitor.visitSingularBoolField(value: self.found, fieldNumber: 1)
+    }
+    if self.deleteBeforeUtf16Len != 0 {
+      try visitor.visitSingularUInt32Field(value: self.deleteBeforeUtf16Len, fieldNumber: 2)
+    }
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Taigi_Engine_ConvertibleTargetResult, rhs: Taigi_Engine_ConvertibleTargetResult) -> Bool {
+    if lhs.found != rhs.found {return false}
+    if lhs.deleteBeforeUtf16Len != rhs.deleteBeforeUtf16Len {return false}
+    if lhs.text != rhs.text {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
