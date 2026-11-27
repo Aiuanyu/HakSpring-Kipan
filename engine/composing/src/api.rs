@@ -293,34 +293,58 @@ fn push_boundary(
     default: &str,
     syllable_joiner: Option<&str>,
 ) {
-    if let Some(forced) = next
-        .raw_text
+    let rendered = text.of(next);
+    push_boundary_parts(
+        s,
+        &next.raw_text,
+        &rendered,
+        text == SegmentText::AssociationTl,
+        default,
+        syllable_joiner,
+    );
+}
+
+fn push_boundary_parts(
+    s: &mut String,
+    next_raw_text: &str,
+    rendered: &str,
+    is_association_tl: bool,
+    default: &str,
+    syllable_joiner: Option<&str>,
+) {
+    if let Some(forced) = next_raw_text
         .chars()
         .next()
         .filter(|c| matches!(c, '+' | '='))
     {
-        match (text, forced) {
-            (SegmentText::AssociationTl, _) => s.push(forced),
-            (SegmentText::Display, '+') => s.push(' '),
-            (SegmentText::Display, '=') => s.push('-'),
-            _ => {}
+        if is_association_tl {
+            s.push(forced);
+        } else {
+            match forced {
+                '+' => s.push(' '),
+                '=' => s.push('-'),
+                _ => {}
+            }
         }
         return;
     }
-    let run = typed_separator_run(&next.raw_text);
+    let run = if next_raw_text.starts_with('\'') {
+        "-"
+    } else {
+        typed_separator_run(next_raw_text)
+    };
     // hakfa: Syllable Separator None = HagPinPlus 連寫，兩隻音節中間會讀毋著
-    // 就加撇號（phonetics::hpp）。淨管單一隻 `-` 抑是無打 `-` 个邊界。
+    // 就加撇號（phonetics::hpp）。淨管單一隻 `-` / `'` 抑是無打 `-` 个邊界。
     let hpp = syllable_joiner == Some("") && run.len() <= 1;
     if run.is_empty() {
         s.push_str(default);
         if hpp && default.is_empty() {
-            s.push_str(phonetics::hpp::hpp_boundary(s, &text.of(next)));
+            s.push_str(phonetics::hpp::hpp_boundary(s, rendered));
         }
         return;
     }
-    let rendered = text.of(next);
     if hpp && !rendered.starts_with('-') && !rendered.starts_with('·') {
-        s.push_str(phonetics::hpp::hpp_boundary(s, &rendered));
+        s.push_str(phonetics::hpp::hpp_boundary(s, rendered));
         return;
     }
     if rendered.starts_with('-') {
@@ -412,10 +436,163 @@ fn longest_compound_run<F: Fn(&str, u8) -> bool>(
 /// no dictionary is installed (`with_state` → `Err`, e.g. unit tests)
 /// the join degrades to the pure space-join: byte-identical to the
 /// pre-Option-A behaviour.
+fn unwrap_both_scripts<'a>(
+    display_text: &'a str,
+    hanji: &str,
+    hanji_leads: bool,
+    template: protos::engine::AnnotationTemplate,
+) -> Option<&'a str> {
+    use protos::engine::AnnotationTemplate::{Curly, Round, Ruby, Square};
+    if hanji_leads {
+        let rest = display_text.strip_prefix(hanji);
+        match template {
+            Round => rest?.strip_prefix(" (")?.strip_suffix(')'),
+            Square => rest?.strip_prefix(" [")?.strip_suffix(']'),
+            Curly => rest?.strip_prefix(" {")?.strip_suffix('}'),
+            Ruby => display_text
+                .strip_prefix("<ruby>")?
+                .strip_prefix(hanji)?
+                .strip_prefix("<rt>")?
+                .strip_suffix("</rt></ruby>"),
+        }
+    } else {
+        match template {
+            Round => display_text
+                .strip_suffix(')')?
+                .strip_suffix(hanji)?
+                .strip_suffix(" ("),
+            Square => display_text
+                .strip_suffix(']')?
+                .strip_suffix(hanji)?
+                .strip_suffix(" ["),
+            Curly => display_text
+                .strip_suffix('}')?
+                .strip_suffix(hanji)?
+                .strip_suffix(" {"),
+            Ruby => display_text
+                .strip_prefix("<ruby>")?
+                .strip_suffix("</rt></ruby>")?
+                .strip_suffix(hanji)?
+                .strip_suffix("<rt>"),
+        }
+    }
+}
+
+/// Merge contiguous `NailedSegment`s joined by typed `-` / `=` / `+` / `'`
+/// separators into one combined both-scripts phrase (`重置 [qiǔngzii]`) when
+/// rendering in both-scripts mode.
+fn merge_both_scripts_runs(
+    nailed: &[NailedSegment],
+    config: &AppConfig,
+) -> Option<Vec<NailedSegment>> {
+    if !config.output_both_scripts || config.is_roman_only_display() || nailed.len() < 2 {
+        return None;
+    }
+    let has_sep_boundary = nailed
+        .windows(2)
+        .any(|w| w[1].raw_text.starts_with(['-', '=', '+', '\'']) || w[0].raw_text.ends_with('-'));
+    if !has_sep_boundary {
+        return None;
+    }
+    let hanji_leads = crate::commit_text::hanji_leads(config);
+    let template = config.annotation_template(hanji_leads);
+    let syllable_joiner = config.rendered_syllable_joiner();
+    let is_tps = config.is_tps_layout();
+
+    let mut out = Vec::with_capacity(nailed.len());
+    let mut i = 0;
+    while i < nailed.len() {
+        let Some((h0, r0)) = nailed[i].hanji.as_deref().and_then(|h| {
+            unwrap_both_scripts(&nailed[i].display_text, h, hanji_leads, template).map(|r| (h, r))
+        }) else {
+            out.push(nailed[i].clone());
+            i += 1;
+            continue;
+        };
+
+        let mut parts: Vec<(&str, &str)> = vec![(h0, r0)];
+        let mut j = i + 1;
+        while j < nailed.len() {
+            let connected = nailed[j].raw_text.starts_with(['-', '=', '+', '\''])
+                || nailed[j - 1].raw_text.ends_with('-');
+            if !connected {
+                break;
+            }
+            let Some((hj, rj)) = nailed[j].hanji.as_deref().and_then(|h| {
+                unwrap_both_scripts(&nailed[j].display_text, h, hanji_leads, template)
+                    .map(|r| (h, r))
+            }) else {
+                break;
+            };
+            parts.push((hj, rj));
+            j += 1;
+        }
+
+        if parts.len() < 2 {
+            out.push(nailed[i].clone());
+            i += 1;
+            continue;
+        }
+
+        let mut merged_hanji = String::new();
+        let mut merged_roman = String::new();
+        for (idx, (hj, rj)) in parts.iter().enumerate() {
+            merged_hanji.push_str(hj);
+            if idx == 0 {
+                merged_roman.push_str(rj);
+            } else {
+                let seg_idx = i + idx;
+                if !nailed[seg_idx - 1].raw_text.ends_with('-') {
+                    if is_tps {
+                        if nailed[seg_idx].raw_text.starts_with('=') {
+                            merged_roman.push('-');
+                        } else {
+                            merged_roman.push(' ');
+                        }
+                    } else {
+                        push_boundary_parts(
+                            &mut merged_roman,
+                            &nailed[seg_idx].raw_text,
+                            rj,
+                            false,
+                            " ",
+                            syllable_joiner,
+                        );
+                    }
+                }
+                merged_roman.push_str(rj);
+            }
+        }
+        let display_text = if hanji_leads {
+            template.wrap(&merged_hanji, &merged_roman)
+        } else {
+            template.wrap(&merged_roman, &merged_hanji)
+        };
+        let raw_text: String = nailed[i..j].iter().map(|s| s.raw_text.as_str()).collect();
+        let syllable_count = nailed[i..j]
+            .iter()
+            .fold(0u8, |acc, s| acc.saturating_add(s.syllable_count));
+        out.push(NailedSegment {
+            display_text,
+            canonical_text: merged_hanji.clone(),
+            raw_text,
+            association_tl: String::new(),
+            hanji: Some(merged_hanji),
+            raw_span: (nailed[i].raw_span.0, nailed[j - 1].raw_span.1),
+            syllable_count,
+            is_picked: nailed[i..j].iter().all(|s| s.is_picked),
+        });
+        i = j;
+    }
+    Some(out)
+}
+
 pub(crate) fn nailed_prefix(nailed: &[NailedSegment], config: &AppConfig) -> String {
     let space = continuous_word_space(config);
+    let merged = merge_both_scripts_runs(nailed, config);
+    let segs = merged.as_deref().unwrap_or(nailed);
     nailed_join(
-        nailed,
+        segs,
         SegmentText::Display,
         space,
         config.rendered_syllable_joiner(),
@@ -538,7 +715,7 @@ pub(crate) fn join_nailed_prefix_and_tail(
         && !derived.is_empty()
         && continuous_word_space(config)
         && !s.ends_with('-')
-        && !derived.starts_with('-')
+        && !derived.starts_with(['-', '\'', '+', '='])
     {
         s.push(' ');
     }
@@ -1402,5 +1579,132 @@ mod tests {
         assert_eq!(combined_display(&n, "lai", &c), "tńg lai");
         let (_, tail_start) = combined_display_with_tail(&n, "--lai", &c);
         assert_eq!(tail_start, "tńg".len());
+    }
+
+    #[test]
+    fn apostrophe_and_forced_separators_follow_two_layer_rules() {
+        use protos::engine::SyllableSeparator::{Hyphen, None as SepNone, Space};
+        let sep_cfg = |sep: protos::engine::SyllableSeparator| AppConfig {
+            syllable_separator: sep as i32,
+            ..cfg("tl", false, false)
+        };
+        for (raw, sep, expected) in [
+            ("-zii", Hyphen, "qiǔng-zii"),
+            ("-zii", SepNone, "qiǔngzii"),
+            ("-zii", Space, "qiǔng zii"),
+            ("'zii", Hyphen, "qiǔng-zii"),
+            ("'zii", SepNone, "qiǔngzii"),
+            ("'zii", Space, "qiǔng zii"),
+            ("=zii", Hyphen, "qiǔng-zii"),
+            ("=zii", SepNone, "qiǔng-zii"),
+            ("=zii", Space, "qiǔng-zii"),
+            ("+zii", Hyphen, "qiǔng zii"),
+            ("+zii", SepNone, "qiǔng zii"),
+            ("+zii", Space, "qiǔng zii"),
+        ] {
+            let n = [seg_dc("qiǔng", "重", 1), seg_raw("zii", "置", raw)];
+            assert_eq!(
+                nailed_prefix(&n, &sep_cfg(sep)),
+                expected,
+                "{sep:?} {raw}"
+            );
+        }
+        // Ambiguous HPP join under None still inserts apostrophe for `'` and `-`.
+        for raw in ["-i", "'i"] {
+            let n = [seg_dc("fàd", "發", 1), seg_raw("i", "醫", raw)];
+            assert_eq!(nailed_prefix(&n, &sep_cfg(SepNone)), "fàd'i", "{raw}");
+        }
+    }
+
+    #[test]
+    fn both_scripts_merges_separator_connected_segments() {
+        use protos::engine::AnnotationTemplate::{Curly, Round, Ruby, Square};
+        use protos::engine::SyllableSeparator::{Hyphen, None as SepNone, Space};
+        let both_cfg = |hanji_first: bool,
+                        sep: protos::engine::SyllableSeparator,
+                        tmpl: protos::engine::AnnotationTemplate| AppConfig {
+            syllable_separator: sep as i32,
+            annotation_template_hanji_first: tmpl as i32,
+            annotation_template_roman_first: tmpl as i32,
+            ..cfg("tl", hanji_first, true)
+        };
+        let seg_both = |display: &str, hanji: &str, raw: &str| NailedSegment {
+            display_text: display.to_owned(),
+            canonical_text: hanji.to_owned(),
+            raw_text: raw.to_owned(),
+            association_tl: String::new(),
+            hanji: Some(hanji.to_owned()),
+            raw_span: (0, raw.len()),
+            syllable_count: 1,
+            is_picked: true,
+        };
+
+        for (raw, sep, expected) in [
+            ("-zii", SepNone, "重置 [qiǔngzii]"),
+            ("-zii", Hyphen, "重置 [qiǔng-zii]"),
+            ("-zii", Space, "重置 [qiǔng zii]"),
+            ("'zii", SepNone, "重置 [qiǔngzii]"),
+            ("'zii", Hyphen, "重置 [qiǔng-zii]"),
+            ("'zii", Space, "重置 [qiǔng zii]"),
+            ("=zii", SepNone, "重置 [qiǔng-zii]"),
+            ("=zii", Space, "重置 [qiǔng-zii]"),
+            ("+zii", SepNone, "重置 [qiǔng zii]"),
+            ("+zii", Hyphen, "重置 [qiǔng zii]"),
+        ] {
+            let n = [
+                seg_both("重 [qiǔng]", "重", "qiung"),
+                seg_both("置 [zii]", "置", raw),
+            ];
+            assert_eq!(
+                nailed_prefix(&n, &both_cfg(true, sep, Square)),
+                expected,
+                "{sep:?} {raw}"
+            );
+        }
+
+        // Templates (Round, Curly, Ruby) and roman-first order.
+        let n = [
+            seg_both("重 (qiǔng)", "重", "qiung"),
+            seg_both("置 (zii)", "置", "-zii"),
+        ];
+        assert_eq!(
+            nailed_prefix(&n, &both_cfg(true, SepNone, Round)),
+            "重置 (qiǔngzii)"
+        );
+        let n_curly = [
+            seg_both("重 {qiǔng}", "重", "qiung"),
+            seg_both("置 {zii}", "置", "-zii"),
+        ];
+        assert_eq!(
+            nailed_prefix(&n_curly, &both_cfg(true, SepNone, Curly)),
+            "重置 {qiǔngzii}"
+        );
+        let n_ruby = [
+            seg_both("<ruby>重<rt>qiǔng</rt></ruby>", "重", "qiung"),
+            seg_both("<ruby>置<rt>zii</rt></ruby>", "置", "-zii"),
+        ];
+        assert_eq!(
+            nailed_prefix(&n_ruby, &both_cfg(true, SepNone, Ruby)),
+            "<ruby>重置<rt>qiǔngzii</rt></ruby>"
+        );
+        let n_roman_first = [
+            seg_both("qiǔng [重]", "重", "qiung"),
+            seg_both("zii [置]", "置", "-zii"),
+        ];
+        assert_eq!(
+            nailed_prefix(&n_roman_first, &both_cfg(false, SepNone, Square)),
+            "qiǔngzii [重置]"
+        );
+
+        // Preceding unseparated segment stays separate.
+        let n_mixed = [
+            seg_both("𠊎 [ngài]", "𠊎", "ngai"),
+            seg_both("重 [qiǔng]", "重", "qiung"),
+            seg_both("置 [zii]", "置", "-zii"),
+        ];
+        assert_eq!(
+            nailed_prefix(&n_mixed, &both_cfg(true, SepNone, Square)),
+            "𠊎 [ngài] 重置 [qiǔngzii]"
+        );
     }
 }

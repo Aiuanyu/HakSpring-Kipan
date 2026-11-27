@@ -1025,4 +1025,18 @@ fn multi_segment_joined_by_separator_learns_immediately_mid_commit() {
     assert_eq!(p3.learned, phrase("記起來", "kì-khí-lâi"));
     assert!(p3.extra_learned.is_empty());
     assert!(matches!(e.snapshot_state().phase, Phase::Continuous { .. }));
+
+    // Picking `'khilai` mid-commit also teaches `記起來` immediately.
+    let mut e2 = engine_in_continuous("laiki'khilailai");
+    assert!(e2
+        .apply_learning(pick((Some("來"), "lâi", 3, 1)), &config_tl())
+        .learned
+        .is_none());
+    assert!(e2
+        .apply_learning(pick((Some("記"), "kì", 2, 1)), &config_tl())
+        .learned
+        .is_none());
+    let p3_apos = e2.apply_learning(pick((Some("起來"), "khí-lâi", 7, 2)), &config_tl());
+    assert_eq!(p3_apos.learned, phrase("記起來", "kì-khí-lâi"));
+    assert!(p3_apos.extra_learned.is_empty());
 }

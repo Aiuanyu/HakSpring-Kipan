@@ -118,7 +118,7 @@ impl OutputScripts {
 /// Whether a commit leads with the Hanji: the composition renders Hanji first
 /// (the swap, or the TPS layout), or Hanji with Romanization forces the lead.
 /// The one place the lead is decided.
-fn hanji_leads(config: &AppConfig) -> bool {
+pub(crate) fn hanji_leads(config: &AppConfig) -> bool {
     config.renders_hanji_first()
         || config.candidate_display_mode() == CandidateDisplayMode::Combined
 }

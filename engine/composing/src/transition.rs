@@ -1524,9 +1524,9 @@ fn separator_phrases_from_last_pick(nailed: &[NailedSegment]) -> Vec<LearnedEntr
             out.push(entry);
         }
     }
-    if last.raw_text.starts_with(['-', '+', '=']) {
+    if last.raw_text.starts_with(['-', '+', '=', '\'']) {
         let mut start = nailed.len() - 1;
-        while start > 0 && nailed[start].raw_text.starts_with(['-', '+', '=']) {
+        while start > 0 && nailed[start].raw_text.starts_with(['-', '+', '=', '\'']) {
             start -= 1;
         }
         if start < nailed.len() - 1 {

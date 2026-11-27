@@ -479,3 +479,149 @@ fn unnail_restores_the_run_and_a_repick_keeps_it() {
     let fin = pick(&mut engine, &cfg, "來");
     assert_eq!(commit_text(&fin).as_deref(), Some("tńg--lâi"));
 }
+
+fn both_scripts_rows() -> Vec<Row> {
+    vec![
+        Row {
+            toneless_key: "tng",
+            hanji: "轉",
+            tl: "tńg",
+            syll: 1,
+            freq: 50_000,
+        },
+        Row {
+            toneless_key: "lai",
+            hanji: "來",
+            tl: "lâi",
+            syll: 1,
+            freq: 60_000,
+        },
+        Row {
+            toneless_key: "khi",
+            hanji: "去",
+            tl: "khì",
+            syll: 1,
+            freq: 40_000,
+        },
+        Row {
+            toneless_key: "tai",
+            hanji: "台",
+            tl: "tâi",
+            syll: 1,
+            freq: 50_000,
+        },
+        Row {
+            toneless_key: "uan",
+            hanji: "灣",
+            tl: "uân",
+            syll: 1,
+            freq: 50_000,
+        },
+    ]
+}
+
+fn both_scripts_cfg(hanji_first: bool, separator: SyllableSeparator) -> AppConfig {
+    AppConfig {
+        is_hanji_first: hanji_first,
+        output_both_scripts: true,
+        syllable_separator: separator as i32,
+        annotation_template_hanji_first: protos::engine::AnnotationTemplate::Square as i32,
+        annotation_template_roman_first: protos::engine::AnnotationTemplate::Square as i32,
+        ..config("tl")
+    }
+}
+
+/// `CommitContinuous` with `CommitScript::Lead` (what mobile/desktop tap sends).
+fn pick_lead(engine: &mut Engine, cfg: &AppConfig, hanji: &str) -> ComposingResponse {
+    let c = single(engine, cfg, hanji);
+    requests::handle(
+        &req(Method::CommitContinuous(CommitContinuous {
+            script: CommitScript::Lead as i32,
+            roman: c.roman.clone(),
+            canonical_text: c.display_text.clone(),
+            association_tl: c.canonical_tl.clone(),
+            hanji: c.hanji.clone(),
+            consumed_bytes: c.consumed_span_end,
+            syllable_count: c.syllable_count,
+        })),
+        engine,
+        cfg,
+    )
+    .expect("CommitContinuous")
+}
+
+#[test]
+fn both_scripts_merges_separator_picks_immediately_in_preedit_and_commit() {
+    let _lock = engine_install_lock();
+    install_rows(&both_scripts_rows(), &["tng2", "lai5", "khi3", "tai5", "uan5"]);
+
+    for (raw, sep, expected_final) in [
+        ("tng-lai", SyllableSeparator::None, "轉來 [tńglâi]"),
+        ("tng-lai", SyllableSeparator::Hyphen, "轉來 [tńg-lâi]"),
+        ("tng-lai", SyllableSeparator::Space, "轉來 [tńg lâi]"),
+        ("tng'lai", SyllableSeparator::None, "轉來 [tńglâi]"),
+        ("tng'lai", SyllableSeparator::Hyphen, "轉來 [tńg-lâi]"),
+        ("tng'lai", SyllableSeparator::Space, "轉來 [tńg lâi]"),
+        ("tng=lai", SyllableSeparator::None, "轉來 [tńg-lâi]"),
+        ("tng=lai", SyllableSeparator::Space, "轉來 [tńg-lâi]"),
+        ("tng+lai", SyllableSeparator::None, "轉來 [tńg lâi]"),
+        ("tng+lai", SyllableSeparator::Hyphen, "轉來 [tńg lâi]"),
+        // Ambiguous HPP join under None inserts apostrophe for `-` and `'`.
+        ("tai-uan", SyllableSeparator::None, "台灣 [tâi'uân]"),
+        ("tai'uan", SyllableSeparator::None, "台灣 [tâi'uân]"),
+    ] {
+        let cfg = both_scripts_cfg(true, sep);
+        let mut engine = started(raw, &cfg);
+        let first_hanji = if raw.starts_with("tai") { "台" } else { "轉" };
+        let second_hanji = if raw.starts_with("tai") { "灣" } else { "來" };
+        let first = pick_lead(&mut engine, &cfg, first_hanji);
+        assert!(
+            preedit(&first).is_some(),
+            "{raw} {sep:?}: mid-commit preedit"
+        );
+        let second = pick_lead(&mut engine, &cfg, second_hanji);
+        assert_eq!(
+            commit_text(&second).as_deref(),
+            Some(expected_final),
+            "{raw} {sep:?}: final commit"
+        );
+    }
+
+    // Roman-first both-scripts order.
+    let rf_cfg = both_scripts_cfg(false, SyllableSeparator::None);
+    let mut rf_engine = started("tng-lai", &rf_cfg);
+    pick_lead(&mut rf_engine, &rf_cfg, "轉");
+    let rf_fin = pick_lead(&mut rf_engine, &rf_cfg, "來");
+    assert_eq!(commit_text(&rf_fin).as_deref(), Some("tńglâi [轉來]"));
+
+    // Mid-commit preedit immediately shows merged phrase before pending tail,
+    // and Backspace un-nails only the last segment (來), leaving 轉 intact.
+    let cfg = both_scripts_cfg(true, SyllableSeparator::None);
+    let mut engine = started("tng-lai-khi", &cfg);
+    pick_lead(&mut engine, &cfg, "轉");
+    let mid = pick_lead(&mut engine, &cfg, "來");
+    assert_eq!(
+        preedit(&mid).as_deref(),
+        Some("轉來 [tńglâi]-khi"),
+        "mid-commit preedit merges 轉來 [tńglâi] immediately"
+    );
+
+    let mut last = None;
+    for _ in 0..5 {
+        last = Some(
+            requests::handle(
+                &req(Method::DeleteBackward(DeleteBackward {})),
+                &mut engine,
+                &cfg,
+            )
+            .expect("DeleteBackward"),
+        );
+    }
+    assert_eq!(
+        preedit(last.as_ref().unwrap()).as_deref(),
+        Some("轉 [tńg]-lai"),
+        "un-nail pops only 來, keeping 轉"
+    );
+    let fin = pick_lead(&mut engine, &cfg, "來");
+    assert_eq!(commit_text(&fin).as_deref(), Some("轉來 [tńglâi]"));
+}
