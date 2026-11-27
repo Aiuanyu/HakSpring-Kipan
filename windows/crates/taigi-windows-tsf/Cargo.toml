@@ -1,6 +1,6 @@
 [package]
 name = "taigi-windows-tsf"
-description = "The Text Services Framework text service (TaigiKeyboard.dll): COM shell over taigi-desktop-core"
+description = "The Text Services Framework text service (HakSpringKipan.dll): COM shell over taigi-desktop-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,8 +9,8 @@ repository.workspace = true
 publish.workspace = true
 
 [lib]
-# `TaigiKeyboard.dll` — the file name the installer registers.
-name = "TaigiKeyboard"
+# `HakSpringKipan.dll` — the file name the installer registers.
+name = "HakSpringKipan"
 crate-type = ["cdylib"]
 
 [dependencies]

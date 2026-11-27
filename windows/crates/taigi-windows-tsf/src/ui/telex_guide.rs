@@ -34,7 +34,7 @@ use windows::Win32::Graphics::DirectWrite::{
 };
 use windows_numerics::Vector2;
 
-const WINDOW_CLASS: &str = "TaigiKeyboardTelexGuide";
+const WINDOW_CLASS: &str = "HakSpringKipanTelexGuide";
 /// Larger than WinUI body / subtitle: a table the user reads across the room
 /// from the text they are typing, not a one-word notice (USER 2026-09-20).
 /// Mirrors `TelexGuidePanel.titleFontSize` / `rowFontSize`.

@@ -11,8 +11,7 @@ use crate::winui::cards;
 use crate::winui::font_awesome::FontAwesomeGlyph;
 use crate::winui::window::{Message, SettingsWindow};
 use taigi_desktop_core::settings::presentation::{
-    DISCORD_URL, EMAIL_URL, FACEBOOK_URL, GITHUB_URL, INSTAGRAM_URL, SPONSOR_URL, THREADS_URL,
-    WEBSITE_URL,
+    DISCORD_URL, EMAIL_URL, FACEBOOK_URL, GITHUB_URL, INSTAGRAM_URL, THREADS_URL, WEBSITE_URL,
 };
 use taigi_desktop_core::strings::{StringKey, StringResolver};
 use windows_reactor::*;
@@ -47,13 +46,7 @@ pub fn view(
         // Every action a row, the sponsor link first (USER 2026-09-20: no
         // lone button on the page); one card, as on the Mac.
         cards::link_group([
-            link_row(
-                strings,
-                context,
-                FontAwesomeGlyph::Heart,
-                StringKey::DesktopSponsorLink,
-                SPONSOR_URL,
-            ),
+            // Hakfa fork: hide upstream ECPay sponsor link during beta.
             link_row(
                 strings,
                 context,

@@ -17,7 +17,7 @@ use windows::Win32::Foundation::{POINT, RECT};
 use windows::Win32::Graphics::Direct2D::Common::D2D_SIZE_U;
 use windows_numerics::Vector2;
 
-const WINDOW_CLASS: &str = "TaigiKeyboardModeFlash";
+const WINDOW_CLASS: &str = "HakSpringKipanModeFlash";
 const HOLD_MILLISECONDS: u32 = 800;
 const HIDE_TIMER_ID: usize = 2;
 const FONT_SIZE: f32 = 24.0;

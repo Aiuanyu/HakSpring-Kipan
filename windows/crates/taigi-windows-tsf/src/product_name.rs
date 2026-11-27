@@ -13,7 +13,7 @@ use windows::Win32::UI::WindowsAndMessaging::LoadStringW;
 /// falls back to: the CLSID key's default value, the TSF profile's plain
 /// `Description`, and the tray on a DLL built without string resources (no
 /// resource compiler on PATH). The Mac's unlocalized `CFBundleName`.
-pub const UNTRANSLATED: &str = "TaigiKeyboard";
+pub const UNTRANSLATED: &str = "HakSpring-Kipan";
 
 /// The STRINGTABLE id the build script stores the localized product name
 /// under, in every language `product_name_strings.rs` carries

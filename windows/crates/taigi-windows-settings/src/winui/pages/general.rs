@@ -12,7 +12,7 @@ use taigi_desktop_core::settings::presentation::{
     OUTPUT_SCRIPTS,
 };
 use taigi_desktop_core::settings::{
-    keys, InputMode, KeyboardLayout, SettingChoice, SyllableSeparator,
+    keys, BracketTemplate, InputMode, KeyboardLayout, Lect, SettingChoice, SyllableSeparator,
 };
 use taigi_desktop_core::strings::{DisplayLanguage, StringKey, StringResolver};
 use taigi_desktop_update::checker;
@@ -30,12 +30,25 @@ pub fn view(
     context: &mut ViewContext<SettingsWindow>,
 ) -> View {
     let document = window.document();
+    let display_mode = document.choice(&keys::CANDIDATE_DISPLAY_MODE);
+    let shows_hanji = display_mode.shows_hanji();
+    let is_output_both_scripts = document.bool(&keys::IS_OUTPUT_BOTH_SCRIPTS);
     // One run of cards, no sub-groups (USER 2026-09-18: "no grouping"), in the
     // order the typing pipeline runs (USER 2026-09-21): what is typed and
     // how its tones are spelled, then the candidate window and its content,
     // then what a commit writes and its shape, then the app's language
     // (`GeneralSettingsView.swift`).
     View::fragment((
+        // Hakfa fork: current active lect selector ("四南海大平安").
+        choice_row(
+            "目前腔頭",
+            Lect::ALL,
+            document.effective_lect(),
+            true,
+            |lect: Lect| lect.display_name().to_owned(),
+            |lect| Message::set_choice(lect, &keys::LECT),
+            context,
+        ),
         // A pop-up like the Output Script row below, not a radio group (System
         // Settings' shape for a small mutually-exclusive choice). Input Script /
         // Output Script name the pair (USER 2026-09-18); mobile keeps Input Mode,
@@ -104,14 +117,49 @@ pub fn view(
             strings.resolve(StringKey::SettingsOutputScript),
             OUTPUT_SCRIPTS,
             document.bool(&keys::IS_HANJI_FIRST),
-            document
-                .choice(&keys::CANDIDATE_DISPLAY_MODE)
-                .allows_swap_toggle(),
+            display_mode.allows_swap_toggle(),
             |is_hanji: bool| strings.resolve(output_script_label(is_hanji)).to_owned(),
             |is_hanji| match is_hanji {
                 Some(is_hanji) => Message::SetSwitch(keys::IS_HANJI_FIRST, is_hanji),
                 None => Message::SetChoice(None),
             },
+            context,
+        ),
+        // Hakfa fork: Dual-Script Annotation switch & templates (`IS_OUTPUT_BOTH_SCRIPTS`).
+        cards::switch_row(
+            strings.resolve(StringKey::SettingsOutputBothScripts),
+            is_output_both_scripts,
+            shows_hanji,
+            context.callback(|is_on| Message::SetSwitch(keys::IS_OUTPUT_BOTH_SCRIPTS, is_on)),
+        ),
+        choice_row(
+            "雙書寫樣板（漢字在前）",
+            BracketTemplate::ALL,
+            document.choice(&keys::ANNOTATION_TEMPLATE_HANJI_FIRST),
+            shows_hanji && is_output_both_scripts,
+            |template: BracketTemplate| {
+                format!(
+                    "{}  →  {}",
+                    template.example_label(),
+                    template.sample("諸夏字", "Lǒmásii")
+                )
+            },
+            |template| Message::set_choice(template, &keys::ANNOTATION_TEMPLATE_HANJI_FIRST),
+            context,
+        ),
+        choice_row(
+            "雙書寫樣板（羅馬字在前）",
+            BracketTemplate::ALL,
+            document.choice(&keys::ANNOTATION_TEMPLATE_ROMAN_FIRST),
+            shows_hanji && is_output_both_scripts,
+            |template: BracketTemplate| {
+                format!(
+                    "{}  →  {}",
+                    template.example_label(),
+                    template.sample("Lǒmásii", "諸夏字")
+                )
+            },
+            |template| Message::set_choice(template, &keys::ANNOTATION_TEMPLATE_ROMAN_FIRST),
             context,
         ),
         // Syllable Separator (§49), directly under Output Script — it describes that

@@ -25,12 +25,18 @@ use crate::strings::StringKey;
 /// recorder rows, the preserved-key registration and the menu.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ShortcutAction {
+    /// Hakfa fork: cycles the active lect among enabled lects.
+    CycleLect,
     ToggleRomanization,
     /// TPS ↔ the romanization last used (`InputModeRequest::ToggleTps`).
     /// Its own row, not a third stop on the romanization switch: TPS is
     /// not a romanization (desktop TPS roadmap U2, D5).
     ToggleTps,
     ToggleTranslateSwapped,
+    /// Hakfa fork: toggles dual-script annotation (`IS_OUTPUT_BOTH_SCRIPTS`).
+    ToggleOutputBothScripts,
+    /// Hakfa fork: cycles dual-script annotation template.
+    CycleAnnotationTemplate,
     /// Steps Candidate Display through its picker order (`CandidateDisplayMode::next`).
     CycleCandidateDisplayMode,
     /// Opens the symbol picker over the caret.
@@ -50,10 +56,13 @@ pub enum ShortcutAction {
 }
 
 impl ShortcutAction {
-    pub const ALL: [ShortcutAction; 8] = [
+    pub const ALL: [ShortcutAction; 11] = [
+        Self::CycleLect,
         Self::ToggleRomanization,
         Self::ToggleTps,
         Self::ToggleTranslateSwapped,
+        Self::ToggleOutputBothScripts,
+        Self::CycleAnnotationTemplate,
         Self::CycleCandidateDisplayMode,
         Self::ShowSymbolPicker,
         Self::ShowTelexGuide,
@@ -70,8 +79,11 @@ impl ShortcutAction {
     /// say where it goes. The Mac's Swift twin: `ShortcutAction.groups`.
     pub const GROUPS: [&'static [ShortcutAction]; 3] = [
         &[
+            Self::CycleLect,
             Self::ToggleRomanization,
             Self::ToggleTranslateSwapped,
+            Self::ToggleOutputBothScripts,
+            Self::CycleAnnotationTemplate,
             Self::CycleCandidateDisplayMode,
         ],
         &[Self::ToggleTps, Self::ShowTpsKeyboard],
@@ -97,10 +109,13 @@ impl ShortcutAction {
     pub fn is_inert_under(self, mode: InputMode) -> bool {
         match self {
             Self::ToggleTranslateSwapped
+            | Self::ToggleOutputBothScripts
+            | Self::CycleAnnotationTemplate
             | Self::CycleCandidateDisplayMode
             | Self::ShowTelexGuide => mode == InputMode::Tps,
             Self::ShowTpsKeyboard => mode != InputMode::Tps,
-            Self::ToggleRomanization
+            Self::CycleLect
+            | Self::ToggleRomanization
             | Self::ToggleTps
             | Self::ShowSymbolPicker
             | Self::OpenLastSettingsPane => false,
@@ -124,9 +139,12 @@ impl ShortcutAction {
     pub fn raw(self) -> &'static str {
         match self {
             Self::OpenLastSettingsPane => "openLastSettingsPane",
+            Self::CycleLect => "cycleLect",
             Self::ToggleRomanization => "toggleRomanization",
             Self::ToggleTps => "toggleTps",
             Self::ToggleTranslateSwapped => "toggleTranslateSwapped",
+            Self::ToggleOutputBothScripts => "toggleOutputBothScripts",
+            Self::CycleAnnotationTemplate => "cycleAnnotationTemplate",
             Self::CycleCandidateDisplayMode => "cycleCandidateDisplayMode",
             Self::ShowSymbolPicker => "showSymbolPicker",
             Self::ShowTelexGuide => "showTelexGuide",
@@ -224,9 +242,12 @@ impl ShortcutAction {
     pub fn default_chord(self) -> ComposingKeyChord {
         let (key, modifiers) = match self {
             Self::OpenLastSettingsPane => ("s", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
+            Self::CycleLect => ("l", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
             Self::ToggleRomanization => ("c", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
             Self::ToggleTps => ("p", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
             Self::ToggleTranslateSwapped => ("`", KeyModifiers::NONE),
+            Self::ToggleOutputBothScripts => ("b", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
+            Self::CycleAnnotationTemplate => ("g", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
             Self::CycleCandidateDisplayMode => ("h", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
             Self::ShowSymbolPicker => (",", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
             Self::ShowTelexGuide => ("/", KeyModifiers::CONTROL.with(KeyModifiers::ALT)),
@@ -247,9 +268,12 @@ impl ShortcutAction {
     pub fn label_key(self) -> StringKey {
         match self {
             Self::OpenLastSettingsPane => StringKey::DesktopShortcutOpenSettings,
+            Self::CycleLect => StringKey::DesktopShortcutCycleLect,
             Self::ToggleRomanization => StringKey::DesktopShortcutToggleRomanization,
             Self::ToggleTps => StringKey::DesktopShortcutToggleTps,
             Self::ToggleTranslateSwapped => StringKey::CommonToggleTranslateSwapped,
+            Self::ToggleOutputBothScripts => StringKey::CommonToggleOutputBothScripts,
+            Self::CycleAnnotationTemplate => StringKey::DesktopShortcutCycleAnnotationTemplate,
             Self::CycleCandidateDisplayMode => StringKey::DesktopShortcutCycleCandidateDisplayMode,
             Self::ShowSymbolPicker => StringKey::DesktopShortcutShowSymbolPicker,
             Self::ShowTelexGuide => StringKey::DesktopShortcutShowTelexGuide,
@@ -627,9 +651,12 @@ mod tests {
         assert_eq!(
             ShortcutAction::ALL,
             [
+                ShortcutAction::CycleLect,
                 ShortcutAction::ToggleRomanization,
                 ShortcutAction::ToggleTps,
                 ShortcutAction::ToggleTranslateSwapped,
+                ShortcutAction::ToggleOutputBothScripts,
+                ShortcutAction::CycleAnnotationTemplate,
                 ShortcutAction::CycleCandidateDisplayMode,
                 ShortcutAction::ShowSymbolPicker,
                 ShortcutAction::ShowTelexGuide,
@@ -1085,6 +1112,8 @@ mod tests {
             inert(InputMode::Tps),
             [
                 ShortcutAction::ToggleTranslateSwapped,
+                ShortcutAction::ToggleOutputBothScripts,
+                ShortcutAction::CycleAnnotationTemplate,
                 ShortcutAction::CycleCandidateDisplayMode,
                 ShortcutAction::ShowTelexGuide,
             ]

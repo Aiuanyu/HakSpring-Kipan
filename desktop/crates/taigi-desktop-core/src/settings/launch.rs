@@ -7,7 +7,7 @@ use super::{SettingChoice, SettingsPane};
 
 /// The settings window's executable, beside the DLL in the install
 /// directory (roadmap W1).
-pub const SETTINGS_EXE_NAME: &str = "TaigiKeyboardSettings.exe";
+pub const SETTINGS_EXE_NAME: &str = "HakSpringKipanSettings.exe";
 /// `--pane <raw>`: open on this pane (absent = where the user left it).
 pub const PANE_FLAG: &str = "--pane";
 /// `--check-now`: run an update check with the window up (the menu's

@@ -1,6 +1,6 @@
 [package]
 name = "taigi-windows-settings"
-description = "TaigiKeyboardSettings.exe — the settings window, a WinUI 3 port of the macOS settings window's panes"
+description = "HakSpringKipanSettings.exe — the settings window, a WinUI 3 port of the macOS settings window's panes"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,7 @@ repository.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "TaigiKeyboardSettings"
+name = "HakSpringKipanSettings"
 path = "src/main.rs"
 
 [dependencies]

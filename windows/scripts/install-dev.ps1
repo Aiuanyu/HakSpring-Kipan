@@ -55,21 +55,21 @@ $RepositoryDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSC
 $WindowsDir = Join-Path $RepositoryDir 'windows'
 $ReleaseTarget = 'x86_64-pc-windows-msvc'
 $TargetDir = Join-Path $WindowsDir "target\$ReleaseTarget\release"
-$ServiceDll = Join-Path $TargetDir 'TaigiKeyboard.dll'
-# The linker writes `release\deps\TaigiKeyboard.dll` and cargo hard-links it
+$ServiceDll = Join-Path $TargetDir 'HakSpringKipan.dll'
+# The linker writes `release\deps\HakSpringKipan.dll` and cargo hard-links it
 # into `release\`: TWO NAMES, ONE FILE. Moving one aside does not free the
 # other, so a loaded dll still failed the link with LNK1104 until both were
 # moved (observed 2026-08-30, fixed 2026-08-31). Every name the linker needs
 # free, in the order the sweep visits them.
-$ServiceDllNames = @($ServiceDll, (Join-Path $TargetDir 'deps\TaigiKeyboard.dll'))
-$SettingsExe = Join-Path $TargetDir 'TaigiKeyboardSettings.exe'
+$ServiceDllNames = @($ServiceDll, (Join-Path $TargetDir 'deps\HakSpringKipan.dll'))
+$SettingsExe = Join-Path $TargetDir 'HakSpringKipanSettings.exe'
 # The one committed copy every platform packages from (#14, `f4e0fb20`);
 # it used to be reached through the iOS bundle's own folder, which no longer
 # exists.
 $DictionariesSource = Join-Path $RepositoryDir 'assets\dictionaries'
 $FontsSource = Join-Path $RepositoryDir 'assets\fonts\font'
 # guids.rs: CLSID_TEXT_SERVICE.
-$Clsid = '{32C28A51-8939-4C8F-8F29-037F9FD3CF0A}'
+$Clsid = '{57109325-54F7-4C4B-A09C-28E1DA812201}'
 $ClsidKey = "HKLM:\SOFTWARE\Classes\CLSID\$Clsid"
 
 function Fail([string] $Message) {
@@ -317,7 +317,7 @@ switch ($Action) {
         Restart-InputIndicator
         Write-Host ''
         Write-Host 'OK  unregistered.'
-        Write-Host '    Your dictionaries and settings under %APPDATA%\TaigiKeyboard are untouched.'
+        Write-Host '    Your dictionaries and settings under %APPDATA%\HakSpring-Kipan are untouched.'
     }
     'reload' {
         Assert-Elevated

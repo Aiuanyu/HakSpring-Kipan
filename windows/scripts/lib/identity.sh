@@ -12,18 +12,18 @@ fail() {
 WINDOWS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REPOSITORY_DIR="$(cd "$WINDOWS_DIR/.." && pwd)"
 
-APP_NAME="TaigiKeyboard"
+APP_NAME="HakSpring-Kipan"
 # The VERSIONINFO ProductName the binaries and the installer must all declare
 # (the updater compares them). Same string as the app name since the Windows
 # surfaces were aligned with the macOS bundle name.
 PRODUCT_NAME="$APP_NAME"
-SERVICE_DLL="TaigiKeyboard.dll"
-SETTINGS_EXE="TaigiKeyboardSettings.exe"
+SERVICE_DLL="HakSpringKipan.dll"
+SETTINGS_EXE="HakSpringKipanSettings.exe"
 RELEASE_TARGET="x86_64-pc-windows-msvc"
-# The 32-bit text service: cargo builds it as `TaigiKeyboard.dll` too, and
+# The 32-bit text service: cargo builds it as `HakSpringKipan.dll` too, and
 # staging renames it to ship beside the 64-bit one
 # (docs/architecture/windows-release.md § The 32-bit service).
-SERVICE_DLL_32="TaigiKeyboard32.dll"
+SERVICE_DLL_32="HakSpringKipan32.dll"
 RELEASE_TARGET_32="i686-pc-windows-msvc"
 
 # The first `version = "…"` after `[workspace.package]`.

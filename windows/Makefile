@@ -36,7 +36,7 @@ help:
 	@echo "  make test        - Native tests for the host-testable crates"
 	@echo "  make check-gnu   - clippy -D warnings, full graph, target x86_64-pc-windows-gnu"
 	@echo "  make check-msvc  - cargo check for the C-free crates, target x86_64-pc-windows-msvc"
-	@echo "  make check-dll   - GNU release link of TaigiKeyboard.dll + export-table check (W13)"
+	@echo "  make check-dll   - GNU release link of HakSpringKipan.dll + export-table check (W13)"
 	@echo "  make check-box   - Settings + platform crates: clippy, tests and the release link on the Windows box, pushed HEAD (W17)"
 	@echo "  make i18n-check  - Fail if the generated i18n Rust is stale"
 	@echo "  make fmt         - cargo fmt"
@@ -67,7 +67,7 @@ check-msvc:
 # points unmangled — what regsvr32 will look for. mingw's objdump reads the
 # PE export table; the names must appear exactly, so a renamed or `#[no_mangle]`
 # -less export fails here rather than on the user's machine.
-DLL_GNU := target/x86_64-pc-windows-gnu/release/TaigiKeyboard.dll
+DLL_GNU := target/x86_64-pc-windows-gnu/release/HakSpringKipan.dll
 check-dll:
 	cargo build -p taigi-windows-tsf --release --target x86_64-pc-windows-gnu
 	@for symbol in DllGetClassObject DllCanUnloadNow DllRegisterServer DllUnregisterServer; do \

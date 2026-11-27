@@ -1165,41 +1165,46 @@ impl ITfLangBarItemButton_Impl for TextService_Impl {
             let runtime = Runtime::shared();
             let rows = lang_bar::popup_rows(&runtime.strings(), &runtime.settings.current());
             if let Some(id) = lang_bar::show_popup(&rows, *pt) {
-                match lang_bar::menu_command(id) {
-                    None => log::warn!("tsf.menu_unknown_id id={id}"),
-                    Some(MenuCommand::OpenSettings) => {
-                        // The guide and the picker come down first, whoever
-                        // raised them: this path never reaches the session,
-                        // and the settings window taking focus is not
-                        // guaranteed to end the context that owns the card
-                        // (`ShortcutHotkeys.openSettings`).
-                        self.hide_telex_guide_now();
-                        self.hide_symbol_picker_now();
-                        settings_launcher::open_settings();
-                    }
-                    Some(MenuCommand::CheckForUpdates) => {
-                        // Also the settings window (on General): same doorway.
-                        self.hide_telex_guide_now();
-                        self.hide_symbol_picker_now();
-                        settings_launcher::check_for_updates();
-                    }
-                    Some(MenuCommand::About) => {
-                        // The settings window on About, the pane the sidebar
-                        // does not list: same doorway.
-                        self.hide_telex_guide_now();
-                        self.hide_symbol_picker_now();
-                        settings_launcher::open_about();
-                    }
-                    // A shortcut row does what its chord does, through the
-                    // same doorway (`perform_global`), against the context
-                    // focused NOW — resolved after the popup's modal loop,
-                    // not before it — so the open list of that context is
-                    // the one re-presented. No focused context is the
-                    // `OnPreservedKey` case: identity 0, the switches still
-                    // flip.
-                    Some(MenuCommand::Shortcut(action)) => {
-                        let identity = self.focused_context_identity();
-                        self.perform_global(action, identity);
+                if let Some(lect) = lang_bar::lect_for_menu_id(id) {
+                    let identity = self.focused_context_identity();
+                    self.select_lect(lect, identity);
+                } else {
+                    match lang_bar::menu_command(id) {
+                        None => log::warn!("tsf.menu_unknown_id id={id}"),
+                        Some(MenuCommand::OpenSettings) => {
+                            // The guide and the picker come down first, whoever
+                            // raised them: this path never reaches the session,
+                            // and the settings window taking focus is not
+                            // guaranteed to end the context that owns the card
+                            // (`ShortcutHotkeys.openSettings`).
+                            self.hide_telex_guide_now();
+                            self.hide_symbol_picker_now();
+                            settings_launcher::open_settings();
+                        }
+                        Some(MenuCommand::CheckForUpdates) => {
+                            // Also the settings window (on General): same doorway.
+                            self.hide_telex_guide_now();
+                            self.hide_symbol_picker_now();
+                            settings_launcher::check_for_updates();
+                        }
+                        Some(MenuCommand::About) => {
+                            // The settings window on About, the pane the sidebar
+                            // does not list: same doorway.
+                            self.hide_telex_guide_now();
+                            self.hide_symbol_picker_now();
+                            settings_launcher::open_about();
+                        }
+                        // A shortcut row does what its chord does, through the
+                        // same doorway (`perform_global`), against the context
+                        // focused NOW — resolved after the popup's modal loop,
+                        // not before it — so the open list of that context is
+                        // the one re-presented. No focused context is the
+                        // `OnPreservedKey` case: identity 0, the switches still
+                        // flip.
+                        Some(MenuCommand::Shortcut(action)) => {
+                            let identity = self.focused_context_identity();
+                            self.perform_global(action, identity);
+                        }
                     }
                 }
             }

@@ -262,7 +262,9 @@
       "hakha": "有新版本"
     },
     "updateAvailableMessage": {
-      "hakha": "客源翠企盤 {latest} 做得下載。"
+      "hakha": "客源翠企盤 {latest} 做得下載。",
+      "en": "HakSpring-Kipan {latest} is available for download.",
+      "ja": "客源翠企盤 {latest} がダウンロードできます。"
     },
     "updateDownloadAction": {
       "hakha": "去下載"
@@ -307,13 +309,17 @@
       "hakha": "安裝失敗"
     },
     "installerDllLocked": {
-      "hakha": "客源翠企盤還在使用中，換檔案失敗。請先換做別个輸入法，登出 Windows 過登入，再過執行安裝程式。毋使重新開機。"
+      "hakha": "客源翠企盤還在使用中，換檔案失敗。請先換做別个輸入法，登出 Windows 過登入，再過執行安裝程式。毋使重新開機。",
+      "en": "HakSpring-Kipan is still in use, so its files cannot be replaced. Switch to another input method, sign out of Windows and back in, then run this installer again. No restart is needed.",
+      "ja": "客源翠企盤は使用中のため、ファイルを置き換えられません。別の入力方式に切り替え、Windows からサインアウトして再度サインインしてから、このインストーラーをもう一度実行してください。再起動は不要です。"
     },
     "installerStepFailed": {
       "hakha": "安裝路數第 {step} 步失敗。係有舊版，既經復原。詳細請看安裝紀錄。"
     },
     "installerSignOutNote": {
-      "hakha": "係講在輸入法清單裡肚無看著客源翠企盤，請登出 Windows 再過登入。"
+      "hakha": "係講在輸入法清單裡肚無看著客源翠企盤，請登出 Windows 再過登入。",
+      "en": "If HakSpring-Kipan does not appear in the input-method list, sign out of Windows and sign in again.",
+      "ja": "入力方式の一覧に HakSpring-Kipan が表示されない場合は、Windows からサインアウトして再度サインインしてください。"
     },
     "installerUpdateTaskSkippedNote": {
       "hakha": "自動檢查更新設定失敗，請在設定裡肚手動檢查。"
@@ -337,7 +343,9 @@
       "hakha": "字重"
     },
     "menuSettings": {
-      "hakha": "客源翠企盤設定"
+      "hakha": "客源翠企盤設定",
+      "en": "HakSpring-Kipan Settings",
+      "ja": "客源翠企盤の設定"
     }
   }
 }

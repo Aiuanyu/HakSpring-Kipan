@@ -47,7 +47,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 use windows_numerics::Vector2;
 
-const WINDOW_CLASS: &str = "TaigiKeyboardTpsKeyboard";
+const WINDOW_CLASS: &str = "HakSpringKipanTpsKeyboard";
 /// A key cap's side and the gap between caps, in DIPs. Mirrors
 /// `TpsKeyboardPanel.capSize` / `capGap` on macOS.
 const CAP_SIZE: f32 = 48.0;

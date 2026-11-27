@@ -7,7 +7,7 @@
 
 /// The Application User Model ID the installer stamps on the Start-menu
 /// shortcut; a toast posted under any other id is silently dropped.
-pub const APPLICATION_USER_MODEL_ID: &str = "TaigiKeyboard.Settings";
+pub const APPLICATION_USER_MODEL_ID: &str = "HakSpringKipan.Settings";
 
 /// Shows a two-line toast; answers whether Windows ACCEPTED it — a missing
 /// AUMID shortcut (registration fails) or a non-Windows host answer

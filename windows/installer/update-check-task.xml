@@ -27,8 +27,8 @@
 -->
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Description>Checks once a day whether a newer TaigiKeyboard is published.</Description>
-    <URI>\TaigiKeyboard Update Check</URI>
+    <Description>Checks once a day whether a newer HakSpring-Kipan is published.</Description>
+    <URI>\HakSpring-Kipan Update Check</URI>
   </RegistrationInfo>
   <Triggers>
     <LogonTrigger>

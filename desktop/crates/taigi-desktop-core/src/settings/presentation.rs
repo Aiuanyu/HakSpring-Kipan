@@ -15,13 +15,13 @@ pub const WEBSITE_URL: &str = "https://hakspring.pages.dev/kipan/";
 /// `AboutPage.githubURL`.
 pub const GITHUB_URL: &str = "https://github.com/Aiuanyu/HakSpring-Kipan";
 /// `AboutPage.discordURL`.
-pub const DISCORD_URL: &str = "https://discord.gg/UFn9RdynPu";
+pub const DISCORD_URL: &str = "https://www.reddit.com/r/HakSpring";
 /// `AboutPage.facebookURL`.
-pub const FACEBOOK_URL: &str = "https://www.facebook.com/profile.php?id=61589036184924";
+pub const FACEBOOK_URL: &str = "https://www.facebook.com/Aiuanyu/";
 /// `AboutPage.instagramURL`.
-pub const INSTAGRAM_URL: &str = "https://www.instagram.com/taigikeyboardtw/";
+pub const INSTAGRAM_URL: &str = "https://www.instagram.com/aiuanyu/";
 /// `AboutPage.threadsURL`.
-pub const THREADS_URL: &str = "https://www.threads.com/@siansiansu";
+pub const THREADS_URL: &str = "https://www.threads.net/@aiuanyu";
 /// `AboutPage.emailURL`.
 pub const EMAIL_URL: &str = "mailto:aiuanyu777@gmail.com";
 

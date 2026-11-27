@@ -480,11 +480,11 @@ mod tests {
         // What rustc writes for the settings exe, and what Inno Setup writes
         // for the installer: the same product, one NUL-terminated, one padded
         // to its placeholder's width.
-        let from_rustc = product_name_from_versioninfo(&utf16("TaigiKeyboard\0"));
+        let from_rustc = product_name_from_versioninfo(&utf16("HakSpring-Kipan\0"));
         let from_inno = product_name_from_versioninfo(&utf16(
-            "TaigiKeyboard                                              \0\0",
+            "HakSpring-Kipan                                              \0\0",
         ));
-        assert_eq!(from_rustc, "TaigiKeyboard");
+        assert_eq!(from_rustc, "HakSpring-Kipan");
         assert_eq!(
             from_rustc, from_inno,
             "a padded name must not reject a genuine package"
@@ -518,7 +518,7 @@ mod tests {
         );
         let signed = Admission::pinned_to(PackageIdentity {
             signer_thumbprint: vec![1, 2, 3],
-            product_name: "TaigiKeyboard".to_owned(),
+            product_name: "HakSpring-Kipan".to_owned(),
         });
         assert_eq!(
             signed.admit(staged.path(), &digest, "3.7.0"),
@@ -541,8 +541,8 @@ mod tests {
     #[test]
     fn a_different_product_still_reads_as_a_different_name() {
         assert_ne!(
-            product_name_from_versioninfo(&utf16("TaigiKeyboard\0")),
-            product_name_from_versioninfo(&utf16("TaigiKeyboard Setup    \0")),
+            product_name_from_versioninfo(&utf16("HakSpring-Kipan\0")),
+            product_name_from_versioninfo(&utf16("HakSpring-Kipan Setup    \0")),
         );
     }
 }

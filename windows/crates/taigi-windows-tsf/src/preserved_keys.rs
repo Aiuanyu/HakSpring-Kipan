@@ -12,9 +12,11 @@
 //! against the context TSF hands over, the way the key sink would.
 
 use crate::guids::{
-    GUID_PRESERVED_KEY_CYCLE_CANDIDATE_DISPLAY_MODE, GUID_PRESERVED_KEY_ROMANIZATION,
-    GUID_PRESERVED_KEY_SETTINGS, GUID_PRESERVED_KEY_SYMBOL_PICKER, GUID_PRESERVED_KEY_TELEX_GUIDE,
-    GUID_PRESERVED_KEY_TPS, GUID_PRESERVED_KEY_TPS_KEYBOARD,
+    GUID_PRESERVED_KEY_CYCLE_ANNOTATION_TEMPLATE, GUID_PRESERVED_KEY_CYCLE_CANDIDATE_DISPLAY_MODE,
+    GUID_PRESERVED_KEY_CYCLE_LECT, GUID_PRESERVED_KEY_ROMANIZATION, GUID_PRESERVED_KEY_SETTINGS,
+    GUID_PRESERVED_KEY_SYMBOL_PICKER, GUID_PRESERVED_KEY_TELEX_GUIDE,
+    GUID_PRESERVED_KEY_TOGGLE_BOTH_SCRIPTS, GUID_PRESERVED_KEY_TPS,
+    GUID_PRESERVED_KEY_TPS_KEYBOARD,
 };
 use crate::wide::to_wide_nul;
 use taigi_desktop_core::keys::{ComposingKeyChord, ShortcutAction};
@@ -32,12 +34,21 @@ use windows::Win32::UI::TextServices::{ITfKeystrokeMgr, TF_PRESERVEDKEY};
 /// In `ShortcutAction::ALL` order, which is what
 /// `every_preserved_key_has_its_own_guid_and_names_its_action` compares
 /// against. Registration order itself carries nothing.
-const PRESERVED: [(ShortcutAction, GUID); 7] = [
+const PRESERVED: [(ShortcutAction, GUID); 10] = [
+    (ShortcutAction::CycleLect, GUID_PRESERVED_KEY_CYCLE_LECT),
     (
         ShortcutAction::ToggleRomanization,
         GUID_PRESERVED_KEY_ROMANIZATION,
     ),
     (ShortcutAction::ToggleTps, GUID_PRESERVED_KEY_TPS),
+    (
+        ShortcutAction::ToggleOutputBothScripts,
+        GUID_PRESERVED_KEY_TOGGLE_BOTH_SCRIPTS,
+    ),
+    (
+        ShortcutAction::CycleAnnotationTemplate,
+        GUID_PRESERVED_KEY_CYCLE_ANNOTATION_TEMPLATE,
+    ),
     (
         ShortcutAction::CycleCandidateDisplayMode,
         GUID_PRESERVED_KEY_CYCLE_CANDIDATE_DISPLAY_MODE,

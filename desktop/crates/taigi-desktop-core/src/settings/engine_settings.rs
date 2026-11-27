@@ -310,6 +310,36 @@ impl BracketTemplate {
             Self::Ruby => format!("ᴿᵀ {annotation}"),
         }
     }
+
+    /// Cycles through the four templates in picker order.
+    pub const fn next(self) -> Self {
+        match self {
+            Self::Square => Self::Round,
+            Self::Round => Self::Curly,
+            Self::Curly => Self::Ruby,
+            Self::Ruby => Self::Square,
+        }
+    }
+
+    /// Short label for the template picker.
+    pub const fn example_label(self) -> &'static str {
+        match self {
+            Self::Square => "[ ]",
+            Self::Round => "( )",
+            Self::Curly => "{ }",
+            Self::Ruby => "<ruby>",
+        }
+    }
+
+    /// Full formatted example for the settings preview.
+    pub fn sample(self, lead: &str, annotation: &str) -> String {
+        match self {
+            Self::Square => format!("{lead} [{annotation}]"),
+            Self::Round => format!("{lead} ({annotation})"),
+            Self::Curly => format!("{lead} {{{annotation}}}"),
+            Self::Ruby => format!("<ruby>{lead}<rt>{annotation}</rt></ruby>"),
+        }
+    }
 }
 
 impl SettingChoice for BracketTemplate {

@@ -42,7 +42,7 @@ RELEASE_TITLE="TaigiKeyboard Desktop $SHORT_VERSION"
 # announcement does not recognise reads as "that platform was never staged"
 # rather than as an error. A throwaway build appends its qualifier to the stem.
 MACOS_ASSET="TaigiKeyboard-$SHORT_VERSION.pkg"
-WINDOWS_ASSET="TaigiKeyboard-$SHORT_VERSION.exe"
+WINDOWS_ASSET="HakSpring-Kipan-$SHORT_VERSION.exe"
 # Each Linux format in its own distribution's file-name convention, which is
 # what `linux/Makefile`'s `deb` / `rpm` / `arch` targets write: Debian
 # (name_version_arch.deb), Fedora (name-version-release.arch.rpm), Arch

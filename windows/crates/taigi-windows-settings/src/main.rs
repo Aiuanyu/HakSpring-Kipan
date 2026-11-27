@@ -21,7 +21,7 @@ use taigi_desktop_core::settings::SettingsPane;
 use taigi_desktop_storage::{user_data_directory, LiveSettings, SettingsFileStore};
 
 /// The per-session mutex that makes the window single-instance.
-const SINGLE_INSTANCE_NAME: &str = "Local\\TaigiKeyboardSettings";
+const SINGLE_INSTANCE_NAME: &str = "Local\\HakSpringKipanSettings";
 
 fn main() -> ExitCode {
     taigi_windows_platform::install_debug_logger();

@@ -270,7 +270,7 @@ echo ""
 echo "✓ $OUTPUT_EXE"
 echo "  version   $SHORT_VERSION"
 echo "  commit    $HEAD_COMMIT"
-echo "  installs  %ProgramFiles%\\TaigiKeyboard (administrator prompt)"
+echo "  installs  %ProgramFiles%\\HakSpring-Kipan (administrator prompt)"
 echo "  sha256    $(release_sha256 "$OUTPUT_EXE")"
 declare -a PUBLISH_ARGS=(--installer "$OUTPUT_EXE")
 if [[ "$skip_sign" == true ]]; then

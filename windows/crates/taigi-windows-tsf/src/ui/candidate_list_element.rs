@@ -59,7 +59,7 @@ impl CandidateListElement {
 impl ITfUIElement_Impl for CandidateListElement_Impl {
     fn GetDescription(&self) -> Result<BSTR> {
         guarded("ITfUIElement::GetDescription", || {
-            Ok(BSTR::from("TaigiKeyboard candidates"))
+            Ok(BSTR::from("HakSpring-Kipan candidates"))
         })
     }
 

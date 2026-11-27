@@ -24,7 +24,7 @@ use crate::ui::window;
 use crate::wide::{fill_fixed, to_wide_nul};
 use taigi_desktop_core::keys::{menu_rows, MenuCommand, MENU};
 use taigi_desktop_core::mode_indicator::ModeIndicator;
-use taigi_desktop_core::settings::SettingsDocument;
+use taigi_desktop_core::settings::{Lect, SettingChoice, SettingsDocument};
 use taigi_desktop_core::strings::StringResolver;
 use taigi_windows_platform::DESKTOP_PLATFORM;
 use windows::core::{Result, PCWSTR};
@@ -35,8 +35,8 @@ use windows::Win32::UI::TextServices::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CopyIcon, CreatePopupMenu, DestroyMenu, GetSystemMetrics, LoadIconW, LoadImageW,
-    TrackPopupMenuEx, HICON, HMENU, IDI_APPLICATION, IMAGE_ICON, LR_DEFAULTCOLOR, MF_SEPARATOR,
-    MF_STRING, SM_CXSMICON, SM_CYSMICON, TPM_NONOTIFY, TPM_RETURNCMD,
+    TrackPopupMenuEx, HICON, HMENU, IDI_APPLICATION, IMAGE_ICON, LR_DEFAULTCOLOR, MF_CHECKED,
+    MF_SEPARATOR, MF_STRING, MF_UNCHECKED, SM_CXSMICON, SM_CYSMICON, TPM_NONOTIFY, TPM_RETURNCMD,
 };
 
 /// A popup row's command id is its position in the shared list, from 1:
@@ -48,12 +48,24 @@ fn popup_id(index: usize) -> u32 {
     u32::try_from(index + 1).unwrap_or(u32::MAX)
 }
 
+/// Base command id for enabled lect rows in the tray popup menu.
+const LECT_MENU_ID_BASE: u32 = 1000;
+
 /// The command a popup id stands for; `None` for 0 (dismissed) or a
 /// separator.
 pub fn menu_command(id: u32) -> Option<MenuCommand> {
     let index = usize::try_from(id).ok()?.checked_sub(1)?;
     MENU.get(index).copied().flatten()
 }
+
+/// The lect a popup id stands for, if it is one of the enabled-lect rows.
+pub fn lect_for_menu_id(id: u32) -> Option<Lect> {
+    let offset = usize::try_from(id.checked_sub(LECT_MENU_ID_BASE)?).ok()?;
+    Lect::ALL.get(offset).copied()
+}
+
+/// One popup menu item: `(id, label, checked)`.
+pub type PopupItem = (u32, String, bool);
 
 /// The one cookie `ITfSource::AdviseSink` hands out for the lang-bar sink.
 pub const LANG_BAR_SINK_COOKIE: u32 = 0x5461_6967;
@@ -80,27 +92,42 @@ pub fn item_info() -> TF_LANGBARITEMINFO {
     info
 }
 
-/// The rows, in order, as (id, label) — `None` is a separator. Pure, so the
-/// menu is testable without a live menu. A row with a recorded chord prints
-/// it tab-separated: a Win32 menu draws what follows a tab in its
-/// accelerator column, which is what `show_popup` builds.
-pub fn popup_rows(
-    strings: &StringResolver,
-    settings: &SettingsDocument,
-) -> Vec<Option<(u32, String)>> {
-    menu_rows(strings, settings, DESKTOP_PLATFORM)
+/// The rows, in order, as (id, label, checked) — `None` is a separator.
+/// Enabled lects lead the menu (active lect checked), followed by the shared
+/// `keys::MENU` rows.
+pub fn popup_rows(strings: &StringResolver, settings: &SettingsDocument) -> Vec<Option<PopupItem>> {
+    let active_lect = settings.effective_lect();
+    let mut rows: Vec<Option<PopupItem>> = settings
+        .available_lects()
         .into_iter()
-        .enumerate()
-        .map(|(index, row)| {
-            row.map(|row| {
-                let label = match row.chord {
-                    Some(chord) => format!("{}\t{chord}", row.title),
-                    None => row.title,
-                };
-                (popup_id(index), label)
-            })
+        .filter_map(|lect| {
+            let offset = Lect::ALL.iter().position(|candidate| *candidate == lect)?;
+            let id = LECT_MENU_ID_BASE + u32::try_from(offset).ok()?;
+            Some(Some((
+                id,
+                lect.display_name().to_owned(),
+                lect == active_lect,
+            )))
         })
-        .collect()
+        .collect();
+    if !rows.is_empty() {
+        rows.push(None);
+    }
+    rows.extend(
+        menu_rows(strings, settings, DESKTOP_PLATFORM)
+            .into_iter()
+            .enumerate()
+            .map(|(index, row)| {
+                row.map(|row| {
+                    let label = match row.chord {
+                        Some(chord) => format!("{}\t{chord}", row.title),
+                        None => row.title,
+                    };
+                    (popup_id(index), label, false)
+                })
+            }),
+    );
+    rows
 }
 
 /// The window a popup is owned by: the focused window of the calling
@@ -149,7 +176,7 @@ fn clamped_to_work_area(point: POINT) -> POINT {
 /// (a bitmap-stretched menu in the screen's corner). The host's windows keep
 /// their own context in the modal loop — a window procedure runs in its
 /// window's.
-pub fn show_popup(rows: &[Option<(u32, String)>], point: POINT) -> Option<u32> {
+pub fn show_popup(rows: &[Option<PopupItem>], point: POINT) -> Option<u32> {
     let owner = popup_owner()?;
     // SAFETY: a menu this call owns; `OwnedMenu` destroys it on every exit,
     // a panic through the COM guard included.
@@ -159,9 +186,10 @@ pub fn show_popup(rows: &[Option<(u32, String)>], point: POINT) -> Option<u32> {
         // outlives its call.
         let appended = unsafe {
             match row {
-                Some((id, label)) => {
+                Some((id, label, checked)) => {
                     let text = to_wide_nul(label);
-                    AppendMenuW(menu.0, MF_STRING, *id as usize, PCWSTR(text.as_ptr()))
+                    let flags = MF_STRING | if *checked { MF_CHECKED } else { MF_UNCHECKED };
+                    AppendMenuW(menu.0, flags, *id as usize, PCWSTR(text.as_ptr()))
                 }
                 None => AppendMenuW(menu.0, MF_SEPARATOR, 0, PCWSTR::null()),
             }
@@ -250,19 +278,25 @@ mod tests {
 
     #[test]
     fn every_row_prints_its_chord_after_a_tab_and_its_id_reads_back() {
-        // trace: keys::MENU rows (the shared literal is asserted in
-        // taigi-desktop-core); here only what Windows adds — the tab join
-        // and the id → command round trip.
+        // trace: enabled lects lead the menu (active lect checked), followed
+        // by a separator and `keys::MENU` rows.
         let strings = StringResolver::new(DisplayLanguage::Hanji);
         let rows = popup_rows(&strings, &SettingsDocument::default());
-        assert_eq!(rows.len(), MENU.len());
+        let lect_count = Lect::ALL.len();
+        assert_eq!(rows.len(), lect_count + 1 + MENU.len());
+        assert_eq!(rows[0], Some((LECT_MENU_ID_BASE, "四縣".to_owned(), true)));
+        assert_eq!(lect_for_menu_id(LECT_MENU_ID_BASE), Some(Lect::Xiien));
+        assert_eq!(rows[lect_count], None);
+        let menu_start = lect_count + 1;
         assert_eq!(
-            rows[0].as_ref().map(|(_, label)| label.as_str()),
+            rows[menu_start]
+                .as_ref()
+                .map(|(_, label, _)| label.as_str()),
             Some("切換台羅/白話字\tCtrl+Alt+C")
         );
-        for (row, command) in rows.iter().zip(MENU) {
+        for (row, command) in rows[menu_start..].iter().zip(MENU) {
             match (row, command) {
-                (Some((id, _)), Some(command)) => {
+                (Some((id, _, _)), Some(command)) => {
                     assert_ne!(*id, 0);
                     assert_eq!(menu_command(*id), Some(command));
                 }
@@ -274,7 +308,7 @@ mod tests {
         let mut cleared = SettingsDocument::default();
         ShortcutAction::ToggleRomanization.store_in(&mut cleared, None, DESKTOP_PLATFORM);
         let rows = popup_rows(&strings, &cleared);
-        assert_eq!(rows[0].as_ref().unwrap().1, "切換台羅/白話字");
+        assert_eq!(rows[menu_start].as_ref().unwrap().1, "切換台羅/白話字");
         // A plain tray button, whose click reaches `OnClick`. A
         // `TF_LBI_STYLE_BTN_MENU` here shows no menu at all in the
         // Windows 8+ taskbar input indicator (module header).

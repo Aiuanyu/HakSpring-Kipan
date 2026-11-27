@@ -22,7 +22,7 @@ pub enum DirectoryError {
 
 /// The application's folder name under `%APPDATA%`. Also what the installer
 /// and the settings window agree on.
-pub const APPLICATION_FOLDER_NAME: &str = "TaigiKeyboard";
+pub const APPLICATION_FOLDER_NAME: &str = "HakSpring-Kipan";
 
 /// The shipped location, created if absent.
 pub fn user_data_directory() -> Result<PathBuf, DirectoryError> {

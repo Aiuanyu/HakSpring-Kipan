@@ -51,6 +51,18 @@ impl Lect {
         }
     }
 
+    /// The lect's Traditional Chinese / Hakfa display name.
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Xiien => "四縣",
+            Self::Namxiian => "南四縣",
+            Self::Hoiliug => "海陸",
+            Self::Taibu => "大埔",
+            Self::Ngiaupin => "饒平",
+            Self::Zhioon => "詔安",
+        }
+    }
+
     /// The lect the cycle shortcut steps to among the `available` ones (the picker order, round
     /// again from the end). `self` itself when nothing else is available.
     pub fn next_among(self, available: &[Self]) -> Self {

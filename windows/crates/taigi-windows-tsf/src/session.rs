@@ -840,15 +840,34 @@ impl TextService_Impl {
     /// changed with no notice reads as the keyboard breaking (USER
     /// 2026-08-26).
     fn flash_mode_label(&self, runtime: &Runtime, settings: &SettingsDocument, label: StringKey) {
-        let Some(flash) = self.state.borrow().mode_flash.clone() else {
-            return;
-        };
         let text = StringResolver::new(runtime.display_language())
             .resolve(label)
             .to_owned();
+        self.flash_mode_text(settings, &text);
+    }
+
+    fn flash_mode_text(&self, settings: &SettingsDocument, text: &str) {
+        let Some(flash) = self.state.borrow().mode_flash.clone() else {
+            return;
+        };
         let anchor = self.state.borrow().focused_caret;
         let appearance: AppearanceMode = settings.choice(&keys::APPEARANCE_MODE);
-        flash.borrow_mut().flash(&text, anchor, appearance);
+        flash.borrow_mut().flash(text, anchor, appearance);
+    }
+
+    /// Switches the active lect, refreshes any open candidate list, and
+    /// flashes the new lect's name.
+    pub(crate) fn select_lect(&self, lect: taigi_desktop_core::settings::Lect, identity: usize) {
+        let runtime = Runtime::shared();
+        if !runtime.update_settings("select_lect", |document| {
+            document.set_choice(&keys::LECT, lect);
+        }) {
+            return;
+        }
+        self.represent_open_list(identity, runtime, true);
+        let settings = runtime.settings.current();
+        self.flash_mode_text(&settings, lect.display_name());
+        self.notify_lang_bar();
     }
 
     /// A Shift tap switched Chinese/English. Runs on the TIP thread from `OnKeyUp`,
@@ -1000,6 +1019,13 @@ impl TextService_Impl {
             // is reached (`needs_key_context`).
             ShortcutAction::ShowSymbolPicker => {}
             ShortcutAction::OpenLastSettingsPane => settings_launcher::open_settings(),
+            ShortcutAction::CycleLect => {
+                let current = runtime.settings.current();
+                let next = current
+                    .effective_lect()
+                    .next_among(&current.available_lects());
+                self.select_lect(next, identity);
+            }
             ShortcutAction::ToggleRomanization => {
                 self.switch_input_mode(InputModeRequest::ToggleRomanization, identity, token);
             }
@@ -1029,6 +1055,66 @@ impl TextService_Impl {
                 // never which exist — re-presented in place, selection kept
                 // (dismissing read as the window vanishing, 2026-08-21).
                 self.represent_open_list(identity, runtime, false);
+            }
+            ShortcutAction::ToggleOutputBothScripts => {
+                let shows_hanji = runtime
+                    .settings
+                    .current()
+                    .engine_settings()
+                    .candidate_display_mode
+                    .shows_hanji();
+                if !shows_hanji {
+                    return;
+                }
+                if !runtime.update_settings("toggle_output_both_scripts", |document| {
+                    let enabled = document.bool(&keys::IS_OUTPUT_BOTH_SCRIPTS);
+                    document.set_bool(&keys::IS_OUTPUT_BOTH_SCRIPTS, !enabled);
+                }) {
+                    return;
+                }
+                self.represent_open_list(identity, runtime, false);
+                let settings = runtime.settings.current();
+                let label = if settings.bool(&keys::IS_OUTPUT_BOTH_SCRIPTS) {
+                    StringKey::SettingsOutputBothScriptsOn
+                } else {
+                    StringKey::SettingsOutputBothScriptsOff
+                };
+                self.flash_mode_label(runtime, &settings, label);
+            }
+            ShortcutAction::CycleAnnotationTemplate => {
+                let current = runtime.settings.current();
+                let engine = current.engine_settings();
+                if !engine.candidate_display_mode.shows_hanji() {
+                    return;
+                }
+                let hanji_first = engine.is_hanji_first;
+                if !runtime.update_settings("cycle_annotation_template", |document| {
+                    if hanji_first {
+                        let next = document
+                            .choice(&keys::ANNOTATION_TEMPLATE_HANJI_FIRST)
+                            .next();
+                        document.set_choice(&keys::ANNOTATION_TEMPLATE_HANJI_FIRST, next);
+                    } else {
+                        let next = document
+                            .choice(&keys::ANNOTATION_TEMPLATE_ROMAN_FIRST)
+                            .next();
+                        document.set_choice(&keys::ANNOTATION_TEMPLATE_ROMAN_FIRST, next);
+                    }
+                }) {
+                    return;
+                }
+                self.represent_open_list(identity, runtime, false);
+                let settings = runtime.settings.current();
+                let preview = if hanji_first {
+                    settings
+                        .choice(&keys::ANNOTATION_TEMPLATE_HANJI_FIRST)
+                        .sample("諸夏字", "Lǒmásii")
+                } else {
+                    settings
+                        .choice(&keys::ANNOTATION_TEMPLATE_ROMAN_FIRST)
+                        .sample("Lǒmásii", "諸夏字")
+                };
+                self.flash_mode_text(&settings, &preview);
             }
             ShortcutAction::CycleCandidateDisplayMode => {
                 if !runtime.update_settings("cycle_candidate_display_mode", |document| {

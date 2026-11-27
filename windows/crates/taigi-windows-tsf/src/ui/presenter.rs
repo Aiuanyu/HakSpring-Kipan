@@ -28,7 +28,7 @@ use windows::Win32::UI::TextServices::{
 };
 use windows_core::ComObject;
 
-const WINDOW_CLASS: &str = "TaigiKeyboardCandidates";
+const WINDOW_CLASS: &str = "HakSpringKipanCandidates";
 
 pub struct CandidatePresenter {
     content: Rc<RefCell<CandidateWindow>>,

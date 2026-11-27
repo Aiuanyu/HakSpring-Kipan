@@ -73,7 +73,7 @@ impl ITfDisplayAttributeInfo_Impl for DisplayAttributeInfo_Impl {
     }
 
     fn GetDescription(&self) -> Result<BSTR> {
-        Ok(BSTR::from("TaigiKeyboard composition"))
+        Ok(BSTR::from("HakSpring-Kipan composition"))
     }
 
     fn GetAttributeInfo(&self, pda: *mut TF_DISPLAYATTRIBUTE) -> Result<()> {

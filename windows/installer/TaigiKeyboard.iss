@@ -1,4 +1,4 @@
-﻿; TaigiKeyboard for Windows — Inno Setup 6.5+ script (roadmap W8; `x64compatible`
+; TaigiKeyboard for Windows — Inno Setup 6.5+ script (roadmap W8; `x64compatible`
 ; is 6.3 syntax, the official ChineseTraditional.isl 6.5).
 ;
 ; Compiled by windows/scripts/release-app.sh:
@@ -36,22 +36,22 @@
   #error Pass /DProductNameStringId=<id> (windows/scripts/release-app.sh reads it from build-support/resource.rs)
 #endif
 
-#define AppName "TaigiKeyboard"
-#define AppPublisher "Soo Bîn-hiân 蘇民弦"
-#define AppContactMail "info@taigikeyboard.tw"
-#define AppURL "https://taigikeyboard.tw"
-#define AppUserModelID "TaigiKeyboard.Settings"
-#define TaskName "TaigiKeyboard Update Check"
-#define SettingsExe "TaigiKeyboardSettings.exe"
-#define ServiceDll "TaigiKeyboard.dll"
-#define ServiceDll32 "TaigiKeyboard32.dll"
+#define AppName "HakSpring-Kipan"
+#define AppPublisher "HakSpring 客源翠"
+#define AppContactMail "aiuanyu777@gmail.com"
+#define AppURL "https://hakspring.pages.dev/kipan/"
+#define AppUserModelID "HakSpringKipan.Settings"
+#define TaskName "HakSpring-Kipan Update Check"
+#define SettingsExe "HakSpringKipanSettings.exe"
+#define ServiceDll "HakSpringKipan.dll"
+#define ServiceDll32 "HakSpringKipan32.dll"
 ; The one Start-menu entry, spelled once for [Icons] and for the two [Code]
 ; sites that localize and un-localize its display name.
 #define ShortcutName "{autoprograms}\" + AppName
 
 [Setup]
 ; Stable across versions: what makes a later installer an UPGRADE.
-AppId={{6F0D8C2B-4A57-4E3F-9B1E-2D7C3A8E5F61}
+AppId={{B8C1EF16-4C69-4EFD-B490-FA852D621AAB}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
@@ -68,10 +68,10 @@ VersionInfoProductVersion={#AppVersion}
 VersionInfoProductName={#AppName}
 VersionInfoDescription={#AppName} Setup
 VersionInfoCompany={#AppPublisher}
-VersionInfoCopyright=Copyright (c) 2025-2026 Soo Bîn-hiân 蘇民弦. Apache License 2.0.
+VersionInfoCopyright=Copyright (c) 2025-2026 HakSpring 客源翠 (based on TaigiKeyboard). Apache License 2.0.
 ; Machine-wide, under Program Files: a text service is loaded into every
 ; process of every user, and regsvr32 needs HKLM (W8).
-DefaultDirName={autopf}\TaigiKeyboard
+DefaultDirName={autopf}\HakSpring-Kipan
 DisableDirPage=yes
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
@@ -107,7 +107,7 @@ MinVersion=10.0.17763
 UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\{#SettingsExe}
 SetupIconFile=..\resources\TaigiKeyboard.ico
-OutputBaseFilename=TaigiKeyboard-{#AppVersion}
+OutputBaseFilename=HakSpring-Kipan-{#AppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern

@@ -16,7 +16,7 @@ use windows::Win32::System::Threading::BELOW_NORMAL_PRIORITY_CLASS;
 
 /// The claim that keeps the many hosts this DLL is loaded into from each
 /// spawning a prewarm of their own.
-const PREWARM_CLAIM_NAME: &str = "Local\\TaigiKeyboardSettingsPrewarm";
+const PREWARM_CLAIM_NAME: &str = "Local\\HakSpringKipanSettingsPrewarm";
 
 /// What the spawned process runs at.
 #[derive(Clone, Copy)]
