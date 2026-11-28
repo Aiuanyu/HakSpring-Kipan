@@ -65,6 +65,9 @@ env:
   # on the runner image, and without it the very first engine crate fails to build.
   PROTOC_VERSION: 36.1
   PROTOC_SHA256: 390e515cb456e6a978553bdb57baf087b054885077fd6da7f7ff0160279c07d6
+  # windows-reactor / windows-reactor-setup are git dependencies on microsoft/windows-rs;
+  # using the git CLI avoids libgit2 stalling on large history fetches.
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
 
 jobs:
   build:
@@ -168,6 +171,12 @@ jobs:
         shell: bash
         working-directory: windows
         run: rustup target add i686-pc-windows-msvc
+
+      - name: Cache Cargo registry, git dependencies, and target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "windows"
+          cache-on-failure: "true"
 
       # What actually built this, recorded in the log. A provenance claim that
       # cannot name its compiler is worth less than one that can.
